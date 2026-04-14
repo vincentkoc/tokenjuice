@@ -1,3 +1,5 @@
+<img src="docs/tokenjuice.jpg" alt="tokenjuice banner"/>
+
 # tokenjuice 🧃
 
 lean output compaction for terminal-heavy agent workflows.

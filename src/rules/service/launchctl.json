@@ -11,19 +11,31 @@
     "dedupeAdjacent": true,
     "trimEmptyEdges": true
   },
+  "filters": {
+    "keepPatterns": [
+      "^-?\\d+\\s+\\S+\\s+.+",
+      "^PID\\s+Status\\s+Label$",
+      "error|failed|stopped|disabled"
+    ]
+  },
   "summarize": {
-    "head": 12,
+    "head": 8,
     "tail": 6
   },
   "failure": {
     "preserveOnFailure": true,
-    "head": 14,
-    "tail": 12
+    "head": 10,
+    "tail": 10
   },
   "counters": [
     {
       "name": "service",
-      "pattern": ".+"
+      "pattern": "^(?!PID\\s+Status\\s+Label$).+\\S.*$"
+    },
+    {
+      "name": "error",
+      "pattern": "error|failed|stopped|disabled",
+      "flags": "i"
     }
   ]
 }

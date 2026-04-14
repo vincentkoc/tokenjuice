@@ -621,4 +621,191 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("Back-off restarting failed container");
     expect(result.stats.ratio).toBeLessThan(0.2);
   });
+
+  it("compresses large systemctl status output around active state and failures", async () => {
+    const noise = Array.from(
+      { length: 120 },
+      (_, index) => `Apr 14 12:00:${String(index).padStart(2, "0")} api[123]: info heartbeat ${index}`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "systemctl status api.service",
+      argv: ["systemctl", "status", "api.service"],
+      combinedText: [
+        "● api.service - API service",
+        "     Loaded: loaded (/etc/systemd/system/api.service; enabled)",
+        "     Active: failed (Result: exit-code) since Tue 2026-04-14 12:00:00 UTC; 1min ago",
+        noise,
+        "     Process: 123 ExecStart=/usr/bin/api (code=exited, status=1/FAILURE)",
+      ].join("\n"),
+      exitCode: 3,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/systemctl-status");
+    expect(result.inlineText).toContain("Active: failed");
+    expect(result.inlineText).toContain("ExecStart=/usr/bin/api");
+    expect(result.stats.ratio).toBeLessThan(0.2);
+  });
+
+  it("compresses large service output around status lines", async () => {
+    const noise = Array.from(
+      { length: 120 },
+      (_, index) => `api worker ${index} heartbeat ok`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "service api status",
+      argv: ["service", "api", "status"],
+      combinedText: [
+        "api is running",
+        noise,
+        "error: refused connection to upstream",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/service");
+    expect(result.inlineText).toContain("api is running");
+    expect(result.inlineText).toContain("refused connection");
+    expect(result.stats.ratio).toBeLessThan(0.2);
+  });
+
+  it("compresses large launchctl tables while counting services", async () => {
+    const rows = Array.from(
+      { length: 140 },
+      (_, index) => `${1000 + index}  0  com.example.service-${index}`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "launchctl list",
+      argv: ["launchctl", "list"],
+      combinedText: [
+        "PID\tStatus\tLabel",
+        rows,
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/launchctl");
+    expect(result.facts?.service).toBe(140);
+    expect(result.inlineText).toContain("140 services");
+    expect(result.stats.ratio).toBeLessThan(0.15);
+  });
+
+  it("compresses large lsof tables while counting entries", async () => {
+    const rows = Array.from(
+      { length: 140 },
+      (_, index) => `node  ${1000 + index} vincent  ${index}u  IPv4  0x${index.toString(16)}  0t0  TCP *:${3000 + index} (LISTEN)`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "lsof -i",
+      argv: ["lsof", "-i"],
+      combinedText: [
+        "COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME",
+        rows,
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/lsof");
+    expect(result.facts?.entry).toBe(140);
+    expect(result.inlineText).toContain("140 entries");
+    expect(result.stats.ratio).toBeLessThan(0.15);
+  });
+
+  it("compresses large netstat output while counting sockets", async () => {
+    const rows = Array.from(
+      { length: 140 },
+      (_, index) => `tcp        0      0 0.0.0.0:${3000 + index}      0.0.0.0:*      LISTEN`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "netstat -an",
+      argv: ["netstat", "-an"],
+      combinedText: [
+        "Proto Recv-Q Send-Q Local Address           Foreign Address         State",
+        rows,
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/netstat");
+    expect(result.facts?.socket).toBe(140);
+    expect(result.inlineText).toContain("140 sockets");
+    expect(result.stats.ratio).toBeLessThan(0.15);
+  });
+
+  it("compresses large ss output while counting sockets", async () => {
+    const rows = Array.from(
+      { length: 140 },
+      (_, index) => `tcp   LISTEN 0      128      0.0.0.0:${3000 + index}     0.0.0.0:*`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "ss -ltn",
+      argv: ["ss", "-ltn"],
+      combinedText: [
+        "State  Recv-Q Send-Q Local Address:Port  Peer Address:Port",
+        rows,
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("service/ss");
+    expect(result.facts?.socket).toBe(140);
+    expect(result.inlineText).toContain("140 sockets");
+    expect(result.stats.ratio).toBeLessThan(0.15);
+  });
+
+  it("compresses large git show output while keeping commit summary and tail stat", async () => {
+    const hunks = Array.from(
+      { length: 120 },
+      (_, index) => `@@ -${index + 1},1 +${index + 1},1 @@\n-console.log(${index})\n+console.info(${index})`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git show HEAD",
+      argv: ["git", "show", "HEAD"],
+      combinedText: [
+        "commit 1234567890abcdef",
+        "Author: Vincent Koc <vincent@example.com>",
+        "Date:   Tue Apr 14 12:00:00 2026 +0000",
+        "",
+        "    refactor logs",
+        "",
+        "diff --git a/src/index.ts b/src/index.ts",
+        "index abcdef0..1234567 100644",
+        "--- a/src/index.ts",
+        "+++ b/src/index.ts",
+        hunks,
+        " 1 file changed, 120 insertions(+), 120 deletions(-)",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/show");
+    expect(result.inlineText).toContain("commit 1234567890abcdef");
+    expect(result.inlineText).toContain("1 file changed, 120 insertions");
+    expect(result.stats.ratio).toBeLessThan(0.2);
+  });
+
+  it("compresses large git log output while keeping commit counts", async () => {
+    const lines = Array.from(
+      { length: 180 },
+      (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit number ${index}`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git log --oneline",
+      argv: ["git", "log", "--oneline"],
+      combinedText: lines,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/log-oneline");
+    expect(result.facts?.commit).toBe(180);
+    expect(result.inlineText).toContain("180 commits");
+    expect(result.stats.ratio).toBeLessThan(0.15);
+  });
 });

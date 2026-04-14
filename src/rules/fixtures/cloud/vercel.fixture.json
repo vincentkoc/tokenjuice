@@ -1,0 +1,16 @@
+{
+  "id": "cloud-vercel-basic",
+  "ruleId": "cloud/vercel",
+  "input": {
+    "toolName": "exec",
+    "argv": ["vercel", "deploy", "--prod"],
+    "command": "vercel deploy --prod",
+    "combinedText": "Vercel CLI 38.0.0\nDeploying tokenjuice\nInspect: https://vercel.com/vincentkoc/tokenjuice/abc123\nProduction: https://tokenjuice.vercel.app\nQueued\nBuilding\nCompleting\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/vercel",
+    "family": "deploy-cli",
+    "contains": ["Production: https://tokenjuice.vercel.app", "Inspect: https://vercel.com"]
+  }
+}

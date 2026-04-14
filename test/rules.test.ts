@@ -28,6 +28,12 @@ describe("rules", () => {
       "build/tsdown",
       "build/vite",
       "build/webpack",
+      "cloud/aws",
+      "cloud/az",
+      "cloud/flyctl",
+      "cloud/gcloud",
+      "cloud/gh",
+      "cloud/vercel",
       "devops/docker-build",
       "devops/docker-images",
       "devops/docker-logs",
@@ -107,7 +113,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(74);
+    expect(fixtures).toHaveLength(80);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

@@ -1,0 +1,16 @@
+{
+  "id": "cloud-flyctl-basic",
+  "ruleId": "cloud/flyctl",
+  "input": {
+    "toolName": "exec",
+    "argv": ["flyctl", "status"],
+    "command": "flyctl status",
+    "combinedText": "App\n  Name     = tokenjuice\n  Owner    = personal\n  Hostname = tokenjuice.fly.dev\nMachines\nPROCESS ID              VERSION REGION  STATE   ROLE    CHECKS\napp     9083d3e8f3d248  18      lhr     started web     2 total, 2 passing\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/flyctl",
+    "family": "deploy-cli",
+    "contains": ["tokenjuice.fly.dev", "2 total, 2 passing"]
+  }
+}

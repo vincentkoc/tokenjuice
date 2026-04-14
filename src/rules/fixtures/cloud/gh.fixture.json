@@ -1,0 +1,16 @@
+{
+  "id": "cloud-gh-basic",
+  "ruleId": "cloud/gh",
+  "input": {
+    "toolName": "exec",
+    "argv": ["gh", "pr", "list"],
+    "command": "gh pr list",
+    "combinedText": "123  feat: add tokenjuice cloud reducers        vincentkoc:main   OPEN\n122  fix: tighten fixture verification          vincentkoc:main   OPEN\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/gh",
+    "family": "developer-cli",
+    "contains": ["123  feat: add tokenjuice cloud reducers", "OPEN"]
+  }
+}

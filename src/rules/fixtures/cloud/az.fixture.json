@@ -1,0 +1,16 @@
+{
+  "id": "cloud-az-basic",
+  "ruleId": "cloud/az",
+  "input": {
+    "toolName": "exec",
+    "argv": ["az", "group", "list", "--output", "table"],
+    "command": "az group list --output table",
+    "combinedText": "Name              Location    Status\n----------------  ----------  ---------\nrg-prod           westeurope  Succeeded\nrg-staging        uksouth     Succeeded\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/az",
+    "family": "cloud-cli",
+    "contains": ["rg-prod", "rg-staging"]
+  }
+}

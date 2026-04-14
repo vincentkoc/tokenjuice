@@ -1,0 +1,16 @@
+{
+  "id": "cloud-gcloud-basic",
+  "ruleId": "cloud/gcloud",
+  "input": {
+    "toolName": "exec",
+    "argv": ["gcloud", "compute", "instances", "list"],
+    "command": "gcloud compute instances list",
+    "combinedText": "NAME          ZONE            MACHINE_TYPE   PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS\napi-prod      europe-west2-a  e2-standard-2               10.0.0.4     34.89.1.10    RUNNING\nworker-prod   europe-west2-b  e2-standard-4               10.0.0.5     34.89.1.11    RUNNING\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/gcloud",
+    "family": "cloud-cli",
+    "contains": ["api-prod", "worker-prod"]
+  }
+}

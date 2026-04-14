@@ -1,0 +1,16 @@
+{
+  "id": "cloud-aws-basic",
+  "ruleId": "cloud/aws",
+  "input": {
+    "toolName": "exec",
+    "argv": ["aws", "s3", "ls"],
+    "command": "aws s3 ls",
+    "combinedText": "2026-04-14 12:11:00 app-backups\n2026-04-14 12:11:12 static-assets\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "cloud/aws",
+    "family": "cloud-cli",
+    "contains": ["app-backups", "static-assets"]
+  }
+}

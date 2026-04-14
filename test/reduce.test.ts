@@ -72,4 +72,38 @@ describe("reduceExecution", () => {
     expect(result.classification.family).toBe("generic");
     expect(result.inlineText).toContain("lines omitted");
   });
+
+  it("matches pnpm test runs to the test reducer family", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm test",
+      argv: ["pnpm", "test"],
+      combinedText: [
+        "RUN  v3.2.4 /repo",
+        "❯ test/example.test.ts (2 tests | 1 failed)",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.inlineText).toContain("exit 1");
+  });
+
+  it("matches tsc output to the TypeScript build reducer", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm tsc --noEmit",
+      argv: ["pnpm", "tsc", "--noEmit"],
+      combinedText: [
+        "src/index.ts(4,1): error TS2322: Type 'string' is not assignable to type 'number'.",
+        "Found 1 error in src/index.ts:4",
+      ].join("\n"),
+      exitCode: 2,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/tsc");
+    expect(result.inlineText).toContain("typescript error");
+  });
 });

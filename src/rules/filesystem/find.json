@@ -1,0 +1,34 @@
+{
+  "id": "filesystem/find",
+  "family": "filesystem-find",
+  "description": "Compact find output while preserving matches and failure context.",
+  "match": {
+    "toolNames": ["exec"],
+    "argv0": ["find"]
+  },
+  "transforms": {
+    "stripAnsi": true,
+    "dedupeAdjacent": true,
+    "trimEmptyEdges": true
+  },
+  "summarize": {
+    "head": 12,
+    "tail": 6
+  },
+  "failure": {
+    "preserveOnFailure": true,
+    "head": 18,
+    "tail": 12
+  },
+  "counters": [
+    {
+      "name": "match",
+      "pattern": ".+"
+    },
+    {
+      "name": "permission denied",
+      "pattern": "Permission denied",
+      "flags": "i"
+    }
+  ]
+}

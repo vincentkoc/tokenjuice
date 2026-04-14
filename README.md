@@ -49,6 +49,8 @@ direct payload:
 }
 ```
 
+library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
+
 envelope payload:
 
 ```json

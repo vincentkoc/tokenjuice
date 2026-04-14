@@ -1,6 +1,7 @@
 export { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, normalizeCommandSignature, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
+export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
 export { classifyOnly, findMatchingRule, reduceExecution, reduceExecutionWithRules } from "./core/reduce.js";
@@ -15,6 +16,7 @@ export type {
   CompactResult,
   JsonRule,
   RuleFixture,
+  ReduceJsonCliOptions,
   ReduceOptions,
   ReduceJsonRequest,
   StoredArtifact,

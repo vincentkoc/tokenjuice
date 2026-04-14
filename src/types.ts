@@ -153,6 +153,13 @@ export type ReduceJsonRequest = {
   options?: ReduceOptions;
 };
 
+export type ReduceJsonCliOptions = {
+  command?: string[];
+  cwd?: string;
+  env?: Record<string, string | undefined>;
+  timeoutMs?: number;
+};
+
 export type RuleFixture = {
   id: string;
   ruleId: string;

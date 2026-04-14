@@ -1,0 +1,49 @@
+{
+  "id": "git/status",
+  "family": "git-status",
+  "description": "Compact human-readable git status output.",
+  "match": {
+    "argv0": ["git"],
+    "argvIncludes": [["status"]]
+  },
+  "transforms": {
+    "stripAnsi": true,
+    "dedupeAdjacent": true,
+    "trimEmptyEdges": true
+  },
+  "filters": {
+    "skipPatterns": [
+      "^On branch ",
+      "^Your branch is ",
+      "^nothing to commit, working tree clean$",
+      "^use \"git .+\" to .+"
+    ]
+  },
+  "summarize": {
+    "head": 10,
+    "tail": 4
+  },
+  "failure": {
+    "preserveOnFailure": true,
+    "head": 12,
+    "tail": 12
+  },
+  "counters": [
+    {
+      "name": "modified",
+      "pattern": "modified:"
+    },
+    {
+      "name": "new file",
+      "pattern": "new file:"
+    },
+    {
+      "name": "deleted",
+      "pattern": "deleted:"
+    },
+    {
+      "name": "untracked",
+      "pattern": "untracked files:"
+    }
+  ]
+}

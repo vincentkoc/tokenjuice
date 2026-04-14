@@ -1,0 +1,31 @@
+{
+  "name": "tokenjuice",
+  "version": "0.1.0",
+  "description": "Lean output compaction for terminal-heavy agent workflows.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "tokenjuice": "./dist/cli/main.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

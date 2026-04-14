@@ -6,9 +6,9 @@ lean output compaction for terminal-heavy agent workflows.
 
 ## why
 
-tool output wastes absurd amounts of context.
+tool output wastes absurd amounts of context. your llm needs a diet.
 
-`tokenjuice` compacts observed output after execution, keeps the raw output as a local artifact, and gives hosts a boring, deterministic summary by default.
+tokenjuice compacts observed output after execution, keeps the raw output as a local artifact, and gives hosts a boring, deterministic summary by default.
 
 ## goals
 

@@ -148,6 +148,11 @@ export type ReduceOptions = {
 
 export type ReduceExecutionResult = CompactResult;
 
+export type ReduceJsonRequest = {
+  input: ToolExecutionInput;
+  options?: ReduceOptions;
+};
+
 export type RuleFixture = {
   id: string;
   ruleId: string;

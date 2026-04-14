@@ -6,6 +6,7 @@ import { stdin as inputStdin } from "node:process";
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
+import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
@@ -33,6 +34,7 @@ function printUsage(): void {
     [
       "usage:",
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store]",
+      "  tokenjuice reduce-json [file]",
       "  tokenjuice wrap -- <command> [args...] [--tee] [--store]",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
@@ -197,6 +199,25 @@ async function runReduce(args: ParsedArgs): Promise<number> {
     },
   );
   emit(args.format, result, result.inlineText);
+  return 0;
+}
+
+async function runReduceJson(args: ParsedArgs): Promise<number> {
+  const file = args.positionals[0];
+  const rawText = file ? await readFile(file, "utf8") : await readStdin();
+  if (!rawText.trim()) {
+    throw new Error("reduce-json requires JSON input from stdin or a file");
+  }
+
+  const request = parseReduceJsonRequest(JSON.parse(rawText) as unknown);
+  const result = await reduceExecution(request.input, {
+    ...(request.options ?? {}),
+    ...(args.classifier ? { classifier: args.classifier } : {}),
+    ...(args.store ? { store: true } : {}),
+    ...(args.storeDir ? { storeDir: args.storeDir } : {}),
+    ...(typeof args.maxInlineChars === "number" ? { maxInlineChars: args.maxInlineChars } : {}),
+  });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return 0;
 }
 
@@ -450,6 +471,8 @@ async function main(): Promise<number> {
   switch (args.command) {
     case "reduce":
       return await runReduce(args);
+    case "reduce-json":
+      return await runReduceJson(args);
     case "wrap":
       return await runWrap(args);
     case "ls":

@@ -63,6 +63,20 @@ tokenjuice reduce build.log
 pnpm test 2>&1 | tokenjuice reduce
 ```
 
+### reduce-json
+
+reduce a structured tool payload for host adapters:
+
+```bash
+cat payload.json | tokenjuice reduce-json
+tokenjuice reduce-json payload.json
+```
+
+this is the machine-facing protocol surface. it accepts either:
+
+- a direct `ToolExecutionInput` JSON object
+- an envelope with `{ input, options }`
+
 ### wrap
 
 explicitly run a command through tokenjuice:

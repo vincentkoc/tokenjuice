@@ -1,0 +1,16 @@
+{
+  "id": "database-mysql-basic",
+  "ruleId": "database/mysql",
+  "input": {
+    "toolName": "exec",
+    "argv": ["mysql", "-e", "show databases;"],
+    "command": "mysql -e \"show databases;\"",
+    "combinedText": "Database\ninformation_schema\nmysql\napp_prod\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "database/mysql",
+    "family": "database-cli",
+    "contains": ["Database", "app_prod"]
+  }
+}

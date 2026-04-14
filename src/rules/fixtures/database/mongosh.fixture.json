@@ -1,0 +1,16 @@
+{
+  "id": "database-mongosh-basic",
+  "ruleId": "database/mongosh",
+  "input": {
+    "toolName": "exec",
+    "argv": ["mongosh", "--quiet"],
+    "command": "mongosh --quiet",
+    "combinedText": "test> db.users.find({}, { email: 1 }).limit(2)\n[\n  { _id: ObjectId('1'), email: 'a@example.com' },\n  { _id: ObjectId('2'), email: 'b@example.com' }\n]\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "database/mongosh",
+    "family": "database-cli",
+    "contains": ["a@example.com", "b@example.com"]
+  }
+}

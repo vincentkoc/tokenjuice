@@ -1,0 +1,16 @@
+{
+  "id": "database-sqlite3-basic",
+  "ruleId": "database/sqlite3",
+  "input": {
+    "toolName": "exec",
+    "argv": ["sqlite3", "app.db", "select count(*) from users;"],
+    "command": "sqlite3 app.db \"select count(*) from users;\"",
+    "combinedText": "2048\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "database/sqlite3",
+    "family": "database-cli",
+    "contains": ["2048"]
+  }
+}

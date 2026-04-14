@@ -34,6 +34,11 @@ describe("rules", () => {
       "cloud/gcloud",
       "cloud/gh",
       "cloud/vercel",
+      "database/mongosh",
+      "database/mysql",
+      "database/psql",
+      "database/redis-cli",
+      "database/sqlite3",
       "devops/docker-build",
       "devops/docker-images",
       "devops/docker-logs",
@@ -113,7 +118,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(80);
+    expect(fixtures).toHaveLength(85);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

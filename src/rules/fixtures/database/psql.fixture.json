@@ -1,0 +1,16 @@
+{
+  "id": "database-psql-basic",
+  "ruleId": "database/psql",
+  "input": {
+    "toolName": "exec",
+    "argv": ["psql", "-c", "\\dt"],
+    "command": "psql -c \"\\dt\"",
+    "combinedText": "             List of relations\n Schema |      Name       | Type  |  Owner\n--------+-----------------+-------+---------\n public | migrations      | table | vincent\n public | users           | table | vincent\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "database/psql",
+    "family": "database-cli",
+    "contains": ["List of relations", "public | users"]
+  }
+}

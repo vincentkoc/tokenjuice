@@ -1,0 +1,16 @@
+{
+  "id": "database-redis-cli-basic",
+  "ruleId": "database/redis-cli",
+  "input": {
+    "toolName": "exec",
+    "argv": ["redis-cli", "INFO", "memory"],
+    "command": "redis-cli INFO memory",
+    "combinedText": "# Memory\nused_memory_human:12.31M\nused_memory_peak_human:19.54M\nmem_fragmentation_ratio:1.18\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "database/redis-cli",
+    "family": "database-cli",
+    "contains": ["used_memory_human:12.31M", "mem_fragmentation_ratio:1.18"]
+  }
+}

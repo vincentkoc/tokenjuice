@@ -1,0 +1,16 @@
+{
+  "id": "observability-htop-basic",
+  "ruleId": "observability/htop",
+  "input": {
+    "toolName": "exec",
+    "argv": ["htop", "-b", "-n", "1"],
+    "command": "htop -b -n 1",
+    "combinedText": "  1  [|||||                                     12.3%]   Tasks: 212, 623 thr; 2 running\n  Mem[|||||||||||                              8.21G/31.0G]   Load average: 1.28 1.11 0.98\n  PID USER      PRI  NI  VIRT   RES   SHR S CPU% MEM%   TIME+  Command\n  921 vincent    20   0 1740M  280M  112M S 23.4  0.9  3:54.23 node dist/cli/main.js\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "observability/htop",
+    "family": "resource-processes",
+    "contains": ["Tasks: 212", "node dist/cli/main.js"]
+  }
+}

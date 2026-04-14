@@ -59,6 +59,11 @@ describe("rules", () => {
       "network/ssh",
       "network/traceroute",
       "network/wget",
+      "observability/free",
+      "observability/htop",
+      "observability/iostat",
+      "observability/top",
+      "observability/vmstat",
       "package/apt-install",
       "package/apt-upgrade",
       "package/brew-install",
@@ -102,7 +107,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(69);
+    expect(fixtures).toHaveLength(74);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

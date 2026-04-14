@@ -1,0 +1,16 @@
+{
+  "id": "observability-vmstat-basic",
+  "ruleId": "observability/vmstat",
+  "input": {
+    "toolName": "exec",
+    "argv": ["vmstat", "1", "2"],
+    "command": "vmstat 1 2",
+    "combinedText": "procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----\n r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st\n 1  0      0 1843200 128432 5969440    0    0     1     4  102  220  6  1 93  0  0\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "observability/vmstat",
+    "family": "resource-vm",
+    "contains": ["procs -----------memory----------", "r  b   swpd"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "observability-top-basic",
+  "ruleId": "observability/top",
+  "input": {
+    "toolName": "exec",
+    "argv": ["top", "-bn1"],
+    "command": "top -bn1",
+    "combinedText": "top - 12:18:40 up 4 days,  2:18,  2 users,  load average: 1.11, 1.24, 1.29\nTasks: 211 total,   2 running, 209 sleeping,   0 stopped,   0 zombie\n%Cpu(s):  6.3 us,  1.4 sy,  0.0 ni, 91.8 id,  0.3 wa,  0.0 hi,  0.2 si,  0.0 st\nMiB Mem :  31744.0 total,  18432.0 free,   7342.0 used,   5969.0 buff/cache\n    PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND\n   3210 vincent   20   0 1786400 286344 114928 S  22.1  0.9   4:01.12 node\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "observability/top",
+    "family": "resource-processes",
+    "contains": ["load average", "Tasks: 211 total", "node"]
+  }
+}

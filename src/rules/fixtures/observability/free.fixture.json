@@ -1,0 +1,16 @@
+{
+  "id": "observability-free-basic",
+  "ruleId": "observability/free",
+  "input": {
+    "toolName": "exec",
+    "argv": ["free", "-h"],
+    "command": "free -h",
+    "combinedText": "               total        used        free      shared  buff/cache   available\nMem:            31Gi       7.2Gi        18Gi       512Mi       6.1Gi        23Gi\nSwap:          2.0Gi          0B       2.0Gi\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "observability/free",
+    "family": "resource-memory",
+    "contains": ["Mem:", "Swap:"]
+  }
+}

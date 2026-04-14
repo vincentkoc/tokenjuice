@@ -1,0 +1,16 @@
+{
+  "id": "observability-iostat-basic",
+  "ruleId": "observability/iostat",
+  "input": {
+    "toolName": "exec",
+    "argv": ["iostat", "-xz", "1", "1"],
+    "command": "iostat -xz 1 1",
+    "combinedText": "avg-cpu:  %user   %nice %system %iowait  %steal   %idle\n          6.21    0.00    1.19    0.48    0.00   92.12\n\nDevice            r/s     rkB/s   rrqm/s  %util\nnvme0n1          12.10    512.00     0.00   14.90\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "observability/iostat",
+    "family": "resource-io",
+    "contains": ["avg-cpu", "nvme0n1"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "archive-tar-basic",
+  "ruleId": "archive/tar",
+  "input": {
+    "toolName": "exec",
+    "argv": ["tar", "-czf", "build.tar.gz", "dist"],
+    "command": "tar -czf build.tar.gz dist",
+    "combinedText": "dist/\ndist/index.js\ndist/cli/main.js\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "archive/tar",
+    "family": "archive-cli",
+    "contains": ["dist/index.js", "dist/cli/main.js"]
+  }
+}

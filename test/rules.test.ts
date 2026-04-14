@@ -23,6 +23,9 @@ describe("rules", () => {
   it("loads builtin rules successfully", async () => {
     const rules = await loadBuiltinRules();
     expect(rules.map((rule) => rule.rule.id)).toEqual([
+      "archive/tar",
+      "archive/unzip",
+      "archive/zip",
       "build/esbuild",
       "build/tsc",
       "build/tsdown",
@@ -107,6 +110,8 @@ describe("rules", () => {
       "tests/pytest",
       "tests/vitest",
       "tests/yarn-test",
+      "transfer/rsync",
+      "transfer/scp",
       "generic/fallback",
     ]);
   });
@@ -118,7 +123,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(85);
+    expect(fixtures).toHaveLength(90);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

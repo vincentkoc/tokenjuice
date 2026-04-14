@@ -1,0 +1,16 @@
+{
+  "id": "archive-zip-basic",
+  "ruleId": "archive/zip",
+  "input": {
+    "toolName": "exec",
+    "argv": ["zip", "-r", "release.zip", "dist"],
+    "command": "zip -r release.zip dist",
+    "combinedText": "  adding: dist/ (stored 0%)\n  adding: dist/index.js (deflated 72%)\n  adding: dist/cli/main.js (deflated 69%)\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "archive/zip",
+    "family": "archive-cli",
+    "contains": ["adding: dist/index.js", "adding: dist/cli/main.js"]
+  }
+}

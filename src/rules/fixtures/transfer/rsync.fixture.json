@@ -1,0 +1,16 @@
+{
+  "id": "transfer-rsync-basic",
+  "ruleId": "transfer/rsync",
+  "input": {
+    "toolName": "exec",
+    "argv": ["rsync", "-avz", "dist/", "deploy@example.com:/srv/tokenjuice/"],
+    "command": "rsync -avz dist/ deploy@example.com:/srv/tokenjuice/",
+    "combinedText": "sending incremental file list\nindex.js\ncli/main.js\n\nsent 18,231 bytes  received 192 bytes  36,846.00 bytes/sec\ntotal size is 61,844  speedup is 3.35\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "transfer/rsync",
+    "family": "file-transfer",
+    "contains": ["sending incremental file list", "speedup is 3.35"]
+  }
+}

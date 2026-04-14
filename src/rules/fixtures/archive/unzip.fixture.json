@@ -1,0 +1,16 @@
+{
+  "id": "archive-unzip-basic",
+  "ruleId": "archive/unzip",
+  "input": {
+    "toolName": "exec",
+    "argv": ["unzip", "release.zip"],
+    "command": "unzip release.zip",
+    "combinedText": "Archive:  release.zip\n  inflating: dist/index.js\n  inflating: dist/cli/main.js\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "archive/unzip",
+    "family": "archive-cli",
+    "contains": ["Archive:  release.zip", "dist/cli/main.js"]
+  }
+}

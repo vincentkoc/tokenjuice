@@ -1,0 +1,16 @@
+{
+  "id": "transfer-scp-basic",
+  "ruleId": "transfer/scp",
+  "input": {
+    "toolName": "exec",
+    "argv": ["scp", "release.zip", "deploy@example.com:/srv/tokenjuice/"],
+    "command": "scp release.zip deploy@example.com:/srv/tokenjuice/",
+    "combinedText": "release.zip                                 100%  412KB  2.6MB/s   00:00\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "transfer/scp",
+    "family": "file-transfer",
+    "contains": ["release.zip", "100%  412KB"]
+  }
+}

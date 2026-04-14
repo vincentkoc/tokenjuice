@@ -1,0 +1,16 @@
+{
+  "id": "media-mediainfo-basic",
+  "ruleId": "media/mediainfo",
+  "input": {
+    "toolName": "exec",
+    "argv": ["mediainfo", "output.mp4"],
+    "command": "mediainfo output.mp4",
+    "combinedText": "General\nComplete name                            : output.mp4\nFormat                                   : MPEG-4\nDuration                                 : 5 s 2 ms\nOverall bit rate                         : 1 330 kb/s\nVideo\nFormat                                   : AVC\nWidth                                    : 1 280 pixels\nHeight                                   : 720 pixels\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "media/mediainfo",
+    "family": "media-cli",
+    "contains": ["Format                                   : MPEG-4", "Width                                    : 1 280 pixels"]
+  }
+}

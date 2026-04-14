@@ -1,0 +1,16 @@
+{
+  "id": "system-file-basic",
+  "ruleId": "system/file",
+  "input": {
+    "toolName": "exec",
+    "argv": ["file", "output.mp4"],
+    "command": "file output.mp4",
+    "combinedText": "output.mp4: ISO Media, MP4 Base Media v1 [ISO 14496-12:2003]\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "system/file",
+    "family": "file-inspection",
+    "contains": ["output.mp4: ISO Media, MP4 Base Media v1"]
+  }
+}

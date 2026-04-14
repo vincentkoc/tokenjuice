@@ -1,0 +1,16 @@
+{
+  "id": "media-ffmpeg-basic",
+  "ruleId": "media/ffmpeg",
+  "input": {
+    "toolName": "exec",
+    "argv": ["ffmpeg", "-i", "input.mov", "-vf", "scale=1280:-1", "output.mp4"],
+    "command": "ffmpeg -i input.mov -vf scale=1280:-1 output.mp4",
+    "combinedText": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'input.mov':\n  Duration: 00:00:05.02, start: 0.000000, bitrate: 1872 kb/s\nStream mapping:\n  Stream #0:0 -> #0:0 (h264 (native) -> h264 (libx264))\nframe=  126 fps=0.0 q=-1.0 Lsize=     812kB time=00:00:05.00 bitrate=1329.7kbits/s speed=8.72x\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "media/ffmpeg",
+    "family": "media-cli",
+    "contains": ["Stream mapping", "frame=  126"]
+  }
+}

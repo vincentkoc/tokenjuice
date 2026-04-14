@@ -66,6 +66,8 @@ describe("rules", () => {
       "lint/eslint",
       "lint/oxlint",
       "lint/prettier-check",
+      "media/ffmpeg",
+      "media/mediainfo",
       "network/curl",
       "network/dig",
       "network/nslookup",
@@ -96,6 +98,7 @@ describe("rules", () => {
       "service/systemctl-status",
       "system/df",
       "system/du",
+      "system/file",
       "system/ps",
       "task/just",
       "task/make",
@@ -123,7 +126,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(90);
+    expect(fixtures).toHaveLength(93);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

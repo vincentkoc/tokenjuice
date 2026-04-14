@@ -120,6 +120,9 @@ export function validateRule(raw: unknown): ValidationResult {
   if ("description" in raw && typeof raw.description !== "string") {
     errors.push("description must be a string");
   }
+  if ("priority" in raw && typeof raw.priority !== "number") {
+    errors.push("priority must be a number");
+  }
   if (!("match" in raw)) {
     errors.push("match is required");
   } else {

@@ -3,7 +3,8 @@
 import { readFile } from "node:fs/promises";
 import { stdin as inputStdin } from "node:process";
 
-import { getArtifact, listArtifacts } from "../core/artifacts.js";
+import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
+import { discoverCandidates, doctorArtifacts } from "../core/analysis.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
@@ -31,6 +32,8 @@ function printUsage(): void {
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify",
+      "  tokenjuice discover",
+      "  tokenjuice doctor",
     ].join("\n"),
   );
   process.stderr.write("\n");
@@ -226,6 +229,84 @@ async function runVerify(args: ParsedArgs): Promise<number> {
   return 1;
 }
 
+function formatRatio(ratio: number | null): string {
+  if (ratio === null) {
+    return "n/a";
+  }
+  return `${Math.round(ratio * 100)}%`;
+}
+
+async function runDiscover(args: ParsedArgs): Promise<number> {
+  const metadata = await listArtifactMetadata(args.storeDir);
+  const candidates = discoverCandidates(metadata);
+
+  if (args.format === "json") {
+    process.stdout.write(`${JSON.stringify(candidates, null, 2)}\n`);
+    return 0;
+  }
+
+  if (candidates.length === 0) {
+    process.stdout.write("no discover candidates found\n");
+    return 0;
+  }
+
+  for (const candidate of candidates) {
+    process.stdout.write(
+      [
+        candidate.kind,
+        candidate.signature,
+        `count=${candidate.count}`,
+        `raw=${candidate.totalRawChars}`,
+        `avgRatio=${formatRatio(candidate.avgRatio)}`,
+        `sample="${candidate.sampleCommand}"`,
+        candidate.matchedReducer ? `reducer=${candidate.matchedReducer}` : null,
+      ].filter(Boolean).join(" "),
+    );
+    process.stdout.write("\n");
+  }
+  return 0;
+}
+
+async function runDoctor(args: ParsedArgs): Promise<number> {
+  const metadata = await listArtifactMetadata(args.storeDir);
+  const report = doctorArtifacts(metadata);
+
+  if (args.format === "json") {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return 0;
+  }
+
+  process.stdout.write(`artifacts: ${report.totals.artifacts}\n`);
+  process.stdout.write(`generic artifacts: ${report.totals.genericArtifacts}\n`);
+  process.stdout.write(`weak artifacts: ${report.totals.weakArtifacts}\n`);
+  process.stdout.write(`avg ratio: ${formatRatio(report.totals.avgRatio)}\n`);
+
+  if (report.topMissingCommands.length > 0) {
+    process.stdout.write("missing-rule candidates:\n");
+    for (const candidate of report.topMissingCommands.slice(0, 5)) {
+      process.stdout.write(`- ${candidate.signature} count=${candidate.count} raw=${candidate.totalRawChars}\n`);
+    }
+  }
+
+  if (report.topWeakReducers.length > 0) {
+    process.stdout.write("weak-rule candidates:\n");
+    for (const candidate of report.topWeakReducers.slice(0, 5)) {
+      process.stdout.write(
+        `- ${candidate.signature} reducer=${candidate.matchedReducer ?? "n/a"} count=${candidate.count} avgRatio=${formatRatio(candidate.avgRatio)}\n`,
+      );
+    }
+  }
+
+  if (report.topReducers.length > 0) {
+    process.stdout.write("top reducers:\n");
+    for (const reducer of report.topReducers.slice(0, 5)) {
+      process.stdout.write(`- ${reducer.reducer} count=${reducer.count}\n`);
+    }
+  }
+
+  return 0;
+}
+
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
   switch (args.command) {
@@ -239,6 +320,10 @@ async function main(): Promise<number> {
       return await runCat(args);
     case "verify":
       return await runVerify(args);
+    case "discover":
+      return await runDiscover(args);
+    case "doctor":
+      return await runDoctor(args);
     default:
       printUsage();
       return 1;

@@ -106,4 +106,23 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("build/tsc");
     expect(result.inlineText).toContain("typescript error");
   });
+
+  it("matches eslint output to the lint reducer", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm eslint src",
+      argv: ["pnpm", "eslint", "src"],
+      combinedText: [
+        "src/index.ts",
+        "  4:10  error  Unexpected any  @typescript-eslint/no-explicit-any",
+        "  8:1   warning  Unexpected console statement  no-console",
+        "",
+        "✖ 2 problems (1 error, 1 warning)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("lint/eslint");
+    expect(result.inlineText).toContain("warning");
+  });
 });

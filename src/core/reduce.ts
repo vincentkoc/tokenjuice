@@ -109,12 +109,25 @@ export async function reduceExecution(input: ToolExecutionInput, opts: ReduceOpt
   }
 
   const { summary, facts } = applyRule(matchedRule, input, rawText);
+  const provisionalInlineText = clampText(
+    formatInline(input, summary || "(no output)", facts, rawText.length),
+    opts.maxInlineChars ?? 1200,
+  );
+  const provisionalStats = {
+    rawChars: rawText.length,
+    reducedChars: provisionalInlineText.length,
+    ratio: rawText.length === 0 ? 1 : provisionalInlineText.length / rawText.length,
+  };
   const rawRef = opts.store
     ? await storeArtifact(
         {
           input,
           rawText,
           classification,
+          stats: {
+            reducedChars: provisionalStats.reducedChars,
+            ratio: provisionalStats.ratio,
+          },
         },
         opts.storeDir,
       )
@@ -123,17 +136,18 @@ export async function reduceExecution(input: ToolExecutionInput, opts: ReduceOpt
     formatInline(input, summary || "(no output)", facts, rawText.length, rawRef?.id),
     opts.maxInlineChars ?? 1200,
   );
+  const stats = {
+    rawChars: rawText.length,
+    reducedChars: inlineText.length,
+    ratio: rawText.length === 0 ? 1 : inlineText.length / rawText.length,
+  };
 
   return {
     inlineText,
     ...(summary ? { previewText: summary } : {}),
     ...(Object.keys(facts).length > 0 ? { facts } : {}),
     ...(rawRef ? { rawRef } : {}),
-    stats: {
-      rawChars: rawText.length,
-      reducedChars: inlineText.length,
-      ratio: rawText.length === 0 ? 1 : inlineText.length / rawText.length,
-    },
+    stats,
     classification,
   };
 }

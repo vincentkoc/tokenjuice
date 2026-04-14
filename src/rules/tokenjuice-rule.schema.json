@@ -17,6 +17,9 @@
     "description": {
       "type": "string"
     },
+    "priority": {
+      "type": "number"
+    },
     "match": {
       "type": "object",
       "additionalProperties": false,

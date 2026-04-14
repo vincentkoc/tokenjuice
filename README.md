@@ -27,6 +27,8 @@ tokenjuice wrap -- <command> [args...]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
+tokenjuice discover
+tokenjuice doctor
 ```
 
 ## rule system
@@ -38,6 +40,10 @@ tokenjuice verify
 
 run `tokenjuice verify` to validate the loaded rules.
 
+use `tokenjuice discover` to find missing or weak reducer candidates from stored artifacts.
+
+use `tokenjuice doctor` to inspect coverage, generic fallbacks, weak reducers, and savings ratios.
+
 ## docs
 
 - spec: `docs/spec.md`
@@ -45,6 +51,6 @@ run `tokenjuice verify` to validate the loaded rules.
 
 ## status
 
-usable foundation, now focused on hardening the rule system and expanding reducer coverage.
+usable foundation with diagnostics and a growing reducer set, now focused on deeper coverage and tuning.
 
 💙 built by [Vincent Koc](https://github.com/vincentkoc).

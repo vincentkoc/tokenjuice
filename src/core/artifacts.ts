@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
-import type { StoredArtifact, StoredArtifactInput, StoredArtifactRef } from "../types.js";
+import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef } from "../types.js";
 
 function artifactBaseDir(storeDir?: string): string {
   return storeDir ?? join(homedir(), ".tokenjuice", "artifacts");
@@ -31,8 +31,10 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
       createdAt: new Date().toISOString(),
       classification: input.classification,
       rawChars: input.rawText.length,
+      ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
       ...(input.input.command ? { command: input.input.command } : {}),
       ...(typeof input.input.exitCode === "number" ? { exitCode: input.input.exitCode } : {}),
+      ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
     },
   };
 
@@ -74,4 +76,23 @@ export async function listArtifacts(storeDir?: string): Promise<StoredArtifactRe
   } catch {
     return [];
   }
+}
+
+export async function listArtifactMetadata(storeDir?: string): Promise<ArtifactMetadataRef[]> {
+  const refs = await listArtifacts(storeDir);
+  const metadata = await Promise.all(
+    refs.map(async (ref) => {
+      try {
+        const raw = await readFile(ref.metadataPath, "utf8");
+        return {
+          ...ref,
+          metadata: JSON.parse(raw) as StoredArtifactMetadata,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return metadata.filter((entry): entry is ArtifactMetadataRef => entry !== null);
 }

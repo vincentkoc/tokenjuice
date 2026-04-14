@@ -23,14 +23,19 @@ describe("rules", () => {
   it("loads builtin rules successfully", async () => {
     const rules = await loadBuiltinRules();
     expect(rules.map((rule) => rule.rule.id)).toEqual([
+      "build/esbuild",
       "build/tsc",
       "filesystem/find",
       "filesystem/ls",
       "git/diff-name-only",
       "git/diff-stat",
       "git/status",
+      "lint/eslint",
+      "lint/oxlint",
       "search/grep",
       "search/rg",
+      "tests/cargo-test",
+      "tests/go-test",
       "tests/jest",
       "tests/pnpm-test",
       "tests/pytest",

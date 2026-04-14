@@ -56,6 +56,7 @@ export type JsonRule = {
   id: string;
   family: string;
   description?: string;
+  priority?: number;
   match: RuleMatch;
   filters?: RuleFilters;
   transforms?: RuleTransforms;
@@ -93,6 +94,21 @@ export type StoredArtifactRef = {
   metadataPath: string;
 };
 
+export type StoredArtifactMetadata = {
+  createdAt: string;
+  toolName?: string;
+  command?: string;
+  exitCode?: number;
+  classification: ClassificationResult;
+  rawChars: number;
+  reducedChars?: number;
+  ratio?: number;
+};
+
+export type ArtifactMetadataRef = StoredArtifactRef & {
+  metadata: StoredArtifactMetadata;
+};
+
 export type CompactResult = {
   inlineText: string;
   previewText?: string;
@@ -110,18 +126,16 @@ export type StoredArtifactInput = {
   input: ToolExecutionInput;
   rawText: string;
   classification: ClassificationResult;
+  stats?: {
+    reducedChars: number;
+    ratio: number;
+  };
 };
 
 export type StoredArtifact = {
   id: string;
   rawText: string;
-  metadata: {
-    createdAt: string;
-    command?: string;
-    exitCode?: number;
-    classification: ClassificationResult;
-    rawChars: number;
-  };
+  metadata: StoredArtifactMetadata;
 };
 
 export type ReduceOptions = {

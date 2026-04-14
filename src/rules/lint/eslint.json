@@ -1,0 +1,35 @@
+{
+  "id": "lint/eslint",
+  "family": "lint-results",
+  "description": "Compact ESLint output while preserving file diagnostics and summary counts.",
+  "match": {
+    "toolNames": ["exec"],
+    "commandIncludes": ["eslint"]
+  },
+  "transforms": {
+    "stripAnsi": true,
+    "dedupeAdjacent": true,
+    "trimEmptyEdges": true
+  },
+  "summarize": {
+    "head": 14,
+    "tail": 10
+  },
+  "failure": {
+    "preserveOnFailure": true,
+    "head": 18,
+    "tail": 18
+  },
+  "counters": [
+    {
+      "name": "error",
+      "pattern": "\\berror\\b",
+      "flags": "i"
+    },
+    {
+      "name": "warning",
+      "pattern": "\\bwarning\\b",
+      "flags": "i"
+    }
+  ]
+}

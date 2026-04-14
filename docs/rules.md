@@ -90,6 +90,11 @@ that checks:
 - regex patterns compile
 - duplicate ids inside the same layer are rejected
 
+`tokenjuice discover` and `tokenjuice doctor` use stored artifact metadata to show:
+
+- commands that keep falling back to `generic/fallback`
+- reducers that still save too little on real runs
+
 ## rule-writing advice
 
 - prefer specific `match` clauses over giant regexes

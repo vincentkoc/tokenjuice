@@ -92,6 +92,22 @@ tokenjuice verify
 tokenjuice verify --format json
 ```
 
+### discover
+
+inspect stored artifacts and surface likely next reducer work:
+
+```bash
+tokenjuice discover
+```
+
+### doctor
+
+summarize reducer health and savings:
+
+```bash
+tokenjuice doctor
+```
+
 ## rule model
 
 tokenjuice uses JSON rules because they are easy to parse, easy to validate, and easy to inspect in tooling.
@@ -132,9 +148,11 @@ that is intentionally boring. boring is good here.
 
 - validate rule structure before loading
 - compile regex once at load time, not every reduction call
+- choose the most specific matching rule, not the first one that happens to match
 - keep fallback behavior deterministic
 - preserve more context on non-zero exits
 - make verification cheap and scriptable
+- make diagnostics artifact-driven so tuning follows real usage
 
 ## next targets
 

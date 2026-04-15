@@ -159,6 +159,7 @@ export type ReduceJsonCliOptions = {
   cwd?: string;
   env?: Record<string, string | undefined>;
   timeoutMs?: number;
+  maxOutputBytes?: number;
 };
 
 export type RuleFixture = {

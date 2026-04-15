@@ -206,4 +206,34 @@ describe("rules", () => {
     expect(bad?.ok).toBe(false);
     expect(bad?.errors.join("\n")).toContain("Invalid regular expression");
   });
+
+  it("rejects override rules with unsafe strings and invalid summarize values", async () => {
+    const cwd = await createTempDir();
+    const rulesDir = join(cwd, ".tokenjuice", "rules");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "unsafe.json"),
+      JSON.stringify(
+        {
+          id: "unsafe\0rule",
+          family: "unsafe",
+          description: "bad\0description",
+          match: {},
+          summarize: {
+            head: -1,
+            tail: 1.5,
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const results = await verifyRules({ cwd });
+    const bad = results.find((result) => result.path.endsWith("unsafe.json"));
+    expect(bad?.ok).toBe(false);
+    expect(bad?.errors.join("\n")).toContain("must not contain NUL bytes");
+    expect(bad?.errors.join("\n")).toContain("non-negative integer");
+  });
 });

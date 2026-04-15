@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import type { CompactResult, ReduceJsonCliOptions, ReduceJsonRequest } from "../types.js";
 
 const DEFAULT_REDUCE_JSON_COMMAND = ["tokenjuice", "reduce-json"];
+const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
 
 function resolveCommand(command?: string[]): string[] {
   const resolved = command ?? DEFAULT_REDUCE_JSON_COMMAND;
@@ -27,6 +28,9 @@ export async function runReduceJsonCli(
   options: ReduceJsonCliOptions = {},
 ): Promise<CompactResult> {
   const command = resolveCommand(options.command);
+  const maxOutputBytes = typeof options.maxOutputBytes === "number" && options.maxOutputBytes > 0
+    ? options.maxOutputBytes
+    : DEFAULT_MAX_OUTPUT_BYTES;
 
   return await new Promise<CompactResult>((resolve, reject) => {
     const child = spawn(command[0]!, command.slice(1), {
@@ -35,6 +39,7 @@ export async function runReduceJsonCli(
         ...process.env,
         ...(options.env ?? {}),
       },
+      shell: false,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -54,10 +59,34 @@ export async function runReduceJsonCli(
       : null;
 
     child.stdout.on("data", (chunk: Buffer) => {
+      if (stdout.length + chunk.length > maxOutputBytes) {
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        if (settled) {
+          return;
+        }
+        settled = true;
+        child.kill("SIGKILL");
+        reject(new Error(`reduce-json command exceeded max output size of ${maxOutputBytes} bytes`));
+        return;
+      }
       stdout += chunk.toString("utf8");
     });
 
     child.stderr.on("data", (chunk: Buffer) => {
+      if (stderr.length + chunk.length > maxOutputBytes) {
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        if (settled) {
+          return;
+        }
+        settled = true;
+        child.kill("SIGKILL");
+        reject(new Error(`reduce-json command exceeded max output size of ${maxOutputBytes} bytes`));
+        return;
+      }
       stderr += chunk.toString("utf8");
     });
 

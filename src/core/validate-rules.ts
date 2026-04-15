@@ -7,6 +7,31 @@ type ValidationResult = {
   errors: string[];
 };
 
+function hasNulByte(value: string): boolean {
+  return value.includes("\0");
+}
+
+function validateSafeString(value: unknown, path: string, errors: string[], { allowEmpty = false }: { allowEmpty?: boolean } = {}): void {
+  if (typeof value !== "string") {
+    errors.push(`${path} must be a string`);
+    return;
+  }
+
+  if (!allowEmpty && value.length === 0) {
+    errors.push(`${path} must be a non-empty string`);
+  }
+
+  if (hasNulByte(value)) {
+    errors.push(`${path} must not contain NUL bytes`);
+  }
+}
+
+function validatePositiveInteger(value: unknown, path: string, errors: string[]): void {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    errors.push(`${path} must be a non-negative integer`);
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -44,14 +69,10 @@ function validateCounter(value: unknown, path: string): string[] {
   }
 
   const errors: string[] = [];
-  if (typeof value.name !== "string" || value.name.length === 0) {
-    errors.push(`${path}.name must be a non-empty string`);
-  }
-  if (typeof value.pattern !== "string" || value.pattern.length === 0) {
-    errors.push(`${path}.pattern must be a non-empty string`);
-  }
-  if ("flags" in value && typeof value.flags !== "string") {
-    errors.push(`${path}.flags must be a string`);
+  validateSafeString(value.name, `${path}.name`, errors);
+  validateSafeString(value.pattern, `${path}.pattern`, errors);
+  if ("flags" in value) {
+    validateSafeString(value.flags, `${path}.flags`, errors, { allowEmpty: true });
   }
   return errors;
 }
@@ -81,8 +102,8 @@ function validateOptionalNumberObject(value: unknown, path: string, keys: string
 
   const errors: string[] = [];
   for (const key of keys) {
-    if (key in value && typeof value[key] !== "number") {
-      errors.push(`${path}.${key} must be a number`);
+    if (key in value) {
+      validatePositiveInteger(value[key], `${path}.${key}`, errors);
     }
   }
   return errors;
@@ -111,17 +132,13 @@ export function validateRule(raw: unknown): ValidationResult {
   }
 
   const errors: string[] = [];
-  if (typeof raw.id !== "string" || raw.id.length === 0) {
-    errors.push("id must be a non-empty string");
+  validateSafeString(raw.id, "id", errors);
+  validateSafeString(raw.family, "family", errors);
+  if ("description" in raw) {
+    validateSafeString(raw.description, "description", errors, { allowEmpty: true });
   }
-  if (typeof raw.family !== "string" || raw.family.length === 0) {
-    errors.push("family must be a non-empty string");
-  }
-  if ("description" in raw && typeof raw.description !== "string") {
-    errors.push("description must be a string");
-  }
-  if ("priority" in raw && typeof raw.priority !== "number") {
-    errors.push("priority must be a number");
+  if ("priority" in raw && (typeof raw.priority !== "number" || !Number.isFinite(raw.priority))) {
+    errors.push("priority must be a finite number");
   }
   if (!("match" in raw)) {
     errors.push("match is required");

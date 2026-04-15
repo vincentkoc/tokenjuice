@@ -93,4 +93,24 @@ describe("runReduceJsonCli", () => {
       ),
     ).rejects.toThrow("invalid JSON");
   });
+
+  it("rejects oversized child output", async () => {
+    const scriptPath = await writeScript(`
+      process.stdout.write("x".repeat(4096));
+    `);
+
+    await expect(
+      runReduceJsonCli(
+        {
+          input: {
+            toolName: "exec",
+          },
+        },
+        {
+          command: [process.execPath, scriptPath],
+          maxOutputBytes: 128,
+        },
+      ),
+    ).rejects.toThrow("max output size");
+  });
 });

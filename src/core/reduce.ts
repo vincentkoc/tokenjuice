@@ -243,7 +243,7 @@ export async function reduceExecutionWithRules(
   const compactText = formatInline(input, summary || "(no output)", facts);
   const maxInlineChars = opts.maxInlineChars ?? 1200;
   const selectedText = selectInlineText(classification, input, rawText, compactText, maxInlineChars);
-  const clamp = classification.family === "help" ? clampTextMiddle : clampText;
+  const clamp = classification.family === "help" || selectedText.includes("\n") ? clampTextMiddle : clampText;
   const provisionalInlineText = clamp(selectedText, maxInlineChars);
   const provisionalReducedChars = countTextChars(provisionalInlineText);
   const provisionalStats = {

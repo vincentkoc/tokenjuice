@@ -19,6 +19,22 @@ function graphemes(text: string): string[] {
   return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
 }
 
+function trimHeadToLineBoundary(text: string): string {
+  const lastNewline = text.lastIndexOf("\n");
+  if (lastNewline === -1 || lastNewline < Math.floor(text.length * 0.5)) {
+    return text;
+  }
+  return text.slice(0, lastNewline);
+}
+
+function trimTailToLineBoundary(text: string): string {
+  const firstNewline = text.indexOf("\n");
+  if (firstNewline === -1 || firstNewline > Math.ceil(text.length * 0.5)) {
+    return text;
+  }
+  return text.slice(firstNewline + 1);
+}
+
 export function stripAnsi(text: string): string {
   return text
     .replaceAll(ANSI_OSC_PATTERN, "")
@@ -134,7 +150,8 @@ export function clampText(text: string, maxChars: number): string {
     return text;
   }
   const bodyChars = Math.max(0, maxChars - countTextChars(TRUNCATION_SUFFIX));
-  return `${graphemes(text).slice(0, bodyChars).join("")}${TRUNCATION_SUFFIX}`;
+  const head = trimHeadToLineBoundary(graphemes(text).slice(0, bodyChars).join(""));
+  return `${head}${TRUNCATION_SUFFIX}`;
 }
 
 export function clampTextMiddle(text: string, maxChars: number): string {
@@ -147,8 +164,10 @@ export function clampTextMiddle(text: string, maxChars: number): string {
   const headChars = Math.ceil(bodyChars * 0.7);
   const tailChars = Math.max(0, bodyChars - headChars);
   const segments = graphemes(text);
+  const head = trimHeadToLineBoundary(segments.slice(0, headChars).join(""));
+  const tail = trimTailToLineBoundary(segments.slice(-tailChars).join(""));
 
-  return `${segments.slice(0, headChars).join("")}${MIDDLE_TRUNCATION_MARKER}${segments.slice(-tailChars).join("")}`;
+  return `${head}${MIDDLE_TRUNCATION_MARKER}${tail}`;
 }
 
 export function pluralize(count: number, noun: string): string {

@@ -49,4 +49,22 @@ describe("text helpers", () => {
     expect(stripped).not.toContain("broken-link");
     expect(stripped).not.toContain("\u001b");
   });
+
+  it("prefers line boundaries when truncating long line-oriented text", () => {
+    const input = [
+      "line 1",
+      "line 2",
+      "line 3",
+      "line 4",
+      "line 5",
+      "line 6",
+      "line 7",
+      "line 8",
+    ].join("\n");
+
+    const clamped = clampText(input, 40);
+
+    expect(clamped).toContain("\n... truncated ...");
+    expect(clamped).not.toContain("li\n... truncated ...");
+  });
 });

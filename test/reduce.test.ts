@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { getArtifact, reduceExecution } from "../src/index.js";
+import { countTextChars } from "../src/core/text.js";
 
 const tempDirs: string[] = [];
 
@@ -174,6 +175,29 @@ describe("reduceExecution", () => {
 
     expect(result.inlineText).toBe("ok: 93 rules validated, 93 fixtures verified");
     expect(result.stats.reducedChars).toBeLessThan(result.stats.rawChars);
+  });
+
+  it("preserves emoji and CJK while stripping ANSI from user-facing output and stats", async () => {
+    const visibleText = ["错误🔥", "修复🙂", "完了✅"].join("\n");
+    const coloredText = [
+      "\u001b[38;5;196m错误🔥\u001b[0m",
+      "\u001b[38;2;120;200;255m修复🙂\u001b[0m",
+      "\u001b]8;;https://openclaw.ai\u0007完了✅\u001b]8;;\u0007",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool unicode",
+      combinedText: coloredText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toContain("错误🔥");
+    expect(result.inlineText).toContain("修复🙂");
+    expect(result.inlineText).toContain("完了✅");
+    expect(result.inlineText).not.toContain("\u001b");
+    expect(result.stats.rawChars).toBe(countTextChars(visibleText));
+    expect(result.stats.reducedChars).toBe(countTextChars(result.inlineText));
   });
 
   it("compresses noisy docker build output aggressively", async () => {

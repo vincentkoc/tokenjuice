@@ -127,6 +127,7 @@ export type StoredArtifactInput = {
   rawText: string;
   classification: ClassificationResult;
   stats?: {
+    rawChars?: number;
     reducedChars: number;
     ratio: number;
   };

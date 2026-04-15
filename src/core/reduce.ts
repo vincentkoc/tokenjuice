@@ -1,6 +1,6 @@
 import { loadRules } from "./rules.js";
 import { classifyExecution, matchesRule } from "./classify.js";
-import { clampText, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
+import { clampText, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact } from "./artifacts.js";
 
 import type { CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } from "../types.js";
@@ -135,6 +135,7 @@ export async function reduceExecutionWithRules(
 ): Promise<CompactResult> {
   const classification = classifyExecution(input, rules, opts.classifier);
   const rawText = buildRawText(input);
+  const measuredRawChars = countTextChars(stripAnsi(rawText));
   const matchedRule = rules.find((rule) => rule.rule.id === classification.matchedReducer)
     ?? rules.find((rule) => rule.rule.id === "generic/fallback");
 
@@ -146,10 +147,11 @@ export async function reduceExecutionWithRules(
   const compactText = formatInline(input, summary || "(no output)", facts);
   const selectedText = selectInlineText(input, rawText, compactText);
   const provisionalInlineText = clampText(selectedText, opts.maxInlineChars ?? 1200);
+  const provisionalReducedChars = countTextChars(provisionalInlineText);
   const provisionalStats = {
-    rawChars: rawText.length,
-    reducedChars: provisionalInlineText.length,
-    ratio: rawText.length === 0 ? 1 : provisionalInlineText.length / rawText.length,
+    rawChars: measuredRawChars,
+    reducedChars: provisionalReducedChars,
+    ratio: measuredRawChars === 0 ? 1 : provisionalReducedChars / measuredRawChars,
   };
   const rawRef = opts.store
     ? await storeArtifact(
@@ -158,6 +160,7 @@ export async function reduceExecutionWithRules(
           rawText,
           classification,
           stats: {
+            rawChars: provisionalStats.rawChars,
             reducedChars: provisionalStats.reducedChars,
             ratio: provisionalStats.ratio,
           },
@@ -166,10 +169,11 @@ export async function reduceExecutionWithRules(
       )
     : undefined;
   const inlineText = clampText(selectedText, opts.maxInlineChars ?? 1200);
+  const reducedChars = countTextChars(inlineText);
   const stats = {
-    rawChars: rawText.length,
-    reducedChars: inlineText.length,
-    ratio: rawText.length === 0 ? 1 : inlineText.length / rawText.length,
+    rawChars: measuredRawChars,
+    reducedChars,
+    ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
   };
 
   return {

@@ -1,10 +1,28 @@
-const ANSI_PATTERN = new RegExp(
-  String.raw`\u001B\[[0-?]*[ -/]*[@-~]`,
-  "g",
-);
+const ANSI_CSI_PATTERN = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*[@-~]`, "g");
+const ANSI_OSC_PATTERN = new RegExp(String.raw`\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)`, "g");
+const ANSI_SINGLE_PATTERN = new RegExp(String.raw`\u001B[@-_]`, "g");
+const TRUNCATION_SUFFIX = "\n... truncated ...";
+const graphemeSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl
+  ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+  : null;
+
+function graphemes(text: string): string[] {
+  if (!graphemeSegmenter) {
+    return Array.from(text);
+  }
+
+  return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+}
 
 export function stripAnsi(text: string): string {
-  return text.replaceAll(ANSI_PATTERN, "");
+  return text
+    .replaceAll(ANSI_OSC_PATTERN, "")
+    .replaceAll(ANSI_CSI_PATTERN, "")
+    .replaceAll(ANSI_SINGLE_PATTERN, "");
+}
+
+export function countTextChars(text: string): number {
+  return graphemes(text).length;
 }
 
 export function normalizeLines(text: string): string[] {
@@ -49,10 +67,11 @@ export function headTail(lines: string[], head: number, tail: number): string[] 
 }
 
 export function clampText(text: string, maxChars: number): string {
-  if (text.length <= maxChars) {
+  if (countTextChars(text) <= maxChars) {
     return text;
   }
-  return `${text.slice(0, Math.max(0, maxChars - 18))}\n... truncated ...`;
+  const bodyChars = Math.max(0, maxChars - countTextChars(TRUNCATION_SUFFIX));
+  return `${graphemes(text).slice(0, bodyChars).join("")}${TRUNCATION_SUFFIX}`;
 }
 
 export function pluralize(count: number, noun: string): string {

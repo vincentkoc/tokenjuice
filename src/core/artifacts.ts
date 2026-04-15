@@ -3,6 +3,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { countTextChars, stripAnsi } from "./text.js";
+
 import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef } from "../types.js";
 
 function artifactBaseDir(storeDir?: string): string {
@@ -30,7 +32,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
     metadata: {
       createdAt: new Date().toISOString(),
       classification: input.classification,
-      rawChars: input.rawText.length,
+      rawChars: input.stats?.rawChars ?? countTextChars(stripAnsi(input.rawText)),
       ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
       ...(input.input.command ? { command: input.input.command } : {}),
       ...(typeof input.input.exitCode === "number" ? { exitCode: input.input.exitCode } : {}),

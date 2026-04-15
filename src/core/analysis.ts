@@ -1,3 +1,5 @@
+import { basename } from "node:path";
+
 import type { CompactResult, StoredArtifactMetadata, ToolExecutionInput } from "../types.js";
 
 export type AnalysisEntry = {
@@ -77,8 +79,6 @@ type GroupState = {
 };
 
 const GENERIC_REDUCERS = new Set(["generic/fallback", undefined]);
-const WRAPPER_COMMANDS = new Set(["pnpm", "npm", "yarn", "bun", "npx"]);
-const SECONDARY_COMMANDS = new Set(["git", "cargo", "go", "python", "node"]);
 const WEAK_RATIO_THRESHOLD = 0.65;
 const MISSING_RAW_CHARS_THRESHOLD = 200;
 const WEAK_RAW_CHARS_THRESHOLD = 500;
@@ -95,9 +95,6 @@ function effectiveReducedChars(metadata: StoredArtifactMetadata): number {
 function effectiveRatio(metadata: StoredArtifactMetadata): number | null {
   if (metadata.rawChars === 0) {
     return 1;
-  }
-  if (typeof metadata.ratio === "number") {
-    return clampRatio(metadata.ratio);
   }
   return clampRatio(effectiveReducedChars(metadata) / metadata.rawChars);
 }
@@ -116,22 +113,13 @@ export function normalizeCommandSignature(command?: string): string | null {
     return null;
   }
 
-  const [first, second, third] = tokens;
-  if (first && WRAPPER_COMMANDS.has(first)) {
-    if (second === "exec" || second === "dlx") {
-      return third ? `${first} ${third}` : first;
-    }
-    if (second === "run") {
-      return third ? `${first} run ${third}` : `${first} run`;
-    }
-    return second ? `${first} ${second}` : first;
+  const first = tokens[0];
+  if (!first) {
+    return null;
   }
 
-  if (first && SECONDARY_COMMANDS.has(first) && second) {
-    return `${first} ${second}`;
-  }
-
-  return first ?? null;
+  const normalized = basename(first.replace(/^["']|["']$/gu, ""));
+  return normalized || null;
 }
 
 export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactResult): AnalysisEntry {

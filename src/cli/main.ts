@@ -34,6 +34,10 @@ type ParsedArgs = {
 
 const VERSION = packageJson.version;
 const DEFAULT_MAX_INPUT_BYTES = 16 * 1024 * 1024;
+const compactNumberFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 
 function printUsage(): void {
   process.stderr.write(
@@ -380,6 +384,16 @@ function formatRatio(ratio: number | null): string {
   return `${Math.round(ratio * 100)}%`;
 }
 
+function formatMetric(value: number): string {
+  if (Math.abs(value) < 1000) {
+    return String(value);
+  }
+
+  return compactNumberFormatter
+    .format(value)
+    .replace(/([KMBT])$/u, (suffix) => suffix.toLowerCase());
+}
+
 async function runDiscover(args: ParsedArgs): Promise<number> {
   const direct = await loadDirectAnalysisEntry(args);
   const entries = direct ? [direct.entry] : await listArtifactMetadata(args.storeDir);
@@ -405,8 +419,8 @@ async function runDiscover(args: ParsedArgs): Promise<number> {
       [
         candidate.kind,
         candidate.signature,
-        `count=${candidate.count}`,
-        `raw=${candidate.totalRawChars}`,
+        `count=${formatMetric(candidate.count)}`,
+        `raw=${formatMetric(candidate.totalRawChars)}`,
         `avgRatio=${formatRatio(candidate.avgRatio)}`,
         `sample="${candidate.sampleCommand}"`,
         candidate.matchedReducer ? `reducer=${candidate.matchedReducer}` : null,
@@ -430,9 +444,9 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   if (direct) {
     process.stdout.write(`classification: ${direct.result.classification.matchedReducer ?? "generic/fallback"}\n`);
   }
-  process.stdout.write(`entries: ${report.totals.entries}\n`);
-  process.stdout.write(`generic artifacts: ${report.totals.genericArtifacts}\n`);
-  process.stdout.write(`weak artifacts: ${report.totals.weakArtifacts}\n`);
+  process.stdout.write(`entries: ${formatMetric(report.totals.entries)}\n`);
+  process.stdout.write(`generic artifacts: ${formatMetric(report.totals.genericArtifacts)}\n`);
+  process.stdout.write(`weak artifacts: ${formatMetric(report.totals.weakArtifacts)}\n`);
   process.stdout.write(`avg ratio: ${formatRatio(report.totals.avgRatio)}\n`);
   process.stdout.write(`health: ${report.health}\n`);
   if (report.alerts.length > 0) {
@@ -445,7 +459,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   if (report.topMissingCommands.length > 0) {
     process.stdout.write("missing-rule candidates:\n");
     for (const candidate of report.topMissingCommands.slice(0, 5)) {
-      process.stdout.write(`- ${candidate.signature} count=${candidate.count} raw=${candidate.totalRawChars}\n`);
+      process.stdout.write(`- ${candidate.signature} count=${formatMetric(candidate.count)} raw=${formatMetric(candidate.totalRawChars)}\n`);
     }
   }
 
@@ -453,7 +467,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     process.stdout.write("weak-rule candidates:\n");
     for (const candidate of report.topWeakReducers.slice(0, 5)) {
       process.stdout.write(
-        `- ${candidate.signature} reducer=${candidate.matchedReducer ?? "n/a"} count=${candidate.count} avgRatio=${formatRatio(candidate.avgRatio)}\n`,
+        `- ${candidate.signature} reducer=${candidate.matchedReducer ?? "n/a"} count=${formatMetric(candidate.count)} avgRatio=${formatRatio(candidate.avgRatio)}\n`,
       );
     }
   }
@@ -461,7 +475,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   if (report.topReducers.length > 0) {
     process.stdout.write("top reducers:\n");
     for (const reducer of report.topReducers.slice(0, 5)) {
-      process.stdout.write(`- ${reducer.reducer} count=${reducer.count}\n`);
+      process.stdout.write(`- ${reducer.reducer} count=${formatMetric(reducer.count)}\n`);
     }
   }
 
@@ -477,10 +491,10 @@ async function runStats(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  process.stdout.write(`entries: ${report.totals.entries}\n`);
-  process.stdout.write(`raw chars: ${report.totals.rawChars}\n`);
-  process.stdout.write(`reduced chars: ${report.totals.reducedChars}\n`);
-  process.stdout.write(`saved chars: ${report.totals.savedChars}\n`);
+  process.stdout.write(`entries: ${formatMetric(report.totals.entries)}\n`);
+  process.stdout.write(`raw chars: ${formatMetric(report.totals.rawChars)}\n`);
+  process.stdout.write(`reduced chars: ${formatMetric(report.totals.reducedChars)}\n`);
+  process.stdout.write(`saved chars: ${formatMetric(report.totals.savedChars)}\n`);
   process.stdout.write(`avg ratio: ${formatRatio(report.totals.avgRatio)}\n`);
   process.stdout.write(`savings: ${formatRatio(report.totals.savingsPercent)}\n`);
 
@@ -488,7 +502,7 @@ async function runStats(args: ParsedArgs): Promise<number> {
     process.stdout.write("top reducers:\n");
     for (const reducer of report.reducers.slice(0, 5)) {
       process.stdout.write(
-        `- ${reducer.reducer} count=${reducer.count} saved=${reducer.savedChars} avgRatio=${formatRatio(reducer.avgRatio)}\n`,
+        `- ${reducer.reducer} count=${formatMetric(reducer.count)} saved=${formatMetric(reducer.savedChars)} avgRatio=${formatRatio(reducer.avgRatio)}\n`,
       );
     }
   }
@@ -497,7 +511,7 @@ async function runStats(args: ParsedArgs): Promise<number> {
     process.stdout.write("top commands:\n");
     for (const command of report.commands.slice(0, 5)) {
       process.stdout.write(
-        `- ${command.signature} count=${command.count} saved=${command.savedChars} avgRatio=${formatRatio(command.avgRatio)}\n`,
+        `- ${command.signature} count=${formatMetric(command.count)} saved=${formatMetric(command.savedChars)} avgRatio=${formatRatio(command.avgRatio)}\n`,
       );
     }
   }
@@ -505,7 +519,7 @@ async function runStats(args: ParsedArgs): Promise<number> {
   if (report.daily.length > 0) {
     process.stdout.write("daily:\n");
     for (const day of report.daily.slice(-5)) {
-      process.stdout.write(`- ${day.day} count=${day.count} saved=${day.savedChars}\n`);
+      process.stdout.write(`- ${day.day} count=${formatMetric(day.count)} saved=${formatMetric(day.savedChars)}\n`);
     }
   }
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, listArtifactMetadata, reduceExecution, statsArtifacts } from "../src/index.js";
+import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, listArtifactMetadata, normalizeCommandSignature, reduceExecution, statsArtifacts } from "../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -173,5 +173,35 @@ describe("analysis", () => {
     expect(stats.totals.savingsPercent).toBe(0.5);
     expect(stats.reducers.find((entry) => entry.reducer === "generic/fallback")?.savedChars).toBe(0);
     expect(doctor.totals.avgRatio).toBe(0.625);
+  });
+
+  it("normalizes command signatures to the initial binary only", () => {
+    expect(normalizeCommandSignature("pnpm --help")).toBe("pnpm");
+    expect(normalizeCommandSignature("node dist/cli/main.js stats")).toBe("node");
+    expect(normalizeCommandSignature("/opt/homebrew/bin/git status --short")).toBe("git");
+    expect(normalizeCommandSignature("stdin")).toBeNull();
+  });
+
+  it("derives ratios from reduced chars instead of trusting stale stored ratio fields", () => {
+    const report = statsArtifacts([
+      {
+        metadata: {
+          createdAt: "2026-04-15T00:00:00.000Z",
+          command: "pnpm --help",
+          classification: {
+            family: "generic",
+            confidence: 1,
+            matchedReducer: "generic/fallback",
+          },
+          rawChars: 100,
+          reducedChars: 25,
+          ratio: 9.9,
+        },
+      },
+    ]);
+
+    expect(report.totals.avgRatio).toBe(0.25);
+    expect(report.totals.savingsPercent).toBe(0.75);
+    expect(report.commands[0]?.signature).toBe("pnpm");
   });
 });

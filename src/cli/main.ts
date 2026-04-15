@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { stdin as inputStdin } from "node:process";
 import packageJson from "../../package.json" with { type: "json" };
 
@@ -27,11 +27,13 @@ type ParsedArgs = {
   storeDir: string | undefined;
   maxInlineChars: number | undefined;
   maxCaptureBytes: number | undefined;
+  maxInputBytes: number | undefined;
   positionals: string[];
   passthrough: string[];
 };
 
 const VERSION = packageJson.version;
+const DEFAULT_MAX_INPUT_BYTES = 16 * 1024 * 1024;
 
 function printUsage(): void {
   process.stderr.write(
@@ -68,6 +70,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let storeDir: string | undefined;
   let maxInlineChars: number | undefined;
   let maxCaptureBytes: number | undefined;
+  let maxInputBytes: number | undefined;
 
   let index = 1;
   while (index < argv.length) {
@@ -118,8 +121,8 @@ function parseArgs(argv: string[]): ParsedArgs {
         index += 2;
         break;
       case "--exit-code":
-        if (!next || Number.isNaN(Number(next))) {
-          throw new Error("--exit-code requires a number");
+        if (!next || !Number.isInteger(Number(next))) {
+          throw new Error("--exit-code requires an integer");
         }
         exitCode = Number(next);
         index += 2;
@@ -153,6 +156,13 @@ function parseArgs(argv: string[]): ParsedArgs {
         maxCaptureBytes = Number(next);
         index += 2;
         break;
+      case "--max-input-bytes":
+        if (!next || !Number.isInteger(Number(next)) || Number(next) <= 0) {
+          throw new Error("--max-input-bytes requires a positive integer");
+        }
+        maxInputBytes = Number(next);
+        index += 2;
+        break;
       default:
         throw new Error(`unknown flag: ${current}`);
     }
@@ -171,21 +181,41 @@ function parseArgs(argv: string[]): ParsedArgs {
     storeDir,
     maxInlineChars,
     maxCaptureBytes,
+    maxInputBytes,
     positionals,
     passthrough,
   };
 }
 
-async function readStdin(): Promise<string> {
+async function readStdin(maxBytes = DEFAULT_MAX_INPUT_BYTES): Promise<string> {
   if (inputStdin.isTTY) {
     return "";
   }
 
   const chunks: Buffer[] = [];
+  let totalBytes = 0;
   for await (const chunk of inputStdin) {
-    chunks.push(Buffer.from(chunk));
+    const buffer = Buffer.from(chunk);
+    totalBytes += buffer.length;
+    if (totalBytes > maxBytes) {
+      throw new Error(`stdin exceeds max input size of ${maxBytes} bytes`);
+    }
+    chunks.push(buffer);
   }
   return Buffer.concat(chunks).toString("utf8");
+}
+
+async function readTextInput(file: string | undefined, maxBytes = DEFAULT_MAX_INPUT_BYTES): Promise<string> {
+  if (!file) {
+    return await readStdin(maxBytes);
+  }
+
+  const details = await stat(file);
+  if (details.size > maxBytes) {
+    throw new Error(`${file} exceeds max input size of ${maxBytes} bytes`);
+  }
+
+  return await readFile(file, "utf8");
 }
 
 function emit(format: Format, value: unknown, text: string): void {
@@ -198,7 +228,7 @@ function emit(format: Format, value: unknown, text: string): void {
 
 async function runReduce(args: ParsedArgs): Promise<number> {
   const file = args.positionals[0];
-  const rawText = file ? await readFile(file, "utf8") : await readStdin();
+  const rawText = await readTextInput(file, args.maxInputBytes);
   const result = await reduceExecution(
     {
       toolName: "exec",
@@ -219,7 +249,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
 
 async function runReduceJson(args: ParsedArgs): Promise<number> {
   const file = args.positionals[0];
-  const rawText = file ? await readFile(file, "utf8") : await readStdin();
+  const rawText = await readTextInput(file, args.maxInputBytes);
   if (!rawText.trim()) {
     throw new Error("reduce-json requires JSON input from stdin or a file");
   }
@@ -324,7 +354,7 @@ async function loadDirectAnalysisEntry(args: ParsedArgs) {
     return null;
   }
 
-  const rawText = file ? await readFile(file, "utf8") : await readStdin();
+  const rawText = await readTextInput(file, args.maxInputBytes);
   const input = {
     toolName: args.toolName ?? "exec",
     command: args.sourceCommand ?? (file ? `analyze:${file}` : "stdin"),

@@ -9,7 +9,7 @@ it has two explicit product surfaces:
 - `tokenjuice`: the core library + CLI
 - host adapters like `openclaw-tokenjuice`: thin wrappers over host hooks
 
-the package reduces observed output after execution, stores the raw output as a local artifact, and keeps prompt-facing text compact and deterministic.
+the package reduces observed output after execution, can store raw output as a local artifact when explicitly requested, and keeps prompt-facing text compact and deterministic.
 
 ## goals
 
@@ -83,7 +83,7 @@ explicitly run a command through tokenjuice:
 
 ```bash
 tokenjuice wrap -- git status
-tokenjuice wrap -- pnpm test
+tokenjuice wrap --store -- pnpm test
 ```
 
 this is command wrapping, not command rewriting.
@@ -172,6 +172,10 @@ that is intentionally boring. boring is good here.
 
 ## reliability priorities
 
+- keep raw artifact storage opt-in
+- store raw artifacts with private permissions where the platform supports it
+- validate artifact ids before lookup
+- bound captured output and direct input sizes so hostile or accidental huge logs do not blow up memory
 - validate rule structure before loading
 - compile regex once at load time, not every reduction call
 - choose the most specific matching rule, not the first one that happens to match

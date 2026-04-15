@@ -70,4 +70,24 @@ describe("parseReduceJsonRequest", () => {
       },
     })).toThrow("options.maxInlineChars");
   });
+
+  it("rejects non-positive maxInlineChars values", () => {
+    expect(() => parseReduceJsonRequest({
+      input: {
+        toolName: "exec",
+      },
+      options: {
+        maxInlineChars: 0,
+      },
+    })).toThrow("positive integer");
+  });
+
+  it("rejects NUL bytes in string fields", () => {
+    expect(() => parseReduceJsonRequest({
+      input: {
+        toolName: "exec",
+        command: "pnpm\0test",
+      },
+    })).toThrow("must not contain NUL bytes");
+  });
 });

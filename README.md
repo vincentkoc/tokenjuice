@@ -43,7 +43,7 @@ package repos follow the same split you already use elsewhere:
 
 tool output wastes absurd amounts of context. your llm needs a diet.
 
-tokenjuice compacts observed output after execution, keeps the raw output as a local artifact, and gives hosts a boring, deterministic summary by default.
+tokenjuice compacts observed output after execution, gives hosts a boring, deterministic summary by default, and only stores raw output when you explicitly ask for it.
 
 ## goals
 
@@ -62,6 +62,7 @@ tokenjuice --version
 tokenjuice reduce [file]
 tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
+tokenjuice wrap --store -- <command> [args...]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -113,6 +114,14 @@ pnpm bench:fixtures
 pnpm bench:verify
 pnpm smoke:live
 ```
+
+## security notes
+
+- `wrap` does not persist raw output unless you pass `--store`
+- stored artifacts use private file modes on unix-like systems
+- artifact ids are validated before lookup
+- `wrap` capture is bounded to avoid unbounded memory growth from noisy commands
+- direct file/stdin reductions enforce a max input size by default
 
 ## rule system
 

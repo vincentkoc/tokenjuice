@@ -5,8 +5,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function validateOptionalString(value: unknown, path: string, errors: string[]): void {
-  if (value !== undefined && typeof value !== "string") {
+  if (value === undefined) {
+    return;
+  }
+
+  if (typeof value !== "string") {
     errors.push(`${path} must be a string`);
+    return;
+  }
+
+  if (value.includes("\0")) {
+    errors.push(`${path} must not contain NUL bytes`);
   }
 }
 
@@ -23,7 +32,13 @@ function validateOptionalBoolean(value: unknown, path: string, errors: string[])
 }
 
 function validateOptionalStringArray(value: unknown, path: string, errors: string[]): void {
-  if (value !== undefined && (!Array.isArray(value) || !value.every((entry) => typeof entry === "string"))) {
+  if (
+    value !== undefined
+    && (
+      !Array.isArray(value)
+      || !value.every((entry) => typeof entry === "string" && !entry.includes("\0"))
+    )
+  ) {
     errors.push(`${path} must be an array of strings`);
   }
 }
@@ -94,6 +109,10 @@ function validateReduceOptions(raw: unknown): { ok: true; value: ReduceOptions }
   validateOptionalBoolean(raw.store, "options.store", errors);
   validateOptionalString(raw.storeDir, "options.storeDir", errors);
   validateOptionalString(raw.cwd, "options.cwd", errors);
+
+  if (typeof raw.maxInlineChars === "number" && (!Number.isInteger(raw.maxInlineChars) || raw.maxInlineChars <= 0)) {
+    errors.push("options.maxInlineChars must be a positive integer");
+  }
 
   if (errors.length > 0) {
     return { ok: false, errors };

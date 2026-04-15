@@ -73,7 +73,7 @@ async function main() {
 
     (bin/"tokenjuice").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["node"].opt_bin}/node" "#{libexec}/dist/cli/main.js" "$@"
+      exec "#{Formula["node"].opt_bin}/node" "#{libexec}/dist/cli/main.js" "\$@"
     EOS
     (bin/"tokenjuice").chmod 0755
   end

@@ -41,8 +41,9 @@
     "bench:verify": "node scripts/bench.mjs verify",
     "build": "rm -rf dist && tsc -p tsconfig.json && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
     "release:artifacts": "node scripts/build-release.mjs",
+    "release:checksums": "node scripts/write-checksums.mjs",
     "release:formula": "node scripts/generate-homebrew-formula.mjs",
-    "release:local": "pnpm test && pnpm build && pnpm release:artifacts && pnpm release:formula",
+    "release:local": "pnpm test && pnpm build && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula",
     "smoke:live": "node scripts/live-smoke.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"

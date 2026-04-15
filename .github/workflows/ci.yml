@@ -37,5 +37,8 @@ jobs:
       - name: Build release artifacts
         run: pnpm release:artifacts
 
+      - name: Write release checksums
+        run: pnpm release:checksums
+
       - name: Generate Homebrew formula
         run: pnpm release:formula

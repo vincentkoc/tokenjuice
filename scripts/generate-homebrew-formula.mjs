@@ -39,13 +39,20 @@ async function main() {
   }
 
   const artifactName = `tokenjuice-v${version}.tar.gz`;
-  const shaPath = join(releaseRoot, `${artifactName}.sha256`);
-  const shaLine = await readFile(shaPath, "utf8").catch(() => {
-    throw new Error(`missing ${shaPath}. run \`pnpm release:artifacts\` first.`);
+  const sumsPath = join(releaseRoot, "sha256sums.txt");
+  const sumsText = await readFile(sumsPath, "utf8").catch(async () => {
+    const fallbackPath = join(releaseRoot, `${artifactName}.sha256`);
+    return await readFile(fallbackPath, "utf8").catch(() => {
+      throw new Error(`missing ${sumsPath}. run \`pnpm release:checksums\` first.`);
+    });
   });
-  const sha256 = shaLine.trim().split(/\s+/)[0];
+  const sha256 = sumsText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.endsWith(`  ${artifactName}`) || line.endsWith(` ${artifactName}`))
+    ?.split(/\s+/)[0];
   if (!sha256) {
-    throw new Error(`could not parse sha256 from ${shaPath}`);
+    throw new Error(`could not parse sha256 for ${artifactName}`);
   }
 
   const repoUrl = parseRepositoryUrl(packageJson.repository);

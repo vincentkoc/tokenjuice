@@ -3,7 +3,13 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build/publish (for example: v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -19,6 +25,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve release tag
+        env:
+          INPUT_TAG: ${{ inputs.tag_name }}
+        run: |
+          set -euo pipefail
+          TAG="${INPUT_TAG:-${GITHUB_REF_NAME}}"
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
+            echo "Invalid release tag: ${TAG}"
+            exit 1
+          fi
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -31,28 +50,113 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install nfpm
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+      - name: Validate
+        run: |
+          pnpm test
+          pnpm build
+          node dist/cli/main.js --version
 
       - name: Build release artifacts
-        run: pnpm release:artifacts
+        run: |
+          set -euo pipefail
+          pnpm release:artifacts
 
-      - name: Generate Homebrew formula
-        run: pnpm release:formula
+          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/all/g" \
+            packaging/nfpm.yaml > release/nfpm-deb.yaml
+          nfpm package \
+            --config release/nfpm-deb.yaml \
+            --packager deb \
+            --target "release/tokenjuice_${RELEASE_VERSION}_all.deb"
+
+          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/noarch/g" \
+            packaging/nfpm.yaml > release/nfpm-rpm.yaml
+          nfpm package \
+            --config release/nfpm-rpm.yaml \
+            --packager rpm \
+            --target "release/tokenjuice-${RELEASE_VERSION}-1.noarch.rpm"
+
+          pnpm release:checksums
+          pnpm release:formula
+
+      - name: Verify artifact checksums
+        run: |
+          set -euo pipefail
+          (cd release && sha256sum -c sha256sums.txt)
+
+      - name: Evaluate Cloudsmith configuration
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          CLOUDSMITH_REPO: ${{ vars.CLOUDSMITH_REPO }}
+          CLOUDSMITH_REPO_SECRET: ${{ secrets.CLOUDSMITH_REPO }}
+        run: |
+          set -euo pipefail
+          REPO="${CLOUDSMITH_REPO:-${CLOUDSMITH_REPO_SECRET:-}}"
+          if [ -n "${CLOUDSMITH_API_KEY}" ] && [ -n "${REPO}" ]; then
+            echo "CLOUDSMITH_ENABLED=1" >> "$GITHUB_ENV"
+            echo "CLOUDSMITH_REPO_EFFECTIVE=${REPO}" >> "$GITHUB_ENV"
+          else
+            echo "CLOUDSMITH_ENABLED=0" >> "$GITHUB_ENV"
+            echo "Cloudsmith publish disabled."
+          fi
+
+      - name: Install Cloudsmith CLI
+        if: ${{ env.CLOUDSMITH_ENABLED == '1' }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          python3 -m pip install cloudsmith-cli
+
+      - name: Publish APT packages to Cloudsmith
+        if: ${{ env.CLOUDSMITH_ENABLED == '1' }}
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          CLOUDSMITH_REPO: ${{ env.CLOUDSMITH_REPO_EFFECTIVE }}
+          CLOUDSMITH_DISTRIBUTION: ${{ vars.CLOUDSMITH_DISTRIBUTION }}
+          CLOUDSMITH_RELEASE: ${{ vars.CLOUDSMITH_RELEASE }}
+        run: |
+          set -euo pipefail
+          DISTRO="${CLOUDSMITH_DISTRIBUTION:-ubuntu}"
+          RELEASE="${CLOUDSMITH_RELEASE:-jammy}"
+          TARGET="${CLOUDSMITH_REPO}/${DISTRO}/${RELEASE}"
+          cloudsmith push deb "${TARGET}" "release/tokenjuice_${RELEASE_VERSION}_all.deb" --no-wait-for-sync
+
+      - name: Publish RPM packages to Cloudsmith
+        if: ${{ env.CLOUDSMITH_ENABLED == '1' }}
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          CLOUDSMITH_REPO: ${{ env.CLOUDSMITH_REPO_EFFECTIVE }}
+          CLOUDSMITH_RPM_DISTRIBUTION: ${{ vars.CLOUDSMITH_RPM_DISTRIBUTION }}
+          CLOUDSMITH_RPM_RELEASE: ${{ vars.CLOUDSMITH_RPM_RELEASE }}
+        run: |
+          set -euo pipefail
+          DISTRO="${CLOUDSMITH_RPM_DISTRIBUTION:-el}"
+          RELEASE="${CLOUDSMITH_RPM_RELEASE:-9}"
+          TARGET="${CLOUDSMITH_REPO}/${DISTRO}/${RELEASE}"
+          cloudsmith push rpm "${TARGET}" "release/tokenjuice-${RELEASE_VERSION}-1.noarch.rpm" --no-wait-for-sync
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          draft: false
           files: |
             release/tokenjuice-v*.tar.gz
-            release/tokenjuice-v*.tar.gz.sha256
-            release/manifest.json
+            release/tokenjuice_*.deb
+            release/tokenjuice-*.rpm
+            release/sha256sums.txt
             release/Formula/tokenjuice.rb
 
       - name: Publish npm package

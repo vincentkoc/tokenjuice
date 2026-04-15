@@ -13,6 +13,7 @@ that means:
   - `README.md`
   - `LICENSE`
 - Homebrew installs that tarball and wraps `dist/cli/main.js` with the brewed `node`
+- nfpm builds `.deb` and `.rpm` packages that depend on `nodejs`
 
 ## why this shape
 
@@ -34,14 +35,14 @@ pnpm install
 pnpm test
 pnpm build
 pnpm release:artifacts
+pnpm release:checksums
 pnpm release:formula
 ```
 
 that writes:
 
 - `release/tokenjuice-v<version>.tar.gz`
-- `release/tokenjuice-v<version>.tar.gz.sha256`
-- `release/manifest.json`
+- `release/sha256sums.txt`
 - `release/Formula/tokenjuice.rb`
 
 ## npm
@@ -62,19 +63,26 @@ the release pipeline generates a formula file that targets the GitHub release ta
 expected shape:
 
 ```bash
-brew tap vincentkoc/tap
+brew tap vincentkoc/homebrew-tap
 brew install tokenjuice
 ```
 
-for now the formula is generated in this repo and then copied into your tap repo.
+the release flow now mirrors `autosecure`:
 
-## apt / dnf / yum later
+- GitHub release uploads `sha256sums.txt`
+- `homebrew-tap.yml` updates `vincentkoc/homebrew-tap`
+- the tap formula points at the GitHub release tarball
 
-same tarball, different wrapper:
+## apt / dnf / yum
 
-- use `nfpm` or `fpm`
-- depend on `nodejs`
-- install the release payload under `/usr/lib/tokenjuice` or `/opt/tokenjuice`
-- expose `/usr/bin/tokenjuice` as a wrapper to `dist/cli/main.js`
+linux packages are built from the same compiled payload:
 
-don’t build distro packaging first. get npm + GitHub release + Homebrew solid, then fan out.
+- `.deb` depends on `nodejs`
+- `.rpm` depends on `nodejs`
+- payload lives under `/usr/lib/tokenjuice`
+- `/usr/bin/tokenjuice` is a thin wrapper
+
+publishing follows the `autosecure` pattern too:
+
+- main release workflow can push to Cloudsmith when secrets are set
+- manual `publish-apt.yml` and `publish-rpm.yml` workflows exist for retries/backfills

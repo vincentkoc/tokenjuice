@@ -1,0 +1,109 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to sync (for example: v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name || inputs.tag_name, 'v')
+
+    steps:
+      - name: Validate tap configuration
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}" ]; then
+            echo "Secret HOMEBREW_TAP_GITHUB_TOKEN is required."
+            exit 1
+          fi
+
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.HOMEBREW_TAP_REPO || 'vincentkoc/homebrew-tap' }}
+          token: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+
+      - name: Update formula
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          TARBALL="tokenjuice-v${VERSION}.tar.gz"
+          CHECKSUMS_URL="https://github.com/${SOURCE_REPO}/releases/download/${TAG}/sha256sums.txt"
+          TARBALL_URL="https://github.com/${SOURCE_REPO}/releases/download/${TAG}/${TARBALL}"
+
+          success=0
+          for attempt in 1 2 3 4 5; do
+            if curl -fsSL "${CHECKSUMS_URL}" -o /tmp/sha256sums.txt; then
+              success=1
+              break
+            fi
+            echo "Attempt ${attempt}/5 failed; retrying in 5s..."
+            sleep 5
+          done
+          if [ "${success}" -ne 1 ]; then
+            echo "Unable to download checksum file: ${CHECKSUMS_URL}"
+            exit 1
+          fi
+
+          SHA256="$(awk -v f="${TARBALL}" '$2 == f {print $1}' /tmp/sha256sums.txt)"
+          if [ -z "${SHA256}" ]; then
+            echo "Unable to find checksum for ${TARBALL} in sha256sums.txt"
+            exit 1
+          fi
+
+          mkdir -p Formula
+          cat > Formula/tokenjuice.rb <<EOF
+          class Tokenjuice < Formula
+            desc "Lean output compaction for terminal-heavy agent workflows"
+            homepage "https://github.com/${SOURCE_REPO}"
+            url "${TARBALL_URL}"
+            sha256 "${SHA256}"
+            license "MIT"
+            version "${VERSION}"
+
+            depends_on "node"
+
+            def install
+              libexec.install "dist", "package.json", "README.md", "LICENSE"
+
+              (bin/"tokenjuice").write <<~EOS
+                #!/bin/bash
+                exec "#{Formula["node"].opt_bin}/node" "#{libexec}/dist/cli/main.js" "$@"
+              EOS
+              (bin/"tokenjuice").chmod 0755
+            end
+
+            test do
+              assert_equal "${VERSION}", shell_output("#{bin}/tokenjuice --version").strip
+            end
+          end
+          EOF
+
+      - name: Commit and push formula update
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+        run: |
+          set -euo pipefail
+          git add Formula/tokenjuice.rb
+          if git diff --cached --quiet; then
+            echo "No tap changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update tokenjuice formula for ${TAG}"
+          git push

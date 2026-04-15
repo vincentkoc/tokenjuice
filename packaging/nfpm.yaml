@@ -1,0 +1,35 @@
+name: tokenjuice
+arch: __ARCH__
+platform: linux
+version: __VERSION__
+section: utils
+priority: optional
+maintainer: Vincent Koc <vincent@openclaw.ai>
+description: |
+  Lean output compaction for terminal-heavy agent workflows.
+homepage: https://github.com/vincentkoc/tokenjuice
+license: MIT
+
+depends:
+  - nodejs
+
+contents:
+  - src: ./release/tokenjuice-v__VERSION__/dist
+    dst: /usr/lib/tokenjuice/dist
+  - src: ./release/tokenjuice-v__VERSION__/package.json
+    dst: /usr/lib/tokenjuice/package.json
+  - src: ./packaging/tokenjuice.sh
+    dst: /usr/bin/tokenjuice
+    file_info:
+      mode: 0755
+  - src: ./release/tokenjuice-v__VERSION__/README.md
+    dst: /usr/share/doc/tokenjuice/README.md
+  - src: ./release/tokenjuice-v__VERSION__/LICENSE
+    dst: /usr/share/licenses/tokenjuice/LICENSE
+
+deb:
+  fields:
+    Bugs: https://github.com/vincentkoc/tokenjuice/issues
+
+rpm:
+  summary: Lean output compaction for terminal-heavy agent workflows

@@ -21,7 +21,23 @@ tokenjuice --help
 tokenjuice --version
 ```
 
+Homebrew:
+
+```bash
+brew tap vincentkoc/homebrew-tap
+brew install tokenjuice
+```
+
+linux package repos follow the same pattern as `autosecure`: GitHub release assets plus optional Cloudsmith-backed `.deb` and `.rpm` publishing from the release workflows.
+
 for release artifacts and Homebrew packaging, see `docs/distribution.md`.
+
+package repos follow the same split you already use elsewhere:
+
+- npm for `npm`, `pnpm`, `yarn`, and `npx`
+- GitHub Releases for tarballs and checksums
+- Homebrew tap sync for macOS install
+- Cloudsmith-backed `.deb` and `.rpm` for Linux package repos
 
 ## why
 

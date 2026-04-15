@@ -37,8 +37,11 @@ describe("reduceExecution", () => {
     });
 
     expect(result.classification.matchedReducer).toBe("git/status");
-    expect(result.inlineText).toContain("1 modified");
-    expect(result.inlineText).toContain("src/index.ts");
+    expect(result.facts?.["modified file"]).toBe(1);
+    expect(result.inlineText).toContain("Changes not staged:");
+    expect(result.inlineText).toContain("M: src/index.ts");
+    expect(result.inlineText).toContain("Untracked files:");
+    expect(result.inlineText).toContain("??: new-file.ts");
   });
 
   it("counts short git status entries correctly", async () => {
@@ -58,12 +61,69 @@ describe("reduceExecution", () => {
 
     expect(result.classification.matchedReducer).toBe("git/status");
     expect(result.facts).toEqual({
-      modified: 1,
-      "new file": 2,
-      deleted: 1,
-      untracked: 1,
+      "modified file": 1,
+      "new file": 1,
+      "deleted file": 1,
+      "untracked file": 1,
     });
-    expect(result.inlineText).toContain("?? scripts/live-smoke.mjs");
+    expect(result.inlineText).toContain("??: scripts/live-smoke.mjs");
+  });
+
+  it("rewrites long git status output into compact branch and file summaries", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git status",
+      argv: ["git", "status"],
+      combinedText: [
+        "On branch pr-65478-security-fix",
+        "Your branch and 'origin/pr-65478-security-fix' have diverged,",
+        "and have 8 and 642 different commits each, respectively.",
+        "",
+        "Changes not staged for commit:",
+        "  modified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
+        "  modified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
+        "",
+        "no changes added to commit",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.facts?.["modified file"]).toBe(2);
+    expect(result.inlineText).toContain("Your branch and 'origin/pr-65478-security-fix' have diverged,");
+    expect(result.inlineText).toContain("Changes not staged:");
+    expect(result.inlineText).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
+    expect(result.inlineText).toContain("M: src/agents/pi-embedded-runner/run/attempt.test.ts");
+    expect(result.inlineText).not.toContain("and have 8 and 642");
+    expect(result.inlineText).not.toContain("no changes added to commit");
+  });
+
+  it("preserves help output instead of over-compacting command discovery text", async () => {
+    const helpText = [
+      "Usage: pnpm [command] [flags]",
+      "",
+      "Manage packages.",
+      "",
+      "Commands:",
+      ...Array.from({ length: 30 }, (_, index) => `  cmd-${index + 1}   Description for command ${index + 1}`),
+      "",
+      "Flags:",
+      "  --help     Show help",
+      "  --version  Show version",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm --help",
+      argv: ["pnpm", "--help"],
+      combinedText: helpText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/help");
+    expect(result.inlineText).toContain("Usage: pnpm [command] [flags]");
+    expect(result.inlineText).toContain("cmd-1");
+    expect(result.inlineText).toContain("--version");
+    expect(result.inlineText).toContain("omitted");
   });
 
   it("stores raw artifacts when requested", async () => {

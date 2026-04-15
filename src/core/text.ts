@@ -4,6 +4,7 @@ const ANSI_CSI_INCOMPLETE_PATTERN = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*$`
 const ANSI_OSC_INCOMPLETE_PATTERN = new RegExp(String.raw`\u001B\][^\u0007\u001B]*$`, "g");
 const ANSI_SINGLE_PATTERN = new RegExp(String.raw`\u001B[@-_]`, "g");
 const TRUNCATION_SUFFIX = "\n... truncated ...";
+const MIDDLE_TRUNCATION_MARKER = "\n... omitted ...\n";
 const COMBINING_MARK_PATTERN = /\p{Mark}/u;
 const EMOJI_PATTERN = /\p{Extended_Pictographic}/u;
 const graphemeSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl
@@ -134,6 +135,20 @@ export function clampText(text: string, maxChars: number): string {
   }
   const bodyChars = Math.max(0, maxChars - countTextChars(TRUNCATION_SUFFIX));
   return `${graphemes(text).slice(0, bodyChars).join("")}${TRUNCATION_SUFFIX}`;
+}
+
+export function clampTextMiddle(text: string, maxChars: number): string {
+  if (countTextChars(text) <= maxChars) {
+    return text;
+  }
+
+  const markerChars = countTextChars(MIDDLE_TRUNCATION_MARKER);
+  const bodyChars = Math.max(0, maxChars - markerChars);
+  const headChars = Math.ceil(bodyChars * 0.7);
+  const tailChars = Math.max(0, bodyChars - headChars);
+  const segments = graphemes(text);
+
+  return `${segments.slice(0, headChars).join("")}${MIDDLE_TRUNCATION_MARKER}${segments.slice(-tailChars).join("")}`;
 }
 
 export function pluralize(count: number, noun: string): string {

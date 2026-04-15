@@ -62,6 +62,7 @@ describe("rules", () => {
       "devops/kubectl-logs",
       "filesystem/find",
       "filesystem/ls",
+      "generic/help",
       "git/branch",
       "git/diff-name-only",
       "git/diff-stat",
@@ -138,7 +139,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(95);
+    expect(fixtures).toHaveLength(96);
   });
 
   it("verifies builtin fixtures cleanly", async () => {

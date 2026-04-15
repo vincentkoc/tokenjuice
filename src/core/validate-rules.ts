@@ -55,9 +55,17 @@ function validateMatch(value: unknown, path: string): string[] {
   if ("commandIncludes" in value && !isStringArray(value.commandIncludes)) {
     errors.push(`${path}.commandIncludes must be an array of strings`);
   }
+  if ("commandIncludesAny" in value && !isStringArray(value.commandIncludesAny)) {
+    errors.push(`${path}.commandIncludesAny must be an array of strings`);
+  }
   if ("argvIncludes" in value) {
     if (!Array.isArray(value.argvIncludes) || !value.argvIncludes.every(isStringArray)) {
       errors.push(`${path}.argvIncludes must be an array of string arrays`);
+    }
+  }
+  if ("argvIncludesAny" in value) {
+    if (!Array.isArray(value.argvIncludesAny) || !value.argvIncludesAny.every(isStringArray)) {
+      errors.push(`${path}.argvIncludesAny must be an array of string arrays`);
     }
   }
   return errors;

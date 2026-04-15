@@ -28,7 +28,15 @@ export function matchesRule(ruleLike: RuleLike, input: ToolExecutionInput): bool
     return false;
   }
 
+  if (rule.match.argvIncludesAny && !rule.match.argvIncludesAny.some((parts) => includesAll(argv, parts))) {
+    return false;
+  }
+
   if (rule.match.commandIncludes && !rule.match.commandIncludes.every((part) => command.includes(part))) {
+    return false;
+  }
+
+  if (rule.match.commandIncludesAny && !rule.match.commandIncludesAny.some((part) => command.includes(part))) {
     return false;
   }
 
@@ -41,7 +49,9 @@ function scoreRule(ruleLike: RuleLike): number {
     (rule.priority ?? 0) * 1000
     + (rule.match.argv0?.length ?? 0) * 100
     + (rule.match.argvIncludes?.reduce((sum, parts) => sum + parts.length, 0) ?? 0) * 40
+    + (rule.match.argvIncludesAny?.reduce((sum, parts) => sum + parts.length, 0) ?? 0) * 35
     + (rule.match.commandIncludes?.length ?? 0) * 25
+    + (rule.match.commandIncludesAny?.length ?? 0) * 20
     + (rule.match.toolNames?.length ?? 0) * 10
   );
 }

@@ -15,6 +15,10 @@
     "skipPatterns": [
       "^On branch ",
       "^Your branch is ",
+      "^and have \\d+ and \\d+ different commits each.*$",
+      "^\\(use \"git .+\" to .+\\)$",
+      "^no changes added to commit.*$",
+      "^nothing added to commit but untracked files present.*$",
       "^nothing to commit, working tree clean$",
       "^use \"git .+\" to .+"
     ]
@@ -30,20 +34,20 @@
   },
   "counters": [
     {
-      "name": "modified",
-      "pattern": "(?:^\\s*modified:)|^(?:[ MTRU][MTRU]|[MTRU][ MTRU])\\s+"
+      "name": "modified file",
+      "pattern": "^(?:M:|\\s*modified:|[ MTRU][MTRU]\\s+|[MTRU][ MTRU]\\s+)"
     },
     {
       "name": "new file",
-      "pattern": "(?:^\\s*new file:)|^(?:A.|.A|\\?\\?)\\s+"
+      "pattern": "^(?:A:|\\s*new file:|A.\\s+|.A\\s+)"
     },
     {
-      "name": "deleted",
-      "pattern": "(?:^\\s*deleted:)|^(?:D.|.D)\\s+"
+      "name": "deleted file",
+      "pattern": "^(?:D:|\\s*deleted:|D.\\s+|.D\\s+)"
     },
     {
-      "name": "untracked",
-      "pattern": "(?:^\\s*untracked files:)|^\\?\\?\\s+"
+      "name": "untracked file",
+      "pattern": "^(?:\\?\\?:|\\?\\?\\s+|\\s*untracked files:)"
     }
   ]
 }

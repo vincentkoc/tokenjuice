@@ -1,11 +1,96 @@
 import { loadRules } from "./rules.js";
 import { classifyExecution, matchesRule } from "./classify.js";
-import { clampText, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
+import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact } from "./artifacts.js";
 
 import type { CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } from "../types.js";
 
 const TINY_OUTPUT_MAX_CHARS = 240;
+
+function rewriteGitStatusLine(line: string): string | null {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (trimmed.startsWith("On branch ")) {
+    return null;
+  }
+  if (/^and have \d+ and \d+ different commits each/u.test(trimmed)) {
+    return null;
+  }
+  if (/^(?:no changes added to commit|nothing added to commit but untracked files present)/u.test(trimmed)) {
+    return null;
+  }
+  if (/^\(use "git .+"\)$/u.test(trimmed) || /^use "git .+" to .+/u.test(trimmed)) {
+    return null;
+  }
+  if (trimmed === "Changes not staged for commit:") {
+    return "Changes not staged:";
+  }
+  if (trimmed === "Changes to be committed:") {
+    return "Staged changes:";
+  }
+  if (trimmed === "Untracked files:") {
+    return "Untracked files:";
+  }
+  if (/^\s*modified:\s+/u.test(line)) {
+    return `M: ${line.replace(/^\s*modified:\s+/u, "").trim()}`;
+  }
+  if (/^\s*new file:\s+/u.test(line)) {
+    return `A: ${line.replace(/^\s*new file:\s+/u, "").trim()}`;
+  }
+  if (/^\s*deleted:\s+/u.test(line)) {
+    return `D: ${line.replace(/^\s*deleted:\s+/u, "").trim()}`;
+  }
+  if (/^\s*renamed:\s+/u.test(line)) {
+    return `R: ${line.replace(/^\s*renamed:\s+/u, "").trim()}`;
+  }
+  if (/^\?\?\s+/u.test(trimmed)) {
+    return `??: ${trimmed.replace(/^\?\?\s+/u, "").trim()}`;
+  }
+
+  const porcelainMatch = line.match(/^([ MADRCU?!]{2})\s+(.+)$/u);
+  if (porcelainMatch) {
+    const status = porcelainMatch[1]!.trim().replace(/\?/gu, "??");
+    const path = porcelainMatch[2]!.trim();
+    const code = status === "" ? "M" : status[0] === "?" ? "??" : status[0]!;
+    return `${code}: ${path}`;
+  }
+
+  return trimmed;
+}
+
+function rewriteGitStatusLines(lines: string[]): string[] {
+  let section: "staged" | "unstaged" | "untracked" | null = null;
+  const rewritten = lines
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed === "Changes not staged for commit:") {
+        section = "unstaged";
+      } else if (trimmed === "Changes to be committed:") {
+        section = "staged";
+      } else if (trimmed === "Untracked files:") {
+        section = "untracked";
+      }
+
+      if (section === "untracked" && /^\s{2,}\S/u.test(line) && !/^\s*(?:modified:|new file:|deleted:|renamed:)/u.test(line)) {
+        return `??: ${trimmed}`;
+      }
+
+      return rewriteGitStatusLine(line);
+    })
+    .filter((line): line is string => line !== null);
+
+  const collapsed: string[] = [];
+  for (const line of rewritten) {
+    if (line === "" && collapsed[collapsed.length - 1] === "") {
+      continue;
+    }
+    collapsed.push(line);
+  }
+  return collapsed;
+}
 
 function buildRawText(input: ToolExecutionInput): string {
   if (input.combinedText) {
@@ -49,6 +134,10 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
 
   if (rule.transforms?.dedupeAdjacent) {
     lines = dedupeAdjacent(lines);
+  }
+
+  if (rule.id === "git/status") {
+    lines = rewriteGitStatusLines(lines);
   }
 
   for (const counter of compiledRule.compiled.counters) {
@@ -107,15 +196,22 @@ function formatInline(
 }
 
 function selectInlineText(
+  classification: { family: string },
   input: ToolExecutionInput,
   rawText: string,
   compactText: string,
+  maxInlineChars: number,
 ): string {
-  const passthroughText = buildPassthroughText(input, rawText);
-  if (passthroughText.length > TINY_OUTPUT_MAX_CHARS) {
+  if (classification.family === "git-status") {
     return compactText;
   }
-  if (passthroughText.length <= compactText.length) {
+
+  const passthroughText = buildPassthroughText(input, rawText);
+  const passthroughLimit = classification.family === "help" ? maxInlineChars : TINY_OUTPUT_MAX_CHARS;
+  if (countTextChars(passthroughText) > passthroughLimit) {
+    return compactText;
+  }
+  if (countTextChars(passthroughText) <= countTextChars(compactText)) {
     return passthroughText;
   }
   return compactText;
@@ -145,8 +241,10 @@ export async function reduceExecutionWithRules(
 
   const { summary, facts } = applyRule(matchedRule, input, rawText);
   const compactText = formatInline(input, summary || "(no output)", facts);
-  const selectedText = selectInlineText(input, rawText, compactText);
-  const provisionalInlineText = clampText(selectedText, opts.maxInlineChars ?? 1200);
+  const maxInlineChars = opts.maxInlineChars ?? 1200;
+  const selectedText = selectInlineText(classification, input, rawText, compactText, maxInlineChars);
+  const clamp = classification.family === "help" ? clampTextMiddle : clampText;
+  const provisionalInlineText = clamp(selectedText, maxInlineChars);
   const provisionalReducedChars = countTextChars(provisionalInlineText);
   const provisionalStats = {
     rawChars: measuredRawChars,
@@ -168,7 +266,7 @@ export async function reduceExecutionWithRules(
         opts.storeDir,
       )
     : undefined;
-  const inlineText = clampText(selectedText, opts.maxInlineChars ?? 1200);
+  const inlineText = clamp(selectedText, maxInlineChars);
   const reducedChars = countTextChars(inlineText);
   const stats = {
     rawChars: measuredRawChars,

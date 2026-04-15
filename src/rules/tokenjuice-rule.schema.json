@@ -39,7 +39,18 @@
             "items": { "type": "string" }
           }
         },
+        "argvIncludesAny": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
         "commandIncludes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "commandIncludesAny": {
           "type": "array",
           "items": { "type": "string" }
         }

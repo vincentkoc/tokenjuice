@@ -27,7 +27,9 @@ export type RuleMatch = {
   toolNames?: string[];
   argv0?: string[];
   argvIncludes?: string[][];
+  argvIncludesAny?: string[][];
   commandIncludes?: string[];
+  commandIncludesAny?: string[];
 };
 
 export type RuleFilters = {

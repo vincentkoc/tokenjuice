@@ -4,6 +4,19 @@
 
 lean output compaction for terminal-heavy agent workflows.
 
+## what it does
+
+an agent or harness calls noisy tools like `git status`, `pnpm test`, `pnpm --help`, `docker build`, or `rg`.
+
+tokenjuice sits in front of that tool call, runs it, trims the fat from the output, and passes back a much cleaner result to the harness.
+
+the important bit is the boundary:
+
+- the original command still runs
+- tokenjuice compacts the observed output after execution
+- raw output can be stored locally when you explicitly ask for it
+- the harness gets a smaller, more useful payload instead of a wall of terminal junk
+
 ## install
 
 ```bash

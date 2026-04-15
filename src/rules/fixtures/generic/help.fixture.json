@@ -1,0 +1,17 @@
+{
+  "id": "generic-help-pnpm",
+  "ruleId": "generic/help",
+  "input": {
+    "toolName": "exec",
+    "argv": ["pnpm", "--help"],
+    "command": "pnpm --help",
+    "combinedText": "Usage: pnpm [command] [flags]\n\nCommands:\n  install   Install packages\n  test      Run tests\n\nFlags:\n  --help     Show help\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "generic/help",
+    "family": "help",
+    "contains": ["Usage: pnpm [command] [flags]", "install", "--help"],
+    "excludes": ["lines omitted"]
+  }
+}

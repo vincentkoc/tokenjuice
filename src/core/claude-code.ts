@@ -1,5 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { constants as fsConstants } from "node:fs";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { delimiter, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
 import { isCompoundShellCommand } from "./command.js";
@@ -14,13 +15,15 @@ type ClaudeCodeHookCommand = {
   timeout?: number;
 };
 
-type ClaudeCodeHookMatcherGroup = {
+type ClaudeCodeHook = Record<string, unknown>;
+
+type ClaudeCodeHookMatcherGroup = Record<string, unknown> & {
   matcher?: string;
-  hooks: ClaudeCodeHookCommand[];
+  hooks: ClaudeCodeHook[];
 };
 
 type ClaudeCodeSettings = Record<string, unknown> & {
-  hooks: Record<string, ClaudeCodeHookMatcherGroup[]>;
+  hooks: Record<string, unknown>;
 };
 
 type ClaudeCodePostToolUsePayload = {
@@ -59,9 +62,49 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/gu, `'\\''`)}'`;
 }
 
-function buildClaudeCodeHookCommand(binaryPath = process.argv[1], nodePath = process.execPath): string {
+async function isExecutableFile(path: string): Promise<boolean> {
+  try {
+    await access(path, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
+  const pathValue = process.env.PATH;
+  if (!pathValue) {
+    return undefined;
+  }
+
+  const candidateNames = process.platform === "win32"
+    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
+    : ["tokenjuice"];
+
+  for (const segment of pathValue.split(delimiter)) {
+    if (!segment) {
+      continue;
+    }
+
+    for (const candidateName of candidateNames) {
+      const candidatePath = join(segment, candidateName);
+      if (await isExecutableFile(candidatePath)) {
+        return candidatePath;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+async function buildClaudeCodeHookCommand(binaryPath = process.argv[1], nodePath = process.execPath): Promise<string> {
   if (!binaryPath) {
     throw new Error("unable to resolve tokenjuice binary path for claude code install");
+  }
+
+  const installedBinaryPath = await resolveInstalledTokenjuicePath();
+  if (installedBinaryPath) {
+    return `${shellQuote(installedBinaryPath)} claude-code-post-tool-use`;
   }
 
   if (binaryPath.endsWith(".js")) {
@@ -115,64 +158,15 @@ function createTokenjuiceClaudeCodeHook(command: string): ClaudeCodeHookMatcherG
 
 function isTokenjuiceClaudeCodeHook(group: ClaudeCodeHookMatcherGroup): boolean {
   return group.hooks.some((hook) =>
-    hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
-    || hook.command.includes("claude-code-post-tool-use"),
+    isRecord(hook) && (
+      hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
+      || (typeof hook.command === "string" && hook.command.includes("claude-code-post-tool-use"))
+    ),
   );
 }
 
-function sanitizeHooksSubtree(raw: unknown): Record<string, ClaudeCodeHookMatcherGroup[]> {
-  if (!isRecord(raw)) {
-    return {};
-  }
-
-  const hooks: Record<string, ClaudeCodeHookMatcherGroup[]> = {};
-  for (const [eventName, groups] of Object.entries(raw)) {
-    if (!Array.isArray(groups)) {
-      continue;
-    }
-
-    const normalizedGroups = groups.flatMap((group): ClaudeCodeHookMatcherGroup[] => {
-      if (!isRecord(group) || !Array.isArray(group.hooks)) {
-        return [];
-      }
-
-      const commands = group.hooks.flatMap((hook): ClaudeCodeHookCommand[] => {
-        if (!isRecord(hook) || hook.type !== "command" || typeof hook.command !== "string") {
-          return [];
-        }
-
-        const normalized: ClaudeCodeHookCommand = {
-          type: "command",
-          command: hook.command,
-        };
-        if (typeof hook.statusMessage === "string" && hook.statusMessage) {
-          normalized.statusMessage = hook.statusMessage;
-        }
-        if (typeof hook.timeout === "number" && Number.isFinite(hook.timeout)) {
-          normalized.timeout = hook.timeout;
-        }
-        return [normalized];
-      });
-
-      if (commands.length === 0) {
-        return [];
-      }
-
-      const normalizedGroup: ClaudeCodeHookMatcherGroup = {
-        hooks: commands,
-      };
-      if (typeof group.matcher === "string" && group.matcher) {
-        normalizedGroup.matcher = group.matcher;
-      }
-      return [normalizedGroup];
-    });
-
-    if (normalizedGroups.length > 0) {
-      hooks[eventName] = normalizedGroups;
-    }
-  }
-
-  return hooks;
+function sanitizeHooksSubtree(raw: unknown): Record<string, unknown> {
+  return isRecord(raw) ? { ...raw } : {};
 }
 
 function sanitizeClaudeCodeSettings(raw: unknown): ClaudeCodeSettings {
@@ -204,9 +198,11 @@ async function loadClaudeCodeSettings(settingsPath: string): Promise<{ config: C
 
 export async function installClaudeCodeHook(settingsPath = getDefaultSettingsPath()): Promise<InstallClaudeCodeHookResult> {
   const { config, backupPath } = await loadClaudeCodeSettings(settingsPath);
-  const command = buildClaudeCodeHookCommand();
-  const postToolUse = config.hooks.PostToolUse ?? [];
-  const retained = postToolUse.filter((group) => !isTokenjuiceClaudeCodeHook(group));
+  const command = await buildClaudeCodeHookCommand();
+  const postToolUse = Array.isArray(config.hooks.PostToolUse) ? config.hooks.PostToolUse : [];
+  const retained = postToolUse.filter((group) =>
+    !(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceClaudeCodeHook(group as ClaudeCodeHookMatcherGroup)),
+  );
   retained.push(createTokenjuiceClaudeCodeHook(command));
   config.hooks.PostToolUse = retained;
 

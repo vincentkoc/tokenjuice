@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,9 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../src/index.js";
 
 const tempDirs: string[] = [];
+const originalPath = process.env.PATH;
 
 afterEach(async () => {
   delete process.env.CLAUDE_HOME;
+  process.env.PATH = originalPath;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -126,6 +128,89 @@ describe("installClaudeCodeHook", () => {
     });
     expect(parsed.hooks.SessionStart).toHaveLength(1);
     expect(parsed.hooks.PostToolUse).toHaveLength(2);
+  });
+
+  it("preserves non-command Claude Code hooks and extra handler fields", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          SessionStart: [
+            {
+              matcher: "Bash",
+              extraGroupField: "keep-me",
+              hooks: [
+                { type: "command", command: "echo session", async: true, shell: "/bin/bash" },
+                { type: "prompt", prompt: "session prompt" },
+                { type: "http", url: "https://example.com/hooks" },
+              ],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "Edit",
+              hooks: [{ type: "agent", prompt: "summarize the edit" }],
+            },
+            {
+              matcher: "Bash",
+              hooks: [
+                {
+                  type: "command",
+                  command: "tokenjuice claude-code-post-tool-use --old",
+                  statusMessage: "compacting bash output with tokenjuice",
+                  async: true,
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await installClaudeCodeHook(settingsPath);
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: Record<string, Array<Record<string, unknown> & { hooks: Array<Record<string, unknown>> }>>;
+    };
+
+    expect(parsed.hooks.SessionStart).toHaveLength(1);
+    expect(parsed.hooks.SessionStart[0]?.extraGroupField).toBe("keep-me");
+    expect(parsed.hooks.SessionStart[0]?.hooks).toEqual([
+      { type: "command", command: "echo session", async: true, shell: "/bin/bash" },
+      { type: "prompt", prompt: "session prompt" },
+      { type: "http", url: "https://example.com/hooks" },
+    ]);
+    expect(parsed.hooks.PostToolUse).toHaveLength(2);
+    expect(parsed.hooks.PostToolUse[0]?.matcher).toBe("Edit");
+    expect(parsed.hooks.PostToolUse[0]?.hooks).toEqual([{ type: "agent", prompt: "summarize the edit" }]);
+    expect(parsed.hooks.PostToolUse[1]?.matcher).toBe("Bash");
+    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toContain("claude-code-post-tool-use");
+  });
+
+  it("prefers a stable tokenjuice launcher from PATH when installing the hook", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(
+      launcherPath,
+      "#!/usr/bin/env bash\nexit 0\n",
+      { encoding: "utf8", mode: 0o755 },
+    );
+
+    const result = await installClaudeCodeHook(settingsPath);
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result.command).toBe(`${launcherPath} claude-code-post-tool-use`);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(`${launcherPath} claude-code-post-tool-use`);
   });
 
   it("is idempotent and replaces old tokenjuice entries", async () => {

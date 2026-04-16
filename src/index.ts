@@ -1,6 +1,7 @@
 export { getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, storeArtifact } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
+export { installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./core/claude-code.js";
 export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorCodexHook, installCodexHook, runCodexPostToolUseHook } from "./core/codex.js";
 export { runReduceJsonCli } from "./core/cli-client.js";

@@ -37,6 +37,7 @@ then:
 tokenjuice --help
 tokenjuice --version
 tokenjuice install codex
+tokenjuice install claude-code
 ```
 
 ## why
@@ -66,6 +67,7 @@ tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
 tokenjuice install codex
 tokenjuice install codex --local
+tokenjuice install claude-code
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -118,6 +120,23 @@ important detail:
 - raw command execution logs are still raw
 - `tokenjuice doctor codex` checks whether the hook command is missing or pinned to a stale Homebrew Cellar path
 - `tokenjuice install codex --local` / `tokenjuice doctor codex --local` are for testing the current repo build before release
+
+## claude code
+
+for claude code, the clean path is a home hook:
+
+```bash
+tokenjuice install claude-code
+```
+
+that writes a `PostToolUse` hook into `~/.claude/settings.json` under `hooks.PostToolUse` so claude code can compact noisy `Bash` output after the command runs.
+
+important detail:
+
+- unrelated top-level settings keys (`permissions`, `env`, `statusLine`, custom keys) are preserved
+- the original shell command still runs untouched
+- tokenjuice only rewrites the output that goes back through the hook
+- raw command execution logs are still raw
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 

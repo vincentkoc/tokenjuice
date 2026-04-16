@@ -141,6 +141,7 @@ install host wiring when tokenjuice can own it directly:
 
 ```bash
 tokenjuice install codex
+tokenjuice install claude-code
 tokenjuice doctor codex
 tokenjuice install codex --local
 tokenjuice doctor codex --local
@@ -149,6 +150,7 @@ tokenjuice doctor codex --local
 for codex, this writes a home-level `PostToolUse` hook into `~/.codex/hooks.json` so tokenjuice can compact `Bash` output after execution without changing the executed command.
 
 `tokenjuice doctor codex` inspects that hook, spots stale Cellar-pinned Homebrew commands, and points back to `tokenjuice install codex` for repair. the `--local` variant is for dev verification and expects the hook to point at the current repo build instead of the installed launcher on `PATH`.
+for claude code, this writes into `~/.claude/settings.json` under `hooks.PostToolUse` and preserves unrelated top-level settings keys while updating the hook subtree.
 
 ## rule model
 

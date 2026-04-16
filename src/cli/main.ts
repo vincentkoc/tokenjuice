@@ -6,6 +6,7 @@ import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
+import { installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../core/claude-code.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook } from "../core/codex.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
@@ -52,6 +53,7 @@ function printUsage(): void {
       "  tokenjuice reduce-json [file]",
       "  tokenjuice wrap [--raw|--full] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice install codex [--local]",
+      "  tokenjuice install claude-code",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
@@ -304,24 +306,38 @@ async function runWrap(args: ParsedArgs): Promise<number> {
 
 async function runInstall(args: ParsedArgs): Promise<number> {
   const target = args.positionals[0];
-  if (target !== "codex") {
-    throw new Error("install currently supports only: codex");
-  }
+  if (target === "codex") {
+    const result = await installCodexHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
 
-  const result = await installCodexHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.stdout.write(`installed codex hook: ${result.hooksPath}\n`);
+    process.stdout.write(`command: ${result.command}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write(`doctor: tokenjuice doctor codex${args.local ? " --local" : ""}\n`);
+    process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
     return 0;
   }
 
-  process.stdout.write(`installed codex hook: ${result.hooksPath}\n`);
-  process.stdout.write(`command: ${result.command}\n`);
-  if (result.backupPath) {
-    process.stdout.write(`backup: ${result.backupPath}\n`);
+  if (target === "claude-code") {
+    const result = await installClaudeCodeHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`installed claude-code hook: ${result.settingsPath}\n`);
+    process.stdout.write(`command: ${result.command}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    return 0;
   }
-  process.stdout.write(`doctor: tokenjuice doctor codex${args.local ? " --local" : ""}\n`);
-  process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
-  return 0;
+  throw new Error("install currently supports: codex, claude-code");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -634,6 +650,8 @@ async function main(): Promise<number> {
       return await runStats(args);
     case "codex-post-tool-use":
       return await runCodexPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "claude-code-post-tool-use":
+      return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes));
     default:
       printUsage();
       return 1;

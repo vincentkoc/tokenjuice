@@ -178,6 +178,41 @@ describe("rules", () => {
     expect(gitStatus?.rule.family).toBe("git-status-project");
   });
 
+  it("reports cross-layer shadow warnings in verify", async () => {
+    const cwd = await createTempDir();
+    const rulesDir = join(cwd, ".tokenjuice", "rules", "git");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "status.json"),
+      JSON.stringify(
+        {
+          id: "git/status",
+          family: "git-status-project",
+          match: {
+            argv0: ["git"],
+            argvIncludes: [["status"]],
+          },
+          summarize: {
+            head: 1,
+            tail: 1,
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const results = await verifyRules({ cwd });
+    const builtin = results.find((result) => result.id === "git/status" && result.source === "builtin");
+    const project = results.find((result) => result.id === "git/status" && result.source === "project");
+
+    expect(builtin?.ok).toBe(true);
+    expect(project?.ok).toBe(true);
+    expect(builtin?.warnings).toContain("shadowed by project:git/status");
+    expect(project?.warnings).toContain("shadows builtin:git/status");
+  });
+
   it("reports invalid override rules in verify", async () => {
     const cwd = await createTempDir();
     const rulesDir = join(cwd, ".tokenjuice", "rules");

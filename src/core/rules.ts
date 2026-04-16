@@ -27,6 +27,7 @@ type RuleVerificationResult = {
   source: RuleOrigin;
   path: string;
   errors: string[];
+  warnings: string[];
 };
 
 const ruleCache = new Map<string, CompiledRule[]>();
@@ -224,6 +225,7 @@ async function verifyRuleRoot(root: string, source: RuleOrigin): Promise<RuleVer
           source,
           path: fullPath,
           errors,
+          warnings: [],
         };
       } catch (error) {
         return {
@@ -232,6 +234,7 @@ async function verifyRuleRoot(root: string, source: RuleOrigin): Promise<RuleVer
           source,
           path: fullPath,
           errors: [error instanceof Error ? error.message : String(error)],
+          warnings: [],
         };
       }
     }),
@@ -255,6 +258,43 @@ async function verifyRuleRoot(root: string, source: RuleOrigin): Promise<RuleVer
   return results;
 }
 
+function ruleSourceRank(source: RuleOrigin): number {
+  switch (source) {
+    case "builtin":
+      return 0;
+    case "user":
+      return 1;
+    case "project":
+      return 2;
+  }
+}
+
+function addShadowWarnings(results: RuleVerificationResult[]): void {
+  const byId = new Map<string, RuleVerificationResult[]>();
+  for (const result of results) {
+    const group = byId.get(result.id) ?? [];
+    group.push(result);
+    byId.set(result.id, group);
+  }
+
+  for (const [id, group] of byId) {
+    if (group.length < 2) {
+      continue;
+    }
+
+    const ordered = [...group].sort((left, right) => ruleSourceRank(left.source) - ruleSourceRank(right.source));
+    const winner = ordered[ordered.length - 1]!;
+    const shadowed = ordered.slice(0, -1);
+
+    winner.warnings.push(
+      `shadows ${shadowed.map((result) => `${result.source}:${id}`).join(", ")}`,
+    );
+    for (const result of shadowed) {
+      result.warnings.push(`shadowed by ${winner.source}:${id}`);
+    }
+  }
+}
+
 export async function verifyRules(options: LoadRuleOptions = {}): Promise<RuleVerificationResult[]> {
   const results: RuleVerificationResult[] = [];
   results.push(...await verifyRuleRoot(builtinRulesRoot(), "builtin"));
@@ -264,6 +304,7 @@ export async function verifyRules(options: LoadRuleOptions = {}): Promise<RuleVe
   if (options.includeProject ?? true) {
     results.push(...await verifyRuleRoot(projectRulesRoot(options.cwd, options.projectRulesDir), "project"));
   }
+  addShadowWarnings(results);
   return results;
 }
 

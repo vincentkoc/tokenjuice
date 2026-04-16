@@ -382,6 +382,7 @@ async function runCat(args: ParsedArgs): Promise<number> {
 async function runVerify(args: ParsedArgs): Promise<number> {
   const results = await verifyRules();
   const failed = results.filter((result) => !result.ok);
+  const warned = results.filter((result) => result.warnings.length > 0);
   const fixtureResults = args.fixtures ? await verifyBuiltinFixtures() : [];
   const failedFixtures = fixtureResults.filter((result) => !result.ok);
 
@@ -393,8 +394,14 @@ async function runVerify(args: ParsedArgs): Promise<number> {
   }
 
   if (failed.length === 0 && failedFixtures.length === 0) {
+    for (const result of warned) {
+      process.stderr.write(`warn:${result.source}:${result.id}\n`);
+      for (const warning of result.warnings) {
+        process.stderr.write(`- ${warning}\n`);
+      }
+    }
     process.stdout.write(
-      `ok: ${results.length} rules validated${args.fixtures ? `, ${fixtureResults.length} fixtures verified` : ""}\n`,
+      `ok: ${results.length} rules validated${warned.length > 0 ? `, ${warned.length} warnings` : ""}${args.fixtures ? `, ${fixtureResults.length} fixtures verified` : ""}\n`,
     );
     return 0;
   }

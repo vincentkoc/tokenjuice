@@ -2,7 +2,7 @@ export { getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, st
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
-export { installCodexHook, runCodexPostToolUseHook } from "./core/codex.js";
+export { doctorCodexHook, installCodexHook, runCodexPostToolUseHook } from "./core/codex.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";

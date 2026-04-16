@@ -6,7 +6,7 @@ import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
-import { installCodexHook, runCodexPostToolUseHook } from "../core/codex.js";
+import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook } from "../core/codex.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { reduceExecution } from "../core/reduce.js";
@@ -55,7 +55,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice doctor [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|codex] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats",
     ].join("\n"),
   );
@@ -312,6 +312,8 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   if (result.backupPath) {
     process.stdout.write(`backup: ${result.backupPath}\n`);
   }
+  process.stdout.write("doctor: tokenjuice doctor codex\n");
+  process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
   return 0;
 }
 
@@ -465,6 +467,36 @@ async function runDiscover(args: ParsedArgs): Promise<number> {
 }
 
 async function runDoctor(args: ParsedArgs): Promise<number> {
+  if (args.positionals[0] === "codex") {
+    const report = await doctorCodexHook();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hooks path: ${report.hooksPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   const direct = await loadDirectAnalysisEntry(args);
   const entries = direct ? [direct.entry] : await listArtifactMetadata(args.storeDir);
   const report = doctorArtifacts(entries);

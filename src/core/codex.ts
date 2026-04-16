@@ -1,5 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { constants as fsConstants } from "node:fs";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { delimiter, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
 import { isCompoundShellCommand } from "./command.js";
@@ -42,7 +43,19 @@ export type InstallCodexHookResult = {
   command: string;
 };
 
+export type CodexDoctorReport = {
+  hooksPath: string;
+  status: "ok" | "warn" | "broken";
+  issues: string[];
+  fixCommand: string;
+  expectedCommand: string;
+  detectedCommand?: string;
+  checkedPaths: string[];
+  missingPaths: string[];
+};
+
 const TOKENJUICE_CODEX_STATUS = "compacting bash output with tokenjuice";
+const TOKENJUICE_CODEX_FIX_COMMAND = "tokenjuice install codex";
 
 function getCodexHome(): string {
   return process.env.CODEX_HOME || join(homedir(), ".codex");
@@ -59,9 +72,49 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/gu, `'\\''`)}'`;
 }
 
-function buildCodexHookCommand(binaryPath = process.argv[1], nodePath = process.execPath): string {
+async function isExecutableFile(path: string): Promise<boolean> {
+  try {
+    await access(path, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
+  const pathValue = process.env.PATH;
+  if (!pathValue) {
+    return undefined;
+  }
+
+  const candidateNames = process.platform === "win32"
+    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
+    : ["tokenjuice"];
+
+  for (const segment of pathValue.split(delimiter)) {
+    if (!segment) {
+      continue;
+    }
+
+    for (const candidateName of candidateNames) {
+      const candidatePath = join(segment, candidateName);
+      if (await isExecutableFile(candidatePath)) {
+        return candidatePath;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+async function buildCodexHookCommand(binaryPath = process.argv[1], nodePath = process.execPath): Promise<string> {
   if (!binaryPath) {
     throw new Error("unable to resolve tokenjuice binary path for codex install");
+  }
+
+  const installedBinaryPath = await resolveInstalledTokenjuicePath();
+  if (installedBinaryPath) {
+    return `${shellQuote(installedBinaryPath)} codex-post-tool-use`;
   }
 
   if (binaryPath.endsWith(".js")) {
@@ -119,6 +172,25 @@ function isTokenjuiceCodexHook(group: CodexHookMatcherGroup): boolean {
     || hook.command.includes("codex-post-tool-use")
     || hook.command.includes("post_tool_use_tokenjuice.py"),
   );
+}
+
+function findTokenjuiceCodexHookCommand(config: CodexHooksConfig): string | undefined {
+  for (const group of config.hooks.PostToolUse ?? []) {
+    if (!isTokenjuiceCodexHook(group)) {
+      continue;
+    }
+
+    const command = group.hooks.find((hook) =>
+      hook.statusMessage === TOKENJUICE_CODEX_STATUS
+      || hook.command.includes("codex-post-tool-use")
+      || hook.command.includes("post_tool_use_tokenjuice.py"),
+    )?.command;
+    if (command) {
+      return command;
+    }
+  }
+
+  return undefined;
 }
 
 function sanitizeHooksConfig(raw: unknown): CodexHooksConfig {
@@ -192,9 +264,109 @@ async function loadHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
   }
 }
 
+async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksConfig; exists: boolean }> {
+  try {
+    const rawText = await readFile(hooksPath, "utf8");
+    const parsed = JSON.parse(rawText) as unknown;
+    return {
+      config: sanitizeHooksConfig(parsed),
+      exists: true,
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        config: { hooks: {} },
+        exists: false,
+      };
+    }
+    throw new Error(`failed to read codex hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function parseShellWords(command: string): string[] {
+  const words: string[] = [];
+  let current = "";
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+
+  for (const char of command) {
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+
+    if (/\s/u.test(char)) {
+      if (current) {
+        words.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    words.push(current);
+  }
+
+  return words;
+}
+
+function extractHookCommandPaths(command: string): string[] {
+  const argv = parseShellWords(command);
+  if (argv.length === 0) {
+    return [];
+  }
+
+  const paths = new Set<string>();
+  const first = argv[0];
+  if (first && (first.includes("/") || first.includes("\\"))) {
+    paths.add(first);
+  }
+
+  const second = argv[1];
+  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
+    paths.add(second);
+  }
+
+  return [...paths];
+}
+
+function buildCodexHint(rawRefId?: string): string {
+  const hints = [
+    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>`.",
+    "if the hook breaks, run `tokenjuice doctor codex`, then `tokenjuice install codex`.",
+  ];
+  if (rawRefId) {
+    hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);
+  }
+  return hints.join(" ");
+}
+
 export async function installCodexHook(hooksPath = getDefaultHooksPath()): Promise<InstallCodexHookResult> {
   const { config, backupPath } = await loadHooksConfig(hooksPath);
-  const command = buildCodexHookCommand();
+  const command = await buildCodexHookCommand();
   const postToolUse = config.hooks.PostToolUse ?? [];
   const retained = postToolUse.filter((group) => !isTokenjuiceCodexHook(group));
   retained.push(createTokenjuiceCodexHook(command));
@@ -209,6 +381,67 @@ export async function installCodexHook(hooksPath = getDefaultHooksPath()): Promi
     hooksPath,
     ...(backupPath ? { backupPath } : {}),
     command,
+  };
+}
+
+export async function doctorCodexHook(hooksPath = getDefaultHooksPath()): Promise<CodexDoctorReport> {
+  const expectedCommand = await buildCodexHookCommand();
+  const { config, exists } = await readHooksConfig(hooksPath);
+  const detectedCommand = findTokenjuiceCodexHookCommand(config);
+
+  if (!exists) {
+    return {
+      hooksPath,
+      status: "warn",
+      issues: ["codex hooks.json is missing"],
+      fixCommand: TOKENJUICE_CODEX_FIX_COMMAND,
+      expectedCommand,
+      checkedPaths: [],
+      missingPaths: [],
+    };
+  }
+
+  if (!detectedCommand) {
+    return {
+      hooksPath,
+      status: "warn",
+      issues: ["tokenjuice PostToolUse hook is not installed for Codex"],
+      fixCommand: TOKENJUICE_CODEX_FIX_COMMAND,
+      expectedCommand,
+      checkedPaths: [],
+      missingPaths: [],
+    };
+  }
+
+  const checkedPaths = extractHookCommandPaths(detectedCommand);
+  const missingPaths: string[] = [];
+  for (const path of checkedPaths) {
+    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await access(path).then(() => true).catch(() => false))) {
+      missingPaths.push(path);
+    }
+  }
+
+  const issues: string[] = [];
+  if (detectedCommand !== expectedCommand) {
+    if (detectedCommand.includes("/Cellar/")) {
+      issues.push("configured Codex hook is pinned to a versioned Homebrew Cellar path");
+    } else {
+      issues.push("configured Codex hook command does not match the current recommended command");
+    }
+  }
+  if (missingPaths.length > 0) {
+    issues.push(`configured Codex hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
+  }
+
+  return {
+    hooksPath,
+    status: missingPaths.length > 0 ? "broken" : issues.length > 0 ? "warn" : "ok",
+    issues,
+    fixCommand: TOKENJUICE_CODEX_FIX_COMMAND,
+    expectedCommand,
+    detectedCommand,
+    checkedPaths,
+    missingPaths,
   };
 }
 
@@ -330,13 +563,11 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     const hookOutput: Record<string, unknown> = {
       decision: "block",
       reason: result.inlineText,
-    };
-    if (result.rawRef?.id) {
-      hookOutput.hookSpecificOutput = {
+      hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: `tokenjuice stored raw bash output as artifact ${result.rawRef.id}. use \`tokenjuice cat ${result.rawRef.id}\` only if the compacted output is insufficient.`,
-      };
-    }
+        additionalContext: buildCodexHint(result.rawRef?.id),
+      },
+    };
 
     process.stdout.write(`${JSON.stringify(hookOutput)}\n`);
     await writeHookDebug({ ...debug, rewrote: true });

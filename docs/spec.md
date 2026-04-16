@@ -122,6 +122,7 @@ summarize reducer health and savings:
 
 ```bash
 tokenjuice doctor
+tokenjuice doctor codex
 cat build.log | tokenjuice doctor --source-command "pnpm eslint src" --exit-code 1
 ```
 
@@ -140,9 +141,12 @@ install host wiring when tokenjuice can own it directly:
 
 ```bash
 tokenjuice install codex
+tokenjuice doctor codex
 ```
 
 for codex, this writes a home-level `PostToolUse` hook into `~/.codex/hooks.json` so tokenjuice can compact `Bash` output after execution without changing the executed command.
+
+`tokenjuice doctor codex` inspects that hook, spots stale Cellar-pinned Homebrew commands, and points back to `tokenjuice install codex` for repair.
 
 ## rule model
 

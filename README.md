@@ -70,6 +70,7 @@ tokenjuice cat <artifact-id>
 tokenjuice verify
 tokenjuice discover
 tokenjuice doctor
+tokenjuice doctor codex
 tokenjuice stats
 ```
 
@@ -95,6 +96,7 @@ for codex, the clean path is a home hook:
 
 ```bash
 tokenjuice install codex
+tokenjuice doctor codex
 ```
 
 that writes a `PostToolUse` hook into `~/.codex/hooks.json` so codex can compact noisy `Bash` output after the command runs.
@@ -104,6 +106,7 @@ important detail:
 - the original shell command still runs untouched
 - tokenjuice only rewrites the output that goes back through the hook
 - raw command execution logs are still raw
+- `tokenjuice doctor codex` checks whether the hook command is missing or pinned to a stale Homebrew Cellar path
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
@@ -112,6 +115,13 @@ when a reducer gets it wrong or the engine needs the untouched output, use the e
 ```bash
 tokenjuice wrap --raw -- pnpm --help
 tokenjuice wrap --full -- git status
+```
+
+if the hook itself goes stale after a package upgrade, repair it with:
+
+```bash
+tokenjuice doctor codex
+tokenjuice install codex
 ```
 
 for machine callers, set:

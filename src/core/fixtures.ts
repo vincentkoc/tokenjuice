@@ -151,6 +151,13 @@ export async function verifyBuiltinFixtures(): Promise<FixtureVerificationResult
         if (!knownRuleIds.has(fixture.ruleId)) {
           errors.push(`unknown builtin ruleId: ${fixture.ruleId}`);
         }
+        if (fixture.expect.matchedReducer !== fixture.ruleId) {
+          errors.push(
+            fixture.expect.matchedReducer
+              ? `builtin fixture matchedReducer must equal ruleId (${fixture.ruleId}), got ${fixture.expect.matchedReducer}`
+              : `builtin fixture must declare expect.matchedReducer = ${fixture.ruleId}`,
+          );
+        }
         const result = await reduceExecutionWithRules(fixture.input, rules, {
           ...(fixture.input.cwd ? { cwd: fixture.input.cwd } : {}),
           maxInlineChars: 5000,

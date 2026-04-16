@@ -160,9 +160,14 @@ describe("rules", () => {
     const rules = await loadBuiltinRules();
     const fixtureRuleIds = new Set(fixtures.map(({ fixture }) => fixture.ruleId));
     const fixtureIds = fixtures.map(({ fixture }) => fixture.id);
+    const fixtureReducerIds = fixtures.map(({ fixture }) => fixture.expect.matchedReducer);
     const builtinRuleIds = rules.map((rule) => rule.rule.id);
 
     expect(new Set(fixtureIds).size).toBe(fixtureIds.length);
+    expect(fixtureReducerIds).not.toContain(undefined);
+    expect(
+      fixtures.filter(({ fixture }) => fixture.expect.matchedReducer !== fixture.ruleId).map(({ fixture }) => fixture.id),
+    ).toEqual([]);
     expect(
       builtinRuleIds.filter((id) => !fixtureRuleIds.has(id)),
     ).toEqual([]);

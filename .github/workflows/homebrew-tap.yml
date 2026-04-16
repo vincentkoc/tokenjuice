@@ -1,9 +1,6 @@
 name: Update Homebrew Tap
 
 on:
-  release:
-    types:
-      - published
   workflow_dispatch:
     inputs:
       tag_name:
@@ -17,7 +14,7 @@ permissions:
 jobs:
   update-tap:
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name || inputs.tag_name, 'v')
+    if: startsWith(inputs.tag_name, 'v')
 
     steps:
       - name: Validate tap configuration
@@ -31,12 +28,12 @@ jobs:
       - name: Checkout tap repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.HOMEBREW_TAP_REPO || 'vincentkoc/tap' }}
+          repository: vincentkoc/tap
           token: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
       - name: Update formula
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+          TAG: ${{ inputs.tag_name }}
           SOURCE_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -95,7 +92,7 @@ jobs:
 
       - name: Commit and push formula update
         env:
-          TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+          TAG: ${{ inputs.tag_name }}
         run: |
           set -euo pipefail
           git add Formula/tokenjuice.rb

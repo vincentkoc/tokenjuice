@@ -1,7 +1,8 @@
-name-template: "tokenjuice $NEXT_TAG"
-tag-template: "$NEXT_TAG"
+name-template: "tokenjuice v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 change-title-escapes: '\<*_&'
+no-changes-template: "- No merged pull requests in this release."
 
 categories:
   - title: "Features"
@@ -115,7 +116,7 @@ autolabeler:
       - '/.*/'
 
 template: |
-  ## tokenjuice $NEXT_TAG
+  ## tokenjuice v$RESOLVED_VERSION
 
   lean output compaction for terminal-heavy agent workflows.
 

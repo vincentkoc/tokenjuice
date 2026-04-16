@@ -162,6 +162,9 @@ export function validateRule(raw: unknown): ValidationResult {
   if ("onEmpty" in raw) {
     validateSafeString(raw.onEmpty, "onEmpty", errors);
   }
+  if ("counterSource" in raw && raw.counterSource !== "postKeep" && raw.counterSource !== "preKeep") {
+    errors.push("counterSource must be one of: postKeep, preKeep");
+  }
   if ("priority" in raw && (typeof raw.priority !== "number" || !Number.isFinite(raw.priority))) {
     errors.push("priority must be a finite number");
   }

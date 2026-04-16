@@ -704,6 +704,10 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("tests/pytest");
     expect(result.inlineText).toContain("test_api.py::test_save FAILED");
     expect(result.inlineText).toContain("1 failed, 120 passed");
+    expect(result.facts).toEqual({
+      "failed test": 1,
+      "passed test": 120,
+    });
     expect(result.stats.ratio).toBeLessThan(0.2);
   });
 

@@ -2,6 +2,7 @@
   "id": "tests/pytest",
   "family": "test-results",
   "description": "Compact pytest output while preserving failures and final summary.",
+  "counterSource": "preKeep",
   "match": {
     "toolNames": ["exec"],
     "commandIncludes": ["pytest"]
@@ -16,8 +17,7 @@
       "^platform .+",
       "^rootdir: .+",
       "^plugins: .+",
-      "^collected \\d+ items$",
-      "^test.+ PASSED$"
+      "^collected \\d+ items$"
     ],
     "keepPatterns": [
       "^=+.+(failed|passed|error).+=+$",
@@ -42,12 +42,12 @@
   "counters": [
     {
       "name": "failed test",
-      "pattern": "FAILED",
+      "pattern": "^.+::.+ (FAILED|ERROR)$",
       "flags": "i"
     },
     {
       "name": "passed test",
-      "pattern": "PASSED",
+      "pattern": "^.+::.+ PASSED$",
       "flags": "i"
     }
   ]

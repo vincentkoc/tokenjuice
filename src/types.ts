@@ -67,6 +67,7 @@ export type JsonRule = {
   priority?: number;
   onEmpty?: string;
   matchOutput?: RuleOutputMatch[];
+  counterSource?: "postKeep" | "preKeep";
   match: RuleMatch;
   filters?: RuleFilters;
   transforms?: RuleTransforms;

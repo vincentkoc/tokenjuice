@@ -275,6 +275,8 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
     lines = lines.filter((line) => !compiledRule.compiled.skipPatterns.some((pattern) => pattern.test(line)));
   }
 
+  let counterLines = [...lines];
+
   if (rule.filters?.keepPatterns?.length) {
     const kept = lines.filter((line) => compiledRule.compiled.keepPatterns.some((pattern) => pattern.test(line)));
     if (kept.length > 0) {
@@ -283,23 +285,27 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
   }
 
   if (rule.transforms?.trimEmptyEdges) {
+    counterLines = trimEmptyEdges(counterLines);
     lines = trimEmptyEdges(lines);
   }
 
   if (rule.transforms?.dedupeAdjacent) {
+    counterLines = dedupeAdjacent(counterLines);
     lines = dedupeAdjacent(lines);
   }
 
   if (rule.id === "git/status") {
+    counterLines = rewriteGitStatusLines(counterLines);
     lines = rewriteGitStatusLines(lines);
   }
   if (rule.id === "cloud/gh") {
+    counterLines = rewriteGhLines(counterLines, input);
     lines = rewriteGhLines(lines, input);
   }
 
   for (const counter of compiledRule.compiled.counters) {
     const pattern = counter.pattern;
-    facts[counter.name] = lines.filter((line) => pattern.test(line)).length;
+    facts[counter.name] = (rule.counterSource === "preKeep" ? counterLines : lines).filter((line) => pattern.test(line)).length;
   }
 
   if (lines.length === 0 && rule.onEmpty) {

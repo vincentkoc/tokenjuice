@@ -11,7 +11,7 @@
     "matchedReducer": "tests/pytest",
     "family": "test-results",
     "facts": {
-      "failed test": 2,
+      "failed test": 1,
       "passed test": 1
     },
     "contains": ["failed test", "FAILED"]

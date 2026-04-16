@@ -21,6 +21,10 @@
       "type": "string",
       "minLength": 1
     },
+    "counterSource": {
+      "type": "string",
+      "enum": ["postKeep", "preKeep"]
+    },
     "matchOutput": {
       "type": "array",
       "items": {

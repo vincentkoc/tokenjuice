@@ -236,6 +236,29 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("lines omitted");
   });
 
+  it("does not generic-compact file inspection output", async () => {
+    const rawText = [
+      "{",
+      "  \"patterns\": [",
+      "    \"AssertionError\",",
+      "    \"TypeError\"",
+      "  ]",
+      "}",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "sed -n '1,80p' src/rules/search/rg.json",
+      argv: ["sed", "-n", "1,80p", "src/rules/search/rg.json"],
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
   it("matches pnpm test runs to the test reducer family", async () => {
     const result = await reduceExecution({
       toolName: "exec",

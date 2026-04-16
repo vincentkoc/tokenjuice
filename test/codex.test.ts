@@ -362,6 +362,33 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.matchedReducer).toBe("generic/fallback");
   });
 
+  it("skips auto-rewriting repository inspection commands", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "find src/rules -maxdepth 2 -type f | head -n 40",
+      },
+      tool_response: Array.from({ length: 40 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      matchedReducer?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("inspection-command");
+    expect(debug.matchedReducer).toBe("filesystem/find");
+  });
+
   it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;

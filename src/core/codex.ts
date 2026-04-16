@@ -3,7 +3,7 @@ import { access, mkdir, readFile, readdir, rename, stat, writeFile } from "node:
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
-import { isCompoundShellCommand } from "./command.js";
+import { isCompoundShellCommand, isRepositoryInspectionCommand } from "./command.js";
 import { reduceExecution } from "./reduce.js";
 
 import type { CompactResult, ReduceOptions } from "../types.js";
@@ -567,6 +567,10 @@ function shouldStoreFromEnv(): boolean {
 function getCodexRewriteSkipReason(command: string, combinedText: string, result: CompactResult): string | null {
   if (commandRequestsTokenjuiceRawBypass(command)) {
     return "explicit-raw-bypass";
+  }
+
+  if (isRepositoryInspectionCommand({ command })) {
+    return "inspection-command";
   }
 
   const inlineText = result.inlineText.trim();

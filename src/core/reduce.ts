@@ -1,6 +1,6 @@
 import { loadRules } from "./rules.js";
 import { classifyExecution, matchesRule } from "./classify.js";
-import { normalizeExecutionInput } from "./command.js";
+import { isFileContentInspectionCommand, normalizeExecutionInput } from "./command.js";
 import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
 
@@ -432,6 +432,34 @@ export async function reduceExecutionWithRules(
     return {
       inlineText: rawText,
       ...(rawRef ? { rawRef } : {}),
+      stats: {
+        rawChars: measuredRawChars,
+        reducedChars: measuredRawChars,
+        ratio: 1,
+      },
+      classification,
+    };
+  }
+
+  if (classification.matchedReducer === "generic/fallback" && isFileContentInspectionCommand(normalizedInput)) {
+    if (!opts.store && opts.recordStats) {
+      await storeArtifactMetadata(
+        {
+          input: normalizedInput,
+          rawText,
+          classification,
+          stats: {
+            rawChars: measuredRawChars,
+            reducedChars: measuredRawChars,
+            ratio: 1,
+          },
+        },
+        opts.storeDir,
+      );
+    }
+
+    return {
+      inlineText: rawText,
       stats: {
         rawChars: measuredRawChars,
         reducedChars: measuredRawChars,

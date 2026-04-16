@@ -409,8 +409,7 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
 
 function buildCodexHint(rawRefId?: string): string {
   const hints = [
-    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>`.",
-    "if the hook breaks, run `tokenjuice doctor codex`, then `tokenjuice install codex`.",
+    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>` or `tokenjuice wrap --full -- <command>`.",
   ];
   if (rawRefId) {
     hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);

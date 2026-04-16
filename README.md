@@ -73,7 +73,7 @@ tokenjuice cat <artifact-id>
 tokenjuice verify
 tokenjuice discover
 tokenjuice doctor
-tokenjuice doctor codex
+tokenjuice doctor hooks
 tokenjuice stats
 ```
 
@@ -99,7 +99,7 @@ for codex, the clean path is a home hook:
 
 ```bash
 tokenjuice install codex
-tokenjuice doctor codex
+tokenjuice doctor hooks
 ```
 
 that writes a `PostToolUse` hook into `~/.codex/hooks.json` so codex can compact noisy `Bash` output after the command runs.
@@ -108,7 +108,7 @@ for local repo verification, use:
 
 ```bash
 tokenjuice install codex --local
-tokenjuice doctor codex --local
+tokenjuice doctor hooks --local
 ```
 
 that pins the hook to the current repo build instead of the installed launcher on `PATH`.
@@ -118,8 +118,8 @@ important detail:
 - the original shell command still runs untouched
 - tokenjuice only rewrites the output that goes back through the hook
 - raw command execution logs are still raw
-- `tokenjuice doctor codex` checks whether the hook command is missing or pinned to a stale Homebrew Cellar path
-- `tokenjuice install codex --local` / `tokenjuice doctor codex --local` are for testing the current repo build before release
+- `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
+- `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 
 ## claude code
 
@@ -127,6 +127,7 @@ for claude code, the clean path is a home hook:
 
 ```bash
 tokenjuice install claude-code
+tokenjuice doctor hooks
 ```
 
 that writes a `PostToolUse` hook into `~/.claude/settings.json` under `hooks.PostToolUse` so claude code can compact noisy `Bash` output after the command runs.
@@ -150,8 +151,9 @@ tokenjuice wrap --full -- git status
 if the hook itself goes stale after a package upgrade, repair it with:
 
 ```bash
-tokenjuice doctor codex
+tokenjuice doctor hooks
 tokenjuice install codex
+tokenjuice install claude-code
 ```
 
 for machine callers, set:

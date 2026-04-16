@@ -45,7 +45,19 @@ export type InstallClaudeCodeHookResult = {
   command: string;
 };
 
+export type ClaudeCodeDoctorReport = {
+  settingsPath: string;
+  status: "ok" | "warn" | "broken";
+  issues: string[];
+  fixCommand: string;
+  expectedCommand: string;
+  detectedCommand?: string;
+  checkedPaths: string[];
+  missingPaths: string[];
+};
+
 const TOKENJUICE_CLAUDE_CODE_STATUS = "compacting bash output with tokenjuice";
+const TOKENJUICE_CLAUDE_CODE_FIX_COMMAND = "tokenjuice install claude-code";
 
 function getClaudeCodeHome(): string {
   return process.env.CLAUDE_HOME || join(homedir(), ".claude");
@@ -165,6 +177,98 @@ function isTokenjuiceClaudeCodeHook(group: ClaudeCodeHookMatcherGroup): boolean 
   );
 }
 
+function findTokenjuiceClaudeCodeHookCommand(config: ClaudeCodeSettings): string | undefined {
+  const postToolUse = Array.isArray(config.hooks.PostToolUse) ? config.hooks.PostToolUse : [];
+  for (const group of postToolUse) {
+    if (!(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceClaudeCodeHook(group as ClaudeCodeHookMatcherGroup))) {
+      continue;
+    }
+
+    const command = group.hooks.find((hook) =>
+      isRecord(hook)
+      && (
+        hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
+        || (typeof hook.command === "string" && hook.command.includes("claude-code-post-tool-use"))
+      ),
+    )?.command;
+    if (typeof command === "string" && command) {
+      return command;
+    }
+  }
+
+  return undefined;
+}
+
+function parseShellWords(command: string): string[] {
+  const words: string[] = [];
+  let current = "";
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+
+  for (const char of command) {
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+
+    if (/\s/u.test(char)) {
+      if (current) {
+        words.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    words.push(current);
+  }
+
+  return words;
+}
+
+function extractHookCommandPaths(command: string): string[] {
+  const argv = parseShellWords(command);
+  if (argv.length === 0) {
+    return [];
+  }
+
+  const paths = new Set<string>();
+  const first = argv[0];
+  if (first && (first.includes("/") || first.includes("\\"))) {
+    paths.add(first);
+  }
+
+  const second = argv[1];
+  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
+    paths.add(second);
+  }
+
+  return [...paths];
+}
+
 function sanitizeHooksSubtree(raw: unknown): Record<string, unknown> {
   return isRecord(raw) ? { ...raw } : {};
 }
@@ -196,6 +300,34 @@ async function loadClaudeCodeSettings(settingsPath: string): Promise<{ config: C
   }
 }
 
+async function readClaudeCodeSettings(settingsPath: string): Promise<{ config: ClaudeCodeSettings; exists: boolean }> {
+  try {
+    const rawText = await readFile(settingsPath, "utf8");
+    const parsed = JSON.parse(rawText) as unknown;
+    return {
+      config: sanitizeClaudeCodeSettings(parsed),
+      exists: true,
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        config: { hooks: {} },
+        exists: false,
+      };
+    }
+    throw new Error(`failed to read claude code settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function installClaudeCodeHook(settingsPath = getDefaultSettingsPath()): Promise<InstallClaudeCodeHookResult> {
   const { config, backupPath } = await loadClaudeCodeSettings(settingsPath);
   const command = await buildClaudeCodeHookCommand();
@@ -215,6 +347,67 @@ export async function installClaudeCodeHook(settingsPath = getDefaultSettingsPat
     settingsPath,
     ...(backupPath ? { backupPath } : {}),
     command,
+  };
+}
+
+export async function doctorClaudeCodeHook(settingsPath = getDefaultSettingsPath()): Promise<ClaudeCodeDoctorReport> {
+  const expectedCommand = await buildClaudeCodeHookCommand();
+  const { config, exists } = await readClaudeCodeSettings(settingsPath);
+  const detectedCommand = findTokenjuiceClaudeCodeHookCommand(config);
+
+  if (!exists) {
+    return {
+      settingsPath,
+      status: "warn",
+      issues: ["claude code settings.json is missing"],
+      fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+      expectedCommand,
+      checkedPaths: [],
+      missingPaths: [],
+    };
+  }
+
+  if (!detectedCommand) {
+    return {
+      settingsPath,
+      status: "warn",
+      issues: ["tokenjuice PostToolUse hook is not installed for Claude Code"],
+      fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+      expectedCommand,
+      checkedPaths: [],
+      missingPaths: [],
+    };
+  }
+
+  const checkedPaths = extractHookCommandPaths(detectedCommand);
+  const missingPaths: string[] = [];
+  for (const path of checkedPaths) {
+    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
+      missingPaths.push(path);
+    }
+  }
+
+  const issues: string[] = [];
+  if (detectedCommand !== expectedCommand) {
+    if (detectedCommand.includes("/Cellar/")) {
+      issues.push("configured Claude Code hook is pinned to a versioned Homebrew Cellar path");
+    } else {
+      issues.push("configured Claude Code hook command does not match the current recommended command");
+    }
+  }
+  if (missingPaths.length > 0) {
+    issues.push(`configured Claude Code hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
+  }
+
+  return {
+    settingsPath,
+    status: missingPaths.length > 0 ? "broken" : issues.length > 0 ? "warn" : "ok",
+    issues,
+    fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+    expectedCommand,
+    detectedCommand,
+    checkedPaths,
+    missingPaths,
   };
 }
 
@@ -257,6 +450,16 @@ function getClaudeCodeRewriteSkipReason(command: string, combinedText: string, r
   }
 
   return null;
+}
+
+function buildClaudeCodeHint(rawRefId?: string): string {
+  const hints = [
+    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>` or `tokenjuice wrap --full -- <command>`.",
+  ];
+  if (rawRefId) {
+    hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);
+  }
+  return hints.join(" ");
 }
 
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
@@ -336,13 +539,11 @@ export async function runClaudeCodePostToolUseHook(rawText: string): Promise<num
     const hookOutput: Record<string, unknown> = {
       decision: "block",
       reason: result.inlineText,
-    };
-    if (result.rawRef?.id) {
-      hookOutput.hookSpecificOutput = {
+      hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: `tokenjuice stored raw bash output as artifact ${result.rawRef.id}. use \`tokenjuice cat ${result.rawRef.id}\` only if the compacted output is insufficient.`,
-      };
-    }
+        additionalContext: buildClaudeCodeHint(result.rawRef?.id),
+      },
+    };
 
     process.stdout.write(`${JSON.stringify(hookOutput)}\n`);
     await writeHookDebug({ ...debug, rewrote: true });

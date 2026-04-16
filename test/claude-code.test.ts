@@ -4,13 +4,14 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../src/index.js";
+import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, runClaudeCodePostToolUseHook } from "../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 
 afterEach(async () => {
   delete process.env.CLAUDE_HOME;
+  delete process.env.CODEX_HOME;
   process.env.PATH = originalPath;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -290,6 +291,82 @@ describe("installClaudeCodeHook", () => {
   });
 });
 
+describe("doctorClaudeCodeHook", () => {
+  it("reports a healthy installed launcher hook", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installClaudeCodeHook(settingsPath);
+
+    const report = await doctorClaudeCodeHook(settingsPath);
+
+    expect(report.status).toBe("ok");
+    expect(report.detectedCommand).toBe(`${launcherPath} claude-code-post-tool-use`);
+    expect(report.issues).toEqual([]);
+  });
+
+  it("flags stale Homebrew Cellar hook commands as broken", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const staleCommand = `${process.execPath} /opt/homebrew/Cellar/tokenjuice/0.2.0/libexec/dist/cli/main.js claude-code-post-tool-use`;
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{ type: "command", command: staleCommand, statusMessage: "compacting bash output with tokenjuice" }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorClaudeCodeHook(settingsPath);
+
+    expect(report.status).toBe("broken");
+    expect(report.detectedCommand).toBe(staleCommand);
+    expect(report.issues).toContain("configured Claude Code hook is pinned to a versioned Homebrew Cellar path");
+    expect(report.missingPaths).toContain("/opt/homebrew/Cellar/tokenjuice/0.2.0/libexec/dist/cli/main.js");
+    expect(report.fixCommand).toBe("tokenjuice install claude-code");
+  });
+});
+
+describe("doctorInstalledHooks", () => {
+  it("reports codex and claude-code health together", async () => {
+    const home = await createTempDir();
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    process.env.CODEX_HOME = home;
+    process.env.CLAUDE_HOME = home;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installCodexHook(join(home, "hooks.json"));
+    await installClaudeCodeHook(join(home, "settings.json"));
+
+    const report = await doctorInstalledHooks();
+
+    expect(report.status).toBe("ok");
+    expect(report.integrations.codex.status).toBe("ok");
+    expect(report.integrations["claude-code"].status).toBe("ok");
+  });
+});
+
 describe("runClaudeCodePostToolUseHook", () => {
   it("writes a block/reason decision on compactable bash output", async () => {
     const home = await createTempDir();
@@ -315,7 +392,11 @@ describe("runClaudeCodePostToolUseHook", () => {
     });
 
     const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
-    const response = JSON.parse(output) as { decision: string; reason: string };
+    const response = JSON.parse(output) as {
+      decision: string;
+      reason: string;
+      hookSpecificOutput?: { additionalContext?: string };
+    };
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       matchedReducer?: string;
@@ -326,6 +407,8 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(response.reason).toContain("Changes not staged:");
     expect(response.reason).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
     expect(response.reason).not.toContain("and have 8 and 642");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
   });

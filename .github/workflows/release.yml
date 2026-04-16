@@ -46,7 +46,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
@@ -145,17 +145,31 @@ jobs:
           TARGET="${CLOUDSMITH_REPO}/${DISTRO}/${RELEASE}"
           cloudsmith push rpm "${TARGET}" "release/tokenjuice-${RELEASE_VERSION}-1.noarch.rpm" --no-wait-for-sync
 
-      - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+      - name: Publish release from Release Drafter
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          draft: false
-          files: |
-            release/tokenjuice-v*.tar.gz
-            release/tokenjuice_*.deb
-            release/tokenjuice-*.rpm
-            release/sha256sums.txt
-            release/Formula/tokenjuice.rb
+          publish: true
+          tag: ${{ env.RELEASE_TAG }}
+          version: ${{ env.RELEASE_VERSION }}
+          name: "tokenjuice ${{ env.RELEASE_TAG }}"
+          prerelease: ${{ contains(env.RELEASE_TAG, 'beta') || contains(env.RELEASE_TAG, 'alpha') || contains(env.RELEASE_TAG, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${RELEASE_TAG}" \
+            release/tokenjuice-v*.tar.gz \
+            release/tokenjuice_*.deb \
+            release/tokenjuice-*.rpm \
+            release/sha256sums.txt \
+            release/Formula/tokenjuice.rb \
+            --clobber
 
       - name: Publish npm package
-        run: npm publish
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm publish --provenance --access public

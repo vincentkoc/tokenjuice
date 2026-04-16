@@ -262,6 +262,15 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
     lines = normalizeLines(stripAnsi(lines.join("\n")));
   }
 
+  const outputMatchText = trimEmptyEdges(lines).join("\n");
+  const matchedOutput = compiledRule.compiled.outputMatches.find((entry) => entry.pattern.test(outputMatchText));
+  if (matchedOutput) {
+    return {
+      summary: matchedOutput.message,
+      facts,
+    };
+  }
+
   if (rule.filters?.skipPatterns?.length) {
     lines = lines.filter((line) => !compiledRule.compiled.skipPatterns.some((pattern) => pattern.test(line)));
   }

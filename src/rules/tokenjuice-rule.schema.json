@@ -21,6 +21,27 @@
       "type": "string",
       "minLength": 1
     },
+    "matchOutput": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pattern", "message"],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "flags": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "priority": {
       "type": "number"
     },

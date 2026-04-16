@@ -3,6 +3,13 @@
   "family": "dependency-install",
   "description": "Compact npm install output while preserving warnings and audit summaries.",
   "onEmpty": "npm install: ok",
+  "matchOutput": [
+    {
+      "pattern": "up to date, audited \\d+ package",
+      "message": "npm install: up to date",
+      "flags": "i"
+    }
+  ],
   "match": {
     "toolNames": ["exec"],
     "argv0": ["npm"],

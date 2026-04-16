@@ -23,6 +23,12 @@ export type RuleCounter = {
   flags?: string;
 };
 
+export type RuleOutputMatch = {
+  pattern: string;
+  message: string;
+  flags?: string;
+};
+
 export type RuleMatch = {
   toolNames?: string[];
   argv0?: string[];
@@ -60,6 +66,7 @@ export type JsonRule = {
   description?: string;
   priority?: number;
   onEmpty?: string;
+  matchOutput?: RuleOutputMatch[];
   match: RuleMatch;
   filters?: RuleFilters;
   transforms?: RuleTransforms;
@@ -80,6 +87,10 @@ export type CompiledRule = {
     counters: Array<{
       name: string;
       pattern: RegExp;
+    }>;
+    outputMatches: Array<{
+      pattern: RegExp;
+      message: string;
     }>;
   };
 };

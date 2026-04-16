@@ -356,6 +356,49 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toBe("custom: ok");
   });
 
+  it("supports rule-level matchOutput short-circuits before summarization", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "tokenjuice-match-output-"));
+    tempDirs.push(cwd);
+    const rulesDir = join(cwd, ".tokenjuice", "rules", "custom");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "match-output.json"),
+      JSON.stringify({
+        id: "custom/match-output",
+        family: "custom",
+        match: {
+          argv0: ["custom-tool"],
+        },
+        matchOutput: [
+          {
+            pattern: "All checks passed",
+            message: "custom: checks passed",
+          },
+        ],
+        summarize: {
+          head: 1,
+          tail: 1,
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      argv: ["custom-tool", "check"],
+      combinedText: [
+        "Preparing workspace...",
+        "All checks passed in 42ms",
+        "Additional verbose line that should never matter",
+      ].join("\n"),
+      exitCode: 0,
+    }, { cwd });
+
+    expect(result.classification.matchedReducer).toBe("custom/match-output");
+    expect(result.inlineText).toBe("custom: checks passed");
+  });
+
   it("uses builtin onEmpty for notice-only npm install output", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -370,6 +413,19 @@ describe("reduceExecution", () => {
 
     expect(result.classification.matchedReducer).toBe("install/npm-install");
     expect(result.inlineText).toBe("npm install: ok");
+  });
+
+  it("uses builtin matchOutput for up-to-date npm install output", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "npm install",
+      argv: ["npm", "install"],
+      combinedText: "up to date, audited 42 packages in 612ms\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("install/npm-install");
+    expect(result.inlineText).toBe("npm install: up to date");
   });
 
   it("does not prepend awkward pass counters for clean test output", async () => {

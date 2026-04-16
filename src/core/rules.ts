@@ -51,6 +51,10 @@ function compileRule(descriptor: RuleDescriptor): CompiledRule {
         name: counter.name,
         pattern: new RegExp(counter.pattern, mergeRegexFlags(counter.flags)),
       })),
+      outputMatches: (descriptor.rule.matchOutput ?? []).map((entry) => ({
+        pattern: new RegExp(entry.pattern, mergeRegexFlags(entry.flags)),
+        message: entry.message,
+      })),
     },
   };
 }

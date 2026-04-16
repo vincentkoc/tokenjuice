@@ -1,4 +1,4 @@
-import type { JsonRule, RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleSummarize, RuleTransforms } from "../types.js";
+import type { JsonRule, RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleOutputMatch, RuleSummarize, RuleTransforms } from "../types.js";
 
 type ValidationResult = {
   ok: true;
@@ -79,6 +79,20 @@ function validateCounter(value: unknown, path: string): string[] {
   const errors: string[] = [];
   validateSafeString(value.name, `${path}.name`, errors);
   validateSafeString(value.pattern, `${path}.pattern`, errors);
+  if ("flags" in value) {
+    validateSafeString(value.flags, `${path}.flags`, errors, { allowEmpty: true });
+  }
+  return errors;
+}
+
+function validateOutputMatch(value: unknown, path: string): string[] {
+  if (!isRecord(value)) {
+    return [`${path} must be an object`];
+  }
+
+  const errors: string[] = [];
+  validateSafeString(value.pattern, `${path}.pattern`, errors);
+  validateSafeString(value.message, `${path}.message`, errors);
   if ("flags" in value) {
     validateSafeString(value.flags, `${path}.flags`, errors, { allowEmpty: true });
   }
@@ -182,6 +196,15 @@ export function validateRule(raw: unknown): ValidationResult {
       });
     }
   }
+  if ("matchOutput" in raw) {
+    if (!Array.isArray(raw.matchOutput)) {
+      errors.push("matchOutput must be an array");
+    } else {
+      raw.matchOutput.forEach((entry, index) => {
+        errors.push(...validateOutputMatch(entry, `matchOutput[${index}]`));
+      });
+    }
+  }
 
   if (errors.length > 0) {
     return {
@@ -200,4 +223,4 @@ export function assertValidRule(raw: unknown): asserts raw is JsonRule {
   }
 }
 
-export type { RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleSummarize, RuleTransforms };
+export type { RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleOutputMatch, RuleSummarize, RuleTransforms };

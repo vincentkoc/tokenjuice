@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vincentkoc/tokenjuice"
+    "url": "git+https://github.com/vincentkoc/tokenjuice.git"
   },
   "license": "MIT",
   "type": "module",

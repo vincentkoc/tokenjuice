@@ -700,8 +700,11 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
 
     const rawChars = result.stats.rawChars;
     const reducedChars = result.stats.reducedChars;
+    const savedChars = rawChars - reducedChars;
     debug.rawChars = rawChars;
     debug.reducedChars = reducedChars;
+    debug.savedChars = savedChars;
+    debug.ratio = result.stats.ratio;
     debug.matchedReducer = result.classification.matchedReducer;
 
     const skipReason = getCodexRewriteSkipReason(command, combinedText, result);

@@ -382,6 +382,8 @@ describe("runCodexPostToolUseHook", () => {
       matchedReducer?: string;
       rawChars?: number;
       reducedChars?: number;
+      savedChars?: number;
+      ratio?: number;
     };
 
     expect(code).toBe(0);
@@ -391,6 +393,8 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.matchedReducer).toBe("git/status");
     expect(debug.rawChars).toBe(21);
     expect(debug.reducedChars).toBe(20);
+    expect(debug.savedChars).toBe(1);
+    expect(debug.ratio).toBeCloseTo(20 / 21, 5);
   });
 
   it("skips auto-rewriting repository inspection commands", async () => {
@@ -558,6 +562,8 @@ describe("runCodexPostToolUseHook", () => {
       rewrote?: boolean;
       tokenjuiceVersion?: string;
       hookCommandPath?: string;
+      savedChars?: number;
+      ratio?: number;
     });
 
     expect(last.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -573,7 +579,10 @@ describe("runCodexPostToolUseHook", () => {
     expect(history[0]?.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(history[0]?.skipped).toBe("inspection-command");
     expect(history[0]?.tokenjuiceVersion).toBe("0.3.4");
+    expect(history[0]?.savedChars).toBe(0);
+    expect(history[0]?.ratio).toBe(1);
     expect(history[1]?.rewrote).toBe(false);
     expect(history[1]?.skipped).toBe("low-savings-compaction");
+    expect(history[1]?.savedChars).toBe(1);
   });
 });

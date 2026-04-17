@@ -43,8 +43,15 @@ export async function showTokenjuiceStatusPanel(
   await ctx.ui.custom(
     (_tui, theme, _keybindings, done) => ({
       render(width: number) {
-        const panelWidth = Math.max(44, Math.min(width, 68));
-        const innerWidth = Math.max(38, panelWidth - 4);
+        const panelWidth = Math.max(0, Math.min(width, 68));
+        if (panelWidth === 0) {
+          return [];
+        }
+        if (panelWidth < 4) {
+          return [truncateToWidth("tokenjuice", panelWidth)];
+        }
+
+        const innerWidth = panelWidth - 4;
         const lines = [
           theme.fg("accent", "tokenjuice"),
           "",
@@ -71,7 +78,7 @@ export async function showTokenjuiceStatusPanel(
         const border = theme.fg("dim", `┌${"─".repeat(innerWidth + 2)}┐`);
         const footer = theme.fg("dim", `└${"─".repeat(innerWidth + 2)}┘`);
         const boxedLines = lines.map((content) => `${theme.fg("dim", "│")} ${padToWidth(content, innerWidth)} ${theme.fg("dim", "│")}`);
-        return [border, ...boxedLines, footer];
+        return [border, ...boxedLines, footer].map((renderedLine) => truncateToWidth(renderedLine, panelWidth));
       },
       handleInput(data: string) {
         if (data === "\r" || data === "\n" || data === "q" || data === "\u001b") {

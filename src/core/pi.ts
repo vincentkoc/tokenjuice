@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -44,6 +44,24 @@ export default createTokenjuicePiExtension(config);
 `;
 }
 
+async function resolvePiRuntimeEntryPoint(): Promise<string> {
+  const candidates = [
+    fileURLToPath(new URL("../pi-extension/runtime.ts", import.meta.url)),
+    fileURLToPath(new URL("../../src/pi-extension/runtime.ts", import.meta.url)),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return candidate;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(`unable to resolve pi runtime source entrypoint from ${candidates.join(", ")}`);
+}
+
 async function bundlePiExtensionRuntimeSource(): Promise<string> {
   let esbuild;
   try {
@@ -52,7 +70,7 @@ async function bundlePiExtensionRuntimeSource(): Promise<string> {
     throw new Error(`unable to load esbuild to bundle the pi runtime from source: ${String(error)}`);
   }
 
-  const entryPoint = fileURLToPath(new URL("../pi-extension/runtime.ts", import.meta.url));
+  const entryPoint = await resolvePiRuntimeEntryPoint();
   const result = await esbuild.build({
     entryPoints: [entryPoint],
     bundle: true,
@@ -70,7 +88,11 @@ async function bundlePiExtensionRuntimeSource(): Promise<string> {
   return runtimeSource;
 }
 
-async function loadPiExtensionRuntimeSource(): Promise<string> {
+async function loadPiExtensionRuntimeSource(local = false): Promise<string> {
+  if (local) {
+    return await bundlePiExtensionRuntimeSource();
+  }
+
   const runtimeAssetUrl = new URL("../pi-extension/runtime.js", import.meta.url);
 
   try {
@@ -105,11 +127,10 @@ export async function installPiExtension(
   extensionPath = getDefaultExtensionPath(),
   options: PiExtensionCommandOptions = {},
 ): Promise<InstallPiExtensionResult> {
-  void options;
   const runtimeConfig: PiExtensionRuntimeConfig = {
     extensionCommand: TOKENJUICE_PI_EXTENSION_COMMAND,
   };
-  const runtimeSource = await loadPiExtensionRuntimeSource();
+  const runtimeSource = await loadPiExtensionRuntimeSource(Boolean(options.local));
   const extensionSource = buildPiExtensionSource(runtimeSource, runtimeConfig);
 
   await mkdir(dirname(extensionPath), { recursive: true });

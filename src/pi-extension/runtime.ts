@@ -145,6 +145,11 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
 
       refreshState(ctx);
 
+      const shouldBypass = bypassNext;
+      if (shouldBypass) {
+        bypassNext = false;
+      }
+
       const command = isRecord(event.input) && typeof event.input.command === "string"
         ? event.input.command
         : "";
@@ -158,8 +163,7 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
       }
 
       const fullOutputPath = extractFullOutputPath(event.details);
-      if (bypassNext) {
-        bypassNext = false;
+      if (shouldBypass) {
         const bypassText = fullOutputPath ? await loadFullOutputText(fullOutputPath) : null;
         return {
           content: [{ type: "text", text: `${bypassText ?? outputText}\n\n[${buildBypassNotice(fullOutputPath)}]` }],

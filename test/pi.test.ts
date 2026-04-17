@@ -27,7 +27,9 @@ async function createTempDir(): Promise<string> {
   return dir;
 }
 
-async function readOptional(path: string): Promise<string | undefined> {
+const SOURCE_RUNTIME_ASSET_PATH = new URL("../src/pi-extension/runtime.js", import.meta.url);
+
+async function readOptional(path: string | URL): Promise<string | undefined> {
   try {
     return await readFile(path, "utf8");
   } catch (error) {
@@ -154,6 +156,35 @@ describe("installPiExtension", () => {
     expect(await readOptional(legacyRuntimePath)).toBeUndefined();
   });
 
+  it("prefers the source runtime bundle for local pi installs", async () => {
+    const home = await createTempDir();
+    const extensionPath = join(home, "tokenjuice.js");
+    const originalRuntimeAsset = await readOptional(SOURCE_RUNTIME_ASSET_PATH);
+
+    await writeFile(
+      SOURCE_RUNTIME_ASSET_PATH,
+      `export function createTokenjuicePiExtension() { return function tokenjuicePiExtension() {} }\nexport const STALE_RUNTIME_MARKER = "stale-runtime-asset";\n`,
+      "utf8",
+    );
+
+    try {
+      await installPiExtension(extensionPath);
+      const bundledAssetInstall = await readFile(extensionPath, "utf8");
+      expect(bundledAssetInstall).toContain("STALE_RUNTIME_MARKER");
+
+      await installPiExtension(extensionPath, { local: true });
+      const localInstall = await readFile(extensionPath, "utf8");
+      expect(localInstall).not.toContain("STALE_RUNTIME_MARKER");
+      expect(localInstall).toContain("createTokenjuicePiExtension");
+    } finally {
+      if (originalRuntimeAsset === undefined) {
+        await rm(SOURCE_RUNTIME_ASSET_PATH, { force: true });
+      } else {
+        await writeFile(SOURCE_RUNTIME_ASSET_PATH, originalRuntimeAsset, "utf8");
+      }
+    }
+  });
+
   it("installs a parseable local pi extension without footer wiring", async () => {
     const home = await createTempDir();
     const extensionPath = join(home, "tokenjuice.js");
@@ -181,6 +212,48 @@ describe("installPiExtension", () => {
 
     const imported = await import(pathToFileURL(extensionPath).href);
     expect(typeof imported.default).toBe("function");
+  });
+
+  it("keeps /tj status panel lines within the requested width", async () => {
+    const home = await createTempDir();
+    const { handlers } = await installLocalTestExtension(
+      home,
+      "process.stdout.write('{}');\n",
+    );
+
+    let renderedLines: string[] = [];
+    const fakeCtx = {
+      cwd: home,
+      hasUI: true,
+      sessionManager: {
+        getBranch: () => [],
+        getEntries: () => [],
+        getCwd: () => home,
+        getSessionName: () => undefined,
+      },
+      ui: {
+        async custom(factory: Function) {
+          const component = factory(
+            { requestRender() {} },
+            {
+              fg(_name: string, text: string) {
+                return text;
+              },
+            },
+            {},
+            () => {},
+          );
+          renderedLines = component.render(20);
+          return undefined;
+        },
+        notify() {},
+      },
+    };
+
+    await handlers.get("command:tj")?.("status", fakeCtx);
+
+    expect(renderedLines.length).toBeGreaterThan(0);
+    expect(renderedLines.every((entry) => entry.length <= 20)).toBe(true);
   });
 
   it("opens a TUI status panel for /tj status when UI is available", async () => {
@@ -396,6 +469,103 @@ describe("installPiExtension", () => {
         fakeCtx,
       ),
     ).resolves.toBeUndefined();
+  });
+
+  it("consumes /tj raw-next on the immediately following empty-output bash result", async () => {
+    const home = await createTempDir();
+    const { handlers, fakeCtx } = await installLocalTestExtension(
+      home,
+      "process.stdout.write('{}');\n",
+    );
+
+    await handlers.get("command:tj")?.("raw-next", fakeCtx);
+
+    const emptyResult = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "true" },
+        content: [{ type: "text", text: "" }],
+        details: {},
+      },
+      fakeCtx,
+    );
+
+    expect(emptyResult).toBeUndefined();
+
+    const nextResult = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "git status" },
+        content: [{
+          type: "text",
+          text: [
+            "On branch feat/pi-extension",
+            "",
+            "Changes not staged for commit:",
+            "\tmodified:   src/pi-extension/runtime.ts",
+            "\tmodified:   src/core/pi.ts",
+            "",
+            "no changes added to commit",
+          ].join("\n"),
+        }],
+        details: {},
+      },
+      fakeCtx,
+    );
+
+    expect(nextResult?.content[0].text).toContain("tokenjuice compacted bash output");
+    expect(nextResult?.content[0].text).not.toContain("tokenjuice bypassed compaction");
+  });
+
+  it("consumes /tj raw-next even when compaction is disabled for the next command", async () => {
+    const home = await createTempDir();
+    const { handlers, fakeCtx } = await installLocalTestExtension(
+      home,
+      "process.stdout.write('{}');\n",
+      {
+        agentSettings: { compaction: { enabled: false } },
+      },
+    );
+
+    await handlers.get("command:tj")?.("raw-next", fakeCtx);
+
+    const disabledResult = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "printf 'hello'" },
+        content: [{ type: "text", text: "hello" }],
+        details: {},
+      },
+      fakeCtx,
+    );
+
+    expect(disabledResult).toBeUndefined();
+
+    await writeFile(join(home, ".pi-agent", "settings.json"), JSON.stringify({ compaction: { enabled: true } }), "utf8");
+
+    const nextResult = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "git status" },
+        content: [{
+          type: "text",
+          text: [
+            "On branch feat/pi-extension",
+            "",
+            "Changes not staged for commit:",
+            "\tmodified:   src/pi-extension/runtime.ts",
+            "\tmodified:   src/core/pi.ts",
+            "",
+            "no changes added to commit",
+          ].join("\n"),
+        }],
+        details: {},
+      },
+      fakeCtx,
+    );
+
+    expect(nextResult?.content[0].text).toContain("tokenjuice compacted bash output");
+    expect(nextResult?.content[0].text).not.toContain("tokenjuice bypassed compaction");
   });
 
   it("returns the trusted full output file for /tj raw-next", async () => {

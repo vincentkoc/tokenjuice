@@ -14,9 +14,8 @@
       "^\\s*\"stopReason\":",
       "^\\s*\"responseId\":",
       "^\\s*\"__openclaw\":",
+      "^\\s*\"id\": \"[a-f0-9]{8}\"\\s*,?\\s*$",
       "^\\s*\"seq\":",
-      "^\\s*\"sourceTool\":",
-      "^\\s*\"sourceSessionKey\":",
       "^\\s*\"contentTruncated\":",
       "^\\s*\"contentRedacted\":",
       "^\\s*\"droppedMessages\":",
@@ -32,6 +31,7 @@
     ]
   },
   "transforms": {
+    "prettyPrintJson": true,
     "dedupeAdjacent": true,
     "trimEmptyEdges": true
   },

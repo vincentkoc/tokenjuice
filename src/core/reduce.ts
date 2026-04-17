@@ -253,8 +253,29 @@ function buildRawText(input: ToolExecutionInput): string {
   return `${stdout}\n${stderr}`;
 }
 
+function prettyPrintJsonIfPossible(text: string): string {
+  const trimmed = text.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+    return text;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (typeof parsed === "object" && parsed !== null) {
+      return JSON.stringify(parsed, null, 2);
+    }
+  } catch {
+    return text;
+  }
+
+  return text;
+}
+
 function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawText: string): { summary: string; facts: Record<string, number> } {
   const rule = compiledRule.rule;
+  if (rule.transforms?.prettyPrintJson) {
+    rawText = prettyPrintJsonIfPossible(rawText);
+  }
   let lines = normalizeLines(rawText);
   const facts: Record<string, number> = {};
 

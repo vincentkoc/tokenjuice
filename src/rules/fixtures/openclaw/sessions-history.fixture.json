@@ -14,6 +14,8 @@
       "agent:john:main",
       "Task complete. All tests passing",
       "Sprint 5B status: READY_FOR_ELI",
+      "sourceSessionKey",
+      "sourceTool",
       "role",
       "timestamp"
     ],
@@ -22,6 +24,8 @@
       "gpt-5.4",
       "resp_0f53cb2184",
       "__openclaw",
+      "\"id\": \"39b8bd8e\"",
+      "\"id\": \"88b5e984\"",
       "\"seq\":",
       "Let me check the current sprint state"
     ]

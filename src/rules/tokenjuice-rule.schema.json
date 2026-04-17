@@ -104,6 +104,7 @@
       "additionalProperties": false,
       "properties": {
         "stripAnsi": { "type": "boolean" },
+        "prettyPrintJson": { "type": "boolean" },
         "dedupeAdjacent": { "type": "boolean" },
         "trimEmptyEdges": { "type": "boolean" }
       }

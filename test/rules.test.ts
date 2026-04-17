@@ -102,6 +102,7 @@ describe("rules", () => {
       "observability/iostat",
       "observability/top",
       "observability/vmstat",
+      "openclaw/sessions-history",
       "package/apt-install",
       "package/apt-upgrade",
       "package/brew-install",
@@ -152,7 +153,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(100);
+    expect(fixtures).toHaveLength(101);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

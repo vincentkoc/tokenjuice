@@ -100,7 +100,7 @@ direct payload:
 
 ## overview
 
-tokenjuice can install native host hooks for:
+tokenjuice can install host integrations for:
 
 | Logo | Client | Install | Hook file | Supported |
 | --- | --- | --- | --- | --- |

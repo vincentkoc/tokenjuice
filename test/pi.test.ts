@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { installPiExtension } from "../src/index.js";
+import { doctorPiExtension, installPiExtension } from "../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -112,6 +112,18 @@ async function installLocalTestExtension(
 }
 
 describe("installPiExtension", () => {
+  it("reports a disabled pi integration when no extension is installed", async () => {
+    const home = await createTempDir();
+    const agentDir = join(home, ".pi-agent");
+
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+    const report = await doctorPiExtension();
+
+    expect(report.status).toBe("disabled");
+    expect(report.extensionPath).toBe(join(agentDir, "extensions", "tokenjuice.js"));
+    expect(report.issues).toEqual([]);
+  });
+
   it("installs a single-file pi extension using a stable launcher from PATH", async () => {
     const home = await createTempDir();
     const agentDir = join(home, ".pi-agent");
@@ -368,6 +380,20 @@ describe("installPiExtension", () => {
 
     expect(result.backupPath).toBe(`${extensionPath}.bak`);
     expect(await readFile(`${extensionPath}.bak`, "utf8")).toBe("// old extension\n");
+  });
+
+  it("reports an installed pi extension as healthy", async () => {
+    const home = await createTempDir();
+    const agentDir = join(home, ".pi-agent");
+
+    process.env.PI_CODING_AGENT_DIR = agentDir;
+    await installPiExtension(undefined, { local: true });
+
+    const report = await doctorPiExtension();
+
+    expect(report.status).toBe("ok");
+    expect(report.extensionPath).toBe(join(agentDir, "extensions", "tokenjuice.js"));
+    expect(report.issues).toEqual([]);
   });
 
   it("compacts bash output without invoking the configured reduce-json subprocess", async () => {

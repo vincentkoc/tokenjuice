@@ -1,14 +1,17 @@
 import { doctorClaudeCodeHook } from "./claude-code.js";
 import { doctorCodexHook } from "./codex.js";
+import { doctorPiExtension } from "./pi.js";
 
 import type { ClaudeCodeDoctorReport } from "./claude-code.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "./codex.js";
+import type { PiDoctorReport } from "./pi.js";
 
 type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   codex: CodexDoctorReport;
   "claude-code": ClaudeCodeDoctorReport;
+  pi: PiDoctorReport;
 };
 
 export type HookDoctorReport = {
@@ -35,12 +38,14 @@ function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealt
 export async function doctorInstalledHooks(codexOptions: CodexHookCommandOptions = {}): Promise<HookDoctorReport> {
   const codex = await doctorCodexHook(undefined, codexOptions);
   const claudeCode = await doctorClaudeCodeHook();
+  const pi = await doctorPiExtension();
 
   return {
-    status: mergeStatus(codex.status, claudeCode.status),
+    status: mergeStatus(mergeStatus(codex.status, claudeCode.status), pi.status),
     integrations: {
       codex,
       "claude-code": claudeCode,
+      pi,
     },
   };
 }

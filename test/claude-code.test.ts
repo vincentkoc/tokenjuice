@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, runClaudeCodePostToolUseHook } from "../src/index.js";
+import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installPiExtension, runClaudeCodePostToolUseHook } from "../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -12,6 +12,7 @@ const originalPath = process.env.PATH;
 afterEach(async () => {
   delete process.env.CLAUDE_HOME;
   delete process.env.CODEX_HOME;
+  delete process.env.PI_CODING_AGENT_DIR;
   process.env.PATH = originalPath;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -354,16 +355,19 @@ describe("doctorInstalledHooks", () => {
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
     await installCodexHook(join(home, "hooks.json"));
     await installClaudeCodeHook(join(home, "settings.json"));
+    await installPiExtension(undefined, { local: true });
 
     const report = await doctorInstalledHooks();
 
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("ok");
     expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.pi.status).toBe("ok");
   });
 
   it("treats a disabled Codex hook as disabled instead of warn", async () => {
@@ -374,6 +378,7 @@ describe("doctorInstalledHooks", () => {
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
     await writeFile(
@@ -390,12 +395,14 @@ describe("doctorInstalledHooks", () => {
       "utf8",
     );
     await installClaudeCodeHook(join(home, "settings.json"));
+    await installPiExtension(undefined, { local: true });
 
     const report = await doctorInstalledHooks();
 
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("disabled");
     expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.pi.status).toBe("ok");
   });
 });
 

@@ -79,6 +79,7 @@ tokenjuice verify
 tokenjuice discover
 tokenjuice doctor
 tokenjuice doctor hooks
+tokenjuice doctor pi
 tokenjuice stats
 ```
 
@@ -114,6 +115,7 @@ shared behavior:
 - tokenjuice only rewrites the output that goes back through the hook or extension
 - raw command execution logs are still raw
 - `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
+- `tokenjuice doctor pi` inspects the installed Pi extension directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
@@ -134,8 +136,10 @@ if the hook itself goes stale after a package upgrade, repair it with:
 
 ```bash
 tokenjuice doctor hooks
+tokenjuice doctor pi
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install pi
 ```
 
 for machine callers, set:

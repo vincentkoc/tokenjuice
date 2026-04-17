@@ -5,7 +5,7 @@ export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHo
 export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "./core/codex.js";
 export { doctorInstalledHooks } from "./core/hook-doctor.js";
-export { installPiExtension } from "./core/pi.js";
+export { doctorPiExtension, installPiExtension } from "./core/pi.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
@@ -32,4 +32,4 @@ export type {
   WrapOptions,
   WrapResult,
 } from "./types.js";
-export type { InstallPiExtensionResult, PiExtensionCommandOptions } from "./core/pi.js";
+export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./core/pi.js";

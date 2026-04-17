@@ -424,6 +424,36 @@ function shouldStoreFromEnv(): boolean {
   return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
 }
 
+function commandRequestsTokenjuiceRawBypass(command: string): boolean {
+  const argv = parseShellWords(command);
+  if (argv.length < 3) {
+    return false;
+  }
+
+  const first = argv[0];
+  const second = argv[1];
+  let wrapIndex = -1;
+  if (first === "tokenjuice") {
+    wrapIndex = 1;
+  } else if (
+    typeof first === "string"
+    && first.endsWith("/node")
+    && typeof second === "string"
+    && second.endsWith(".js")
+    && argv.slice(1).some((part) => part.includes("tokenjuice"))
+  ) {
+    wrapIndex = 2;
+  }
+
+  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
+    return false;
+  }
+
+  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
+  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex === -1 ? undefined : optionEndIndex);
+  return optionArgs.includes("--raw") || optionArgs.includes("--full");
+}
+
 function buildClaudeCodeHint(rawRefId?: string): string {
   const hints = [
     "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>` or `tokenjuice wrap --full -- <command>`.",
@@ -472,6 +502,11 @@ export async function runClaudeCodePostToolUseHook(rawText: string): Promise<num
   const combinedText = stringifyToolResponse(payload.tool_response);
   if (!combinedText.trim()) {
     await writeHookDebug({ ...debug, skipped: "empty-tool-response" });
+    return 0;
+  }
+
+  if (commandRequestsTokenjuiceRawBypass(command)) {
+    await writeHookDebug({ ...debug, skipped: "explicit-raw-bypass" });
     return 0;
   }
 

@@ -502,6 +502,62 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(debug.skipped).toBe("non-bash");
   });
 
+  it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "tokenjuice wrap --raw -- bash -lc 'git show HEAD --stat'",
+      },
+      tool_response: [
+        "commit abcdef",
+        "Author: Example",
+        "",
+        " README.md | 10 +++++-----",
+        " src/core/claude-code.ts | 12 +++++++-----",
+      ].join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
+  it("honors tokenjuice full bypass commands without re-compacting them", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "tokenjuice wrap --full -- git log --oneline -50",
+      },
+      tool_response: Array.from({ length: 50 }, (_, i) => `${String(i).padStart(7, "0")} commit ${i}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
   it("skips empty tool_response", async () => {
     const home = await createTempDir();
     process.env.CLAUDE_HOME = home;

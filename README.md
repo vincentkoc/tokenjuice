@@ -116,7 +116,7 @@ shared behavior:
 - `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
-- `tokenjuice install pi --local` installs a pi extension that shells out to the current repo build instead of the stable launcher on `PATH`
+- `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.

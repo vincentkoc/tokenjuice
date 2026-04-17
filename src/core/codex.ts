@@ -4,8 +4,9 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { isCompoundShellCommand, isRepositoryInspectionCommand } from "./command.js";
-import { classifyOnly, reduceExecution } from "./reduce.js";
+import { isRepositoryInspectionCommand } from "./command.js";
+import { compactBashResult } from "./integrations/compact-bash-result.js";
+import { classifyOnly } from "./reduce.js";
 import { storeArtifactMetadata } from "./artifacts.js";
 import { countTextChars, stripAnsi } from "./text.js";
 
@@ -603,45 +604,6 @@ function shouldStoreFromEnv(): boolean {
   return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
 }
 
-function getCodexRewriteSkipReason(command: string, combinedText: string, result: CompactResult): string | null {
-  if (commandRequestsTokenjuiceRawBypass(command)) {
-    return "explicit-raw-bypass";
-  }
-
-  if (isRepositoryInspectionCommand({ command })) {
-    return "inspection-command";
-  }
-
-  const inlineText = result.inlineText.trim();
-  const rawText = combinedText.trim();
-  const rawChars = result.stats.rawChars;
-  const reducedChars = result.stats.reducedChars;
-  const savedChars = rawChars - reducedChars;
-
-  if (!inlineText || inlineText === rawText || reducedChars >= rawChars) {
-    return "no-compaction";
-  }
-
-  if (savedChars < HOOK_REWRITE_MIN_SAVED_CHARS) {
-    return "low-savings-compaction";
-  }
-
-  if (result.classification.matchedReducer !== "generic/fallback") {
-    return null;
-  }
-
-  if (isCompoundShellCommand(command)) {
-    return "generic-compound-command";
-  }
-
-  const ratio = rawChars === 0 ? 1 : reducedChars / rawChars;
-  if (savedChars < GENERIC_FALLBACK_MIN_SAVED_CHARS || ratio > GENERIC_FALLBACK_MAX_RATIO) {
-    return "generic-weak-compaction";
-  }
-
-  return null;
-}
-
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
   const codexHome = getCodexHome();
   const debugPath = join(codexHome, CODEX_HOOK_LAST_LOG);
@@ -784,40 +746,47 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
   }
 
   const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_CODEX_MAX_INLINE_CHARS");
-  const options: ReduceOptions = {
-    ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-    ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-    recordStats: true,
-    ...(storeRaw ? { store: true } : {}),
-  };
 
   try {
-    const result = await reduceExecution(
-      executionInput,
-      options,
-    );
+    const outcome = await compactBashResult({
+      source: "codex",
+      command,
+      visibleText: combinedText,
+      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
+      storeRaw,
+      metadata: {
+        source: "codex-post-tool-use",
+      },
+      minSavedCharsAny: HOOK_REWRITE_MIN_SAVED_CHARS,
+      genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
+      genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
+      skipGenericFallbackForCompoundCommands: true,
+    });
 
-    const rawChars = result.stats.rawChars;
-    const reducedChars = result.stats.reducedChars;
-    const savedChars = rawChars - reducedChars;
-    debug.rawChars = rawChars;
-    debug.reducedChars = reducedChars;
-    debug.savedChars = savedChars;
-    debug.ratio = result.stats.ratio;
-    debug.matchedReducer = result.classification.matchedReducer;
+    const result = outcome.action === "rewrite" ? outcome.result : outcome.result;
+    if (result) {
+      const rawChars = result.stats.rawChars;
+      const reducedChars = result.stats.reducedChars;
+      const savedChars = rawChars - reducedChars;
+      debug.rawChars = rawChars;
+      debug.reducedChars = reducedChars;
+      debug.savedChars = savedChars;
+      debug.ratio = result.stats.ratio;
+      debug.matchedReducer = result.classification.matchedReducer;
+    }
 
-    const skipReason = getCodexRewriteSkipReason(command, combinedText, result);
-    if (skipReason) {
-      await writeHookDebug({ ...debug, skipped: skipReason });
+    if (outcome.action === "keep") {
+      await writeHookDebug({ ...debug, skipped: outcome.reason });
       return 0;
     }
 
     const hookOutput: Record<string, unknown> = {
       decision: "block",
-      reason: result.inlineText,
+      reason: outcome.result.inlineText,
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: buildCodexHint(result.rawRef?.id),
+        additionalContext: buildCodexHint(outcome.result.rawRef?.id),
       },
     };
 

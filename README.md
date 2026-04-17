@@ -38,6 +38,7 @@ tokenjuice --help
 tokenjuice --version
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install pi
 tokenjuice uninstall codex
 ```
 
@@ -69,6 +70,8 @@ tokenjuice wrap --store -- <command> [args...]
 tokenjuice install codex
 tokenjuice install codex --local
 tokenjuice install claude-code
+tokenjuice install pi
+tokenjuice install pi --local
 tokenjuice uninstall codex
 tokenjuice ls
 tokenjuice cat <artifact-id>
@@ -103,18 +106,22 @@ tokenjuice can install native host hooks for:
 | --- | --- | --- | --- | --- |
 | <img width="48px" src="https://raw.githubusercontent.com/junhoyeo/tokscale/main/.github/assets/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="https://raw.githubusercontent.com/junhoyeo/tokscale/main/.github/assets/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
+| <img width="48px" src="https://shittycodingagent.ai/logo.svg" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
 
 - the original shell command still runs untouched
-- tokenjuice only rewrites the output that goes back through the hook
+- tokenjuice only rewrites the output that goes back through the hook or extension
 - raw command execution logs are still raw
 - `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install pi --local` installs a pi extension that shells out to the current repo build instead of the stable launcher on `PATH`
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
+
+for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 
 when a reducer gets it wrong or the engine needs the untouched output, use the explicit bypass:
 

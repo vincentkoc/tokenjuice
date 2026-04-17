@@ -4,6 +4,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { CompiledRule, JsonRule, RuleOrigin } from "../types.js";
+import { BUNDLED_BUILTIN_RULES } from "./builtin-rules.generated.js";
 import { assertValidRule, validateRule } from "./validate-rules.js";
 
 type LoadRuleOptions = {
@@ -145,6 +146,18 @@ async function loadRuleDescriptorsFromRoot(root: string, source: RuleOrigin): Pr
   );
 }
 
+function loadBundledBuiltinRuleDescriptors(): RuleDescriptor[] {
+  return BUNDLED_BUILTIN_RULES.map((rule) => {
+    assertValidRule(rule);
+    return {
+      source: "builtin" as const,
+      path: `bundled:${rule.id}`,
+      relativePath: rule.id,
+      rule,
+    };
+  });
+}
+
 function cacheKey(options: LoadRuleOptions): string {
   return JSON.stringify({
     cwd: options.cwd ?? process.cwd(),
@@ -171,7 +184,8 @@ export async function loadRules(options: LoadRuleOptions = {}): Promise<Compiled
   }
 
   const descriptors: RuleDescriptor[] = [];
-  descriptors.push(...await loadRuleDescriptorsFromRoot(builtinRulesRoot(), "builtin"));
+  const builtinDescriptors = await loadRuleDescriptorsFromRoot(builtinRulesRoot(), "builtin");
+  descriptors.push(...(builtinDescriptors.length > 0 ? builtinDescriptors : loadBundledBuiltinRuleDescriptors()));
 
   if (options.includeUser ?? true) {
     descriptors.push(...await loadRuleDescriptorsFromRoot(userRulesRoot(options.userRulesDir), "user"));

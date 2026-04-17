@@ -9,6 +9,7 @@ import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../core/claude-code.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../core/codex.js";
 import { doctorInstalledHooks } from "../core/hook-doctor.js";
+import { installPiExtension } from "../core/pi.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { reduceExecution } from "../core/reduce.js";
@@ -55,6 +56,7 @@ function printUsage(): void {
       "  tokenjuice wrap [--raw|--full] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code",
+      "  tokenjuice install pi [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
@@ -343,7 +345,24 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     process.stdout.write("doctor: tokenjuice doctor hooks\n");
     return 0;
   }
-  throw new Error("install currently supports: codex, claude-code");
+
+  if (target === "pi") {
+    const result = await installPiExtension(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`installed pi extension: ${result.extensionPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("reload: /reload\n");
+    process.stdout.write("usage in pi: /tj status | /tj on | /tj off | /tj raw-next\n");
+    return 0;
+  }
+
+  throw new Error("install currently supports: codex, claude-code, pi");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {

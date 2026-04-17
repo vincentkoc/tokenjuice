@@ -3,8 +3,7 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { delimiter, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
-import { isCompoundShellCommand } from "./command.js";
-import { reduceExecution } from "./reduce.js";
+import { compactBashResult } from "./integrations/compact-bash-result.js";
 
 import type { CompactResult, ReduceOptions } from "../types.js";
 
@@ -425,33 +424,6 @@ function shouldStoreFromEnv(): boolean {
   return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
 }
 
-function getClaudeCodeRewriteSkipReason(command: string, combinedText: string, result: CompactResult): string | null {
-  const inlineText = result.inlineText.trim();
-  const rawText = combinedText.trim();
-  const rawChars = result.stats.rawChars;
-  const reducedChars = result.stats.reducedChars;
-
-  if (!inlineText || inlineText === rawText || reducedChars >= rawChars) {
-    return "no-compaction";
-  }
-
-  if (result.classification.matchedReducer !== "generic/fallback") {
-    return null;
-  }
-
-  if (isCompoundShellCommand(command)) {
-    return "generic-compound-command";
-  }
-
-  const savedChars = rawChars - reducedChars;
-  const ratio = rawChars === 0 ? 1 : reducedChars / rawChars;
-  if (savedChars < GENERIC_FALLBACK_MIN_SAVED_CHARS || ratio > GENERIC_FALLBACK_MAX_RATIO) {
-    return "generic-weak-compaction";
-  }
-
-  return null;
-}
-
 function buildClaudeCodeHint(rawRefId?: string): string {
   const hints = [
     "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>` or `tokenjuice wrap --full -- <command>`.",
@@ -504,45 +476,41 @@ export async function runClaudeCodePostToolUseHook(rawText: string): Promise<num
   }
 
   const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_CLAUDE_CODE_MAX_INLINE_CHARS");
-  const options: ReduceOptions = {
-    ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-    ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-    recordStats: true,
-    ...(shouldStoreFromEnv() ? { store: true } : {}),
-  };
 
   try {
-    const result = await reduceExecution(
-      {
-        toolName: "exec",
-        command,
-        combinedText,
-        ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-        metadata: {
-          source: "claude-code-post-tool-use",
-        },
+    const outcome = await compactBashResult({
+      source: "claude-code",
+      command,
+      visibleText: combinedText,
+      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
+      storeRaw: shouldStoreFromEnv(),
+      metadata: {
+        source: "claude-code-post-tool-use",
       },
-      options,
-    );
+      genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
+      genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
+      skipGenericFallbackForCompoundCommands: true,
+    });
 
-    const rawChars = result.stats.rawChars;
-    const reducedChars = result.stats.reducedChars;
-    debug.rawChars = rawChars;
-    debug.reducedChars = reducedChars;
-    debug.matchedReducer = result.classification.matchedReducer;
+    const result = outcome.action === "rewrite" ? outcome.result : outcome.result;
+    if (result) {
+      debug.rawChars = result.stats.rawChars;
+      debug.reducedChars = result.stats.reducedChars;
+      debug.matchedReducer = result.classification.matchedReducer;
+    }
 
-    const skipReason = getClaudeCodeRewriteSkipReason(command, combinedText, result);
-    if (skipReason) {
-      await writeHookDebug({ ...debug, skipped: skipReason });
+    if (outcome.action === "keep") {
+      await writeHookDebug({ ...debug, skipped: outcome.reason });
       return 0;
     }
 
     const hookOutput: Record<string, unknown> = {
       decision: "block",
-      reason: result.inlineText,
+      reason: outcome.result.inlineText,
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: buildClaudeCodeHint(result.rawRef?.id),
+        additionalContext: buildClaudeCodeHint(outcome.result.rawRef?.id),
       },
     };
 

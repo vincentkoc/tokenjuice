@@ -48,6 +48,7 @@ host adapters should own:
 - host-specific storage defaults
 - message conversion
 - retrieval seams when needed
+- host-native installation surfaces such as hooks or extension files
 
 if reducer logic starts leaking into an adapter, the boundary is wrong.
 
@@ -142,8 +143,10 @@ install host wiring when tokenjuice can own it directly:
 ```bash
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install pi
 tokenjuice doctor hooks
 tokenjuice install codex --local
+tokenjuice install pi --local
 tokenjuice doctor hooks --local
 ```
 
@@ -153,6 +156,7 @@ supported host hooks:
 | --- | --- | --- | --- |
 | Claude Code | `tokenjuice install claude-code` | `~/.claude/settings.json` | Preserves unrelated settings keys while updating `hooks.PostToolUse` |
 | Codex CLI | `tokenjuice install codex` | `~/.codex/hooks.json` | `tokenjuice install codex --local` is available for repo-local verification |
+| pi | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | `tokenjuice install pi --local` installs a pi extension that targets the current repo build and adds `/tj` controls inside pi |
 
 `tokenjuice doctor hooks` inspects installed host hooks together, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. the `--local` variant is for codex dev verification and expects that hook to point at the current repo build instead of the installed launcher on `PATH`.
 

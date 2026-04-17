@@ -1,0 +1,71 @@
+import { describe, expect, it } from "vitest";
+
+import { compactBashResult } from "../src/core/integrations/compact-bash-result.js";
+
+describe("compactBashResult", () => {
+  it("uses trusted full text when provided", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "git status",
+      visibleText: "truncated output",
+      trustedFullText: [
+        "On branch feature/demo",
+        "",
+        "Changes not staged for commit:",
+        "\tmodified:   src/core/pi.ts",
+        "\tmodified:   src/pi-extension/runtime.ts",
+        "",
+        "no changes added to commit",
+      ].join("\n"),
+      maxInlineChars: 1200,
+      skipInspectionCommands: true,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome.action).toBe("rewrite");
+    if (outcome.action === "rewrite") {
+      expect(outcome.usedTrustedFullText).toBe(true);
+      expect(outcome.rawText).toContain("src/core/pi.ts");
+      expect(outcome.result.inlineText).toContain("M: src/core/pi.ts");
+      expect(outcome.result.inlineText).not.toContain("truncated output");
+    }
+  });
+
+  it("skips repository inspection commands before compaction when requested", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "find src/rules -maxdepth 2 -type f | head -n 20",
+      visibleText: Array.from({ length: 20 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
+      skipInspectionCommands: true,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "keep",
+      reason: "inspection-command",
+    });
+  });
+
+  it("returns a keep decision for weak generic fallback compaction", async () => {
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "node -e \"console.log('x')\"",
+      visibleText: Array.from({ length: 18 }, (_, index) => `line ${index + 1} ${"x".repeat(24)}`).join("\n"),
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome.action).toBe("keep");
+    if (outcome.action === "keep") {
+      expect(outcome.reason).toBe("generic-weak-compaction");
+      expect(outcome.result?.classification.matchedReducer).toBe("generic/fallback");
+    }
+  });
+});

@@ -44,17 +44,19 @@
   "scripts": {
     "bench:fixtures": "node scripts/bench.mjs fixtures",
     "bench:verify": "node scripts/bench.mjs verify",
-    "build": "rm -rf dist && tsc -p tsconfig.json && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
+    "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
+    "build": "rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
     "release:artifacts": "node scripts/build-release.mjs",
     "release:checksums": "node scripts/write-checksums.mjs",
     "release:formula": "node scripts/generate-homebrew-formula.mjs",
     "release:local": "pnpm test && pnpm build && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula",
     "smoke:live": "node scripts/live-smoke.mjs",
-    "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "test": "pnpm generate:builtin-rules && vitest run",
+    "typecheck": "pnpm generate:builtin-rules && tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^24.7.0",
+    "esbuild": "^0.25.11",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

@@ -179,6 +179,7 @@ export function validateRule(raw: unknown): ValidationResult {
   if ("transforms" in raw) {
     errors.push(...validateOptionalBooleanObject(raw.transforms, "transforms", [
       "stripAnsi",
+      "prettyPrintJson",
       "dedupeAdjacent",
       "trimEmptyEdges",
     ]));

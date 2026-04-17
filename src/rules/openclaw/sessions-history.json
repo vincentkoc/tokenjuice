@@ -1,0 +1,59 @@
+{
+  "id": "openclaw/sessions-history",
+  "family": "openclaw",
+  "description": "Reduce OpenClaw sessions_history tool output by stripping internal metadata (api, provider, model, responseId, __openclaw, thinking blocks) while preserving message content, roles, timestamps, and provenance.",
+  "priority": 100,
+  "match": {
+    "toolNames": ["sessions_history"]
+  },
+  "filters": {
+    "skipPatterns": [
+      "^\\s*\"api\":",
+      "^\\s*\"provider\":",
+      "^\\s*\"model\":",
+      "^\\s*\"stopReason\":",
+      "^\\s*\"responseId\":",
+      "^\\s*\"__openclaw\":",
+      "^\\s*\"id\": \"[a-f0-9]{8}\"\\s*,?\\s*$",
+      "^\\s*\"seq\":",
+      "^\\s*\"contentTruncated\":",
+      "^\\s*\"contentRedacted\":",
+      "^\\s*\"droppedMessages\":",
+      "^\\s*\"bytes\":",
+      "^\\s*\"partialJson\":",
+      "^\\s*\"toolCallId\":",
+      "^\\s*\"type\": \"thinking\"",
+      "^\\s*\"thinking\":",
+      "^\\s*\\{\\s*$",
+      "^\\s*\\}\\s*,?\\s*$",
+      "^\\s*\\[\\s*$",
+      "^\\s*\\]\\s*,?\\s*$"
+    ]
+  },
+  "transforms": {
+    "prettyPrintJson": true,
+    "dedupeAdjacent": true,
+    "trimEmptyEdges": true
+  },
+  "summarize": {
+    "head": 40,
+    "tail": 20
+  },
+  "failure": {
+    "preserveOnFailure": true,
+    "head": 60,
+    "tail": 30
+  },
+  "counters": [
+    {
+      "name": "message",
+      "pattern": "\"role\":",
+      "flags": "i"
+    },
+    {
+      "name": "blocker",
+      "pattern": "BLOCK|blocked",
+      "flags": "i"
+    }
+  ]
+}

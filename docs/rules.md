@@ -36,6 +36,7 @@ example:
   },
   "transforms": {
     "stripAnsi": true,
+    "prettyPrintJson": true,
     "dedupeAdjacent": true,
     "trimEmptyEdges": true
   },
@@ -71,6 +72,7 @@ example:
 - `filters.skipPatterns`: lines to drop
 - `filters.keepPatterns`: lines to prefer
 - `transforms`: output normalization toggles
+- `transforms.prettyPrintJson`: reformat parseable object/array JSON before line filters
 - `summarize`: head/tail retention on success
 - `failure`: more generous retention on failure
 - `counters`: named regex counters used in summaries

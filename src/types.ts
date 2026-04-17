@@ -45,6 +45,7 @@ export type RuleFilters = {
 
 export type RuleTransforms = {
   stripAnsi?: boolean;
+  prettyPrintJson?: boolean;
   dedupeAdjacent?: boolean;
   trimEmptyEdges?: boolean;
 };

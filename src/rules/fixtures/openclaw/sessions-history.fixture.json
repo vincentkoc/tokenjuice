@@ -1,0 +1,33 @@
+{
+  "id": "openclaw-sessions-history-basic",
+  "ruleId": "openclaw/sessions-history",
+  "input": {
+    "toolName": "sessions_history",
+    "combinedText": "{\n  \"sessionKey\": \"agent:john:main\",\n  \"messages\": [\n    {\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Task complete. All tests passing, 12 of 12 green.\"\n        }\n      ],\n      \"api\": \"openai-codex-responses\",\n      \"provider\": \"openai-codex\",\n      \"model\": \"gpt-5.4\",\n      \"stopReason\": \"stop\",\n      \"timestamp\": 1776296991381,\n      \"responseId\": \"resp_0f53cb2184abb0830169e0241fec50819a85da550a72e23ebc\",\n      \"__openclaw\": {\n        \"id\": \"39b8bd8e\",\n        \"seq\": 859\n      }\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"John — sprint status update needed.\"\n        }\n      ],\n      \"timestamp\": 1776301782870,\n      \"provenance\": {\n        \"kind\": \"inter_session\",\n        \"sourceSessionKey\": \"agent:josh:reef-s5b-watch\",\n        \"sourceTool\": \"sessions_send\"\n      },\n      \"__openclaw\": {\n        \"id\": \"88b5e984\",\n        \"seq\": 860\n      }\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"thinking\",\n          \"thinking\": \"Let me check the current sprint state and prepare a status update...\"\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"Sprint 5B status: READY_FOR_ELI. All verification tests passing. Commit 8b048af frozen.\"\n        }\n      ],\n      \"api\": \"openai-codex-responses\",\n      \"provider\": \"openai-codex\",\n      \"model\": \"gpt-5.4\",\n      \"stopReason\": \"stop\",\n      \"timestamp\": 1776301782888,\n      \"responseId\": \"resp_0f53cb2184abb0830169e036d76100819abfe6de80a224e1e0\",\n      \"__openclaw\": {\n        \"id\": \"e7b08245\",\n        \"seq\": 861\n      }\n    }\n  ],\n  \"truncated\": true,\n  \"droppedMessages\": false,\n  \"contentTruncated\": true,\n  \"contentRedacted\": false,\n  \"bytes\": 2840\n}",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "openclaw/sessions-history",
+    "family": "openclaw",
+    "contains": [
+      "sessionKey",
+      "agent:john:main",
+      "Task complete. All tests passing",
+      "Sprint 5B status: READY_FOR_ELI",
+      "sourceSessionKey",
+      "sourceTool",
+      "role",
+      "timestamp"
+    ],
+    "excludes": [
+      "openai-codex-responses",
+      "gpt-5.4",
+      "resp_0f53cb2184",
+      "__openclaw",
+      "\"id\": \"39b8bd8e\"",
+      "\"id\": \"88b5e984\"",
+      "\"seq\":",
+      "Let me check the current sprint state"
+    ]
+  }
+}

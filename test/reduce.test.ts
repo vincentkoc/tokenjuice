@@ -399,6 +399,100 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toBe("custom: checks passed");
   });
 
+  it("pretty-prints minified JSON before applying line-based reducers when enabled", async () => {
+    const result = await reduceExecution({
+      toolName: "sessions_history",
+      combinedText: JSON.stringify({
+        sessionKey: "agent:john:main",
+        messages: [
+          {
+            role: "assistant",
+            content: [
+              {
+                type: "text",
+                text: "Task complete. All tests passing, 12 of 12 green.",
+              },
+            ],
+            api: "openai-codex-responses",
+            provider: "openai-codex",
+            model: "gpt-5.4",
+            stopReason: "stop",
+            timestamp: 1776296991381,
+            responseId: "resp_0f53cb2184abb0830169e0241fec50819a85da550a72e23ebc",
+            __openclaw: {
+              id: "39b8bd8e",
+              seq: 859,
+            },
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "John - sprint status update needed.",
+              },
+            ],
+            timestamp: 1776301782870,
+            provenance: {
+              kind: "inter_session",
+              sourceSessionKey: "agent:josh:reef-s5b-watch",
+              sourceTool: "sessions_send",
+            },
+            __openclaw: {
+              id: "88b5e984",
+              seq: 860,
+            },
+          },
+          {
+            role: "assistant",
+            content: [
+              {
+                type: "thinking",
+                thinking: "Let me check the current sprint state and prepare a status update...",
+              },
+              {
+                type: "text",
+                text: "Sprint 5B status: READY_FOR_ELI. All verification tests passing. Commit 8b048af frozen.",
+              },
+            ],
+            api: "openai-codex-responses",
+            provider: "openai-codex",
+            model: "gpt-5.4",
+            stopReason: "stop",
+            timestamp: 1776301782888,
+            responseId: "resp_0f53cb2184abb0830169e036d76100819abfe6de80a224e1e0",
+            __openclaw: {
+              id: "e7b08245",
+              seq: 861,
+            },
+          },
+        ],
+        truncated: true,
+        droppedMessages: false,
+        contentTruncated: true,
+        contentRedacted: false,
+        bytes: 2840,
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("openclaw/sessions-history");
+    expect(result.inlineText).toContain("\"sourceSessionKey\": \"agent:josh:reef-s5b-watch\"");
+    expect(result.inlineText).toContain("\"sourceTool\": \"sessions_send\"");
+    expect(result.inlineText).toContain("\"truncated\": true");
+    expect(result.inlineText).toContain("Sprint 5B status: READY_FOR_ELI");
+    expect(result.inlineText).not.toContain("openai-codex-responses");
+    expect(result.inlineText).not.toContain("gpt-5.4");
+    expect(result.inlineText).not.toContain("resp_0f53cb2184");
+    expect(result.inlineText).not.toContain("\"id\": \"39b8bd8e\"");
+    expect(result.inlineText).not.toContain("Let me check the current sprint state");
+    expect(result.facts).toEqual({
+      message: 3,
+      blocker: 0,
+    });
+    expect(result.stats.ratio).toBeLessThan(0.75);
+  });
+
   it("uses builtin onEmpty for notice-only npm install output", async () => {
     const result = await reduceExecution({
       toolName: "exec",

@@ -83,31 +83,15 @@ tokenjuice doctor pi
 tokenjuice stats
 ```
 
-## adapter JSON
-
-`reduce-json` is the machine-facing adapter command. it reads JSON from stdin or a file and always writes JSON to stdout.
-
-direct payload:
-
-```json
-{
-  "toolName": "exec",
-  "command": "pnpm test",
-  "argv": ["pnpm", "test"],
-  "combinedText": "RUN  v3.2.4 /repo\n...",
-  "exitCode": 1
-}
-```
-
 ## overview
 
 tokenjuice can install host integrations for:
 
 | Logo | Client | Install | Hook file | Supported |
 | --- | --- | --- | --- | --- |
-| <img width="48px" src="https://raw.githubusercontent.com/junhoyeo/tokscale/main/.github/assets/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
-| <img width="48px" src="https://raw.githubusercontent.com/junhoyeo/tokscale/main/.github/assets/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
-| <img width="48px" src="https://shittycodingagent.ai/logo.svg" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
+| <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
+| <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
+| <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
 
@@ -167,6 +151,22 @@ envelope payload:
     "store": true,
     "maxInlineChars": 1200
   }
+}
+```
+
+## adapter JSON
+
+`reduce-json` is the machine-facing adapter command. it reads JSON from stdin or a file and always writes JSON to stdout.
+
+direct payload:
+
+```json
+{
+  "toolName": "exec",
+  "command": "pnpm test",
+  "argv": ["pnpm", "test"],
+  "combinedText": "RUN  v3.2.4 /repo\n...",
+  "exitCode": 1
 }
 ```
 

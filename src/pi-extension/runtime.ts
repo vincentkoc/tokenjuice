@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 
-import { getInspectionCommandSkipReason } from "../core/command.js";
 import { compactBashResult } from "../core/integrations/compact-bash-result.js";
+import { getInspectionCommandSkipReason } from "../core/inventory-safety.js";
 
 import type { Pi, PiContext, PiToolResultEvent } from "./pi-types.js";
 import { isRecord } from "./pi-types.js";

@@ -1,9 +1,9 @@
-import { getInspectionCommandSkipReason } from "../command.js";
+import { getInspectionCommandSkipReason } from "../inventory-safety.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
-import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../command.js";
+import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../inventory-safety.js";
 
 export type CompactBashResultInput = {
   source: "claude-code" | "codex" | "pi";

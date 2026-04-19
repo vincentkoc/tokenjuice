@@ -4,8 +4,9 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { getInspectionCommandSkipReason, tokenizeCommand } from "./command.js";
+import { tokenizeCommand } from "./command.js";
 import { compactBashResult } from "./integrations/compact-bash-result.js";
+import { getInspectionCommandSkipReason } from "./inventory-safety.js";
 import { classifyOnly } from "./reduce.js";
 import { storeArtifactMetadata } from "./artifacts.js";
 import { countTextChars, stripAnsi } from "./text.js";

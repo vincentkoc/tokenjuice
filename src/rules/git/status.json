@@ -2,6 +2,7 @@
   "id": "git/status",
   "family": "git-status",
   "description": "Compact human-readable git status output.",
+  "onEmpty": "working tree clean",
   "match": {
     "argv0": ["git"],
     "argvIncludes": [["status"]]

@@ -44,6 +44,32 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("?? new-file.ts");
   });
 
+  it("reports working tree clean instead of collapsing to empty output", async () => {
+    // Regression: every useful line in a clean long-form `git status` is
+    // matched by skipPatterns (branch, tracking, "nothing to commit..."),
+    // leaving zero lines. Without onEmpty, the reducer returns an empty
+    // summary and the agent reports "(no output)" even though the tree is
+    // clean. Observed in phase 2/3 tokenjuice trials — ~60% of runs
+    // misreported the clean state.
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git status",
+      argv: ["git", "status"],
+      combinedText: [
+        "On branch main",
+        "Your branch is up to date with 'origin/main'.",
+        "",
+        "nothing to commit, working tree clean",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/status");
+    expect(result.inlineText).toContain("working tree clean");
+    expect(result.inlineText).not.toContain("(no output)");
+  });
+
+
   it("derives argv from the command string when callers only pass command", async () => {
     const result = await reduceExecution({
       toolName: "exec",

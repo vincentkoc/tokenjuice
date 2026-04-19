@@ -116,6 +116,20 @@ const FEATURE_FLAG_FIX_HINT =
   "Enable per-invocation with `codex exec --enable codex_hooks ...`, " +
   "or persistently by adding a `[features]` section with `codex_hooks = true` to ~/.codex/config.toml.";
 
+function buildCodexFeatureFlagStatus(
+  configPath: string,
+  configExists: boolean,
+): CodexFeatureFlagStatus {
+  return {
+    configPath,
+    configExists,
+    keyPresent: false,
+    value: null,
+    enabled: false,
+    fixHint: FEATURE_FLAG_FIX_HINT,
+  };
+}
+
 /**
  * Read-only scan of ~/.codex/config.toml for `codex_hooks = <bool>` under
  * a `[features]` section (top-level or dotted form). Does NOT edit the
@@ -131,15 +145,12 @@ export async function inspectCodexHooksFeatureFlag(
   try {
     source = await readFile(configPath, "utf8");
   } catch (error: unknown) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        configPath,
-        configExists: false,
-        keyPresent: false,
-        value: null,
-        enabled: false,
-        fixHint: FEATURE_FLAG_FIX_HINT,
-      };
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      return buildCodexFeatureFlagStatus(configPath, false);
+    }
+    if (code === "EACCES" || code === "EPERM" || code === "EISDIR") {
+      return buildCodexFeatureFlagStatus(configPath, true);
     }
     throw error;
   }
@@ -167,7 +178,7 @@ export function parseCodexFeatureFlag(
   key: string,
 ): { keyPresent: boolean; value: boolean | null } {
   const lines = source.split(/\r?\n/u);
-  let inFeatures = false;
+  let currentTablePath: string[] = [];
   const dottedRe = new RegExp(`^\\s*features\\.${key}\\s*=\\s*(true|false)\\b`, "u");
   const scopedRe = new RegExp(`^\\s*${key}\\s*=\\s*(true|false)\\b`, "u");
 
@@ -175,14 +186,18 @@ export function parseCodexFeatureFlag(
     const line = rawLine.replace(/#.*$/u, "");
     const header = /^\s*\[([^\]]+)\]/u.exec(line);
     if (header) {
-      inFeatures = header[1]!.trim() === "features";
+      currentTablePath = header[1]!
+        .trim()
+        .split(".")
+        .map((segment) => segment.trim())
+        .filter(Boolean);
       continue;
     }
-    const dotted = dottedRe.exec(line);
+    const dotted = currentTablePath.length === 0 ? dottedRe.exec(line) : null;
     if (dotted) {
       return { keyPresent: true, value: dotted[1] === "true" };
     }
-    if (inFeatures) {
+    if (currentTablePath.length === 1 && currentTablePath[0] === "features") {
       const scoped = scopedRe.exec(line);
       if (scoped) {
         return { keyPresent: true, value: scoped[1] === "true" };

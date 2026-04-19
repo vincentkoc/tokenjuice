@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -72,6 +72,14 @@ describe("parseCodexFeatureFlag", () => {
       value: null,
     });
   });
+
+  it("ignores dotted assignments inside a non-root table", () => {
+    const source = "[profiles.default]\nfeatures.codex_hooks = true\n";
+    expect(parseCodexFeatureFlag(source, "codex_hooks")).toEqual({
+      keyPresent: false,
+      value: null,
+    });
+  });
 });
 
 describe("inspectCodexHooksFeatureFlag", () => {
@@ -109,18 +117,44 @@ describe("inspectCodexHooksFeatureFlag", () => {
       expect(status.fixHint).toContain("codex_hooks");
     });
   });
+
+  it("treats unreadable config as not enabled instead of throwing", async () => {
+    if (process.platform === "win32") {
+      return;
+    }
+
+    await withTempCodexHome(async ({ configPath }) => {
+      await writeFile(configPath, "[features]\ncodex_hooks = true\n", "utf8");
+      try {
+        await chmod(configPath, 0o000);
+        const status = await inspectCodexHooksFeatureFlag(configPath);
+        expect(status.configExists).toBe(true);
+        expect(status.keyPresent).toBe(false);
+        expect(status.value).toBe(null);
+        expect(status.enabled).toBe(false);
+      } finally {
+        await chmod(configPath, 0o644);
+      }
+    });
+  });
 });
 
 describe("installCodexHook feature-flag surface", () => {
   it("returns featureFlag.enabled=false when config.toml is missing", async () => {
     await withTempCodexHome(async ({ hooksPath }) => {
-      const result = await installCodexHook(hooksPath);
-      expect(result.featureFlag.enabled).toBe(false);
-      expect(result.featureFlag.configExists).toBe(false);
-      expect(result.featureFlag.fixHint).toContain("codex_hooks");
-      // sanity: hooks.json was still written as usual
-      const hooks = JSON.parse(await readFile(hooksPath, "utf8"));
-      expect(hooks.hooks.PostToolUse).toBeDefined();
+      const previousCodexHome = process.env.CODEX_HOME;
+      process.env.CODEX_HOME = join(hooksPath, "..");
+      try {
+        const result = await installCodexHook(hooksPath);
+        expect(result.featureFlag.enabled).toBe(false);
+        expect(result.featureFlag.configExists).toBe(false);
+        expect(result.featureFlag.fixHint).toContain("codex_hooks");
+        // sanity: hooks.json was still written as usual
+        const hooks = JSON.parse(await readFile(hooksPath, "utf8"));
+        expect(hooks.hooks.PostToolUse).toBeDefined();
+      } finally {
+        process.env.CODEX_HOME = previousCodexHome;
+      }
     });
   });
 });

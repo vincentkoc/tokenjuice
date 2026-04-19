@@ -108,7 +108,7 @@ shared behavior:
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
-repository inventory compaction is deliberately narrow. standalone inventory commands compact, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
+repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 

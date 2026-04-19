@@ -55,8 +55,9 @@ if reducer logic starts leaking into an adapter, the boundary is wrong.
 host adapters choose an inspection policy before calling the shared compactor. the Codex, Claude Code, and pi adapters use the safe-inventory policy:
 
 - exact file-content reads stay raw (`cat`, `sed`, `head`, `tail`, `nl`, `bat`, `jq`, `yq`)
-- standalone repository inventory commands can compact (`find`, `ls`, `rg --files`, `git ls-files`, `fd`)
+- standalone repository inventory commands can compact when they are inventory-only (`find`, `ls`, `rg --files`, `git ls-files`, `fd`)
 - inventory pipelines compact only when downstream commands are structural stdin transforms (`sort`, `head`, `tail`, `uniq`)
+- source inventory commands that execute other commands, such as `find ... -exec ...` or `fd --exec ...`, stay raw
 - mixed command sequences and unsafe inventory pipelines stay raw
 
 ## operating modes

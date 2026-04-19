@@ -1,0 +1,27 @@
+{
+  "id": "build-xcodebuild-failure-basic",
+  "ruleId": "build/xcodebuild",
+  "input": {
+    "toolName": "exec",
+    "command": "bash -lc 'cd apps/ios && xcodebuild -project App.xcodeproj -scheme App build'",
+    "combinedText": "Command line invocation:\n    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project App.xcodeproj -scheme App build\n\nResolve Package Graph\nFetching from https://github.com/apple/swift-syntax\nFetching from https://github.com/pointfreeco/swift-snapshot-testing (cached)\n\nSwiftCompile normal arm64 Compiling\\ Foo.swift /repo/apps/ios/Sources/Foo.swift (in target 'App' from project 'App')\n/repo/apps/ios/Sources/Foo.swift:17:12: error: cannot find 'missingSymbol' in scope\n/repo/apps/ios/Sources/Bar.swift:4:9: warning: initialization of immutable value 'unused' was never used\nnote: Building targets in dependency order\n\nThe following build commands failed:\n\tSwiftCompile normal arm64 /repo/apps/ios/Sources/Foo.swift\n\tBuilding project App with scheme App\n(2 failures)\n** BUILD FAILED **\n",
+    "exitCode": 65
+  },
+  "expect": {
+    "matchedReducer": "build/xcodebuild",
+    "family": "build-xcode",
+    "contains": [
+      "error",
+      "warning",
+      "failed command",
+      "/repo/apps/ios/Sources/Foo.swift:17:12: error: cannot find 'missingSymbol' in scope",
+      "/repo/apps/ios/Sources/Bar.swift:4:9: warning: initialization of immutable value 'unused' was never used",
+      "The following build commands failed:",
+      "** BUILD FAILED **"
+    ],
+    "excludes": [
+      "Fetching from https://github.com/apple/swift-syntax",
+      "SwiftCompile normal arm64 Compiling\\ Foo.swift"
+    ]
+  }
+}

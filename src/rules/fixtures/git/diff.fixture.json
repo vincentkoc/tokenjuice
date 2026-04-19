@@ -1,0 +1,26 @@
+{
+  "id": "git-diff-patch-basic",
+  "ruleId": "git/diff",
+  "input": {
+    "toolName": "exec",
+    "command": "cd /workspace/example-app && git diff -- src/app.ts src/util.ts",
+    "combinedText": "diff --git a/src/app.ts b/src/app.ts\nindex 1111111..2222222 100644\n--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1,5 +1,6 @@\n import { start } from './start';\n-console.log('old');\n+console.log('new');\n+console.log('added');\n export function main() {\n   start();\n }\ndiff --git a/src/util.ts b/src/util.ts\nindex 3333333..4444444 100644\n--- a/src/util.ts\n+++ b/src/util.ts\n@@ -10,4 +10,3 @@ export function helper() {\n-  return 'old';\n+  return 'new';\n }\n\\ No newline at end of file\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "git/diff",
+    "family": "git-diff",
+    "contains": [
+      "changed file",
+      "hunk",
+      "added line",
+      "removed line",
+      "diff --git a/src/app.ts b/src/app.ts",
+      "@@ -1,5 +1,6 @@",
+      "+console.log('added');"
+    ],
+    "excludes": [
+      "index 1111111..2222222 100644"
+    ]
+  }
+}

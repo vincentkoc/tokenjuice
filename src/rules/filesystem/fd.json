@@ -23,12 +23,11 @@
   "counters": [
     {
       "name": "path",
-      "pattern": "^(?!fd: ).+\\S.*$"
+      "pattern": "^(?!(fd: |\\[fd error\\]: )).+\\S.*$"
     },
     {
       "name": "error",
-      "pattern": "error|permission denied|no such file",
-      "flags": "i"
+      "pattern": "^(fd: |\\[fd error\\]: )"
     }
   ]
 }

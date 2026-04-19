@@ -28,8 +28,7 @@
     },
     {
       "name": "error",
-      "pattern": "rg:|error|permission denied|no such file",
-      "flags": "i"
+      "pattern": "^rg: "
     }
   ]
 }

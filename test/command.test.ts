@@ -198,6 +198,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     "rg --files | sort -u | tail -n 20",
     "find src -type f | sort | uniq",
     "find src -type f | sort -k 1 | head -40",
+    "find src -type f | sort --batch-size 4M --sort name | head -40",
     "find src -type f | uniq -c",
   ])("allows `%s`", (command) => {
     expect(isSafeRepositoryInventoryPipeline(command)).toBe(true);

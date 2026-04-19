@@ -374,6 +374,45 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("search/git-grep");
   });
 
+  it("does not count normal rg --files paths containing error as errors", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg --files src",
+      combinedText: "src/error.ts\nsrc/normal.ts\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/rg-files");
+    expect(result.facts?.path).toBe(2);
+    expect(result.facts?.error).toBe(0);
+  });
+
+  it("does not count normal fd paths containing error as errors", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "fd src",
+      combinedText: "src/error.ts\nsrc/normal.ts\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/fd");
+    expect(result.facts?.path).toBe(2);
+    expect(result.facts?.error).toBe(0);
+  });
+
+  it("counts fd error-prefixed output as errors instead of paths", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "fd src",
+      combinedText: "[fd error]: regex parse error\nsrc/normal.ts\n",
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/fd");
+    expect(result.facts?.path).toBe(1);
+    expect(result.facts?.error).toBe(1);
+  });
+
   it("matches pnpm test runs to the test reducer family", async () => {
     const result = await reduceExecution({
       toolName: "exec",

@@ -188,13 +188,38 @@ describe("doctorCodexHook", () => {
     process.env.PATH = binDir;
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-    await installCodexHook(hooksPath);
+    const featureFlagConfigPath = join(home, "config.toml");
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+    await installCodexHook(hooksPath, { featureFlagConfigPath });
 
-    const report = await doctorCodexHook(hooksPath);
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
 
     expect(report.status).toBe("ok");
     expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
     expect(report.issues).toEqual([]);
+    expect(report.featureFlag.enabled).toBe(true);
+  });
+
+  it("warns when codex_hooks feature flag is not enabled", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installCodexHook(hooksPath, { featureFlagConfigPath });
+
+    // featureFlagConfigPath doesn't exist → flag not enabled
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+    expect(report.status).toBe("warn");
+    expect(report.featureFlag.enabled).toBe(false);
+    expect(report.issues).toContain(
+      "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
+    );
   });
 
   it("reports disabled when the tokenjuice Codex hook is not installed", async () => {
@@ -272,16 +297,20 @@ describe("doctorCodexHook", () => {
     await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
     await writeFile(localCliPath, "console.log('tokenjuice');\n", "utf8");
 
+    const featureFlagConfigPath = join(home, "config.toml");
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
     await installCodexHook(hooksPath, {
       local: true,
       binaryPath: localCliPath,
       nodePath: localNodePath,
+      featureFlagConfigPath,
     });
 
     const report = await doctorCodexHook(hooksPath, {
       local: true,
       binaryPath: localCliPath,
       nodePath: localNodePath,
+      featureFlagConfigPath,
     });
 
     expect(report.status).toBe("ok");

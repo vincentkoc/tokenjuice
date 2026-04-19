@@ -588,6 +588,19 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
           process.stdout.write(`  - ${path}\n`);
         }
       }
+      if ("featureFlag" in integrationReport && integrationReport.featureFlag) {
+        const flag = integrationReport.featureFlag;
+        if (flag.enabled) {
+          process.stdout.write(
+            `- feature flag: codex_hooks is enabled (${flag.configPath})\n`,
+          );
+        } else {
+          const where = flag.configExists
+            ? `${flag.configPath} (missing or disabled)`
+            : `no ${flag.configPath}`;
+          process.stdout.write(`- feature flag: codex_hooks not enabled — ${where}\n`);
+        }
+      }
       process.stdout.write(`- repair: ${integrationReport.fixCommand}\n`);
     }
     return report.status === "broken" ? 1 : 0;
@@ -618,6 +631,17 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
       }
+    }
+    if (report.featureFlag.enabled) {
+      process.stdout.write(
+        `feature flag: codex_hooks is enabled (${report.featureFlag.configPath})\n`,
+      );
+    } else {
+      const where = report.featureFlag.configExists
+        ? `${report.featureFlag.configPath} (missing or disabled)`
+        : `no ${report.featureFlag.configPath}`;
+      process.stdout.write(`feature flag: codex_hooks not enabled — ${where}\n`);
+      process.stdout.write(`   ${report.featureFlag.fixHint}\n`);
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);
     return report.status === "broken" ? 1 : 0;

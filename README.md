@@ -104,8 +104,11 @@ shared behavior:
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
+- Codex, Claude Code, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
+
+repository inventory compaction is deliberately narrow. standalone inventory commands compact, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 

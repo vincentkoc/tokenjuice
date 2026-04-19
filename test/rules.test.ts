@@ -71,8 +71,11 @@ describe("rules", () => {
       "devops/kubectl-describe",
       "devops/kubectl-get",
       "devops/kubectl-logs",
+      "filesystem/fd",
       "filesystem/find",
+      "filesystem/git-ls-files",
       "filesystem/ls",
+      "filesystem/rg-files",
       "generic/help",
       "git/branch",
       "git/diff",
@@ -157,7 +160,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(105);
+    expect(fixtures).toHaveLength(108);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

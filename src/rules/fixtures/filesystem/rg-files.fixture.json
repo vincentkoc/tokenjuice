@@ -1,0 +1,16 @@
+{
+  "id": "filesystem-rg-files-basic",
+  "ruleId": "filesystem/rg-files",
+  "input": {
+    "toolName": "exec",
+    "argv": ["rg", "--files", "src"],
+    "command": "rg --files src",
+    "combinedText": "src/index.ts\nsrc/core/codex.ts\nsrc/core/reduce.ts\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "filesystem/rg-files",
+    "family": "filesystem-inventory",
+    "contains": ["path", "src/core/codex.ts"]
+  }
+}

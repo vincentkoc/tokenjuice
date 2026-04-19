@@ -1,0 +1,16 @@
+{
+  "id": "filesystem-fd-basic",
+  "ruleId": "filesystem/fd",
+  "input": {
+    "toolName": "exec",
+    "argv": ["fd", "codex", "src"],
+    "command": "fd codex src",
+    "combinedText": "src/core/codex.ts\nsrc/rules/fixtures/openclaw/sessions-history.fixture.json\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "filesystem/fd",
+    "family": "filesystem-inventory",
+    "contains": ["path", "src/core/codex.ts"]
+  }
+}

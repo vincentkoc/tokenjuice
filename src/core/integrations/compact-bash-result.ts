@@ -1,8 +1,9 @@
-import { isRepositoryInspectionCommand } from "../command.js";
+import { getInspectionCommandSkipReason } from "../command.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
+import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../command.js";
 
 export type CompactBashResultInput = {
   source: "claude-code" | "codex" | "pi";
@@ -14,12 +15,14 @@ export type CompactBashResultInput = {
   maxInlineChars?: number;
   storeRaw?: boolean;
   metadata?: Record<string, unknown>;
+  inspectionPolicy?: InspectionCommandPolicy;
+  /** @deprecated use inspectionPolicy instead. */
   skipInspectionCommands?: boolean;
 } & RewritePolicyOptions;
 
 export type CompactBashResultKeepReason =
   | "empty-output"
-  | "inspection-command"
+  | InspectionCommandSkipReason
   | "unsupported"
   | "no-compaction"
   | "low-savings-compaction"
@@ -40,6 +43,13 @@ export type CompactBashResultOutput =
       usedTrustedFullText: boolean;
       result: CompactResult;
     };
+
+function resolveInspectionPolicy(input: CompactBashResultInput): InspectionCommandPolicy {
+  if (input.inspectionPolicy) {
+    return input.inspectionPolicy;
+  }
+  return input.skipInspectionCommands ? "skip-all" : "compact-all";
+}
 
 export async function compactBashResult(input: CompactBashResultInput): Promise<CompactBashResultOutput> {
   const command = input.command.trim();
@@ -63,10 +73,11 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     };
   }
 
-  if (input.skipInspectionCommands && isRepositoryInspectionCommand({ command })) {
+  const inspectionSkipReason = getInspectionCommandSkipReason(command, resolveInspectionPolicy(input));
+  if (inspectionSkipReason) {
     return {
       action: "keep",
-      reason: "inspection-command",
+      reason: inspectionSkipReason,
       rawText,
       usedTrustedFullText,
     };

@@ -121,3 +121,15 @@ that checks:
 - do not invent prose in rules
 - preserve failure detail more than success noise
 - use project overrides for local weirdness, not built-ins
+
+## repository inventory reducers
+
+built-in filesystem inventory reducers cover:
+
+- `filesystem/find`
+- `filesystem/ls`
+- `filesystem/rg-files`
+- `filesystem/git-ls-files`
+- `filesystem/fd`
+
+host adapters may gate these reducers with the safe-inventory inspection policy. that policy keeps exact file reads raw, allows standalone inventory output, allows simple path-filtering pipelines, and rejects mixed command sequences or unsafe downstream transforms before reduction.

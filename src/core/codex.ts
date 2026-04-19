@@ -4,7 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { isRepositoryInspectionCommand } from "./command.js";
+import { getInspectionCommandSkipReason, tokenizeCommand } from "./command.js";
 import { compactBashResult } from "./integrations/compact-bash-result.js";
 import { classifyOnly } from "./reduce.js";
 import { storeArtifactMetadata } from "./artifacts.js";
@@ -32,6 +32,8 @@ type CodexPostToolUsePayload = {
   hook_event_name?: unknown;
   tool_name?: unknown;
   cwd?: unknown;
+  exitCode?: unknown;
+  exit_code?: unknown;
   tool_input?: {
     command?: unknown;
   };
@@ -494,58 +496,8 @@ async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
   }
 }
 
-function parseShellWords(command: string): string[] {
-  const words: string[] = [];
-  let current = "";
-  let quote: "'" | "\"" | null = null;
-  let escaping = false;
-
-  for (const char of command) {
-    if (escaping) {
-      current += char;
-      escaping = false;
-      continue;
-    }
-
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-
-    if (quote) {
-      if (char === quote) {
-        quote = null;
-      } else {
-        current += char;
-      }
-      continue;
-    }
-
-    if (char === "'" || char === "\"") {
-      quote = char;
-      continue;
-    }
-
-    if (/\s/u.test(char)) {
-      if (current) {
-        words.push(current);
-        current = "";
-      }
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (current) {
-    words.push(current);
-  }
-
-  return words;
-}
-
 function extractHookCommandPaths(command: string): string[] {
-  const argv = parseShellWords(command);
+  const argv = tokenizeCommand(command);
   if (argv.length === 0) {
     return [];
   }
@@ -565,7 +517,7 @@ function extractHookCommandPaths(command: string): string[] {
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(command);
+  const argv = tokenizeCommand(command);
   if (argv.length < 3) {
     return false;
   }
@@ -602,6 +554,36 @@ function buildCodexHint(rawRefId?: string): string {
     hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);
   }
   return hints.join(" ");
+}
+
+function parseExitCodeValue(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === "string" && /^-?\d+$/u.test(value.trim())) {
+    return Number(value);
+  }
+  return undefined;
+}
+
+function extractCodexExitCode(payload: CodexPostToolUsePayload): number | undefined {
+  for (const candidate of [payload.exitCode, payload.exit_code]) {
+    const parsed = parseExitCodeValue(candidate);
+    if (typeof parsed === "number") {
+      return parsed;
+    }
+  }
+
+  if (isRecord(payload.tool_response)) {
+    for (const key of ["exitCode", "exit_code"]) {
+      const parsed = parseExitCodeValue(payload.tool_response[key]);
+      if (typeof parsed === "number") {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export async function installCodexHook(
@@ -856,11 +838,13 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     return 0;
   }
 
+  const exitCode = extractCodexExitCode(payload);
   const executionInput: ToolExecutionInput = {
     toolName: "exec",
     command,
     combinedText,
     ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+    ...(typeof exitCode === "number" ? { exitCode } : {}),
     metadata: {
       source: "codex-post-tool-use",
     },
@@ -878,13 +862,14 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     return 0;
   }
 
-  if (isRepositoryInspectionCommand({ command })) {
+  const inspectionSkipReason = getInspectionCommandSkipReason(command, "allow-safe-inventory");
+  if (inspectionSkipReason) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);
     const stats = buildImmediateSkipStats(combinedText);
     await writeHookDebug({
       ...debug,
       ...stats,
-      skipped: "inspection-command",
+      skipped: inspectionSkipReason,
     });
     return 0;
   }
@@ -897,6 +882,7 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
       command,
       visibleText: combinedText,
       ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+      ...(typeof exitCode === "number" ? { exitCode } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
       storeRaw,
       metadata: {

@@ -519,6 +519,7 @@ export async function runClaudeCodePostToolUseHook(rawText: string): Promise<num
       visibleText: combinedText,
       ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
+      inspectionPolicy: "allow-safe-inventory",
       storeRaw: shouldStoreFromEnv(),
       metadata: {
         source: "claude-code-post-tool-use",

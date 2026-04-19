@@ -453,6 +453,88 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(debug.matchedReducer).toBe("git/status");
   });
 
+  it("skips file-content inspection commands", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "cat src/core/reduce.ts",
+      },
+      tool_response: "export function reduceExecution() {}\n",
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("file-content-inspection-command");
+  });
+
+  it("rewrites safe repository inventory commands", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "rg --files src/rules",
+      },
+      tool_response: Array.from({ length: 30 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const response = JSON.parse(output) as {
+      decision: string;
+      reason: string;
+    };
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      matchedReducer?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(response.decision).toBe("block");
+    expect(response.reason).toContain("30 paths");
+    expect(debug.rewrote).toBe(true);
+    expect(debug.matchedReducer).toBe("filesystem/rg-files");
+  });
+
+  it("skips unsafe repository inventory pipelines", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "git -C repo ls-files | jq -R .",
+      },
+      tool_response: Array.from({ length: 30 }, (_, index) => JSON.stringify(`src/file-${index + 1}.ts`)).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      matchedReducer?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("unsafe-inventory-pipeline");
+    expect(debug.matchedReducer).toBeUndefined();
+  });
+
   it("skips non-PostToolUse events", async () => {
     const home = await createTempDir();
     process.env.CLAUDE_HOME = home;

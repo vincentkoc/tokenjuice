@@ -328,6 +328,41 @@ describe("reduceExecution", () => {
     expect(result.stats.ratio).toBeLessThan(0.5);
   });
 
+  it.each([
+    {
+      command: "rg --files src/rules",
+      argv: ["rg", "--files", "src/rules"],
+      reducer: "filesystem/rg-files",
+    },
+    {
+      command: "git ls-files src",
+      argv: ["git", "ls-files", "src"],
+      reducer: "filesystem/git-ls-files",
+    },
+    {
+      command: "git -C repo ls-files src",
+      argv: ["git", "-C", "repo", "ls-files", "src"],
+      reducer: "filesystem/git-ls-files",
+    },
+    {
+      command: "fd codex src",
+      argv: ["fd", "codex", "src"],
+      reducer: "filesystem/fd",
+    },
+  ])("compacts $command through a filesystem inventory reducer", async ({ command, argv, reducer }) => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command,
+      argv,
+      stdout: Array.from({ length: 60 }, (_, index) => `src/path-${index + 1}.ts`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe(reducer);
+    expect(result.inlineText).toContain("60 paths");
+    expect(result.stats.ratio).toBeLessThan(0.5);
+  });
+
   it("matches pnpm test runs to the test reducer family", async () => {
     const result = await reduceExecution({
       toolName: "exec",

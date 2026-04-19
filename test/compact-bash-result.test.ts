@@ -68,4 +68,50 @@ describe("compactBashResult", () => {
       expect(outcome.result?.classification.matchedReducer).toBe("generic/fallback");
     }
   });
+
+  it("compacts generic/fallback output when the command is only a cd-prefixed chain", async () => {
+    // Regression: a leading `cd <dir> && <cmd>` is classified as compound by
+    // `isCompoundShellCommand`, which trips `skipGenericFallbackForCompoundCommands`
+    // and drops compaction to zero even though the effective command is a
+    // single inspection. See tokenjuice phase 3 trial — 3/10 Pi runs went from
+    // -25% to 0% solely because the model prefixed `cd <repo> && git log`.
+    const longOutput = Array.from({ length: 30 }, (_, index) => `commit ${index + 1} ${"x".repeat(120)}`).join("\n");
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "cd /home/clawdbot/repos/astro-portfolio && git log -30",
+      visibleText: longOutput,
+      maxInlineChars: 1200,
+      skipInspectionCommands: true,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome.action).toBe("rewrite");
+    if (outcome.action === "rewrite") {
+      expect(outcome.result.inlineText.length).toBeLessThan(longOutput.length);
+      expect(outcome.result.classification.matchedReducer).toBe("generic/fallback");
+    }
+  });
+
+  it("still skips genuinely compound commands after stripping cd prefixes", async () => {
+    // `cd X && foo | bar` is still compound after stripping the cd; the gate
+    // should continue to apply to the residual pipeline.
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "cd /repo && echo hi | head -c 4",
+      visibleText: Array.from({ length: 18 }, (_, index) => `line ${index + 1} ${"x".repeat(24)}`).join("\n"),
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome.action).toBe("keep");
+    if (outcome.action === "keep") {
+      expect(outcome.reason).toBe("generic-compound-command");
+    }
+  });
+
 });

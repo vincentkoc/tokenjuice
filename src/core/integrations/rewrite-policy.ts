@@ -1,6 +1,6 @@
 import type { CompactResult } from "../../types.js";
 
-import { isCompoundShellCommand } from "../command.js";
+import { isCompoundShellCommand, stripLeadingCdPrefix } from "../command.js";
 
 export type RewritePolicyOptions = {
   minSavedCharsAny?: number;
@@ -33,7 +33,7 @@ export function getCompactionSkipReason(
     return null;
   }
 
-  if (options.skipGenericFallbackForCompoundCommands && isCompoundShellCommand(command)) {
+  if (options.skipGenericFallbackForCompoundCommands && isCompoundShellCommand(stripLeadingCdPrefix(command))) {
     return "generic-compound-command";
   }
 

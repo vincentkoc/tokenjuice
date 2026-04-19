@@ -162,6 +162,91 @@ export function normalizeCommandSignature(command?: string): string | null {
   return normalized || null;
 }
 
+/**
+ * Strip trivial leading `cd <dir> && ` (or `pushd`) prefixes from a shell
+ * command. Models sometimes emit `cd /path && git status` even when the
+ * harness provides a cwd, which causes downstream compound-command heuristics
+ * to skip compaction. Stripping the prefix lets classification and the
+ * rewrite policy reason about the effective command.
+ *
+ * Only handles trivially safe chains — a single shell token argument, no
+ * redirections, no nested pipelines. Anything fancier returns the input
+ * unchanged.
+ */
+export function stripLeadingCdPrefix(command: string): string {
+  let current = command.trim();
+  // Guard against pathological inputs; legitimate chains are rarely > 2.
+  for (let iteration = 0; iteration < 8; iteration += 1) {
+    const next = matchLeadingCdChain(current);
+    if (next === null) return current;
+    current = next;
+  }
+  return current;
+}
+
+function matchLeadingCdChain(command: string): string | null {
+  const keywordMatch = /^\s*(cd|pushd)(\s+)/u.exec(command);
+  if (!keywordMatch) return null;
+
+  let index = keywordMatch[0].length;
+  const length = command.length;
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+  let sawArg = false;
+
+  while (index < length) {
+    const char = command[index]!;
+    if (escaping) {
+      escaping = false;
+      index += 1;
+      sawArg = true;
+      continue;
+    }
+    if (char === "\\") {
+      escaping = true;
+      index += 1;
+      sawArg = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = null;
+      index += 1;
+      sawArg = true;
+      continue;
+    }
+    if (char === "'" || char === "\"") {
+      quote = char;
+      index += 1;
+      sawArg = true;
+      continue;
+    }
+    if (/\s/u.test(char)) break;
+    if (
+      char === "&" ||
+      char === "|" ||
+      char === ";" ||
+      char === "<" ||
+      char === ">" ||
+      char === "\n"
+    ) {
+      return null;
+    }
+    sawArg = true;
+    index += 1;
+  }
+
+  if (!sawArg) return null;
+
+  while (index < length && /[ \t]/u.test(command[index]!)) index += 1;
+
+  if (command[index] === "&" && command[index + 1] === "&") {
+    const tail = command.slice(index + 2).trim();
+    return tail.length > 0 ? tail : null;
+  }
+  return null;
+}
+
+
 export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutionInput {
   if (input.argv?.length || !input.command) {
     return input;

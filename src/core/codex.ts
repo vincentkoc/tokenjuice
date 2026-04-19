@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
 import { isRepositoryInspectionCommand } from "./command.js";
+import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "./hook-command.js";
 import { compactBashResult } from "./integrations/compact-bash-result.js";
 import { classifyOnly } from "./reduce.js";
 import { storeArtifactMetadata } from "./artifacts.js";
@@ -83,13 +84,6 @@ function getCodexHome(): string {
 
 function getDefaultHooksPath(): string {
   return join(getCodexHome(), "hooks.json");
-}
-
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:-]+$/u.test(value)) {
-    return value;
-  }
-  return `'${value.replace(/'/gu, `'\\''`)}'`;
 }
 
 async function isExecutableFile(path: string): Promise<boolean> {
@@ -362,76 +356,6 @@ async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
   }
 }
 
-function parseShellWords(command: string): string[] {
-  const words: string[] = [];
-  let current = "";
-  let quote: "'" | "\"" | null = null;
-  let escaping = false;
-
-  for (const char of command) {
-    if (escaping) {
-      current += char;
-      escaping = false;
-      continue;
-    }
-
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-
-    if (quote) {
-      if (char === quote) {
-        quote = null;
-      } else {
-        current += char;
-      }
-      continue;
-    }
-
-    if (char === "'" || char === "\"") {
-      quote = char;
-      continue;
-    }
-
-    if (/\s/u.test(char)) {
-      if (current) {
-        words.push(current);
-        current = "";
-      }
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (current) {
-    words.push(current);
-  }
-
-  return words;
-}
-
-function extractHookCommandPaths(command: string): string[] {
-  const argv = parseShellWords(command);
-  if (argv.length === 0) {
-    return [];
-  }
-
-  const paths = new Set<string>();
-  const first = argv[0];
-  if (first && (first.includes("/") || first.includes("\\"))) {
-    paths.add(first);
-  }
-
-  const second = argv[1];
-  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
-    paths.add(second);
-  }
-
-  return [...paths];
-}
-
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   const argv = parseShellWords(command);
   if (argv.length < 3) {
@@ -445,7 +369,7 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
     wrapIndex = 1;
   } else if (
     typeof first === "string"
-    && first.endsWith("/node")
+    && isNodeExecutablePath(first)
     && typeof second === "string"
     && second.endsWith(".js")
     && argv.slice(1).some((part) => part.includes("tokenjuice"))

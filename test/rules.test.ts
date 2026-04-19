@@ -50,6 +50,7 @@ describe("rules", () => {
       "build/tsdown",
       "build/vite",
       "build/webpack",
+      "build/xcodebuild",
       "cloud/aws",
       "cloud/az",
       "cloud/flyctl",
@@ -73,6 +74,7 @@ describe("rules", () => {
       "filesystem/ls",
       "generic/help",
       "git/branch",
+      "git/diff",
       "git/diff-name-only",
       "git/diff-stat",
       "git/log-oneline",
@@ -153,7 +155,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(101);
+    expect(fixtures).toHaveLength(103);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

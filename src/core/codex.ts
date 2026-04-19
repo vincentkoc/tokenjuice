@@ -76,6 +76,13 @@ export type CodexHookCommandOptions = {
   local?: boolean;
   binaryPath?: string;
   nodePath?: string;
+  /**
+   * Override for the config.toml consulted when reporting the
+   * `codex_hooks` feature-flag state. Defaults to `~/.codex/config.toml`.
+   * Exposed primarily for tests and tooling that manage a non-default
+   * Codex home.
+   */
+  featureFlagConfigPath?: string;
 };
 
 export type CodexDoctorReport = {
@@ -87,6 +94,7 @@ export type CodexDoctorReport = {
   detectedCommand?: string;
   checkedPaths: string[];
   missingPaths: string[];
+  featureFlag: CodexFeatureFlagStatus;
 };
 
 export type UninstallCodexHookResult = {
@@ -612,7 +620,7 @@ export async function installCodexHook(
   await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   await rename(tempPath, hooksPath);
 
-  const featureFlag = await inspectCodexHooksFeatureFlag();
+  const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
 
   return {
     hooksPath,
@@ -656,6 +664,7 @@ export async function doctorCodexHook(
   let fixCommand = getCodexFixCommand(options.local);
   const { config, exists } = await readHooksConfig(hooksPath);
   const detectedCommand = findTokenjuiceCodexHookCommand(config);
+  const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
 
   if (!exists) {
     return {
@@ -666,6 +675,7 @@ export async function doctorCodexHook(
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
+      featureFlag,
     };
   }
 
@@ -678,6 +688,7 @@ export async function doctorCodexHook(
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
+      featureFlag,
     };
   }
 
@@ -704,6 +715,11 @@ export async function doctorCodexHook(
     issues.push("local Codex hook target is older than the source tree");
     fixCommand = "pnpm build && tokenjuice install codex --local";
   }
+  if (!featureFlag.enabled) {
+    issues.push(
+      "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
+    );
+  }
 
   return {
     hooksPath,
@@ -714,6 +730,7 @@ export async function doctorCodexHook(
     detectedCommand,
     checkedPaths,
     missingPaths,
+    featureFlag,
   };
 }
 

@@ -358,6 +358,7 @@ describe("doctorInstalledHooks", () => {
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(join(home, "config.toml"), "[features]\ncodex_hooks = true\n", "utf8");
     await installCodexHook(join(home, "hooks.json"));
     await installClaudeCodeHook(join(home, "settings.json"));
     await installPiExtension(undefined, { local: true });

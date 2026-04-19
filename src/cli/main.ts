@@ -321,6 +321,15 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`installed codex hook: ${result.hooksPath}\n`);
+    if (result.featureFlag.enabled) {
+      process.stdout.write(`feature flag: codex_hooks is enabled (${result.featureFlag.configPath})\n`);
+    } else {
+      const where = result.featureFlag.configExists
+        ? `${result.featureFlag.configPath} (missing or disabled)`
+        : `no ${result.featureFlag.configPath}`;
+      process.stdout.write(`feature flag: codex_hooks not enabled — ${where}\n`);
+      process.stdout.write(`   ${result.featureFlag.fixHint}\n`);
+    }
     process.stdout.write(`command: ${result.command}\n`);
     if (result.backupPath) {
       process.stdout.write(`backup: ${result.backupPath}\n`);

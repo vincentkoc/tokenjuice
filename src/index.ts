@@ -3,7 +3,15 @@ export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 export { classifyExecution } from "./core/classify.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./core/claude-code.js";
 export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
-export { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "./core/codex.js";
+export {
+  doctorCodexHook,
+  inspectCodexHooksFeatureFlag,
+  installCodexHook,
+  parseCodexFeatureFlag,
+  runCodexPostToolUseHook,
+  uninstallCodexHook,
+} from "./core/codex.js";
+export type { CodexFeatureFlagStatus } from "./core/codex.js";
 export { doctorInstalledHooks } from "./core/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./core/pi.js";
 export { runReduceJsonCli } from "./core/cli-client.js";

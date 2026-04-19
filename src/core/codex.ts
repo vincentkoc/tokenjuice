@@ -49,6 +49,27 @@ export type InstallCodexHookResult = {
   hooksPath: string;
   backupPath?: string;
   command: string;
+  featureFlag: CodexFeatureFlagStatus;
+};
+
+export type CodexFeatureFlagStatus = {
+  /** Absolute path we looked at (`~/.codex/config.toml` by default). */
+  configPath: string;
+  /** Whether the config file exists on disk. */
+  configExists: boolean;
+  /** Whether a `codex_hooks` key was found anywhere in `[features]`. */
+  keyPresent: boolean;
+  /** Parsed value when present, otherwise null. */
+  value: boolean | null;
+  /** Convenience: keyPresent && value === true. */
+  enabled: boolean;
+  /**
+   * One-line remediation the user can copy-paste. Empty when enabled.
+   * Currently a `codex exec --enable codex_hooks` hint rather than
+   * editing config.toml automatically (tokenjuice avoids silent
+   * config rewrites).
+   */
+  fixHint: string;
 };
 
 export type CodexHookCommandOptions = {
@@ -84,6 +105,94 @@ function getCodexHome(): string {
 function getDefaultHooksPath(): string {
   return join(getCodexHome(), "hooks.json");
 }
+
+function getDefaultCodexConfigPath(): string {
+  return join(getCodexHome(), "config.toml");
+}
+
+const FEATURE_FLAG_NAME = "codex_hooks";
+const FEATURE_FLAG_FIX_HINT =
+  "Codex requires the `codex_hooks` feature to load hooks.json. " +
+  "Enable per-invocation with `codex exec --enable codex_hooks ...`, " +
+  "or persistently by adding a `[features]` section with `codex_hooks = true` to ~/.codex/config.toml.";
+
+/**
+ * Read-only scan of ~/.codex/config.toml for `codex_hooks = <bool>` under
+ * a `[features]` section (top-level or dotted form). Does NOT edit the
+ * file — tokenjuice prefers to surface the state and let the user decide.
+ *
+ * Returns `keyPresent: false` if the file is missing, unreadable, or the
+ * key is not declared. Stray comments and inline `# ...` are tolerated.
+ */
+export async function inspectCodexHooksFeatureFlag(
+  configPath: string = getDefaultCodexConfigPath(),
+): Promise<CodexFeatureFlagStatus> {
+  let source: string;
+  try {
+    source = await readFile(configPath, "utf8");
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return {
+        configPath,
+        configExists: false,
+        keyPresent: false,
+        value: null,
+        enabled: false,
+        fixHint: FEATURE_FLAG_FIX_HINT,
+      };
+    }
+    throw error;
+  }
+
+  const parsed = parseCodexFeatureFlag(source, FEATURE_FLAG_NAME);
+  const enabled = parsed.keyPresent && parsed.value === true;
+  return {
+    configPath,
+    configExists: true,
+    keyPresent: parsed.keyPresent,
+    value: parsed.keyPresent ? parsed.value : null,
+    enabled,
+    fixHint: enabled ? "" : FEATURE_FLAG_FIX_HINT,
+  };
+}
+
+/**
+ * Minimal TOML-ish scanner. Looks for `codex_hooks = <bool>` either under
+ * a `[features]` header or as a dotted `features.codex_hooks = <bool>`
+ * assignment at any indent. Ignores comments and in-line comments.
+ * Not a full TOML parser; only the shapes Codex itself documents.
+ */
+export function parseCodexFeatureFlag(
+  source: string,
+  key: string,
+): { keyPresent: boolean; value: boolean | null } {
+  const lines = source.split(/\r?\n/u);
+  let inFeatures = false;
+  const dottedRe = new RegExp(`^\\s*features\\.${key}\\s*=\\s*(true|false)\\b`, "u");
+  const scopedRe = new RegExp(`^\\s*${key}\\s*=\\s*(true|false)\\b`, "u");
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/#.*$/u, "");
+    const header = /^\s*\[([^\]]+)\]/u.exec(line);
+    if (header) {
+      inFeatures = header[1]!.trim() === "features";
+      continue;
+    }
+    const dotted = dottedRe.exec(line);
+    if (dotted) {
+      return { keyPresent: true, value: dotted[1] === "true" };
+    }
+    if (inFeatures) {
+      const scoped = scopedRe.exec(line);
+      if (scoped) {
+        return { keyPresent: true, value: scoped[1] === "true" };
+      }
+    }
+  }
+
+  return { keyPresent: false, value: null };
+}
+
 
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_./:-]+$/u.test(value)) {
@@ -488,10 +597,13 @@ export async function installCodexHook(
   await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   await rename(tempPath, hooksPath);
 
+  const featureFlag = await inspectCodexHooksFeatureFlag();
+
   return {
     hooksPath,
     ...(backupPath ? { backupPath } : {}),
     command,
+    featureFlag,
   };
 }
 

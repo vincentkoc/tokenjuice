@@ -224,6 +224,36 @@ describe("rules", () => {
     expect(gitStatus?.rule.family).toBe("git-status-project");
   });
 
+  it("accepts gitSubcommands in project rule matchers", async () => {
+    const cwd = await createTempDir();
+    const rulesDir = join(cwd, ".tokenjuice", "rules", "git");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "ls-files.json"),
+      JSON.stringify(
+        {
+          id: "project/git-ls-files",
+          family: "project-git-ls-files",
+          match: {
+            argv0: ["git"],
+            gitSubcommands: ["ls-files"],
+          },
+          summarize: {
+            head: 1,
+            tail: 1,
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const results = await verifyRules({ cwd });
+    const projectRule = results.find((result) => result.id === "project/git-ls-files");
+    expect(projectRule?.ok).toBe(true);
+  });
+
   it("reports cross-layer shadow warnings in verify", async () => {
     const cwd = await createTempDir();
     const rulesDir = join(cwd, ".tokenjuice", "rules", "git");

@@ -39,6 +39,13 @@ describe("normalizeExecutionInput", () => {
       command: "find src -maxdepth 2 -type f",
     }).argv).toEqual(["find", "src", "-maxdepth", "2", "-type", "f"]);
   });
+
+  it("derives argv from the effective command after a safe cd prefix", () => {
+    expect(normalizeExecutionInput({
+      toolName: "exec",
+      command: "cd /repo && cat README.md",
+    }).argv).toEqual(["cat", "README.md"]);
+  });
 });
 
 describe("hasSequentialShellCommands", () => {
@@ -87,6 +94,10 @@ describe("isFileContentInspectionCommand", () => {
     expect(isFileContentInspectionCommand({ command })).toBe(true);
   });
 
+  it("detects file inspection after a safe cd prefix", () => {
+    expect(isFileContentInspectionCommand({ command: "cd /repo && cat README.md" })).toBe(true);
+  });
+
   it("returns false for normal search commands", () => {
     expect(isFileContentInspectionCommand({ command: "rg AssertionError src" })).toBe(false);
   });
@@ -100,6 +111,7 @@ describe("isRepositoryInspectionCommand", () => {
     "fdfind codex src",
     "ls src/rules",
     "rg --files src/rules",
+    "cd /repo && rg --files src/rules",
     "git ls-files src",
     "git -C repo ls-files src",
     "git --no-pager ls-files src",
@@ -158,6 +170,7 @@ describe("isRepositoryInventoryCommand", () => {
     "ls src/rules",
     "rg --files src/rules",
     "git ls-files src",
+    "cd /repo && rg --files src/rules",
     "git -C repo ls-files src",
     "git --no-pager ls-files src",
   ])("detects `%s` as repository inventory", (command) => {
@@ -179,6 +192,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     "find src -type f",
     "rg --files src",
     "git ls-files src",
+    "cd /repo && rg --files src",
     "find src -type f | sort | head -n 20",
     "git -C repo ls-files | sort | head -n 20",
     "rg --files | sort -u | tail -n 20",
@@ -225,6 +239,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
   it.each([
     { command: "rg TODO src", safety: "not-inventory" },
     { command: "find src -type f", safety: "safe" },
+    { command: "cd /repo && rg --files src", safety: "safe" },
     { command: "ls src && rg TODO src", safety: "sequential-command" },
     { command: "find src -type f | xargs wc -l", safety: "unsafe-pipeline" },
     { command: "find src -type f -exec cat {} +", safety: "unsafe-pipeline" },
@@ -237,6 +252,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
 describe("getInspectionCommandSkipReason", () => {
   it.each([
     { command: "cat README.md", reason: "file-content-inspection-command" },
+    { command: "cd /repo && cat README.md", reason: "file-content-inspection-command" },
     { command: "ls src && rg TODO src", reason: "sequential-inventory-command" },
     { command: "git -C repo ls-files | jq -R .", reason: "unsafe-inventory-pipeline" },
     { command: "rg --files | sort README.md", reason: "unsafe-inventory-pipeline" },
@@ -248,5 +264,6 @@ describe("getInspectionCommandSkipReason", () => {
 
   it("allows safe inventory with allow-safe-inventory", () => {
     expect(getInspectionCommandSkipReason("rg --files | sort | head -n 10", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("cd /repo && rg --files src", "allow-safe-inventory")).toBeNull();
   });
 });

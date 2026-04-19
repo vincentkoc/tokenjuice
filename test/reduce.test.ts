@@ -363,6 +363,17 @@ describe("reduceExecution", () => {
     expect(result.stats.ratio).toBeLessThan(0.5);
   });
 
+  it("does not treat unrelated git commands containing ls-files as git ls-files inventory", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git grep ls-files src",
+      combinedText: Array.from({ length: 30 }, (_, index) => `src/file-${index + 1}.ts:${index + 1}: mentions ls-files`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("search/git-grep");
+  });
+
   it("matches pnpm test runs to the test reducer family", async () => {
     const result = await reduceExecution({
       toolName: "exec",

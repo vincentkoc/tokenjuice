@@ -32,6 +32,7 @@ export type RuleOutputMatch = {
 export type RuleMatch = {
   toolNames?: string[];
   argv0?: string[];
+  gitSubcommands?: string[];
   argvIncludes?: string[][];
   argvIncludesAny?: string[][];
   commandIncludes?: string[];

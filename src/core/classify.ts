@@ -1,5 +1,7 @@
 import type { ClassificationResult, CompiledRule, JsonRule, ToolExecutionInput } from "../types.js";
 
+import { getGitSubcommand } from "./command.js";
+
 function includesAll(argv: string[], expected: string[]): boolean {
   return expected.every((part) => argv.includes(part));
 }
@@ -21,6 +23,10 @@ export function matchesRule(ruleLike: RuleLike, input: ToolExecutionInput): bool
   }
 
   if (rule.match.argv0 && !rule.match.argv0.includes(argv[0] ?? "")) {
+    return false;
+  }
+
+  if (rule.match.gitSubcommands && !rule.match.gitSubcommands.includes(getGitSubcommand(argv) ?? "")) {
     return false;
   }
 
@@ -48,6 +54,7 @@ function scoreRule(ruleLike: RuleLike): number {
   return (
     (rule.priority ?? 0) * 1000
     + (rule.match.argv0?.length ?? 0) * 100
+    + (rule.match.gitSubcommands?.length ?? 0) * 60
     + (rule.match.argvIncludes?.reduce((sum, parts) => sum + parts.length, 0) ?? 0) * 40
     + (rule.match.argvIncludesAny?.reduce((sum, parts) => sum + parts.length, 0) ?? 0) * 35
     + (rule.match.commandIncludes?.length ?? 0) * 25

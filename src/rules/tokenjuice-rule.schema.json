@@ -61,6 +61,10 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "gitSubcommands": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "argvIncludes": {
           "type": "array",
           "items": {

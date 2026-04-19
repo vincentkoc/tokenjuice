@@ -110,7 +110,7 @@ function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
   if (!input.command) {
     return [];
   }
-  return tokenizeCommand(input.command);
+  return tokenizeCommand(stripLeadingCdPrefix(input.command));
 }
 
 function getNormalizedArgv0(argv: string[]): string | null {
@@ -408,17 +408,19 @@ export function isRepositoryInventoryCommand(input: Pick<ToolExecutionInput, "ar
 }
 
 export function getRepositoryInventorySafety(command: string): RepositoryInventorySafety {
-  if (!isRepositoryInventoryCommand({ command })) {
+  const effectiveCommand = stripLeadingCdPrefix(command);
+  const sourceArgv = tokenizeCommand(effectiveCommand);
+  if (!isRepositoryInventoryCommand({ argv: sourceArgv })) {
     return "not-inventory";
   }
-  if (!isSafeRepositoryInventorySource(tokenizeCommand(command))) {
+  if (!isSafeRepositoryInventorySource(sourceArgv)) {
     return "unsafe-pipeline";
   }
-  if (hasSequentialShellCommands(command)) {
+  if (hasSequentialShellCommands(effectiveCommand)) {
     return "sequential-command";
   }
 
-  const segments = splitUnquotedPipes(command);
+  const segments = splitUnquotedPipes(effectiveCommand);
   if (segments.length <= 1) {
     return "safe";
   }
@@ -579,7 +581,7 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
     return input;
   }
 
-  const argv = tokenizeCommand(input.command);
+  const argv = tokenizeCommand(stripLeadingCdPrefix(input.command));
   if (argv.length === 0) {
     return input;
   }

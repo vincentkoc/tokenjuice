@@ -5,7 +5,7 @@
   "match": {
     "toolNames": ["exec"],
     "argv0": ["git"],
-    "argvIncludes": [["ls-files"]]
+    "gitSubcommands": ["ls-files"]
   },
   "transforms": {
     "stripAnsi": true,

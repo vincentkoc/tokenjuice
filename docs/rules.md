@@ -32,7 +32,7 @@ example:
   "family": "git-status",
   "match": {
     "argv0": ["git"],
-    "argvIncludes": [["status"]]
+    "gitSubcommands": ["status"]
   },
   "transforms": {
     "stripAnsi": true,
@@ -68,7 +68,7 @@ example:
 
 - `id`: stable override key
 - `family`: high-level classifier family
-- `match`: command/tool matching conditions
+- `match`: command/tool matching conditions. `gitSubcommands` matches the parsed Git subcommand after global Git options such as `-C` and `--git-dir`.
 - `filters.skipPatterns`: lines to drop
 - `filters.keepPatterns`: lines to prefer
 - `transforms`: output normalization toggles

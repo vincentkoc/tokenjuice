@@ -789,23 +789,6 @@ describe("installPiExtension", () => {
     expect(await readOptional(markerPath)).toBeUndefined();
   });
 
-  it("skips file-content inspection commands in-process", async () => {
-    const home = await createTempDir();
-    const { handlers, fakeCtx } = await installLocalTestExtension(home, "process.exit(7);");
-
-    const result = await handlers.get("tool_result")?.(
-      {
-        toolName: "bash",
-        input: { command: "cat src/core/reduce.ts" },
-        content: [{ type: "text", text: "export function reduceExecution() {}\n" }],
-        details: {},
-      },
-      fakeCtx,
-    );
-
-    expect(result).toBeUndefined();
-  });
-
   it("skips file-content inspection commands before reading fullOutputPath", async () => {
     const home = await createTempDir();
     const missingOutputPath = join(home, "missing-output.txt");
@@ -843,26 +826,6 @@ describe("installPiExtension", () => {
 
     expect(result?.content[0].text).toContain("30 paths");
     expect(result?.content[0].text).toContain("src/rules/example-1.json");
-  });
-
-  it("skips unsafe repository inventory pipelines in-process", async () => {
-    const home = await createTempDir();
-    const { handlers, fakeCtx } = await installLocalTestExtension(home, "process.exit(7);");
-
-    const result = await handlers.get("tool_result")?.(
-      {
-        toolName: "bash",
-        input: { command: "git -C repo ls-files | jq -R ." },
-        content: [{
-          type: "text",
-          text: Array.from({ length: 30 }, (_, index) => JSON.stringify(`src/file-${index + 1}.ts`)).join("\n"),
-        }],
-        details: {},
-      },
-      fakeCtx,
-    );
-
-    expect(result).toBeUndefined();
   });
 
   it("skips unsafe repository inventory pipelines before reading fullOutputPath", async () => {

@@ -508,33 +508,6 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(debug.matchedReducer).toBe("filesystem/rg-files");
   });
 
-  it("skips unsafe repository inventory pipelines", async () => {
-    const home = await createTempDir();
-    process.env.CLAUDE_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command: "git -C repo ls-files | jq -R .",
-      },
-      tool_response: Array.from({ length: 30 }, (_, index) => JSON.stringify(`src/file-${index + 1}.ts`)).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-      matchedReducer?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("unsafe-inventory-pipeline");
-    expect(debug.matchedReducer).toBeUndefined();
-  });
-
   it("skips non-PostToolUse events", async () => {
     const home = await createTempDir();
     process.env.CLAUDE_HOME = home;

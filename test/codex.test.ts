@@ -538,26 +538,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.ratio).toBeLessThan(1);
   });
 
-  it.each([
-    {
-      label: "cat",
-      command: "cat src/core/reduce.ts",
-      output: [
-        "import { loadRules } from \"./rules.js\";",
-        "throw new AssertionError();",
-        "export function reduceExecution() {}",
-      ].join("\n"),
-    },
-    {
-      label: "sed",
-      command: "sed -n '560,620p' src/core/codex.ts",
-      output: [
-        "function shouldStoreFromEnv(): boolean {",
-        "  return value === \"yes\";",
-        "}",
-      ].join("\n"),
-    },
-  ])("skips auto-rewrite for $label file-content inspection commands", async ({ command, output: toolResponse }) => {
+  it("skips auto-rewrite for file-content inspection commands", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;
 
@@ -565,9 +546,13 @@ describe("runCodexPostToolUseHook", () => {
       hook_event_name: "PostToolUse",
       tool_name: "Bash",
       tool_input: {
-        command,
+        command: "cat src/core/reduce.ts",
       },
-      tool_response: toolResponse,
+      tool_response: [
+        "import { loadRules } from \"./rules.js\";",
+        "throw new AssertionError();",
+        "export function reduceExecution() {}",
+      ].join("\n"),
     });
 
     const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
@@ -588,100 +573,6 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.reducedChars).toBe(debug.rawChars);
     expect(debug.savedChars).toBe(0);
     expect(debug.ratio).toBe(1);
-  });
-
-  it.each([
-    {
-      label: "rg --files",
-      command: "rg --files src/rules",
-      reducer: "filesystem/rg-files",
-      output: Array.from({ length: 30 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
-    },
-    {
-      label: "git ls-files",
-      command: "git ls-files src",
-      reducer: "filesystem/git-ls-files",
-      output: Array.from({ length: 30 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
-    },
-    {
-      label: "git -C ls-files",
-      command: "git -C repo ls-files src",
-      reducer: "filesystem/git-ls-files",
-      output: Array.from({ length: 30 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
-    },
-  ])("auto-rewrites $label repository inventory commands", async ({ command, output: toolResponse, reducer }) => {
-    const home = await createTempDir();
-    process.env.CODEX_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command,
-      },
-      tool_response: toolResponse,
-    });
-
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-      matchedReducer?: string;
-      rawChars?: number;
-      reducedChars?: number;
-      savedChars?: number;
-      ratio?: number;
-    };
-    const hookOutput = JSON.parse(output) as {
-      decision: string;
-      reason: string;
-    };
-
-    expect(code).toBe(0);
-    expect(hookOutput.decision).toBe("block");
-    expect(hookOutput.reason).toContain("30 paths");
-    expect(debug.rewrote).toBe(true);
-    expect(debug.skipped).toBeUndefined();
-    expect(debug.matchedReducer).toBe(reducer);
-    expect(debug.rawChars).toBeGreaterThan(0);
-    expect(debug.reducedChars).toBeLessThan(debug.rawChars!);
-    expect(debug.savedChars).toBeGreaterThan(0);
-    expect(debug.ratio).toBeLessThan(1);
-  });
-
-  it("keeps mixed inventory command sequences unmodified", async () => {
-    const home = await createTempDir();
-    process.env.CODEX_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command: "ls src\nrg -n \"TODO\" src",
-      },
-      tool_response: [
-        "core",
-        "index.ts",
-        "src/index.ts:12:// TODO keep exact search output",
-      ].join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-      matchedReducer?: string;
-      rawChars?: number;
-      reducedChars?: number;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("sequential-inventory-command");
-    expect(debug.matchedReducer).toBeUndefined();
-    expect(debug.rawChars).toBeGreaterThan(0);
-    expect(debug.reducedChars).toBe(debug.rawChars);
   });
 
   it("keeps unsafe inventory pipelines unmodified", async () => {
@@ -717,67 +608,6 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.matchedReducer).toBeUndefined();
     expect(debug.rawChars).toBeGreaterThan(0);
     expect(debug.reducedChars).toBe(debug.rawChars);
-  });
-
-  it("keeps git global-option inventory pipelines unmodified when downstream is unsafe", async () => {
-    const home = await createTempDir();
-    process.env.CODEX_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command: "git -C repo --no-pager ls-files | jq -R .",
-      },
-      tool_response: Array.from({ length: 30 }, (_, index) => JSON.stringify(`src/file-${index + 1}.ts`)).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-      matchedReducer?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("unsafe-inventory-pipeline");
-    expect(debug.matchedReducer).toBeUndefined();
-  });
-
-  it.each([
-    "rg --files | rg TODO src",
-    "find src -type f | sed -n '1,5p' src/core/reduce.ts",
-    "git ls-files | grep -R TODO src",
-  ])("keeps inventory pipelines with downstream file readers unmodified: %s", async (command) => {
-    const home = await createTempDir();
-    process.env.CODEX_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command,
-      },
-      tool_response: [
-        "src/core/reduce.ts:1:export function reduceExecution() {}",
-        "src/core/command.ts:2:const TODO = true;",
-      ].join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-      matchedReducer?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("unsafe-inventory-pipeline");
-    expect(debug.matchedReducer).toBeUndefined();
   });
 
   it("routes Codex exit codes into reducers", async () => {

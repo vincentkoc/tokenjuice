@@ -46,6 +46,7 @@ describe("rules", () => {
       "archive/unzip",
       "archive/zip",
       "build/esbuild",
+      "build/swift-build",
       "build/tsc",
       "build/tsdown",
       "build/vite",
@@ -136,6 +137,7 @@ describe("rules", () => {
       "tests/playwright",
       "tests/pnpm-test",
       "tests/pytest",
+      "tests/swift-test",
       "tests/vitest",
       "tests/yarn-test",
       "transfer/rsync",
@@ -155,7 +157,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(103);
+    expect(fixtures).toHaveLength(105);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

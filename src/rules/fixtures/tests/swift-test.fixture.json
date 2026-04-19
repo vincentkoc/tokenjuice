@@ -1,0 +1,30 @@
+{
+  "id": "tests-swift-test-failure-basic",
+  "ruleId": "tests/swift-test",
+  "input": {
+    "toolName": "exec",
+    "argv": ["swift", "test"],
+    "command": "swift test",
+    "combinedText": "[0/1] Planning build\nBuilding for debugging...\n[0/4] Write sources\n[1/4] Write swift-version--1A2B3C.txt\n[3/6] Compiling TokenTests ParserTests.swift\n/repo/Tests/ParserTests.swift:12: error: ParserTests.testParseNumber : XCTAssertEqual failed: (\"41\") is not equal to (\"42\") - parser should keep the last digit\nTest Case '-[TokenTests.ParserTests testParseNumber]' failed (0.014 seconds)\nTest Suite 'ParserTests' failed at 2026-04-19 19:40:12.345.\n\tExecuted 2 tests, with 1 failure (0 unexpected) in 0.014 (0.015) seconds\nTest Suite 'All tests' failed at 2026-04-19 19:40:12.345.\n\tExecuted 2 tests, with 1 failure (0 unexpected) in 0.014 (0.015) seconds\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "tests/swift-test",
+    "family": "test-results",
+    "facts": {
+      "error": 1,
+      "failed test": 1
+    },
+    "contains": [
+      "exit 1",
+      "failed test",
+      "/repo/Tests/ParserTests.swift:12: error: ParserTests.testParseNumber : XCTAssertEqual failed: (\"41\") is not equal to (\"42\") - parser should keep the last digit",
+      "Test Case '-[TokenTests.ParserTests testParseNumber]' failed (0.014 seconds)",
+      "Executed 2 tests, with 1 failure"
+    ],
+    "excludes": [
+      "[3/6] Compiling TokenTests ParserTests.swift",
+      "Building for debugging..."
+    ]
+  }
+}

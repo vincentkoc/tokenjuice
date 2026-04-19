@@ -1,0 +1,29 @@
+{
+  "id": "build-swift-build-failure-basic",
+  "ruleId": "build/swift-build",
+  "input": {
+    "toolName": "exec",
+    "argv": ["swift", "build"],
+    "command": "swift build",
+    "combinedText": "[0/1] Planning build\nBuilding for debugging...\n[0/5] Write sources\n[1/5] Write swift-version--A1B2C3.txt\n[3/5] Emitting module TokenJuice\n/repo/Sources/App/main.swift:18:7: warning: initialization of immutable value 'unused' was never used; consider replacing with assignment to '_' or removing it\n/repo/Sources/App/main.swift:22:18: error: cannot find 'missingSymbol' in scope\nerror: emit-module command failed with exit code 1 (use -v to see invocation)\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/swift-build",
+    "family": "build",
+    "facts": {
+      "error": 2,
+      "warning": 1
+    },
+    "contains": [
+      "exit 1",
+      "/repo/Sources/App/main.swift:18:7: warning: initialization of immutable value 'unused' was never used",
+      "/repo/Sources/App/main.swift:22:18: error: cannot find 'missingSymbol' in scope",
+      "error: emit-module command failed with exit code 1"
+    ],
+    "excludes": [
+      "[3/5] Emitting module TokenJuice",
+      "Building for debugging..."
+    ]
+  }
+}

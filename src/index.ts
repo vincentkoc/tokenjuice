@@ -1,7 +1,7 @@
 export { getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
-export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
+export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
 export {
   doctorCodexHook,

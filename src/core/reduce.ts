@@ -1,5 +1,5 @@
 import { loadRules } from "./rules.js";
-import { classifyExecution, matchesRule } from "./classify.js";
+import { classifyExecution, findBestRuleMatch } from "./classify.js";
 import { isFileContentInspectionCommand, normalizeExecutionInput } from "./command.js";
 import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
@@ -718,5 +718,5 @@ export async function classifyOnly(input: ToolExecutionInput, forcedRuleId?: str
 export async function findMatchingRule(input: ToolExecutionInput): Promise<CompiledRule | undefined> {
   const rules = await loadRules();
   const normalizedInput = normalizeExecutionInput(input);
-  return rules.find((rule) => matchesRule(rule, normalizedInput));
+  return findBestRuleMatch(normalizedInput, rules)?.rule;
 }

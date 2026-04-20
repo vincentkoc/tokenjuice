@@ -1,13 +1,22 @@
 import { basename } from "node:path";
 
-import type { ToolExecutionInput } from "../types.js";
+import type { CommandMatchSource, ToolExecutionInput } from "../types.js";
+
+export type CommandMatchCandidate = {
+  argv: string[];
+  source: CommandMatchSource;
+  command?: string;
+};
 
 type ShellOperator = ";" | "\n" | "|" | "&&" | "||";
 
 const FILE_CONTENT_INSPECTION_COMMANDS = new Set(["cat", "sed", "head", "tail", "nl", "bat", "batcat", "jq", "yq"]);
+const REPO_INVENTORY_COMMANDS = new Set(["find", "fd", "fdfind", "ls", "tree"]);
+const SETUP_WRAPPER_COMMANDS = new Set(["cd", "pwd", "set", "source", ".", "export", "unset", "trap"]);
 const COMPOUND_SHELL_OPERATORS = new Set<ShellOperator>([";", "\n", "|", "&&", "||"]);
 const SEQUENTIAL_SHELL_OPERATORS = new Set<ShellOperator>([";", "\n", "&&", "||"]);
 const SHELL_COMMAND_LAUNCHERS = new Set(["bash", "sh", "zsh", "fish"]);
+const ENV_ASSIGNMENT_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*=.*/u;
 
 function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
   if (input.argv?.length) {
@@ -16,7 +25,7 @@ function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
   if (!input.command) {
     return [];
   }
-  return tokenizeCommand(stripLeadingCdPrefix(input.command));
+  return tokenizeCommand(input.command);
 }
 
 export function getCommandName(argv: string[]): string | null {
@@ -25,6 +34,155 @@ export function getCommandName(argv: string[]): string | null {
     return null;
   }
   return basename(first.replace(/^["']|["']$/gu, ""));
+}
+
+function isShellCommandStringOption(token: string): boolean {
+  return /^-[A-Za-z]*c[A-Za-z]*$/u.test(token);
+}
+
+function stripLeadingEnvAssignmentsFromCommand(command: string): string | null {
+  const trimmed = command.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  let index = 0;
+
+  while (index < trimmed.length) {
+    while (/\s/u.test(trimmed[index] ?? "")) {
+      index += 1;
+    }
+
+    if (index >= trimmed.length) {
+      return null;
+    }
+
+    const tokenStart = index;
+    let quote: "'" | "\"" | null = null;
+    let escaping = false;
+
+    while (index < trimmed.length) {
+      const char = trimmed[index]!;
+
+      if (escaping) {
+        escaping = false;
+        index += 1;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaping = true;
+        index += 1;
+        continue;
+      }
+
+      if (quote) {
+        if (char === quote) {
+          quote = null;
+        }
+        index += 1;
+        continue;
+      }
+
+      if (char === "'" || char === "\"") {
+        quote = char;
+        index += 1;
+        continue;
+      }
+
+      if (/\s/u.test(char)) {
+        break;
+      }
+
+      index += 1;
+    }
+
+    if (quote || escaping) {
+      return trimmed;
+    }
+
+    const token = trimmed.slice(tokenStart, index);
+    if (!ENV_ASSIGNMENT_PATTERN.test(token)) {
+      return trimmed.slice(tokenStart).trim();
+    }
+  }
+
+  return null;
+}
+
+function getSourcePriority(source: CommandMatchSource): number {
+  switch (source) {
+    case "effective":
+      return 2;
+    case "shell-body":
+      return 1;
+    case "original":
+    default:
+      return 0;
+  }
+}
+
+function isFileContentInspectionArgv(argv: string[]): boolean {
+  const argv0 = getCommandName(argv);
+  if (!argv0) {
+    return false;
+  }
+  return FILE_CONTENT_INSPECTION_COMMANDS.has(argv0);
+}
+
+function isRepositoryInspectionArgv(argv: string[]): boolean {
+  const argv0 = getCommandName(argv);
+  if (!argv0) {
+    return false;
+  }
+  if (isFileContentInspectionArgv(argv)) {
+    return true;
+  }
+  if (REPO_INVENTORY_COMMANDS.has(argv0)) {
+    return true;
+  }
+  if (argv0 === "rg" && argv.includes("--files")) {
+    return true;
+  }
+  if (getGitSubcommand(argv) === "ls-files") {
+    return true;
+  }
+  return false;
+}
+
+function buildCandidate(
+  input: Pick<ToolExecutionInput, "argv" | "command">,
+  source: CommandMatchSource,
+): CommandMatchCandidate {
+  return {
+    ...(typeof input.command === "string" && input.command.trim()
+      ? { command: input.command.trim() }
+      : {}),
+    argv: getNormalizedArgv(input),
+    source,
+  };
+}
+
+function dedupeCandidates(candidates: CommandMatchCandidate[]): CommandMatchCandidate[] {
+  const deduped: CommandMatchCandidate[] = [];
+  const indexes = new Map<string, number>();
+
+  for (const candidate of candidates) {
+    const key = `${candidate.command ?? ""}\0${candidate.argv.join("\0")}`;
+    const existingIndex = indexes.get(key);
+    if (existingIndex === undefined) {
+      indexes.set(key, deduped.length);
+      deduped.push(candidate);
+      continue;
+    }
+
+    const existing = deduped[existingIndex]!;
+    if (getSourcePriority(candidate.source) > getSourcePriority(existing.source)) {
+      deduped[existingIndex] = candidate;
+    }
+  }
+
+  return deduped;
 }
 
 export function tokenizeCommand(command: string): string[] {
@@ -126,6 +284,239 @@ function hasUnquotedShellOperator(command: string, operators: Set<ShellOperator>
   return false;
 }
 
+export function splitTopLevelCommandChain(command: string): string[] {
+  const trimmed = command.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const segments: string[] = [];
+  let current = "";
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const char = trimmed[index]!;
+
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      current += char;
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      current += char;
+      if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      current += char;
+      quote = char;
+      continue;
+    }
+
+    if (char === "&" && trimmed[index + 1] === "&") {
+      const segment = current.trim();
+      if (segment) {
+        segments.push(segment);
+      }
+      current = "";
+      index += 1;
+      continue;
+    }
+
+    if (char === ";" || char === "\n") {
+      const segment = current.trim();
+      if (segment) {
+        segments.push(segment);
+      }
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (quote || escaping) {
+    return [trimmed];
+  }
+
+  const segment = current.trim();
+  if (segment) {
+    segments.push(segment);
+  }
+
+  return segments;
+}
+
+function isLikelyShellLauncher(launcherName: string, launcherPath?: string): boolean {
+  const normalized = launcherName.toLowerCase().replace(/\.exe$/u, "");
+  if (SHELL_COMMAND_LAUNCHERS.has(normalized)) {
+    return true;
+  }
+
+  if (
+    normalized === "dash"
+    || normalized === "ksh"
+    || normalized === "mksh"
+    || normalized === "ash"
+    || normalized === "csh"
+    || normalized === "tcsh"
+  ) {
+    return true;
+  }
+
+  const pathNormalized = launcherPath?.toLowerCase().replace(/\\/gu, "/");
+  if (!pathNormalized) {
+    return false;
+  }
+  if (!pathNormalized.includes("/bin/")) {
+    return false;
+  }
+  return (
+    pathNormalized.endsWith("/bash")
+    || pathNormalized.endsWith("/sh")
+    || pathNormalized.endsWith("/zsh")
+    || pathNormalized.endsWith("/fish")
+    || pathNormalized.endsWith("/dash")
+    || pathNormalized.endsWith("/ksh")
+    || pathNormalized.endsWith("/mksh")
+    || pathNormalized.endsWith("/ash")
+    || pathNormalized.endsWith("/csh")
+    || pathNormalized.endsWith("/tcsh")
+    || pathNormalized.endsWith("/bash.exe")
+    || pathNormalized.endsWith("/sh.exe")
+    || pathNormalized.endsWith("/zsh.exe")
+    || pathNormalized.endsWith("/fish.exe")
+  );
+}
+
+export function unwrapShellRunner(input: Pick<ToolExecutionInput, "argv" | "command">): string | null {
+  const argv = getNormalizedArgv(input);
+  const argv0 = getCommandName(argv);
+  if (!argv0 || !isLikelyShellLauncher(argv0, argv[0])) {
+    return null;
+  }
+
+  for (let index = 1; index < argv.length - 1; index += 1) {
+    if (!isShellCommandStringOption(argv[index] ?? "")) {
+      continue;
+    }
+
+    const shellBody = argv[index + 1]?.trim();
+    return shellBody ? shellBody : null;
+  }
+
+  return null;
+}
+
+export function stripLeadingEnvAssignments(argv: string[]): string[] {
+  let index = 0;
+  while (index < argv.length && ENV_ASSIGNMENT_PATTERN.test(argv[index] ?? "")) {
+    index += 1;
+  }
+  return argv.slice(index);
+}
+
+export function isSetupWrapperSegment(argv: string[]): boolean {
+  if (argv.length === 0) {
+    return true;
+  }
+
+  const argv0 = getCommandName(argv);
+  if (!argv0) {
+    return true;
+  }
+
+  return SETUP_WRAPPER_COMMANDS.has(argv0);
+}
+
+function buildEffectiveCandidate(
+  argv: string[],
+  transformed: boolean,
+  command?: string,
+): CommandMatchCandidate | null {
+  const strippedArgv = stripLeadingEnvAssignments(argv);
+  if (strippedArgv.length === 0 || isSetupWrapperSegment(strippedArgv)) {
+    return null;
+  }
+
+  if (!transformed && strippedArgv.length === argv.length) {
+    return null;
+  }
+
+  return {
+    ...(command ? { command } : {}),
+    argv: strippedArgv,
+    source: "effective",
+  };
+}
+
+export function resolveEffectiveCommand(input: Pick<ToolExecutionInput, "argv" | "command">): CommandMatchCandidate | null {
+  const command = typeof input.command === "string" ? input.command.trim() : "";
+  const argv = getNormalizedArgv(input);
+
+  if (!command && argv.length === 0) {
+    return null;
+  }
+
+  if (!command) {
+    return buildEffectiveCandidate(argv, false);
+  }
+
+  const segments = splitTopLevelCommandChain(command);
+  const transformedByChain = segments.length > 1;
+
+  for (const segment of segments) {
+    const trimmedSegment = segment.trim();
+    const segmentArgv = tokenizeCommand(trimmedSegment);
+    if (segmentArgv.length === 0) {
+      continue;
+    }
+
+    const effectiveCommand = stripLeadingEnvAssignmentsFromCommand(trimmedSegment) ?? undefined;
+    const candidate = buildEffectiveCandidate(segmentArgv, transformedByChain, effectiveCommand);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+export function deriveCommandMatchCandidates(
+  input: Pick<ToolExecutionInput, "argv" | "command">,
+): CommandMatchCandidate[] {
+  const candidates: CommandMatchCandidate[] = [buildCandidate(input, "original")];
+
+  const shellBody = unwrapShellRunner(input);
+  if (shellBody) {
+    candidates.push(buildCandidate({ command: shellBody }, "shell-body"));
+  }
+
+  const effective = resolveEffectiveCommand(shellBody ? { command: shellBody } : input);
+  if (effective) {
+    candidates.push(effective);
+  }
+
+  return dedupeCandidates(candidates);
+}
+
+function getMostDerivedCandidate(input: Pick<ToolExecutionInput, "argv" | "command">): CommandMatchCandidate {
+  return deriveCommandMatchCandidates(input).reduce((best, candidate) => (
+    getSourcePriority(candidate.source) >= getSourcePriority(best.source) ? candidate : best
+  ));
+}
+
 export function isCompoundShellCommand(command: string): boolean {
   return hasUnquotedShellOperator(command, COMPOUND_SHELL_OPERATORS);
 }
@@ -185,12 +576,11 @@ export function getGitSubcommand(argv: string[]): string | null {
 }
 
 export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  const argv = getNormalizedArgv(input);
-  const argv0 = getCommandName(argv);
-  if (!argv0) {
-    return false;
-  }
-  return FILE_CONTENT_INSPECTION_COMMANDS.has(argv0);
+  return isFileContentInspectionArgv(getMostDerivedCandidate(input).argv);
+}
+
+export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  return isRepositoryInspectionArgv(getMostDerivedCandidate(input).argv);
 }
 
 export function normalizeCommandSignature(command?: string): string | null {
@@ -207,6 +597,16 @@ export function normalizeCommandSignature(command?: string): string | null {
   return normalized || null;
 }
 
+export function normalizeEffectiveCommandSignature(command?: string): string | null {
+  if (!command || command === "stdin" || command.startsWith("reduce:")) {
+    return null;
+  }
+
+  const candidate = getMostDerivedCandidate({ command });
+  const normalized = getCommandName(candidate.argv);
+  return normalized || null;
+}
+
 /**
  * Strip trivial leading `cd <dir> && ` (or `pushd`) prefixes from a shell
  * command. Models sometimes emit `cd /path && git status` even when the
@@ -220,10 +620,11 @@ export function normalizeCommandSignature(command?: string): string | null {
  */
 export function stripLeadingCdPrefix(command: string): string {
   let current = command.trim();
-  // Guard against pathological inputs; legitimate chains are rarely > 2.
   for (let iteration = 0; iteration < 8; iteration += 1) {
     const next = matchLeadingCdChain(current);
-    if (next === null) return current;
+    if (next === null) {
+      return current;
+    }
     current = next;
   }
   return current;
@@ -231,7 +632,9 @@ export function stripLeadingCdPrefix(command: string): string {
 
 function matchLeadingCdChain(command: string): string | null {
   const keywordMatch = /^\s*(cd|pushd)(\s+)/u.exec(command);
-  if (!keywordMatch) return null;
+  if (!keywordMatch) {
+    return null;
+  }
 
   let index = keywordMatch[0].length;
   const length = command.length;
@@ -254,7 +657,9 @@ function matchLeadingCdChain(command: string): string | null {
       continue;
     }
     if (quote) {
-      if (char === quote) quote = null;
+      if (char === quote) {
+        quote = null;
+      }
       index += 1;
       sawArg = true;
       continue;
@@ -265,14 +670,16 @@ function matchLeadingCdChain(command: string): string | null {
       sawArg = true;
       continue;
     }
-    if (/\s/u.test(char)) break;
+    if (/\s/u.test(char)) {
+      break;
+    }
     if (
-      char === "&" ||
-      char === "|" ||
-      char === ";" ||
-      char === "<" ||
-      char === ">" ||
-      char === "\n"
+      char === "&"
+      || char === "|"
+      || char === ";"
+      || char === "<"
+      || char === ">"
+      || char === "\n"
     ) {
       return null;
     }
@@ -280,9 +687,13 @@ function matchLeadingCdChain(command: string): string | null {
     index += 1;
   }
 
-  if (!sawArg) return null;
+  if (!sawArg) {
+    return null;
+  }
 
-  while (index < length && /[ \t]/u.test(command[index]!)) index += 1;
+  while (index < length && /[ \t]/u.test(command[index]!)) {
+    index += 1;
+  }
 
   if (command[index] === "&" && command[index + 1] === "&") {
     const tail = command.slice(index + 2).trim();
@@ -291,9 +702,8 @@ function matchLeadingCdChain(command: string): string | null {
   return null;
 }
 
-
 export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutionInput {
-  const shellWrapped = unwrapShellLauncherCommand(input);
+  const shellWrapped = unwrapShellRunner(input);
   if (shellWrapped) {
     const effectiveCommand = stripLeadingCdPrefix(shellWrapped);
     if (isCompoundShellCommand(effectiveCommand)) {
@@ -337,64 +747,4 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
     ...input,
     argv,
   };
-}
-
-function unwrapShellLauncherCommand(input: ToolExecutionInput): string | null {
-  const argv = input.argv;
-  if (!argv || argv.length !== 3) {
-    return null;
-  }
-
-  const launcher = getCommandName(argv);
-  const launchFlag = argv[1];
-  const nestedCommand = argv[2];
-  if (
-    !launcher
-    || !isLikelyShellLauncher(launcher, argv[0])
-    || (launchFlag !== "-c" && launchFlag !== "-lc")
-    || typeof nestedCommand !== "string"
-    || nestedCommand.trim().length === 0
-  ) {
-    return null;
-  }
-
-  return nestedCommand;
-}
-
-function isLikelyShellLauncher(launcherName: string, launcherPath?: string): boolean {
-  const normalized = launcherName.toLowerCase().replace(/\.exe$/u, "");
-  if (SHELL_COMMAND_LAUNCHERS.has(normalized)) {
-    return true;
-  }
-
-  if (
-    normalized === "dash"
-    || normalized === "ksh"
-    || normalized === "mksh"
-    || normalized === "ash"
-    || normalized === "csh"
-    || normalized === "tcsh"
-  ) {
-    return true;
-  }
-
-  const pathNormalized = launcherPath?.toLowerCase().replace(/\\/gu, "/");
-  if (!pathNormalized) return false;
-  if (!pathNormalized.includes("/bin/")) return false;
-  return (
-    pathNormalized.endsWith("/bash")
-    || pathNormalized.endsWith("/sh")
-    || pathNormalized.endsWith("/zsh")
-    || pathNormalized.endsWith("/fish")
-    || pathNormalized.endsWith("/dash")
-    || pathNormalized.endsWith("/ksh")
-    || pathNormalized.endsWith("/mksh")
-    || pathNormalized.endsWith("/ash")
-    || pathNormalized.endsWith("/csh")
-    || pathNormalized.endsWith("/tcsh")
-    || pathNormalized.endsWith("/bash.exe")
-    || pathNormalized.endsWith("/sh.exe")
-    || pathNormalized.endsWith("/zsh.exe")
-    || pathNormalized.endsWith("/fish.exe")
-  );
 }

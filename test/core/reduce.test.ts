@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, reduceExecution, statsArtifacts } from "../../src/index.js";
+import { findMatchingRule, getArtifact, listArtifactMetadata, reduceExecution, statsArtifacts } from "../../src/index.js";
 import { countTextChars } from "../../src/core/text.js";
 
 const tempDirs: string[] = [];
@@ -440,6 +440,191 @@ describe("reduceExecution", () => {
 
     expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
     expect(result.inlineText).toContain("exit 1");
+  });
+
+  it("matches setup-wrapped swift test commands via the effective command", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cd apps/macos && swift test --filter Foo",
+      combinedText: [
+        "Building for debugging...",
+        "Test Case 'FooTests.testExample' failed (0.12 seconds).",
+        "Executed 1 test, with 1 failure (0 unexpected) in 0.12 (0.12) seconds",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/swift-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("swift test --filter Foo");
+  });
+
+  it("matches shell-wrapped pnpm test commands without falling back to generic", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "bash -lc 'cd repo && pnpm test'",
+      combinedText: [
+        "> tokenjuice@0.2.0 test /repo",
+        "> vitest run",
+        "",
+        " RUN  v3.2.4 /repo",
+        "",
+        " FAIL  test/example.test.ts > example",
+        " AssertionError: expected 1 to be 2",
+        " Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("pnpm test");
+  });
+
+  it("matches env-prefixed swift build commands via the effective command", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "FOO=1 BAR=2 swift build",
+      combinedText: [
+        "Planning build",
+        "Build complete! (1.23s)",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/swift-build");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("swift build");
+  });
+
+  it("matches shell-wrapped xcodebuild commands via the effective command", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "bash -lc 'cd apps/ios && xcodebuild -project App.xcodeproj -scheme App build'",
+      combinedText: [
+        "Command line invocation:",
+        "    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project App.xcodeproj -scheme App build",
+        "",
+        "Resolve Package Graph",
+        "/repo/apps/ios/Sources/Foo.swift:17:12: error: cannot find 'missingSymbol' in scope",
+        "The following build commands failed:",
+        "\tSwiftCompile normal arm64 /repo/apps/ios/Sources/Foo.swift",
+        "** BUILD FAILED **",
+      ].join("\n"),
+      exitCode: 65,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/xcodebuild");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("xcodebuild -project App.xcodeproj -scheme App build");
+  });
+
+  it("matches shell-wrapped xcodebuild commands directly from the shell body when no setup is present", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "bash -lc 'xcodebuild -project App.xcodeproj -scheme App build'",
+      combinedText: [
+        "Command line invocation:",
+        "    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project App.xcodeproj -scheme App build",
+        "** BUILD FAILED **",
+      ].join("\n"),
+      exitCode: 65,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/xcodebuild");
+    expect(result.classification.matchedVia).toBe("shell-body");
+    expect(result.classification.matchedCommand).toBe("xcodebuild -project App.xcodeproj -scheme App build");
+  });
+
+  it("matches wrapped cargo, npm, and yarn test commands", async () => {
+    const cases = [
+      {
+        command: "source .env && cargo test",
+        expectedReducer: "tests/cargo-test",
+        expectedCommand: "cargo test",
+        output: ["running 1 test", "test sample ... FAILED", "test result: FAILED. 0 passed; 1 failed;"].join("\n"),
+      },
+      {
+        command: "cd repo && npm test",
+        expectedReducer: "tests/npm-test",
+        expectedCommand: "npm test",
+        output: ["FAIL test/example.test.ts", "AssertionError: expected 1 to be 2", "Test Files  1 failed (1)"].join("\n"),
+      },
+      {
+        command: "cd repo && yarn test",
+        expectedReducer: "tests/yarn-test",
+        expectedCommand: "yarn test",
+        output: ["FAIL test/example.test.ts", "AssertionError: expected 1 to be 2", "Test Files  1 failed (1)"].join("\n"),
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const result = await reduceExecution({
+        toolName: "exec",
+        command: testCase.command,
+        combinedText: testCase.output,
+        exitCode: 1,
+      });
+
+      expect(result.classification.matchedReducer).toBe(testCase.expectedReducer);
+      expect(result.classification.matchedVia).toBe("effective");
+      expect(result.classification.matchedCommand).toBe(testCase.expectedCommand);
+    }
+  });
+
+  it("matches wrapped rg search commands and prefers the first substantive command in a chain", async () => {
+    const searchResult = await reduceExecution({
+      toolName: "exec",
+      command: "pwd && rg -n AssertionError src",
+      combinedText: "src/example.ts:12:throw new AssertionError('boom')",
+      exitCode: 0,
+    });
+
+    expect(searchResult.classification.matchedReducer).toBe("search/rg");
+    expect(searchResult.classification.matchedVia).toBe("effective");
+    expect(searchResult.classification.matchedCommand).toBe("rg -n AssertionError src");
+
+    const firstCommandWins = await reduceExecution({
+      toolName: "exec",
+      command: "cd repo && swift test && rg -n failure src",
+      combinedText: [
+        "Test Case 'FooTests.testExample' failed (0.12 seconds).",
+        "Executed 1 test, with 1 failure (0 unexpected) in 0.12 (0.12) seconds",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(firstCommandWins.classification.matchedReducer).toBe("tests/swift-test");
+    expect(firstCommandWins.classification.matchedVia).toBe("effective");
+    expect(firstCommandWins.classification.matchedCommand).toBe("swift test");
+  });
+
+  it("keeps wrapped file inspection output verbatim under generic fallback", async () => {
+    const rawText = [
+      "# tokenjuice",
+      "",
+      "A tiny command-output reducer.",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cd repo && cat README.md",
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("finds the same wrapped rule match used by classification", async () => {
+    const rule = await findMatchingRule({
+      toolName: "exec",
+      command: "set -euo pipefail && pnpm test",
+    });
+
+    expect(rule?.rule.id).toBe("tests/pnpm-test");
   });
 
   it("supports rule-level onEmpty fallbacks after filtering", async () => {

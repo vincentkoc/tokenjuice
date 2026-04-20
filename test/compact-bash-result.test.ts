@@ -104,6 +104,23 @@ describe("compactBashResult", () => {
     });
   });
 
+  it("keeps tree output raw under the safe-inventory inspection policy", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "tree src",
+      visibleText: Array.from({ length: 40 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
+      inspectionPolicy: "allow-safe-inventory",
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "keep",
+      reason: "inspection-command",
+    });
+  });
+
   it("skips cd-prefixed file content under the safe-inventory inspection policy", async () => {
     const outcome = await compactBashResult({
       source: "pi",

@@ -296,7 +296,12 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
     return input;
   }
 
-  const argv = tokenizeCommand(stripLeadingCdPrefix(input.command));
+  const effectiveCommand = stripLeadingCdPrefix(input.command);
+  if (isCompoundShellCommand(effectiveCommand)) {
+    return input;
+  }
+
+  const argv = tokenizeCommand(effectiveCommand);
   if (argv.length === 0) {
     return input;
   }

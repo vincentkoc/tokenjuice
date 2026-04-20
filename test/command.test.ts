@@ -41,6 +41,13 @@ describe("normalizeExecutionInput", () => {
       command: "cd /repo && cat README.md",
     }).argv).toEqual(["cat", "README.md"]);
   });
+
+  it("does not derive argv from compound shell commands", () => {
+    expect(normalizeExecutionInput({
+      toolName: "exec",
+      command: "rg --files | rg TODO src",
+    }).argv).toBeUndefined();
+  });
 });
 
 describe("hasSequentialShellCommands", () => {

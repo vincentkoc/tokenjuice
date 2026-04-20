@@ -1,4 +1,4 @@
-import { getInspectionCommandSkipReason } from "../inventory-safety.js";
+import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv } from "../inventory-safety.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
@@ -83,10 +83,12 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     };
   }
 
+  const safeInventoryArgv = getSafeRepositoryInventorySourceArgv(command);
   const executionInput: ToolExecutionInput = {
     toolName: "exec",
     command,
     combinedText: rawText,
+    ...(safeInventoryArgv ? { argv: safeInventoryArgv } : {}),
     ...(typeof input.cwd === "string" && input.cwd.trim() ? { cwd: input.cwd } : {}),
     ...(typeof input.exitCode === "number" ? { exitCode: input.exitCode } : {}),
     ...(input.metadata ? { metadata: input.metadata } : {}),

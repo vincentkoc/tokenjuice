@@ -40,6 +40,7 @@ describe("isRepositoryInspectionCommand", () => {
     "fd codex src",
     "fdfind codex src",
     "ls src/rules",
+    "tree src/rules",
     "rg --files src/rules",
     "cd /repo && rg --files src/rules",
     "git ls-files src",
@@ -125,6 +126,7 @@ describe("getInspectionCommandSkipReason", () => {
   it.each([
     { command: "cat README.md", reason: "file-content-inspection-command" },
     { command: "cd /repo && cat README.md", reason: "file-content-inspection-command" },
+    { command: "tree src", reason: "inspection-command" },
     { command: "ls src && rg TODO src", reason: "sequential-inventory-command" },
     { command: "git -C repo ls-files | jq -R .", reason: "unsafe-inventory-pipeline" },
     { command: "rg --files | sort README.md", reason: "unsafe-inventory-pipeline" },

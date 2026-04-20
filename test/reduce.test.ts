@@ -374,6 +374,17 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("search/git-grep");
   });
 
+  it("does not route unsafe inventory pipelines into filesystem reducers without adapter gating", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg --files | rg TODO src",
+      combinedText: Array.from({ length: 40 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).not.toBe("filesystem/rg-files");
+  });
+
   it("does not count normal rg --files paths containing error as errors", async () => {
     const result = await reduceExecution({
       toolName: "exec",

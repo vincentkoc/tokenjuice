@@ -17,6 +17,7 @@ type StdinFilterSpec = {
 };
 
 const REPO_INVENTORY_COMMANDS = new Set(["find", "fd", "fdfind", "ls"]);
+const REPO_INSPECTION_ONLY_COMMANDS = new Set(["tree"]);
 const FIND_EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 const FD_EXEC_OPTIONS = new Set(["-x", "--exec", "-X", "--exec-batch"]);
 const HEAD_FILTER: StdinFilterSpec = {
@@ -103,6 +104,12 @@ export type InspectionCommandSkipReason =
   | "file-content-inspection-command"
   | "sequential-inventory-command"
   | "unsafe-inventory-pipeline";
+
+function getRepositoryInventorySourceArgv(command: string): string[] {
+  const effectiveCommand = stripLeadingCdPrefix(command);
+  const sourceCommand = splitUnquotedPipes(effectiveCommand)[0] ?? effectiveCommand;
+  return tokenizeCommand(sourceCommand);
+}
 
 function splitUnquotedPipes(command: string): string[] {
   const segments: string[] = [];
@@ -207,7 +214,7 @@ function isSafeRepositoryInventorySource(argv: string[]): boolean {
 }
 
 export function isRepositoryInventoryCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  const argv = input.argv?.length ? input.argv : tokenizeCommand(stripLeadingCdPrefix(input.command ?? ""));
+  const argv = input.argv?.length ? input.argv : getRepositoryInventorySourceArgv(input.command ?? "");
   const argv0 = getCommandName(argv);
   if (!argv0) {
     return false;
@@ -226,7 +233,7 @@ export function isRepositoryInventoryCommand(input: Pick<ToolExecutionInput, "ar
 
 export function getRepositoryInventorySafety(command: string): RepositoryInventorySafety {
   const effectiveCommand = stripLeadingCdPrefix(command);
-  const sourceArgv = tokenizeCommand(effectiveCommand);
+  const sourceArgv = getRepositoryInventorySourceArgv(effectiveCommand);
   if (!isRepositoryInventoryCommand({ argv: sourceArgv })) {
     return "not-inventory";
   }
@@ -255,13 +262,24 @@ export function isSafeRepositoryInventoryPipeline(command: string): boolean {
 }
 
 export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  const argv = input.argv?.length ? input.argv : getRepositoryInventorySourceArgv(input.command ?? "");
+  const argv0 = getCommandName(argv);
   if (isFileContentInspectionCommand(input)) {
     return true;
   }
   if (isRepositoryInventoryCommand(input)) {
     return true;
   }
+  if (argv0 && REPO_INSPECTION_ONLY_COMMANDS.has(argv0)) {
+    return true;
+  }
   return false;
+}
+
+export function getSafeRepositoryInventorySourceArgv(command: string): string[] | null {
+  return getRepositoryInventorySafety(command) === "safe"
+    ? getRepositoryInventorySourceArgv(command)
+    : null;
 }
 
 export function getInspectionCommandSkipReason(
@@ -282,6 +300,14 @@ export function getInspectionCommandSkipReason(
 
   if (policy === "skip-file-content") {
     return null;
+  }
+
+  if (isRepositoryInspectionCommand({ command })) {
+    const sourceArgv = getRepositoryInventorySourceArgv(command);
+    const argv0 = getCommandName(sourceArgv);
+    if (argv0 && REPO_INSPECTION_ONLY_COMMANDS.has(argv0)) {
+      return "inspection-command";
+    }
   }
 
   const inventorySafety = getRepositoryInventorySafety(command);

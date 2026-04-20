@@ -44,7 +44,7 @@ function includesCommandPart(command: string, part: string): boolean {
 
 type RuleLike = JsonRule | CompiledRule;
 
-type RuleMatchSelection<T extends RuleLike> = {
+export type RuleMatchSelection<T extends RuleLike> = {
   rule: T;
   candidate: CommandMatchCandidate;
 };
@@ -65,7 +65,7 @@ function getCandidatePriority(candidate: CommandMatchCandidate): number {
   }
 }
 
-function buildCandidateInput(input: ToolExecutionInput, candidate: CommandMatchCandidate): ToolExecutionInput {
+export function applyCommandMatchCandidate(input: ToolExecutionInput, candidate: CommandMatchCandidate): ToolExecutionInput {
   return {
     ...input,
     command: candidate.command,
@@ -147,7 +147,7 @@ export function findBestRuleMatch<T extends RuleLike>(
   let fallbackSelection: RuleMatchSelection<T> | undefined;
 
   for (const candidate of candidates) {
-    const candidateInput = buildCandidateInput(input, candidate);
+    const candidateInput = applyCommandMatchCandidate(input, candidate);
 
     for (const rule of rules) {
       if (!matchesRule(rule, candidateInput)) {
@@ -170,7 +170,7 @@ export function findBestRuleMatch<T extends RuleLike>(
   return fallbackSelection;
 }
 
-function buildClassificationResult(
+export function buildClassificationResult(
   ruleLike: RuleLike,
   candidate: CommandMatchCandidate,
 ): ClassificationResult {

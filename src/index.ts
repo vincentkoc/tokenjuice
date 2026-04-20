@@ -41,3 +41,4 @@ export type {
   WrapResult,
 } from "./types.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./core/pi.js";
+export type { StatsOptions, StatsReport } from "./core/analysis.js";

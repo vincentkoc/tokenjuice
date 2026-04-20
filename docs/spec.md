@@ -143,7 +143,10 @@ summarize stored artifact history:
 ```bash
 tokenjuice stats
 tokenjuice stats --format json
+tokenjuice stats --timezone utc
 ```
+
+daily stats are bucketed in the local timezone by default. pass `--timezone utc` for UTC buckets or an IANA timezone such as `America/New_York` for explicit reporting.
 
 ### install
 

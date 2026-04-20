@@ -1,5 +1,6 @@
 import type { CompactResult, StoredArtifactMetadata, ToolExecutionInput } from "../types.js";
 import { normalizeCommandSignature } from "./command.js";
+import { buildCalendarDayFormatter } from "./time.js";
 
 export type AnalysisEntry = {
   metadata: StoredArtifactMetadata;
@@ -64,6 +65,10 @@ export type StatsReport = {
     reducedChars: number;
     savedChars: number;
   }>;
+};
+
+export type StatsOptions = {
+  timeZone?: string;
 };
 
 type GroupState = {
@@ -256,14 +261,11 @@ function avgRatioFromGroup(group: StatsGroup): number | null {
   return group.ratioCount > 0 ? group.ratioSum / group.ratioCount : null;
 }
 
-function isoDay(createdAt: string): string {
-  return createdAt.slice(0, 10);
-}
-
-export function statsArtifacts(entries: AnalysisEntry[]): StatsReport {
+export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions = {}): StatsReport {
   const reducers = new Map<string, StatsGroup>();
   const commands = new Map<string, StatsGroup>();
   const daily = new Map<string, StatsGroup>();
+  const formatDay = buildCalendarDayFormatter(options.timeZone);
 
   let rawChars = 0;
   let reducedChars = 0;
@@ -273,7 +275,7 @@ export function statsArtifacts(entries: AnalysisEntry[]): StatsReport {
   for (const entry of entries) {
     const reducer = entry.metadata.classification.matchedReducer ?? "generic/fallback";
     const signature = normalizeCommandSignature(entry.metadata.command) ?? "(unknown)";
-    const day = isoDay(entry.metadata.createdAt);
+    const day = formatDay(entry.metadata.createdAt);
     const reduced = effectiveReducedChars(entry.metadata);
     const ratio = effectiveRatio(entry.metadata);
 

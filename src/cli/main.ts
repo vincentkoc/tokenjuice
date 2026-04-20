@@ -34,6 +34,7 @@ type ParsedArgs = {
   maxInlineChars: number | undefined;
   maxCaptureBytes: number | undefined;
   maxInputBytes: number | undefined;
+  timeZone: string | undefined;
   positionals: string[];
   passthrough: string[];
 };
@@ -63,7 +64,7 @@ function printUsage(): void {
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice doctor [file|hooks|codex|claude-code|pi] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice stats",
+      "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
     ].join("\n"),
   );
   process.stderr.write("\n");
@@ -87,6 +88,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let maxInlineChars: number | undefined;
   let maxCaptureBytes: number | undefined;
   let maxInputBytes: number | undefined;
+  let timeZone: string | undefined;
 
   let index = 1;
   while (index < argv.length) {
@@ -188,6 +190,13 @@ function parseArgs(argv: string[]): ParsedArgs {
         maxInputBytes = Number(next);
         index += 2;
         break;
+      case "--timezone":
+        if (!next) {
+          throw new Error("--timezone requires a value");
+        }
+        timeZone = next;
+        index += 2;
+        break;
       default:
         throw new Error(`unknown flag: ${current}`);
     }
@@ -209,6 +218,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     maxInlineChars,
     maxCaptureBytes,
     maxInputBytes,
+    timeZone,
     positionals,
     passthrough,
   };
@@ -755,7 +765,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
 async function runStats(args: ParsedArgs): Promise<number> {
   const entries = await listArtifactMetadata(args.storeDir);
-  const report = statsArtifacts(entries);
+  const report = statsArtifacts(entries, { timeZone: args.timeZone ?? "local" });
 
   if (args.format === "json") {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

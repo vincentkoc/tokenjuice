@@ -481,10 +481,46 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedCommand).toBe("pnpm test");
   });
 
+  it("matches shell wrappers that use clustered -c flags", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "sh -ceu 'cd repo && pnpm test'",
+      combinedText: [
+        "> tokenjuice@0.2.0 test /repo",
+        "> vitest run",
+        "",
+        " FAIL  test/example.test.ts > example",
+        " AssertionError: expected 1 to be 2",
+        " Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("pnpm test");
+  });
+
   it("matches env-prefixed swift build commands via the effective command", async () => {
     const result = await reduceExecution({
       toolName: "exec",
       command: "FOO=1 BAR=2 swift build",
+      combinedText: [
+        "Planning build",
+        "Build complete! (1.23s)",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/swift-build");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.classification.matchedCommand).toBe("swift build");
+  });
+
+  it("matches argv-only env-prefixed swift build commands with spaced assignment values", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      argv: ["FOO=a b", "swift", "build"],
       combinedText: [
         "Planning build",
         "Build complete! (1.23s)",
@@ -609,6 +645,25 @@ describe("reduceExecution", () => {
     const result = await reduceExecution({
       toolName: "exec",
       command: "cd repo && cat README.md",
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("keeps clustered shell-wrapped file inspection output verbatim under generic fallback", async () => {
+    const rawText = [
+      "# tokenjuice",
+      "",
+      "A tiny command-output reducer.",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "bash -ec 'cat README.md'",
       stdout: rawText,
       exitCode: 0,
     });

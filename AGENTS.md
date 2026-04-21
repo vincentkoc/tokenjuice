@@ -9,7 +9,7 @@
 - `src/hosts/` contains host-specific integrations (`codex/`, `claude-code/`, `cursor/`, `pi/`) plus shared hook helpers.
 - `src/rules/` contains built-in JSON rules and fixtures.
 
-Tests live in `test/` and follow `*.test.ts`. Supporting docs live in `docs/`, packaging files in `packaging/`, and utility scripts in `scripts/`. `dist/` and `release/` are generated outputs; do not hand-edit them.
+Tests live in `test/` and mirror the source layout (`test/core/`, `test/hosts/`, `test/hosts/shared/`). Supporting docs live in `docs/`, packaging files in `packaging/`, and utility scripts in `scripts/`. `dist/` and `release/` are generated outputs; do not hand-edit them.
 
 ## Build, Test, and Development Commands
 
@@ -18,7 +18,7 @@ Tests live in `test/` and follow `*.test.ts`. Supporting docs live in `docs/`, p
 - `pnpm typecheck` runs TypeScript without emitting files.
 - `pnpm build` rebuilds `dist/`, Pi runtime output, and packaged rules.
 - `pnpm release:local` runs the local release pipeline: tests, build, tarball, checksums, and Homebrew formula.
-- `pnpm exec vitest run test/codex.test.ts` runs a focused test file during iteration.
+- `pnpm exec vitest run test/hosts/codex.test.ts` runs a focused test file during iteration.
 
 For a quick smoke check after building, run `node dist/cli/main.js --version`.
 

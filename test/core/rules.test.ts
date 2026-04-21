@@ -13,7 +13,7 @@ import {
   verifyBuiltinFixtures,
   verifyBuiltinRules,
   verifyRules,
-} from "../src/index.js";
+} from "../../src/index.js";
 
 const tempDirs: string[] = [];
 

@@ -84,13 +84,13 @@ minimum gate for a new host adapter:
 ```bash
 pnpm typecheck
 pnpm vitest run test/<host>.test.ts
-pnpm vitest run test/codex.test.ts test/claude-code.test.ts test/pi.test.ts
+pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/pi.test.ts
 ```
 
 if you changed normalization/classification paths, also run:
 
 ```bash
-pnpm vitest run test/command.test.ts test/classify.test.ts test/trace.test.ts
+pnpm vitest run test/core/command.test.ts test/core/classify.test.ts test/core/trace.test.ts
 ```
 
 ## manual verification flow
@@ -126,4 +126,3 @@ when adding a host integration, update:
 - `README.md` command examples and support table
 - `docs/spec.md` supported host hooks table
 - dedicated design doc if host behavior differs materially (like cursor pre-tool wrapping)
-

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { reduceExecution, runWrappedCommand } from "../src/index.js";
+import { reduceExecution, runWrappedCommand } from "../../src/index.js";
 
 describe("reduce trace", () => {
   it("includes normalized command and argv when trace is enabled", async () => {

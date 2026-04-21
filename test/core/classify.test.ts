@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { matchesRule } from "../src/core/classify.js";
-import type { JsonRule, ToolExecutionInput } from "../src/types.js";
+import { matchesRule } from "../../src/core/classify.js";
+import type { JsonRule, ToolExecutionInput } from "../../src/types.js";
 
 function buildRule(commandIncludes: string[]): JsonRule {
   return {

@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../src/index.js";
+import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;

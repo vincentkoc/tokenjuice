@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCalendarDayFormatter } from "../src/core/time.js";
+import { buildCalendarDayFormatter } from "../../src/core/time.js";
 
 describe("time helpers", () => {
   it("formats calendar days in utc and explicit timezones", () => {

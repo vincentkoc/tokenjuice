@@ -5,7 +5,7 @@
     "toolName": "exec",
     "argv": ["git", "diff", "--stat"],
     "command": "git diff --stat",
-    "combinedText": " src/index.ts | 4 ++--\n test/reduce.test.ts | 2 +-\n 2 files changed, 3 insertions(+), 3 deletions(-)\n",
+    "combinedText": " src/index.ts | 4 ++--\n test/core/reduce.test.ts | 2 +-\n 2 files changed, 3 insertions(+), 3 deletions(-)\n",
     "exitCode": 0
   },
   "expect": {

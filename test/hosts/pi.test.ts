@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorPiExtension, installPiExtension } from "../src/index.js";
+import { doctorPiExtension, installPiExtension } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -27,7 +27,7 @@ async function createTempDir(): Promise<string> {
   return dir;
 }
 
-const SOURCE_RUNTIME_ASSET_PATH = new URL("../src/hosts/pi/extension/runtime.js", import.meta.url);
+const SOURCE_RUNTIME_ASSET_PATH = new URL("../../src/hosts/pi/extension/runtime.js", import.meta.url);
 
 async function readOptional(path: string | URL): Promise<string | undefined> {
   try {

@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../src/index.js";
+import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 

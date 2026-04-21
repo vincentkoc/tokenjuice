@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compactBashResult } from "../src/core/integrations/compact-bash-result.js";
+import { compactBashResult } from "../../../src/core/integrations/compact-bash-result.js";
 
 describe("compactBashResult", () => {
   it("uses trusted full text when provided", async () => {

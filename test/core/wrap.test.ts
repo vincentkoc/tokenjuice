@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { listArtifacts, runWrappedCommand } from "../src/index.js";
+import { listArtifacts, runWrappedCommand } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clampText, countTerminalCells, countTextChars, stripAnsi } from "../src/core/text.js";
+import { clampText, countTerminalCells, countTextChars, stripAnsi } from "../../src/core/text.js";
 
 describe("text helpers", () => {
   it("strips xterm colors and OSC hyperlinks while preserving emoji and CJK", () => {

@@ -5,7 +5,7 @@
     "toolName": "exec",
     "argv": ["git", "diff", "--name-only"],
     "command": "git diff --name-only",
-    "combinedText": "src/index.ts\ntest/reduce.test.ts\n",
+    "combinedText": "src/index.ts\ntest/core/reduce.test.ts\n",
     "exitCode": 0
   },
   "expect": {

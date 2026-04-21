@@ -4,8 +4,8 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, reduceExecution, statsArtifacts } from "../src/index.js";
-import { countTextChars } from "../src/core/text.js";
+import { getArtifact, listArtifactMetadata, reduceExecution, statsArtifacts } from "../../src/index.js";
+import { countTextChars } from "../../src/core/text.js";
 
 const tempDirs: string[] = [];
 
@@ -681,15 +681,15 @@ describe("reduceExecution", () => {
   it("does not prepend awkward pass counters for clean test output", async () => {
     const result = await reduceExecution({
       toolName: "exec",
-      command: "pnpm test test/reduce.test.ts",
-      argv: ["pnpm", "test", "test/reduce.test.ts"],
+      command: "pnpm test test/core/reduce.test.ts",
+      argv: ["pnpm", "test", "test/core/reduce.test.ts"],
       combinedText: [
         "> tokenjuice@0.2.0 test /repo",
-        "> vitest run test/reduce.test.ts",
+        "> vitest run test/core/reduce.test.ts",
         "",
         " RUN  v3.2.4 /repo",
         "",
-        " ✓ test/reduce.test.ts (44 tests) 56ms",
+        " ✓ test/core/reduce.test.ts (44 tests) 56ms",
         "",
         " Test Files  1 passed (1)",
         "      Tests  44 passed (44)",

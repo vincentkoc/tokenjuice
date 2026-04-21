@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installPiExtension, runClaudeCodePostToolUseHook } from "../src/index.js";
+import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;

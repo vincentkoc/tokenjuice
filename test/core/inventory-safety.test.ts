@@ -6,7 +6,7 @@ import {
   isRepositoryInspectionCommand,
   isRepositoryInventoryCommand,
   isSafeRepositoryInventoryPipeline,
-} from "../src/core/inventory-safety.js";
+} from "../../src/core/inventory-safety.js";
 
 describe("isRepositoryInventoryCommand", () => {
   it.each([

@@ -8,7 +8,7 @@ import {
   normalizeExecutionInput,
   stripLeadingCdPrefix,
   tokenizeCommand,
-} from "../src/core/command.js";
+} from "../../src/core/command.js";
 
 describe("tokenizeCommand", () => {
   it("keeps quoted path arguments together", () => {

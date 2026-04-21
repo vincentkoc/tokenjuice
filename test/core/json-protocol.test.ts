@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseReduceJsonRequest } from "../src/index.js";
+import { parseReduceJsonRequest } from "../../src/index.js";
 
 describe("parseReduceJsonRequest", () => {
   it("accepts a direct ToolExecutionInput payload", () => {

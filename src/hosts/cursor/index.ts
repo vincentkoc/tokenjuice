@@ -11,6 +11,7 @@ type CursorHooksConfig = Record<string, unknown> & {
 };
 
 type CursorHookCommandOptions = {
+  local?: boolean;
   binaryPath?: string;
   nodePath?: string;
 };
@@ -152,13 +153,20 @@ async function buildCursorHookCommand(options: CursorHookCommandOptions = {}): P
     throw new Error("unable to resolve tokenjuice binary path for cursor install");
   }
 
-  const installedBinaryPath = await resolveInstalledTokenjuicePath();
-  const launcher = installedBinaryPath ?? binaryPath;
+  let launcher = binaryPath;
+  if (!options.local) {
+    const installedBinaryPath = await resolveInstalledTokenjuicePath();
+    launcher = installedBinaryPath ?? binaryPath;
+  }
   const launcherCommand = launcher.endsWith(".js")
     ? `${shellQuote(nodePath)} ${shellQuote(launcher)}`
     : shellQuote(launcher);
 
   return `${launcherCommand} cursor-pre-tool-use --wrap-launcher ${shellQuote(launcher)}`;
+}
+
+function getCursorFixCommand(local = false): string {
+  return local ? "tokenjuice install cursor --local" : TOKENJUICE_CURSOR_FIX_COMMAND;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -354,7 +362,7 @@ export async function doctorCursorHook(
       hooksPath,
       status: "disabled",
       issues: [],
-      fixCommand: TOKENJUICE_CURSOR_FIX_COMMAND,
+      fixCommand: getCursorFixCommand(options.local),
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
@@ -385,7 +393,7 @@ export async function doctorCursorHook(
     hooksPath,
     status: missingPaths.length > 0 ? "broken" : issues.length > 0 ? "warn" : "ok",
     issues,
-    fixCommand: TOKENJUICE_CURSOR_FIX_COMMAND,
+    fixCommand: getCursorFixCommand(options.local),
     expectedCommand,
     detectedCommand,
     checkedPaths,

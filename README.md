@@ -66,7 +66,7 @@ tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
 tokenjuice install [codex|claude-code|cursor|pi]
-tokenjuice install [codex|pi] --local
+tokenjuice install [codex|claude-code|cursor|pi] --local
 tokenjuice uninstall codex
 tokenjuice ls
 tokenjuice cat <artifact-id>
@@ -98,7 +98,7 @@ shared behavior:
 - `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
 - `tokenjuice doctor pi` inspects the installed Pi extension directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
-- `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install [codex|claude-code|cursor] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
 - Codex, Claude Code, Cursor, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`

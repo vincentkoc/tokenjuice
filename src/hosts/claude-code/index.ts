@@ -60,7 +60,10 @@ const TOKENJUICE_CLAUDE_CODE_STATUS = "compacting bash output with tokenjuice";
 const TOKENJUICE_CLAUDE_CODE_FIX_COMMAND = "tokenjuice install claude-code";
 
 function getClaudeCodeHome(): string {
-  return process.env.CLAUDE_HOME || join(homedir(), ".claude");
+  // Claude Code itself reads CLAUDE_CONFIG_DIR for its config directory, so
+  // honor it first to stay aligned with the host. CLAUDE_HOME is kept as a
+  // fallback for backwards compatibility with existing tokenjuice installs.
+  return process.env.CLAUDE_CONFIG_DIR || process.env.CLAUDE_HOME || join(homedir(), ".claude");
 }
 
 function getDefaultSettingsPath(): string {

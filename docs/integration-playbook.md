@@ -70,7 +70,7 @@ add host-specific tests and aggregate tests:
 
 new adapters often fail CI/local due to leaked machine config. isolate host homes explicitly:
 
-- set and reset host env vars in each suite (`CODEX_HOME`, `CLAUDE_HOME`, `CURSOR_HOME`, `PI_CODING_AGENT_DIR`, etc.)
+- set and reset host env vars in each suite (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `CLAUDE_HOME`, `CURSOR_HOME`, `PI_CODING_AGENT_DIR`, etc.)
 - avoid reading real `~/.<host>` in tests
 - use temp dirs for all config paths
 - restore `PATH` after each test

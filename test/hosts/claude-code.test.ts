@@ -10,6 +10,7 @@ const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 
 afterEach(async () => {
+  delete process.env.CLAUDE_CONFIG_DIR;
   delete process.env.CLAUDE_HOME;
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
@@ -639,6 +640,57 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(code).toBe(0);
     expect(output).toBe("");
     expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("empty-tool-response");
+  });
+});
+
+describe("claude code config directory discovery", () => {
+  it("prefers CLAUDE_CONFIG_DIR over CLAUDE_HOME when both are set", async () => {
+    const configDir = await createTempDir();
+    const legacyHome = await createTempDir();
+    process.env.CLAUDE_CONFIG_DIR = configDir;
+    process.env.CLAUDE_HOME = legacyHome;
+
+    const result = await installClaudeCodeHook();
+
+    expect(result.settingsPath).toBe(join(configDir, "settings.json"));
+  });
+
+  it("uses CLAUDE_CONFIG_DIR when CLAUDE_HOME is unset", async () => {
+    const configDir = await createTempDir();
+    process.env.CLAUDE_CONFIG_DIR = configDir;
+
+    const result = await installClaudeCodeHook();
+
+    expect(result.settingsPath).toBe(join(configDir, "settings.json"));
+  });
+
+  it("falls back to CLAUDE_HOME when CLAUDE_CONFIG_DIR is unset", async () => {
+    const legacyHome = await createTempDir();
+    process.env.CLAUDE_HOME = legacyHome;
+
+    const result = await installClaudeCodeHook();
+
+    expect(result.settingsPath).toBe(join(legacyHome, "settings.json"));
+  });
+
+  it("writes hook debug log under CLAUDE_CONFIG_DIR when set", async () => {
+    const configDir = await createTempDir();
+    const legacyHome = await createTempDir();
+    process.env.CLAUDE_CONFIG_DIR = configDir;
+    process.env.CLAUDE_HOME = legacyHome;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status" },
+      tool_response: "",
+    });
+
+    await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+
+    const debugPath = join(configDir, "tokenjuice-hook.last.json");
+    const debug = JSON.parse(await readFile(debugPath, "utf8")) as { skipped?: string };
     expect(debug.skipped).toBe("empty-tool-response");
   });
 });

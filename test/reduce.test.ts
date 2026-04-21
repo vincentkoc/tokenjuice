@@ -44,6 +44,32 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("?? new-file.ts");
   });
 
+  it("reports working tree clean instead of collapsing to empty output", async () => {
+    // Regression: every useful line in a clean long-form `git status` is
+    // matched by skipPatterns (branch, tracking, "nothing to commit..."),
+    // leaving zero lines. Without onEmpty, the reducer returns an empty
+    // summary and the agent reports "(no output)" even though the tree is
+    // clean. Observed in phase 2/3 tokenjuice trials — ~60% of runs
+    // misreported the clean state.
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git status",
+      argv: ["git", "status"],
+      combinedText: [
+        "On branch main",
+        "Your branch is up to date with 'origin/main'.",
+        "",
+        "nothing to commit, working tree clean",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/status");
+    expect(result.inlineText).toContain("working tree clean");
+    expect(result.inlineText).not.toContain("(no output)");
+  });
+
+
   it("derives argv from the command string when callers only pass command", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -300,6 +326,102 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("filesystem/find");
     expect(result.inlineText).toContain("60 matches");
     expect(result.stats.ratio).toBeLessThan(0.5);
+  });
+
+  it.each([
+    {
+      command: "rg --files src/rules",
+      argv: ["rg", "--files", "src/rules"],
+      reducer: "filesystem/rg-files",
+    },
+    {
+      command: "git ls-files src",
+      argv: ["git", "ls-files", "src"],
+      reducer: "filesystem/git-ls-files",
+    },
+    {
+      command: "git -C repo ls-files src",
+      argv: ["git", "-C", "repo", "ls-files", "src"],
+      reducer: "filesystem/git-ls-files",
+    },
+    {
+      command: "fd codex src",
+      argv: ["fd", "codex", "src"],
+      reducer: "filesystem/fd",
+    },
+  ])("compacts $command through a filesystem inventory reducer", async ({ command, argv, reducer }) => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command,
+      argv,
+      stdout: Array.from({ length: 60 }, (_, index) => `src/path-${index + 1}.ts`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe(reducer);
+    expect(result.inlineText).toContain("60 paths");
+    expect(result.stats.ratio).toBeLessThan(0.5);
+  });
+
+  it("does not treat unrelated git commands containing ls-files as git ls-files inventory", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git grep ls-files src",
+      combinedText: Array.from({ length: 30 }, (_, index) => `src/file-${index + 1}.ts:${index + 1}: mentions ls-files`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("search/git-grep");
+  });
+
+  it("does not route unsafe inventory pipelines into filesystem reducers without adapter gating", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg --files | rg TODO src",
+      combinedText: Array.from({ length: 40 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).not.toBe("filesystem/rg-files");
+  });
+
+  it("does not count normal rg --files paths containing error as errors", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg --files src",
+      combinedText: "src/error.ts\nsrc/normal.ts\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/rg-files");
+    expect(result.facts?.path).toBe(2);
+    expect(result.facts?.error).toBe(0);
+  });
+
+  it("does not count normal fd paths containing error as errors", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "fd src",
+      combinedText: "src/error.ts\nsrc/normal.ts\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/fd");
+    expect(result.facts?.path).toBe(2);
+    expect(result.facts?.error).toBe(0);
+  });
+
+  it("counts fd error-prefixed output as errors instead of paths", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "fd src",
+      combinedText: "[fd error]: regex parse error\nsrc/normal.ts\n",
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("filesystem/fd");
+    expect(result.facts?.path).toBe(1);
+    expect(result.facts?.error).toBe(1);
   });
 
   it("matches pnpm test runs to the test reducer family", async () => {
@@ -640,6 +762,30 @@ describe("reduceExecution", () => {
     expect(result.stats.reducedChars).toBeLessThan(result.stats.rawChars);
   });
 
+  it("keeps search output raw when the rewritten form would be longer but still fits inline", async () => {
+    const rawText = [
+      "src/core/claude-code.ts:101:1: recordStats option plumbing",
+      "src/core/claude-code.ts:142:3: storeArtifactMetadata branch",
+      "src/core/claude-code.ts:188:9: reduceExecution(input, options)",
+      "src/core/claude-code.ts:220:7: inspection-command handling",
+      "src/core/claude-code.ts:265:5: raw bypass preserve",
+      "src/core/claude-code.ts:301:11: skipped low-savings-compaction",
+      "src/core/claude-code.ts:344:13: writeHookDebug final record",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n \"recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip\" src/core/claude-code.ts",
+      argv: ["rg", "-n", "recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip", "src/core/claude-code.ts"],
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("search/rg");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
   it("formats gh issue json-line output into compact issue summaries", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -659,6 +805,79 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("\"number\":67473");
   });
 
+  it("formats gh json arrays without requiring jq line mode", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh issue list -R openclaw/openclaw --limit 2 --json number,title,url,comments,updatedAt,labels",
+      argv: ["gh", "issue", "list", "--json", "number,title,url,comments,updatedAt,labels"],
+      combinedText: JSON.stringify([
+        {
+          number: 67473,
+          title: "[Bug]: Auto-compaction (threshold-based) never fires in embedded runner",
+          url: "https://github.com/openclaw/openclaw/issues/67473",
+          comments: 0,
+          updatedAt: "2026-04-16T01:52:50Z",
+          labels: [{ name: "bug" }, { name: "bug:behavior" }],
+        },
+        {
+          number: 67469,
+          title: "[Bug]: google-gemini-cli replies stop being persisted to OpenClaw session transcripts / WebUI history",
+          url: "https://github.com/openclaw/openclaw/issues/67469",
+          comments: 1,
+          updatedAt: "2026-04-16T02:06:50Z",
+          labels: [{ name: "bug" }, { name: "regression" }],
+        },
+      ], null, 2),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("#67473");
+    expect(result.inlineText).toContain("{bug, bug:behavior}");
+    expect(result.inlineText).not.toContain("\"labels\"");
+  });
+
+  it("formats gh run json objects and nested jobs into compact summaries", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 24524437739 --repo openclaw/openclaw --json createdAt,updatedAt,status,conclusion,jobs,url,displayTitle",
+      argv: ["gh", "run", "view", "24524437739", "--json", "createdAt,updatedAt,status,conclusion,jobs,url,displayTitle"],
+      combinedText: JSON.stringify({
+        displayTitle: "checks: tighten tokenjuice reducers",
+        status: "completed",
+        conclusion: "success",
+        createdAt: "2026-04-20T19:00:00Z",
+        updatedAt: "2026-04-20T19:18:32Z",
+        jobs: [
+          {
+            databaseId: 71690896188,
+            name: "checks-node-core-security",
+            status: "completed",
+            conclusion: "success",
+            startedAt: "2026-04-20T19:00:10Z",
+            completedAt: "2026-04-20T19:05:25Z",
+          },
+          {
+            databaseId: 71690896311,
+            name: "checks-node-core-runtime",
+            status: "completed",
+            conclusion: "success",
+            startedAt: "2026-04-20T19:00:20Z",
+            completedAt: "2026-04-20T19:11:00Z",
+          },
+        ],
+      }, null, 2),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("checks: tighten tokenjuice reducers");
+    expect(result.inlineText).toContain("#71690896188 checks-node-core-security");
+    expect(result.inlineText).toContain("5m15s");
+    expect(result.inlineText).toContain("#71690896311 checks-node-core-runtime");
+    expect(result.inlineText).not.toContain("\"jobs\"");
+  });
+
   it("formats gh table output into compact list lines", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -674,6 +893,25 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("cloud/gh");
     expect(result.inlineText).toContain("#123 feat: add tokenjuice cloud reducers [OPEN] (vincentkoc:main)");
     expect(result.inlineText).not.toContain("        ");
+  });
+
+  it("formats gh actions log lines into compact job and step summaries", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 24526018547 -R openclaw/openclaw --job 71696981540 --log",
+      argv: ["gh", "run", "view", "24526018547", "--job", "71696981540", "--log"],
+      combinedText: [
+        "checks-node-core-security\tCheckout\t2026-04-20T19:00:10.000Z\tFetching the repository",
+        "checks-node-core-security\tCheckout\t2026-04-20T19:00:11.000Z\tgit version 2.49.0",
+        "checks-node-core-security\tRun Node test shard\t2026-04-20T19:04:00.000Z\terror: timed out talking to registry",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("checks-node-core-security | Checkout | Fetching the repository");
+    expect(result.inlineText).toContain("checks-node-core-security | Run Node test shard | error: timed out talking to registry");
+    expect(result.inlineText).not.toContain("2026-04-20T19:00:10.000Z");
   });
 
   it("preserves emoji and CJK while stripping ANSI from user-facing output and stats", async () => {

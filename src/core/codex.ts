@@ -4,9 +4,9 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { isRepositoryInspectionCommand } from "./command.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "./hook-command.js";
 import { compactBashResult } from "./integrations/compact-bash-result.js";
+import { getInspectionCommandSkipReason } from "./inventory-safety.js";
 import { classifyOnly } from "./reduce.js";
 import { storeArtifactMetadata } from "./artifacts.js";
 import { countTextChars, stripAnsi } from "./text.js";
@@ -33,6 +33,8 @@ type CodexPostToolUsePayload = {
   hook_event_name?: unknown;
   tool_name?: unknown;
   cwd?: unknown;
+  exitCode?: unknown;
+  exit_code?: unknown;
   tool_input?: {
     command?: unknown;
   };
@@ -50,12 +52,40 @@ export type InstallCodexHookResult = {
   hooksPath: string;
   backupPath?: string;
   command: string;
+  featureFlag: CodexFeatureFlagStatus;
+};
+
+export type CodexFeatureFlagStatus = {
+  /** Absolute path we looked at (`~/.codex/config.toml` by default). */
+  configPath: string;
+  /** Whether the config file exists on disk. */
+  configExists: boolean;
+  /** Whether a `codex_hooks` key was found anywhere in `[features]`. */
+  keyPresent: boolean;
+  /** Parsed value when present, otherwise null. */
+  value: boolean | null;
+  /** Convenience: keyPresent && value === true. */
+  enabled: boolean;
+  /**
+   * One-line remediation the user can copy-paste. Empty when enabled.
+   * Currently a `codex exec --enable codex_hooks` hint rather than
+   * editing config.toml automatically (tokenjuice avoids silent
+   * config rewrites).
+   */
+  fixHint: string;
 };
 
 export type CodexHookCommandOptions = {
   local?: boolean;
   binaryPath?: string;
   nodePath?: string;
+  /**
+   * Override for the config.toml consulted when reporting the
+   * `codex_hooks` feature-flag state. Defaults to `~/.codex/config.toml`.
+   * Exposed primarily for tests and tooling that manage a non-default
+   * Codex home.
+   */
+  featureFlagConfigPath?: string;
 };
 
 export type CodexDoctorReport = {
@@ -67,6 +97,7 @@ export type CodexDoctorReport = {
   detectedCommand?: string;
   checkedPaths: string[];
   missingPaths: string[];
+  featureFlag: CodexFeatureFlagStatus;
 };
 
 export type UninstallCodexHookResult = {
@@ -84,6 +115,108 @@ function getCodexHome(): string {
 
 function getDefaultHooksPath(): string {
   return join(getCodexHome(), "hooks.json");
+}
+
+function getDefaultCodexConfigPath(): string {
+  return join(getCodexHome(), "config.toml");
+}
+
+const FEATURE_FLAG_NAME = "codex_hooks";
+const FEATURE_FLAG_FIX_HINT =
+  "Codex requires the `codex_hooks` feature to load hooks.json. " +
+  "Enable per-invocation with `codex exec --enable codex_hooks ...`, " +
+  "or persistently by adding a `[features]` section with `codex_hooks = true` to ~/.codex/config.toml.";
+
+function buildCodexFeatureFlagStatus(
+  configPath: string,
+  configExists: boolean,
+): CodexFeatureFlagStatus {
+  return {
+    configPath,
+    configExists,
+    keyPresent: false,
+    value: null,
+    enabled: false,
+    fixHint: FEATURE_FLAG_FIX_HINT,
+  };
+}
+
+/**
+ * Read-only scan of ~/.codex/config.toml for `codex_hooks = <bool>` under
+ * a `[features]` section (top-level or dotted form). Does NOT edit the
+ * file — tokenjuice prefers to surface the state and let the user decide.
+ *
+ * Returns `keyPresent: false` if the file is missing, unreadable, or the
+ * key is not declared. Stray comments and inline `# ...` are tolerated.
+ */
+export async function inspectCodexHooksFeatureFlag(
+  configPath: string = getDefaultCodexConfigPath(),
+): Promise<CodexFeatureFlagStatus> {
+  let source: string;
+  try {
+    source = await readFile(configPath, "utf8");
+  } catch (error: unknown) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      return buildCodexFeatureFlagStatus(configPath, false);
+    }
+    if (code === "EACCES" || code === "EPERM" || code === "EISDIR") {
+      return buildCodexFeatureFlagStatus(configPath, true);
+    }
+    throw error;
+  }
+
+  const parsed = parseCodexFeatureFlag(source, FEATURE_FLAG_NAME);
+  const enabled = parsed.keyPresent && parsed.value === true;
+  return {
+    configPath,
+    configExists: true,
+    keyPresent: parsed.keyPresent,
+    value: parsed.keyPresent ? parsed.value : null,
+    enabled,
+    fixHint: enabled ? "" : FEATURE_FLAG_FIX_HINT,
+  };
+}
+
+/**
+ * Minimal TOML-ish scanner. Looks for `codex_hooks = <bool>` either under
+ * a `[features]` header or as a dotted `features.codex_hooks = <bool>`
+ * assignment at any indent. Ignores comments and in-line comments.
+ * Not a full TOML parser; only the shapes Codex itself documents.
+ */
+export function parseCodexFeatureFlag(
+  source: string,
+  key: string,
+): { keyPresent: boolean; value: boolean | null } {
+  const lines = source.split(/\r?\n/u);
+  let currentTablePath: string[] = [];
+  const dottedRe = new RegExp(`^\\s*features\\.${key}\\s*=\\s*(true|false)\\b`, "u");
+  const scopedRe = new RegExp(`^\\s*${key}\\s*=\\s*(true|false)\\b`, "u");
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/#.*$/u, "");
+    const header = /^\s*\[([^\]]+)\]/u.exec(line);
+    if (header) {
+      currentTablePath = header[1]!
+        .trim()
+        .split(".")
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+      continue;
+    }
+    const dotted = currentTablePath.length === 0 ? dottedRe.exec(line) : null;
+    if (dotted) {
+      return { keyPresent: true, value: dotted[1] === "true" };
+    }
+    if (currentTablePath.length === 1 && currentTablePath[0] === "features") {
+      const scoped = scopedRe.exec(line);
+      if (scoped) {
+        return { keyPresent: true, value: scoped[1] === "true" };
+      }
+    }
+  }
+
+  return { keyPresent: false, value: null };
 }
 
 async function isExecutableFile(path: string): Promise<boolean> {
@@ -396,6 +529,36 @@ function buildCodexHint(rawRefId?: string): string {
   return hints.join(" ");
 }
 
+function parseExitCodeValue(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === "string" && /^-?\d+$/u.test(value.trim())) {
+    return Number(value);
+  }
+  return undefined;
+}
+
+function extractCodexExitCode(payload: CodexPostToolUsePayload): number | undefined {
+  for (const candidate of [payload.exitCode, payload.exit_code]) {
+    const parsed = parseExitCodeValue(candidate);
+    if (typeof parsed === "number") {
+      return parsed;
+    }
+  }
+
+  if (isRecord(payload.tool_response)) {
+    for (const key of ["exitCode", "exit_code"]) {
+      const parsed = parseExitCodeValue(payload.tool_response[key]);
+      if (typeof parsed === "number") {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export async function installCodexHook(
   hooksPath = getDefaultHooksPath(),
   options: CodexHookCommandOptions = {},
@@ -412,10 +575,13 @@ export async function installCodexHook(
   await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   await rename(tempPath, hooksPath);
 
+  const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
+
   return {
     hooksPath,
     ...(backupPath ? { backupPath } : {}),
     command,
+    featureFlag,
   };
 }
 
@@ -453,6 +619,7 @@ export async function doctorCodexHook(
   let fixCommand = getCodexFixCommand(options.local);
   const { config, exists } = await readHooksConfig(hooksPath);
   const detectedCommand = findTokenjuiceCodexHookCommand(config);
+  const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
 
   if (!exists) {
     return {
@@ -463,6 +630,7 @@ export async function doctorCodexHook(
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
+      featureFlag,
     };
   }
 
@@ -475,6 +643,7 @@ export async function doctorCodexHook(
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
+      featureFlag,
     };
   }
 
@@ -501,6 +670,11 @@ export async function doctorCodexHook(
     issues.push("local Codex hook target is older than the source tree");
     fixCommand = "pnpm build && tokenjuice install codex --local";
   }
+  if (!featureFlag.enabled) {
+    issues.push(
+      "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
+    );
+  }
 
   return {
     hooksPath,
@@ -511,6 +685,7 @@ export async function doctorCodexHook(
     detectedCommand,
     checkedPaths,
     missingPaths,
+    featureFlag,
   };
 }
 
@@ -636,11 +811,13 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     return 0;
   }
 
+  const exitCode = extractCodexExitCode(payload);
   const executionInput: ToolExecutionInput = {
     toolName: "exec",
     command,
     combinedText,
     ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+    ...(typeof exitCode === "number" ? { exitCode } : {}),
     metadata: {
       source: "codex-post-tool-use",
     },
@@ -658,13 +835,14 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     return 0;
   }
 
-  if (isRepositoryInspectionCommand({ command })) {
+  const inspectionSkipReason = getInspectionCommandSkipReason(command, "allow-safe-inventory");
+  if (inspectionSkipReason) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);
     const stats = buildImmediateSkipStats(combinedText);
     await writeHookDebug({
       ...debug,
       ...stats,
-      skipped: "inspection-command",
+      skipped: inspectionSkipReason,
     });
     return 0;
   }
@@ -677,6 +855,7 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
       command,
       visibleText: combinedText,
       ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+      ...(typeof exitCode === "number" ? { exitCode } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
       storeRaw,
       metadata: {

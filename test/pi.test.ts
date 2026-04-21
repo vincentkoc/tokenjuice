@@ -789,6 +789,66 @@ describe("installPiExtension", () => {
     expect(await readOptional(markerPath)).toBeUndefined();
   });
 
+  it("skips file-content inspection commands before reading fullOutputPath", async () => {
+    const home = await createTempDir();
+    const missingOutputPath = join(home, "missing-output.txt");
+    const { handlers, fakeCtx } = await installLocalTestExtension(home, "process.exit(7);");
+
+    const result = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "cat src/core/reduce.ts" },
+        content: [{ type: "text", text: "export function reduceExecution() {}\n" }],
+        details: { fullOutputPath: missingOutputPath },
+      },
+      fakeCtx,
+    );
+
+    expect(result).toBeUndefined();
+  });
+
+  it("rewrites safe repository inventory commands in-process", async () => {
+    const home = await createTempDir();
+    const { handlers, fakeCtx } = await installLocalTestExtension(home, "process.exit(7);");
+
+    const result = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "rg --files src/rules" },
+        content: [{
+          type: "text",
+          text: Array.from({ length: 30 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
+        }],
+        details: {},
+      },
+      fakeCtx,
+    );
+
+    expect(result?.content[0].text).toContain("30 paths");
+    expect(result?.content[0].text).toContain("src/rules/example-1.json");
+  });
+
+  it("skips unsafe repository inventory pipelines before reading fullOutputPath", async () => {
+    const home = await createTempDir();
+    const missingOutputPath = join(home, "missing-output.txt");
+    const { handlers, fakeCtx } = await installLocalTestExtension(home, "process.exit(7);");
+
+    const result = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "rg --files | sort README.md" },
+        content: [{
+          type: "text",
+          text: Array.from({ length: 30 }, (_, index) => `src/file-${index + 1}.ts`).join("\n"),
+        }],
+        details: { fullOutputPath: missingOutputPath },
+      },
+      fakeCtx,
+    );
+
+    expect(result).toBeUndefined();
+  });
+
   it("continues to compact in-process even when the configured reduce-json target is broken", async () => {
     const home = await createTempDir();
     const markerPath = join(home, "reduce-json-called.txt");

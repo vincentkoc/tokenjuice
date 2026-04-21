@@ -38,6 +38,7 @@ tokenjuice --help
 tokenjuice --version
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 tokenjuice uninstall codex
 ```
@@ -70,6 +71,7 @@ tokenjuice wrap --store -- <command> [args...]
 tokenjuice install codex
 tokenjuice install codex --local
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 tokenjuice install pi --local
 tokenjuice uninstall codex
@@ -81,6 +83,7 @@ tokenjuice doctor
 tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice stats
+tokenjuice stats --timezone utc
 ```
 
 ## overview
@@ -91,6 +94,7 @@ tokenjuice can install host integrations for:
 | --- | --- | --- | --- | --- |
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
+| Cursor (Linux/macOS/WSL) | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
@@ -104,8 +108,11 @@ shared behavior:
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
+- Codex, Claude Code, Cursor, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
+
+repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 
@@ -123,6 +130,7 @@ tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 ```
 
@@ -181,6 +189,8 @@ direct payload:
 
 - spec: `docs/spec.md`
 - rules: `docs/rules.md`
+- cursor integration: `docs/cursor-integration.md`
+- integration playbook: `docs/integration-playbook.md`
 - security: `SECURITY.md`
 
 ## status

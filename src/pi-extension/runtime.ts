@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 
-import { isFileContentInspectionCommand } from "../core/command.js";
 import { compactBashResult } from "../core/integrations/compact-bash-result.js";
+import { getInspectionCommandSkipReason } from "../core/inventory-safety.js";
 
 import type { Pi, PiContext, PiToolResultEvent } from "./pi-types.js";
 import { isRecord } from "./pi-types.js";
@@ -170,7 +170,7 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
         };
       }
 
-      if (isFileContentInspectionCommand({ command })) {
+      if (getInspectionCommandSkipReason(command, "allow-safe-inventory")) {
         return undefined;
       }
 
@@ -191,7 +191,7 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
           ...(typeof trustedFullOutputText === "string" ? { trustedFullText: trustedFullOutputText } : {}),
           exitCode,
           maxInlineChars: DEFAULT_MAX_INLINE_CHARS,
-          skipInspectionCommands: true,
+          inspectionPolicy: "allow-safe-inventory",
           minSavedCharsAny: 8,
           genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
           genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,

@@ -1,6 +1,6 @@
 {
   "name": "tokenjuice",
-  "version": "0.4.0",
+  "version": "0.5.1",
   "description": "Lean output compaction for terminal-heavy agent workflows.",
   "keywords": [
     "cli",
@@ -24,6 +24,7 @@
   },
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.11.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -42,6 +43,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "analyze:codex-logs": "node scripts/analyze-codex-logs.mjs",
     "bench:fixtures": "node scripts/bench.mjs fixtures",
     "bench:verify": "node scripts/bench.mjs verify",
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",

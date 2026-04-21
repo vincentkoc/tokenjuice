@@ -52,6 +52,9 @@ function validateMatch(value: unknown, path: string): string[] {
   if ("argv0" in value && !isStringArray(value.argv0)) {
     errors.push(`${path}.argv0 must be an array of strings`);
   }
+  if ("gitSubcommands" in value && !isStringArray(value.gitSubcommands)) {
+    errors.push(`${path}.gitSubcommands must be an array of strings`);
+  }
   if ("commandIncludes" in value && !isStringArray(value.commandIncludes)) {
     errors.push(`${path}.commandIncludes must be an array of strings`);
   }

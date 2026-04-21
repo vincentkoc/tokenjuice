@@ -131,6 +131,29 @@ describe("analysis", () => {
     expect(report.daily.length).toBe(1);
   });
 
+  it("buckets daily stats by the requested timezone", () => {
+    const entries = [
+      {
+        metadata: {
+          createdAt: "2026-04-20T03:30:00.000Z",
+          command: "pnpm test",
+          classification: {
+            family: "tests",
+            confidence: 1,
+            matchedReducer: "tests/pnpm-test",
+          },
+          rawChars: 100,
+          reducedChars: 25,
+          ratio: 0.25,
+        },
+      },
+    ];
+
+    expect(statsArtifacts(entries, { timeZone: "America/New_York" }).daily[0]?.day).toBe("2026-04-19");
+    expect(statsArtifacts(entries, { timeZone: "utc" }).daily[0]?.day).toBe("2026-04-20");
+    expect(statsArtifacts(entries).daily[0]?.day).toBe("2026-04-20");
+  });
+
   it("clamps expanded artifact ratios in stats and doctor output", () => {
     const entries = [
       {

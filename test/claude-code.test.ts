@@ -12,6 +12,7 @@ const originalPath = process.env.PATH;
 afterEach(async () => {
   delete process.env.CLAUDE_HOME;
   delete process.env.CODEX_HOME;
+  delete process.env.CURSOR_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
   process.env.PATH = originalPath;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
@@ -355,9 +356,11 @@ describe("doctorInstalledHooks", () => {
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.CURSOR_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(join(home, "config.toml"), "[features]\ncodex_hooks = true\n", "utf8");
     await installCodexHook(join(home, "hooks.json"));
     await installClaudeCodeHook(join(home, "settings.json"));
     await installPiExtension(undefined, { local: true });
@@ -378,6 +381,7 @@ describe("doctorInstalledHooks", () => {
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.CURSOR_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -450,6 +454,61 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
+  });
+
+  it("skips file-content inspection commands", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "cat src/core/reduce.ts",
+      },
+      tool_response: "export function reduceExecution() {}\n",
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("file-content-inspection-command");
+  });
+
+  it("rewrites safe repository inventory commands", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "rg --files src/rules",
+      },
+      tool_response: Array.from({ length: 30 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const response = JSON.parse(output) as {
+      decision: string;
+      reason: string;
+    };
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      matchedReducer?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(response.decision).toBe("block");
+    expect(response.reason).toContain("30 paths");
+    expect(debug.rewrote).toBe(true);
+    expect(debug.matchedReducer).toBe("filesystem/rg-files");
   });
 
   it("skips non-PostToolUse events", async () => {

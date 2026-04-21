@@ -71,8 +71,11 @@ describe("rules", () => {
       "devops/kubectl-describe",
       "devops/kubectl-get",
       "devops/kubectl-logs",
+      "filesystem/fd",
       "filesystem/find",
+      "filesystem/git-ls-files",
       "filesystem/ls",
+      "filesystem/rg-files",
       "generic/help",
       "git/branch",
       "git/diff",
@@ -157,7 +160,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(105);
+    expect(fixtures).toHaveLength(108);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {
@@ -219,6 +222,36 @@ describe("rules", () => {
     const gitStatus = rules.find((rule) => rule.rule.id === "git/status");
     expect(gitStatus?.source).toBe("project");
     expect(gitStatus?.rule.family).toBe("git-status-project");
+  });
+
+  it("accepts gitSubcommands in project rule matchers", async () => {
+    const cwd = await createTempDir();
+    const rulesDir = join(cwd, ".tokenjuice", "rules", "git");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "ls-files.json"),
+      JSON.stringify(
+        {
+          id: "project/git-ls-files",
+          family: "project-git-ls-files",
+          match: {
+            argv0: ["git"],
+            gitSubcommands: ["ls-files"],
+          },
+          summarize: {
+            head: 1,
+            tail: 1,
+          },
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const results = await verifyRules({ cwd });
+    const projectRule = results.find((result) => result.id === "project/git-ls-files");
+    expect(projectRule?.ok).toBe(true);
   });
 
   it("reports cross-layer shadow warnings in verify", async () => {

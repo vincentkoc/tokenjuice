@@ -142,6 +142,68 @@ function parseJsonObjectLine(line: string): Record<string, unknown> | null {
   }
 }
 
+function parseJsonValue(text: string): unknown | null {
+  const trimmed = text.trim();
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function parseIsoTimestamp(value: unknown): number | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return "";
+  }
+
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+  if (hours > 0) {
+    return `${hours}h${String(minutes).padStart(2, "0")}m`;
+  }
+  return `${minutes}m${String(remainingSeconds).padStart(2, "0")}s`;
+}
+
+function extractGhDuration(record: Record<string, unknown>): string | null {
+  if (typeof record.durationSec === "number" && Number.isFinite(record.durationSec) && record.durationSec >= 0) {
+    return formatDuration(record.durationSec);
+  }
+  if (typeof record.durationSeconds === "number" && Number.isFinite(record.durationSeconds) && record.durationSeconds >= 0) {
+    return formatDuration(record.durationSeconds);
+  }
+
+  const startedAt = parseIsoTimestamp(record.startedAt);
+  const completedAt = parseIsoTimestamp(record.completedAt);
+  if (startedAt !== null && completedAt !== null && completedAt >= startedAt) {
+    return formatDuration((completedAt - startedAt) / 1000);
+  }
+
+  const createdAt = parseIsoTimestamp(record.createdAt);
+  const updatedAt = parseIsoTimestamp(record.updatedAt);
+  if (createdAt !== null && updatedAt !== null && updatedAt >= createdAt) {
+    return formatDuration((updatedAt - createdAt) / 1000);
+  }
+
+  return null;
+}
+
 function formatGhJsonRecord(record: Record<string, unknown>): string | null {
   const numericId = typeof record.number === "number" ? record.number
     : typeof record.databaseId === "number" ? record.databaseId
@@ -163,8 +225,9 @@ function formatGhJsonRecord(record: Record<string, unknown>): string | null {
   const status = typeof record.state === "string" ? record.state
     : typeof record.status === "string" ? record.status
       : typeof record.conclusion === "string" ? record.conclusion
-        : null;
+      : null;
   const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt.slice(0, 10) : null;
+  const duration = extractGhDuration(record);
 
   const parts: string[] = [];
   if (numericId !== null) {
@@ -176,6 +239,9 @@ function formatGhJsonRecord(record: Record<string, unknown>): string | null {
   }
   if (branch) {
     parts.push(`(${compactWhitespace(branch)})`);
+  }
+  if (duration) {
+    parts.push(duration);
   }
   if (typeof comments === "number" && comments > 0) {
     parts.push(`${comments}c`);
@@ -189,10 +255,59 @@ function formatGhJsonRecord(record: Record<string, unknown>): string | null {
   return parts.join(" ");
 }
 
+function formatGhJsonValue(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => {
+      if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+        return [];
+      }
+      const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
+      return formatted ? [formatted] : [];
+    });
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+
+  const record = value as Record<string, unknown>;
+  const lines: string[] = [];
+  const header = formatGhJsonRecord(record);
+  if (header) {
+    lines.push(header);
+  }
+
+  for (const collectionKey of ["jobs", "workflowRuns", "items", "artifacts"]) {
+    const collection = record[collectionKey];
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+
+    for (const entry of collection) {
+      if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+        continue;
+      }
+      const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
+      if (formatted) {
+        lines.push(formatted);
+      }
+    }
+  }
+
+  return lines;
+}
+
 function formatGhTableLine(line: string): string {
   const trimmed = line.trim();
   if (!trimmed) {
     return "";
+  }
+
+  const tabColumns = line.split("\t").map((part) => compactWhitespace(part)).filter(Boolean);
+  if (tabColumns.length >= 4 && /^\d{4}-\d{2}-\d{2}T/u.test(tabColumns[2] ?? "")) {
+    const [job, step, , ...rest] = tabColumns;
+    const parts = [job, step, compactWhitespace(rest.join(" "))].filter(Boolean);
+    return parts.join(" | ");
   }
 
   const columns = trimmed.split(/\s{2,}|\t+/u).map((part) => compactWhitespace(part)).filter(Boolean);
@@ -218,6 +333,14 @@ function rewriteGhLines(lines: string[], input: ToolExecutionInput): string[] {
   const nonEmpty = lines.filter((line) => line.trim() !== "");
   if (nonEmpty.length === 0) {
     return [];
+  }
+
+  const parsedWholeJson = parseJsonValue(nonEmpty.join("\n"));
+  if (parsedWholeJson !== null) {
+    const rewrittenWholeJson = formatGhJsonValue(parsedWholeJson);
+    if (rewrittenWholeJson.length > 0) {
+      return rewrittenWholeJson;
+    }
   }
 
   const parsedJsonLines = nonEmpty.map(parseJsonObjectLine);
@@ -410,12 +533,12 @@ function selectInlineText(
   const passthroughText = buildPassthroughText(input, rawText);
   const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
+  if (rawChars <= maxInlineChars && compactChars >= rawChars) {
+    return passthroughText;
+  }
   const passthroughLimit = classification.family === "help" ? maxInlineChars : TINY_OUTPUT_MAX_CHARS;
   if (countTextChars(passthroughText) > passthroughLimit) {
     return compactText;
-  }
-  if (rawChars <= maxInlineChars && compactChars >= rawChars) {
-    return passthroughText;
   }
   if (countTextChars(passthroughText) <= countTextChars(compactText)) {
     return passthroughText;
@@ -439,6 +562,14 @@ export async function reduceExecutionWithRules(
   const rawText = buildRawText(normalizedInput);
   const measuredRawChars = countTextChars(stripAnsi(rawText));
   const classification = classifyExecution(normalizedInput, rules, opts.classifier);
+  const trace = opts.trace
+    ? {
+        ...(normalizedInput.command ? { normalizedCommand: normalizedInput.command } : {}),
+        ...(normalizedInput.argv?.length ? { normalizedArgv: normalizedInput.argv } : {}),
+        ...(classification.matchedReducer ? { matchedReducer: classification.matchedReducer } : {}),
+        family: classification.family,
+      }
+    : undefined;
 
   if (opts.raw) {
     const rawRef = opts.store
@@ -474,6 +605,7 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: rawText,
+      ...(trace ? { trace } : {}),
       ...(rawRef ? { rawRef } : {}),
       stats: {
         rawChars: measuredRawChars,
@@ -503,6 +635,7 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: rawText,
+      ...(trace ? { trace } : {}),
       stats: {
         rawChars: measuredRawChars,
         reducedChars: measuredRawChars,
@@ -570,6 +703,7 @@ export async function reduceExecutionWithRules(
     inlineText,
     ...(summary ? { previewText: summary } : {}),
     ...(Object.keys(facts).length > 0 ? { facts } : {}),
+    ...(trace ? { trace } : {}),
     ...(rawRef ? { rawRef } : {}),
     stats,
     classification,

@@ -43,7 +43,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: pnpm
           registry-url: https://registry.npmjs.org
 
       - name: Enable Corepack pnpm

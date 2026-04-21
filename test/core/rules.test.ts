@@ -46,6 +46,7 @@ describe("rules", () => {
       "archive/unzip",
       "archive/zip",
       "build/esbuild",
+      "build/pnpm-build",
       "build/swift-build",
       "build/tsc",
       "build/tsdown",
@@ -161,7 +162,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(110);
+    expect(fixtures).toHaveLength(112);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

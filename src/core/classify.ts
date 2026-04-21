@@ -6,6 +6,40 @@ function includesAll(argv: string[], expected: string[]): boolean {
   return expected.every((part) => argv.includes(part));
 }
 
+function isWordLikeChar(char: string | undefined): boolean {
+  return typeof char === "string" && /[A-Za-z0-9_]/u.test(char);
+}
+
+function includesCommandPart(command: string, part: string): boolean {
+  if (!part) {
+    return true;
+  }
+
+  let fromIndex = 0;
+  while (fromIndex <= command.length) {
+    const index = command.indexOf(part, fromIndex);
+    if (index === -1) {
+      return false;
+    }
+
+    const end = index + part.length;
+    const partStartsWord = isWordLikeChar(part[0]);
+    const partEndsWord = isWordLikeChar(part.at(-1));
+    const prev = index > 0 ? command[index - 1] : undefined;
+    const next = end < command.length ? command[end] : undefined;
+    const leftBoundaryOk = !partStartsWord || !isWordLikeChar(prev);
+    const rightBoundaryOk = !partEndsWord || !isWordLikeChar(next);
+
+    if (leftBoundaryOk && rightBoundaryOk) {
+      return true;
+    }
+
+    fromIndex = index + 1;
+  }
+
+  return false;
+}
+
 type RuleLike = JsonRule | CompiledRule;
 
 function getJsonRule(rule: RuleLike): JsonRule {
@@ -38,11 +72,11 @@ export function matchesRule(ruleLike: RuleLike, input: ToolExecutionInput): bool
     return false;
   }
 
-  if (rule.match.commandIncludes && !rule.match.commandIncludes.every((part) => command.includes(part))) {
+  if (rule.match.commandIncludes && !rule.match.commandIncludes.every((part) => includesCommandPart(command, part))) {
     return false;
   }
 
-  if (rule.match.commandIncludesAny && !rule.match.commandIncludesAny.some((part) => command.includes(part))) {
+  if (rule.match.commandIncludesAny && !rule.match.commandIncludesAny.some((part) => includesCommandPart(command, part))) {
     return false;
   }
 

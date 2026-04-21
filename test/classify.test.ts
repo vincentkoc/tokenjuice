@@ -14,6 +14,17 @@ function buildRule(commandIncludes: string[]): JsonRule {
   };
 }
 
+function buildAnyRule(commandIncludesAny: string[]): JsonRule {
+  return {
+    id: "test/any-rule",
+    family: "test",
+    match: {
+      toolNames: ["exec"],
+      commandIncludesAny,
+    },
+  };
+}
+
 describe("matchesRule commandIncludes", () => {
   it("matches terminal token patterns even when they end the command", () => {
     const rule = buildRule([" && git diff"]);
@@ -27,6 +38,16 @@ describe("matchesRule commandIncludes", () => {
 
   it("does not match partial tokens", () => {
     const rule = buildRule([" && git diff"]);
+    const input: ToolExecutionInput = {
+      toolName: "exec",
+      command: "git status && git diffx",
+    };
+
+    expect(matchesRule(rule, input)).toBe(false);
+  });
+
+  it("applies the same boundary protection to commandIncludesAny", () => {
+    const rule = buildAnyRule(["git diff"]);
     const input: ToolExecutionInput = {
       toolName: "exec",
       command: "git status && git diffx",

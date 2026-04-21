@@ -4,7 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { tokenizeCommand } from "./command.js";
+import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "./hook-command.js";
 import { compactBashResult } from "./integrations/compact-bash-result.js";
 import { getInspectionCommandSkipReason } from "./inventory-safety.js";
 import { classifyOnly } from "./reduce.js";
@@ -217,14 +217,6 @@ export function parseCodexFeatureFlag(
   }
 
   return { keyPresent: false, value: null };
-}
-
-
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:-]+$/u.test(value)) {
-    return value;
-  }
-  return `'${value.replace(/'/gu, `'\\''`)}'`;
 }
 
 async function isExecutableFile(path: string): Promise<boolean> {
@@ -497,28 +489,8 @@ async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
   }
 }
 
-function extractHookCommandPaths(command: string): string[] {
-  const argv = tokenizeCommand(command);
-  if (argv.length === 0) {
-    return [];
-  }
-
-  const paths = new Set<string>();
-  const first = argv[0];
-  if (first && (first.includes("/") || first.includes("\\"))) {
-    paths.add(first);
-  }
-
-  const second = argv[1];
-  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
-    paths.add(second);
-  }
-
-  return [...paths];
-}
-
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = tokenizeCommand(command);
+  const argv = parseShellWords(command);
   if (argv.length < 3) {
     return false;
   }
@@ -530,7 +502,7 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
     wrapIndex = 1;
   } else if (
     typeof first === "string"
-    && first.endsWith("/node")
+    && isNodeExecutablePath(first)
     && typeof second === "string"
     && second.endsWith(".js")
     && argv.slice(1).some((part) => part.includes("tokenjuice"))

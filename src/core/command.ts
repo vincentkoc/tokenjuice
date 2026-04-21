@@ -341,7 +341,7 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
 
 function unwrapShellLauncherCommand(input: ToolExecutionInput): string | null {
   const argv = input.argv;
-  if (!argv || argv.length < 3) {
+  if (!argv || argv.length !== 3) {
     return null;
   }
 
@@ -350,7 +350,7 @@ function unwrapShellLauncherCommand(input: ToolExecutionInput): string | null {
   const nestedCommand = argv[2];
   if (
     !launcher
-    || !SHELL_COMMAND_LAUNCHERS.has(launcher)
+    || !isLikelyShellLauncher(launcher, argv[0])
     || (launchFlag !== "-c" && launchFlag !== "-lc")
     || typeof nestedCommand !== "string"
     || nestedCommand.trim().length === 0
@@ -359,4 +359,42 @@ function unwrapShellLauncherCommand(input: ToolExecutionInput): string | null {
   }
 
   return nestedCommand;
+}
+
+function isLikelyShellLauncher(launcherName: string, launcherPath?: string): boolean {
+  const normalized = launcherName.toLowerCase().replace(/\.exe$/u, "");
+  if (SHELL_COMMAND_LAUNCHERS.has(normalized)) {
+    return true;
+  }
+
+  if (
+    normalized === "dash"
+    || normalized === "ksh"
+    || normalized === "mksh"
+    || normalized === "ash"
+    || normalized === "csh"
+    || normalized === "tcsh"
+  ) {
+    return true;
+  }
+
+  const pathNormalized = launcherPath?.toLowerCase().replace(/\\/gu, "/");
+  if (!pathNormalized) return false;
+  if (!pathNormalized.includes("/bin/")) return false;
+  return (
+    pathNormalized.endsWith("/bash")
+    || pathNormalized.endsWith("/sh")
+    || pathNormalized.endsWith("/zsh")
+    || pathNormalized.endsWith("/fish")
+    || pathNormalized.endsWith("/dash")
+    || pathNormalized.endsWith("/ksh")
+    || pathNormalized.endsWith("/mksh")
+    || pathNormalized.endsWith("/ash")
+    || pathNormalized.endsWith("/csh")
+    || pathNormalized.endsWith("/tcsh")
+    || pathNormalized.endsWith("/bash.exe")
+    || pathNormalized.endsWith("/sh.exe")
+    || pathNormalized.endsWith("/zsh.exe")
+    || pathNormalized.endsWith("/fish.exe")
+  );
 }

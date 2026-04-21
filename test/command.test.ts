@@ -59,6 +59,26 @@ describe("normalizeExecutionInput", () => {
     expect(normalized.argv).toEqual(["git", "status", "--short"]);
   });
 
+  it("unwraps absolute-path shell launchers used by cursor hooks", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "/usr/bin/zsh -lc 'git status --short'",
+      argv: ["/usr/bin/zsh", "-lc", "git status --short"],
+    });
+    expect(normalized.command).toBe("git status --short");
+    expect(normalized.argv).toEqual(["git", "status", "--short"]);
+  });
+
+  it("does not unwrap non-shell launchers such as ssh -c", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "/usr/bin/ssh -c aes128-ctr host",
+      argv: ["/usr/bin/ssh", "-c", "aes128-ctr", "host"],
+    });
+    expect(normalized.command).toBe("/usr/bin/ssh -c aes128-ctr host");
+    expect(normalized.argv).toEqual(["/usr/bin/ssh", "-c", "aes128-ctr", "host"]);
+  });
+
   it("unwraps bash -lc but keeps compound nested commands as command-only", () => {
     const normalized = normalizeExecutionInput({
       toolName: "exec",

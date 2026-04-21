@@ -34,6 +34,23 @@ describe("reduce trace", () => {
     expect(result.trace).toBeUndefined();
   });
 
+  it("classifies wrapped commands from absolute-path shell launchers", async () => {
+    const result = await reduceExecution(
+      {
+        toolName: "exec",
+        command: "/usr/bin/zsh -lc 'rg --files src'",
+        argv: ["/usr/bin/zsh", "-lc", "rg --files src"],
+        combinedText: "src/index.ts\nsrc/core/command.ts\nsrc/core/classify.ts\n",
+        exitCode: 0,
+      },
+      { trace: true },
+    );
+
+    expect(result.trace?.normalizedCommand).toBe("rg --files src");
+    expect(result.trace?.normalizedArgv).toEqual(["rg", "--files", "src"]);
+    expect(result.trace?.matchedReducer).toBe("filesystem/rg-files");
+  });
+
   it("propagates trace through wrap execution", async () => {
     const wrapped = await runWrappedCommand(["bash", "-lc", "git status --short"], {
       trace: true,

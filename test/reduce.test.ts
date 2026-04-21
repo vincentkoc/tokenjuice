@@ -764,19 +764,19 @@ describe("reduceExecution", () => {
 
   it("keeps search output raw when the rewritten form would be longer but still fits inline", async () => {
     const rawText = [
-      "src/core/claude-code.ts:101:1: recordStats option plumbing",
-      "src/core/claude-code.ts:142:3: storeArtifactMetadata branch",
-      "src/core/claude-code.ts:188:9: reduceExecution(input, options)",
-      "src/core/claude-code.ts:220:7: inspection-command handling",
-      "src/core/claude-code.ts:265:5: raw bypass preserve",
-      "src/core/claude-code.ts:301:11: skipped low-savings-compaction",
-      "src/core/claude-code.ts:344:13: writeHookDebug final record",
+      "src/hosts/claude-code/index.ts:101:1: recordStats option plumbing",
+      "src/hosts/claude-code/index.ts:142:3: storeArtifactMetadata branch",
+      "src/hosts/claude-code/index.ts:188:9: reduceExecution(input, options)",
+      "src/hosts/claude-code/index.ts:220:7: inspection-command handling",
+      "src/hosts/claude-code/index.ts:265:5: raw bypass preserve",
+      "src/hosts/claude-code/index.ts:301:11: skipped low-savings-compaction",
+      "src/hosts/claude-code/index.ts:344:13: writeHookDebug final record",
     ].join("\n");
 
     const result = await reduceExecution({
       toolName: "exec",
-      command: "rg -n \"recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip\" src/core/claude-code.ts",
-      argv: ["rg", "-n", "recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip", "src/core/claude-code.ts"],
+      command: "rg -n \"recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip\" src/hosts/claude-code/index.ts",
+      argv: ["rg", "-n", "recordStats|storeArtifactMetadata|reduceExecution\\(|raw bypass|inspection-command|skip", "src/hosts/claude-code/index.ts"],
       combinedText: rawText,
       exitCode: 0,
     });

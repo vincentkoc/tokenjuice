@@ -576,7 +576,7 @@ describe("runClaudeCodePostToolUseHook", () => {
         "Author: Example",
         "",
         " README.md | 10 +++++-----",
-        " src/core/claude-code.ts | 12 +++++++-----",
+        " src/hosts/claude-code/index.ts | 12 +++++++-----",
       ].join("\n"),
     });
 

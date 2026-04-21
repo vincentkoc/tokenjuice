@@ -1,8 +1,8 @@
 export { getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
-export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./core/claude-code.js";
 export { normalizeCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
+export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
 export {
   doctorCodexHook,
   inspectCodexHooksFeatureFlag,
@@ -10,11 +10,11 @@ export {
   parseCodexFeatureFlag,
   runCodexPostToolUseHook,
   uninstallCodexHook,
-} from "./core/codex.js";
-export type { CodexFeatureFlagStatus } from "./core/codex.js";
-export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./core/cursor.js";
-export { doctorInstalledHooks } from "./core/hook-doctor.js";
-export { doctorPiExtension, installPiExtension } from "./core/pi.js";
+} from "./hosts/codex/index.js";
+export type { CodexFeatureFlagStatus } from "./hosts/codex/index.js";
+export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
+export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
@@ -41,6 +41,6 @@ export type {
   WrapOptions,
   WrapResult,
 } from "./types.js";
-export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./core/pi.js";
-export type { CursorDoctorReport, InstallCursorHookResult } from "./core/cursor.js";
+export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
+export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
 export type { StatsOptions, StatsReport } from "./core/analysis.js";

@@ -5,12 +5,12 @@
     "toolName": "exec",
     "argv": ["git", "ls-files", "src"],
     "command": "git ls-files src",
-    "combinedText": "src/index.ts\nsrc/core/codex.ts\nsrc/core/reduce.ts\n",
+    "combinedText": "src/index.ts\nsrc/hosts/codex/index.ts\nsrc/core/reduce.ts\n",
     "exitCode": 0
   },
   "expect": {
     "matchedReducer": "filesystem/git-ls-files",
     "family": "filesystem-inventory",
-    "contains": ["path", "src/core/codex.ts"]
+    "contains": ["path", "src/hosts/codex/index.ts"]
   }
 }

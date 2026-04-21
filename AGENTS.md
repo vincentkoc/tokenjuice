@@ -5,9 +5,8 @@
 `tokenjuice` is a TypeScript CLI/library. Main source lives in `src/`:
 
 - `src/cli/` contains the CLI entrypoint.
-- `src/core/` contains shared reducers, rule loading, and compatibility shims for host modules.
+- `src/core/` contains shared reducers, rule loading, and other host-agnostic logic.
 - `src/hosts/` contains host-specific integrations (`codex/`, `claude-code/`, `cursor/`, `pi/`) plus shared hook helpers.
-- `src/pi-extension/runtime.ts` is the compatibility entrypoint for bundling the Pi runtime from `src/hosts/pi/extension/`.
 - `src/rules/` contains built-in JSON rules and fixtures.
 
 Tests live in `test/` and follow `*.test.ts`. Supporting docs live in `docs/`, packaging files in `packaging/`, and utility scripts in `scripts/`. `dist/` and `release/` are generated outputs; do not hand-edit them.

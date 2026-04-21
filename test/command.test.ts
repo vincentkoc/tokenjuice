@@ -128,7 +128,7 @@ describe("isFileContentInspectionCommand", () => {
     { label: "sed", command: "sed -n '1,80p' src/core/reduce.ts" },
     { label: "head", command: "head -n 20 package.json" },
     { label: "tail", command: "tail -n 20 pnpm-lock.yaml" },
-    { label: "nl", command: "nl -ba src/core/codex.ts" },
+    { label: "nl", command: "nl -ba src/hosts/codex/index.ts" },
     { label: "bat", command: "bat README.md" },
     { label: "jq", command: "jq '.version' package.json" },
     { label: "yq", command: "yq '.name' pnpm-workspace.yaml" },

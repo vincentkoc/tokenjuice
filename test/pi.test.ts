@@ -27,7 +27,7 @@ async function createTempDir(): Promise<string> {
   return dir;
 }
 
-const SOURCE_RUNTIME_ASSET_PATH = new URL("../src/pi-extension/runtime.js", import.meta.url);
+const SOURCE_RUNTIME_ASSET_PATH = new URL("../src/hosts/pi/extension/runtime.js", import.meta.url);
 
 async function readOptional(path: string | URL): Promise<string | undefined> {
   try {
@@ -420,8 +420,8 @@ describe("installPiExtension", () => {
             "On branch feat/pi-extension",
             "",
             "Changes not staged for commit:",
-            "\tmodified:   src/pi-extension/runtime.ts",
-            "\tmodified:   src/core/pi.ts",
+            "\tmodified:   src/hosts/pi/extension/runtime.ts",
+            "\tmodified:   src/hosts/pi/index.ts",
             "",
             "no changes added to commit",
           ].join("\n"),
@@ -431,7 +431,7 @@ describe("installPiExtension", () => {
       fakeCtx,
     );
 
-    expect(result?.content[0].text).toContain("M: src/pi-extension/runtime.ts");
+    expect(result?.content[0].text).toContain("M: src/hosts/pi/extension/runtime.ts");
     expect(result?.content[0].text).toContain("tokenjuice compacted bash output");
     expect(await readOptional(markerPath)).toBeUndefined();
   });
@@ -528,8 +528,8 @@ describe("installPiExtension", () => {
             "On branch feat/pi-extension",
             "",
             "Changes not staged for commit:",
-            "\tmodified:   src/pi-extension/runtime.ts",
-            "\tmodified:   src/core/pi.ts",
+            "\tmodified:   src/hosts/pi/extension/runtime.ts",
+            "\tmodified:   src/hosts/pi/index.ts",
             "",
             "no changes added to commit",
           ].join("\n"),
@@ -579,8 +579,8 @@ describe("installPiExtension", () => {
             "On branch feat/pi-extension",
             "",
             "Changes not staged for commit:",
-            "\tmodified:   src/pi-extension/runtime.ts",
-            "\tmodified:   src/core/pi.ts",
+            "\tmodified:   src/hosts/pi/extension/runtime.ts",
+            "\tmodified:   src/hosts/pi/index.ts",
             "",
             "no changes added to commit",
           ].join("\n"),
@@ -873,8 +873,8 @@ describe("installPiExtension", () => {
             "On branch feat/pi-extension",
             "",
             "Changes not staged for commit:",
-            "\tmodified:   src/pi-extension/runtime.ts",
-            "\tmodified:   src/core/pi.ts",
+            "\tmodified:   src/hosts/pi/extension/runtime.ts",
+            "\tmodified:   src/hosts/pi/index.ts",
             "",
             "no changes added to commit",
           ].join("\n"),
@@ -884,7 +884,7 @@ describe("installPiExtension", () => {
       fakeCtx,
     );
 
-    expect(result?.content[0].text).toContain("M: src/pi-extension/runtime.ts");
+    expect(result?.content[0].text).toContain("M: src/hosts/pi/extension/runtime.ts");
     expect(await readOptional(markerPath)).toBeUndefined();
   });
 });

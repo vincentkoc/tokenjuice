@@ -5,12 +5,12 @@
     "toolName": "exec",
     "argv": ["fd", "codex", "src"],
     "command": "fd codex src",
-    "combinedText": "src/core/codex.ts\nsrc/rules/fixtures/openclaw/sessions-history.fixture.json\n",
+    "combinedText": "src/hosts/codex/index.ts\nsrc/rules/fixtures/openclaw/sessions-history.fixture.json\n",
     "exitCode": 0
   },
   "expect": {
     "matchedReducer": "filesystem/fd",
     "family": "filesystem-inventory",
-    "contains": ["path", "src/core/codex.ts"]
+    "contains": ["path", "src/hosts/codex/index.ts"]
   }
 }

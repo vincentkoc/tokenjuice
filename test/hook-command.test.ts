@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractHookCommandPaths, parseShellWords, shellQuote } from "../src/core/hook-command.js";
+import { extractHookCommandPaths, parseShellWords, shellQuote } from "../src/hosts/shared/hook-command.js";
 
 describe("shellQuote", () => {
   it("leaves unspaced Windows paths unquoted", () => {

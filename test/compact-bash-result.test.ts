@@ -12,8 +12,8 @@ describe("compactBashResult", () => {
         "On branch feature/demo",
         "",
         "Changes not staged for commit:",
-        "\tmodified:   src/core/pi.ts",
-        "\tmodified:   src/pi-extension/runtime.ts",
+        "\tmodified:   src/hosts/pi/index.ts",
+        "\tmodified:   src/hosts/pi/extension/runtime.ts",
         "",
         "no changes added to commit",
       ].join("\n"),
@@ -28,8 +28,8 @@ describe("compactBashResult", () => {
     expect(outcome.action).toBe("rewrite");
     if (outcome.action === "rewrite") {
       expect(outcome.usedTrustedFullText).toBe(true);
-      expect(outcome.rawText).toContain("src/core/pi.ts");
-      expect(outcome.result.inlineText).toContain("M: src/core/pi.ts");
+      expect(outcome.rawText).toContain("src/hosts/pi/index.ts");
+      expect(outcome.result.inlineText).toContain("M: src/hosts/pi/index.ts");
       expect(outcome.result.inlineText).not.toContain("truncated output");
     }
   });

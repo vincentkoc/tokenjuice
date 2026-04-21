@@ -472,7 +472,7 @@ describe("runCodexPostToolUseHook", () => {
       tool_input: {
         command: "git status --short",
       },
-      tool_response: " M src/core/codex.ts\n",
+      tool_response: " M src/hosts/codex/index.ts\n",
     });
 
     const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
@@ -491,10 +491,10 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("low-savings-compaction");
     expect(debug.matchedReducer).toBe("git/status");
-    expect(debug.rawChars).toBe(21);
-    expect(debug.reducedChars).toBe(20);
+    expect(debug.rawChars).toBe(28);
+    expect(debug.reducedChars).toBe(27);
     expect(debug.savedChars).toBe(1);
-    expect(debug.ratio).toBeCloseTo(20 / 21, 5);
+    expect(debug.ratio).toBeCloseTo(27 / 28, 5);
   });
 
   it("auto-rewrites large repository inventory commands", async () => {
@@ -586,7 +586,7 @@ describe("runCodexPostToolUseHook", () => {
         command: "find src -type f | xargs wc -l",
       },
       tool_response: [
-        "  120 src/core/codex.ts",
+        "  120 src/hosts/codex/index.ts",
         "   42 src/core/command.ts",
         "  162 total",
       ].join("\n"),
@@ -652,7 +652,7 @@ describe("runCodexPostToolUseHook", () => {
         "Author: Example",
         "",
         " README.md | 10 +++++-----",
-        " src/core/codex.ts | 12 +++++++-----",
+        " src/hosts/codex/index.ts | 12 +++++++-----",
       ].join("\n"),
     });
 
@@ -719,7 +719,7 @@ describe("runCodexPostToolUseHook", () => {
       hook_event_name: "PostToolUse",
       tool_name: "Bash",
       tool_input: {
-        command: "sed -n '1,40p' src/core/codex.ts",
+        command: "sed -n '1,40p' src/hosts/codex/index.ts",
       },
       tool_response: [
         "function example() {",
@@ -733,7 +733,7 @@ describe("runCodexPostToolUseHook", () => {
       tool_input: {
         command: "git status --short",
       },
-      tool_response: " M src/core/codex.ts\n",
+      tool_response: " M src/hosts/codex/index.ts\n",
     });
 
     await captureStdout(() => runCodexPostToolUseHook(firstPayload));
@@ -766,7 +766,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(last.hookCommandPath).not.toBe("");
     expect(history).toHaveLength(2);
     expect(history.map((entry) => entry.command)).toEqual([
-      "sed -n '1,40p' src/core/codex.ts",
+      "sed -n '1,40p' src/hosts/codex/index.ts",
       "git status --short",
     ]);
     expect(history[0]?.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);

@@ -6,16 +6,16 @@ import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
-import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../core/claude-code.js";
-import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../core/codex.js";
-import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../core/cursor.js";
-import { doctorInstalledHooks } from "../core/hook-doctor.js";
-import { doctorPiExtension, installPiExtension } from "../core/pi.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
+import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
+import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
+import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
+import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
+import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 
 type Format = "text" | "json";
 

@@ -8,7 +8,7 @@ import {
   inspectCodexHooksFeatureFlag,
   installCodexHook,
   parseCodexFeatureFlag,
-} from "../src/core/codex.js";
+} from "../src/hosts/codex/index.js";
 
 async function withTempCodexHome<T>(
   fn: (paths: { hooksPath: string; configPath: string }) => Promise<T>,

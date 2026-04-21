@@ -56,8 +56,8 @@ export default createTokenjuicePiExtension(config);
 
 async function resolvePiRuntimeEntryPoint(): Promise<string> {
   const candidates = [
-    fileURLToPath(new URL("../../pi-extension/runtime.ts", import.meta.url)),
-    fileURLToPath(new URL("../extension/runtime.ts", import.meta.url)),
+    fileURLToPath(new URL("./extension/runtime.ts", import.meta.url)),
+    fileURLToPath(new URL("../../../src/hosts/pi/extension/runtime.ts", import.meta.url)),
   ];
 
   for (const candidate of candidates) {
@@ -103,7 +103,7 @@ async function loadPiExtensionRuntimeSource(local = false): Promise<string> {
     return await bundlePiExtensionRuntimeSource();
   }
 
-  const runtimeAssetUrl = new URL("../../pi-extension/runtime.js", import.meta.url);
+  const runtimeAssetUrl = new URL("./extension/runtime.js", import.meta.url);
 
   try {
     return await readFile(runtimeAssetUrl, "utf8");

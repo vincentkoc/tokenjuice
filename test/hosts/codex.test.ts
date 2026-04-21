@@ -282,6 +282,61 @@ describe("doctorCodexHook", () => {
     expect(report.fixCommand).toBe("tokenjuice install codex");
   });
 
+  it("warns about low timeouts on non-tokenjuice Codex hooks", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          SessionStart: [
+            {
+              hooks: [{ type: "command", command: "$HOME/bin/agent-attn-set reset codex", timeout: 2 }],
+            },
+          ],
+          UserPromptSubmit: [
+            {
+              hooks: [{ type: "command", command: "$HOME/bin/agent-attn-set reset codex", timeout: 2 }],
+            },
+          ],
+          Stop: [
+            {
+              hooks: [{ type: "command", command: "$HOME/bin/agent-attn-set waiting codex", timeout: 2 }],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [{ type: "command", command: `${launcherPath} codex-post-tool-use`, statusMessage: "compacting bash output with tokenjuice" }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+    expect(report.status).toBe("warn");
+    expect(report.issues).toContain(
+      'non-tokenjuice Codex hook SessionStart[0].hooks[0] uses a low 2s timeout for "$HOME/bin/agent-attn-set reset codex" — consider 6s or higher',
+    );
+    expect(report.issues).toContain(
+      'non-tokenjuice Codex hook UserPromptSubmit[0].hooks[0] uses a low 2s timeout for "$HOME/bin/agent-attn-set reset codex" — consider 6s or higher',
+    );
+    expect(report.issues).toContain(
+      'non-tokenjuice Codex hook Stop[0].hooks[0] uses a low 2s timeout for "$HOME/bin/agent-attn-set waiting codex" — consider 6s or higher',
+    );
+  });
+
   it("reports a healthy local codex hook when asked to check local mode", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");

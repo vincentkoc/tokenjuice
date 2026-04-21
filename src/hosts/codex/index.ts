@@ -47,6 +47,8 @@ const HOOK_REWRITE_MIN_SAVED_CHARS = 8;
 const CODEX_HOOK_LAST_LOG = "tokenjuice-hook.last.json";
 const CODEX_HOOK_HISTORY_LOG = "tokenjuice-hook.history.jsonl";
 const CODEX_HOOK_HISTORY_LIMIT = 200;
+const LOW_NON_TOKENJUICE_TIMEOUT_SECONDS = 2;
+const RECOMMENDED_NON_TOKENJUICE_TIMEOUT_SECONDS = 6;
 
 export type InstallCodexHookResult = {
   hooksPath: string;
@@ -399,6 +401,45 @@ function findTokenjuiceCodexHookCommand(config: CodexHooksConfig): string | unde
   return undefined;
 }
 
+function truncateHookCommand(command: string, maxLength = 80): string {
+  const trimmed = command.trim();
+  if (trimmed.length <= maxLength) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, maxLength - 3)}...`;
+}
+
+function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
+  const issues: string[] = [];
+
+  for (const [eventName, groups] of Object.entries(config.hooks)) {
+    groups.forEach((group, groupIndex) => {
+      const tokenjuiceGroup = eventName === "PostToolUse" && isTokenjuiceCodexHook(group);
+      if (tokenjuiceGroup) {
+        return;
+      }
+
+      group.hooks.forEach((hook, hookIndex) => {
+        if (
+          typeof hook.timeout !== "number"
+          || !Number.isFinite(hook.timeout)
+          || hook.timeout > LOW_NON_TOKENJUICE_TIMEOUT_SECONDS
+        ) {
+          return;
+        }
+
+        const location = `${eventName}[${groupIndex}].hooks[${hookIndex}]`;
+        const command = truncateHookCommand(hook.command);
+        issues.push(
+          `non-tokenjuice Codex hook ${location} uses a low ${hook.timeout}s timeout for "${command}" — consider ${RECOMMENDED_NON_TOKENJUICE_TIMEOUT_SECONDS}s or higher`,
+        );
+      });
+    });
+  }
+
+  return issues;
+}
+
 function sanitizeHooksConfig(raw: unknown): CodexHooksConfig {
   if (!isRecord(raw) || !isRecord(raw.hooks)) {
     return { hooks: {} };
@@ -675,6 +716,7 @@ export async function doctorCodexHook(
       "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
     );
   }
+  issues.push(...collectLowTimeoutWarnings(config));
 
   return {
     hooksPath,

@@ -122,6 +122,10 @@ describe("inspectCodexHooksFeatureFlag", () => {
     if (process.platform === "win32") {
       return;
     }
+    if (typeof process.getuid === "function" && process.getuid() === 0) {
+      // root can read files regardless of mode bits; unreadable chmod tests are not meaningful.
+      return;
+    }
 
     await withTempCodexHome(async ({ configPath }) => {
       await writeFile(configPath, "[features]\ncodex_hooks = true\n", "utf8");

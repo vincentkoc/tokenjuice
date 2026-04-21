@@ -22,6 +22,7 @@ type CursorPreToolUsePayload = {
 
 type CursorToolInput = {
   command?: unknown;
+  shell?: unknown;
 } & Record<string, unknown>;
 
 export type InstallCursorHookResult = {
@@ -87,6 +88,49 @@ async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
       if (await isExecutableFile(candidatePath)) {
         return candidatePath;
       }
+    }
+  }
+
+  return undefined;
+}
+
+async function resolveShellPath(shell: string): Promise<string | undefined> {
+  const trimmed = shell.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (trimmed.includes("/") || trimmed.includes("\\")) {
+    return await isExecutableFile(trimmed) ? trimmed : undefined;
+  }
+
+  const pathValue = process.env.PATH;
+  if (!pathValue) {
+    return undefined;
+  }
+  for (const segment of pathValue.split(delimiter)) {
+    if (!segment) {
+      continue;
+    }
+    const candidatePath = join(segment, trimmed);
+    if (await isExecutableFile(candidatePath)) {
+      return candidatePath;
+    }
+  }
+  return undefined;
+}
+
+async function resolveCursorHostShell(toolInput: CursorToolInput): Promise<string | undefined> {
+  const shellCandidates = [
+    typeof toolInput.shell === "string" ? toolInput.shell : undefined,
+    process.env.TOKENJUICE_CURSOR_SHELL,
+    process.env.SHELL,
+    "sh",
+  ].filter((candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0);
+
+  for (const candidate of shellCandidates) {
+    const resolved = await resolveShellPath(candidate);
+    if (resolved) {
+      return resolved;
     }
   }
 
@@ -351,11 +395,15 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
     process.stdout.write(`${JSON.stringify(response)}\n`);
     return 0;
   }
+  const shellPath = await resolveCursorHostShell(toolInput);
+  if (!shellPath) {
+    return 0;
+  }
 
   const launcherCommand = wrapLauncher.endsWith(".js")
     ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
     : shellQuote(wrapLauncher);
-  const wrappedCommand = `${launcherCommand} wrap -- sh -lc ${shellQuote(command)}`;
+  const wrappedCommand = `${launcherCommand} wrap -- ${shellQuote(shellPath)} -lc ${shellQuote(command)}`;
   const response = {
     permission: "allow",
     updated_input: {

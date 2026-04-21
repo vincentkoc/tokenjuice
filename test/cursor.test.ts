@@ -8,9 +8,21 @@ import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "..
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
+const originalShell = process.env.SHELL;
+const originalCursorShell = process.env.TOKENJUICE_CURSOR_SHELL;
 
 afterEach(async () => {
   process.env.PATH = originalPath;
+  if (originalShell === undefined) {
+    delete process.env.SHELL;
+  } else {
+    process.env.SHELL = originalShell;
+  }
+  if (originalCursorShell === undefined) {
+    delete process.env.TOKENJUICE_CURSOR_SHELL;
+  } else {
+    process.env.TOKENJUICE_CURSOR_SHELL = originalCursorShell;
+  }
   delete process.env.CURSOR_HOME;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -108,11 +120,16 @@ describe("doctorCursorHook", () => {
 });
 
 describe("runCursorPreToolUseHook", () => {
-  it("wraps shell commands with tokenjuice wrap", async () => {
+  it("wraps shell commands with tokenjuice wrap using the provided host shell", async () => {
+    const home = await createTempDir();
+    const hostShellPath = join(home, "host-shell");
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
     const payload = JSON.stringify({
       tool_name: "Shell",
       tool_input: {
         command: "git status --short",
+        shell: hostShellPath,
         working_directory: "/repo",
       },
     });
@@ -123,7 +140,7 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe("/usr/local/bin/tokenjuice wrap -- sh -lc 'git status --short'");
+    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
     expect(response.updated_input.working_directory).toBe("/repo");
   });
 
@@ -142,10 +159,15 @@ describe("runCursorPreToolUseHook", () => {
   });
 
   it("uses node to execute a js wrap launcher path", async () => {
+    const home = await createTempDir();
+    const hostShellPath = join(home, "host-shell");
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
     const payload = JSON.stringify({
       tool_name: "Shell",
       tool_input: {
         command: "git status --short",
+        shell: hostShellPath,
       },
     });
 
@@ -157,7 +179,7 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- sh -lc 'git status --short'`);
+    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- ${hostShellPath} -lc 'git status --short'`);
   });
 
   it("skips node-based local wrap commands to preserve raw bypass", async () => {
@@ -169,6 +191,47 @@ describe("runCursorPreToolUseHook", () => {
     });
 
     const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload));
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+  });
+
+  it("falls back to SHELL when tool_input.shell is absent", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const hostShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "git status --short",
+      },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as {
+      updated_input: { command: string };
+    };
+
+    expect(code).toBe(0);
+    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
+  });
+
+  it("leaves command unchanged when no host shell can be resolved", async () => {
+    process.env.PATH = "";
+    process.env.SHELL = "/definitely/missing-shell";
+    process.env.TOKENJUICE_CURSOR_SHELL = "/definitely/missing-shell";
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "git status --short",
+      },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
 
     expect(code).toBe(0);
     expect(output).toBe("");

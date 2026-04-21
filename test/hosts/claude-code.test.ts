@@ -693,4 +693,14 @@ describe("claude code config directory discovery", () => {
     const debug = JSON.parse(await readFile(debugPath, "utf8")) as { skipped?: string };
     expect(debug.skipped).toBe("empty-tool-response");
   });
+
+  it("doctor reads settings.json from CLAUDE_CONFIG_DIR when no path is provided", async () => {
+    const configDir = await createTempDir();
+    process.env.CLAUDE_CONFIG_DIR = configDir;
+    await installClaudeCodeHook();
+
+    const report = await doctorClaudeCodeHook();
+
+    expect(report.settingsPath).toBe(join(configDir, "settings.json"));
+  });
 });

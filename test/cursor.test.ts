@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -74,6 +74,17 @@ describe("installCursorHook", () => {
     expect(result.command).toContain(`${launcherPath} cursor-pre-tool-use`);
     expect(parsed.hooks.preToolUse[0]?.command).toContain(`${launcherPath} cursor-pre-tool-use`);
   });
+
+  it("persists absolute launcher path when installing from relative binaryPath", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    process.env.PATH = "";
+
+    const result = await installCursorHook(hooksPath, { binaryPath: "dist/cli/main.js", nodePath: "/usr/bin/node" });
+
+    expect(result.command).toContain(`${resolve("dist/cli/main.js")} cursor-pre-tool-use`);
+    expect(result.command).toContain("--wrap-launcher");
+  });
 });
 
 describe("doctorCursorHook", () => {
@@ -112,7 +123,7 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe("/usr/local/bin/tokenjuice wrap -- bash -lc 'git status --short'");
+    expect(response.updated_input.command).toBe("/usr/local/bin/tokenjuice wrap -- sh -lc 'git status --short'");
     expect(response.updated_input.working_directory).toBe("/repo");
   });
 
@@ -146,7 +157,7 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- bash -lc 'git status --short'`);
+    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- sh -lc 'git status --short'`);
   });
 
   it("skips node-based local wrap commands to preserve raw bypass", async () => {

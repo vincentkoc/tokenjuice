@@ -1,6 +1,6 @@
 import { constants as fsConstants } from "node:fs";
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import { tokenizeCommand } from "./command.js";
@@ -95,13 +95,14 @@ async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
 
 async function buildCursorHookCommand(options: CursorHookCommandOptions = {}): Promise<string> {
   const rawBinaryPath = options.binaryPath ?? process.argv[1];
+  const binaryPath = rawBinaryPath && !isAbsolute(rawBinaryPath) ? resolve(rawBinaryPath) : rawBinaryPath;
   const nodePath = options.nodePath ?? process.execPath;
-  if (!rawBinaryPath) {
+  if (!binaryPath) {
     throw new Error("unable to resolve tokenjuice binary path for cursor install");
   }
 
   const installedBinaryPath = await resolveInstalledTokenjuicePath();
-  const launcher = installedBinaryPath ?? rawBinaryPath;
+  const launcher = installedBinaryPath ?? binaryPath;
   const launcherCommand = launcher.endsWith(".js")
     ? `${shellQuote(nodePath)} ${shellQuote(launcher)}`
     : shellQuote(launcher);
@@ -341,11 +342,20 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
   if (commandAlreadyWrapped(command)) {
     return 0;
   }
+  if (process.platform === "win32") {
+    const response = {
+      permission: "deny",
+      user_message: "tokenjuice cursor integration does not support native Windows shells yet. please run Cursor in WSL.",
+      agent_message: "Shell command blocked by tokenjuice: native Windows shell interception is not supported yet. Use Cursor in WSL and retry.",
+    };
+    process.stdout.write(`${JSON.stringify(response)}\n`);
+    return 0;
+  }
 
   const launcherCommand = wrapLauncher.endsWith(".js")
     ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
     : shellQuote(wrapLauncher);
-  const wrappedCommand = `${launcherCommand} wrap -- bash -lc ${shellQuote(command)}`;
+  const wrappedCommand = `${launcherCommand} wrap -- sh -lc ${shellQuote(command)}`;
   const response = {
     permission: "allow",
     updated_input: {

@@ -10,6 +10,7 @@ const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 const originalShell = process.env.SHELL;
 const originalCursorShell = process.env.TOKENJUICE_CURSOR_SHELL;
+const originalPlatform = process.platform;
 
 afterEach(async () => {
   process.env.PATH = originalPath;
@@ -24,6 +25,7 @@ afterEach(async () => {
     process.env.TOKENJUICE_CURSOR_SHELL = originalCursorShell;
   }
   delete process.env.CURSOR_HOME;
+  Object.defineProperty(process, "platform", { value: originalPlatform });
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -47,6 +49,10 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   } finally {
     process.stdout.write = originalWrite;
   }
+}
+
+function setPlatform(value: NodeJS.Platform): void {
+  Object.defineProperty(process, "platform", { value });
 }
 
 describe("installCursorHook", () => {
@@ -97,6 +103,16 @@ describe("installCursorHook", () => {
     expect(result.command).toContain(`${resolve("dist/cli/main.js")} cursor-pre-tool-use`);
     expect(result.command).toContain("--wrap-launcher");
   });
+
+  it("rejects native Windows installs instead of writing a broken hook", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    setPlatform("win32");
+
+    await expect(installCursorHook(hooksPath)).rejects.toThrow(
+      "tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.",
+    );
+  });
 });
 
 describe("doctorCursorHook", () => {
@@ -116,6 +132,35 @@ describe("doctorCursorHook", () => {
     expect(report.status).toBe("ok");
     expect(report.detectedCommand).toContain(`${launcherPath} cursor-pre-tool-use`);
     expect(report.issues).toEqual([]);
+  });
+
+  it("flags a configured native Windows hook as broken", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        version: 1,
+        hooks: {
+          preToolUse: [
+            {
+              type: "command",
+              matcher: "Shell",
+              command: String.raw`C:\Users\andre\bin\tokenjuice.exe cursor-pre-tool-use --wrap-launcher C:\Users\andre\bin\tokenjuice.exe`,
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+    setPlatform("win32");
+
+    const report = await doctorCursorHook(hooksPath);
+
+    expect(report.status).toBe("broken");
+    expect(report.issues).toContain("configured Cursor hook cannot run on native Windows; use Cursor in WSL instead.");
+    expect(report.detectedCommand).toContain("cursor-pre-tool-use");
+    expect(report.fixCommand).toBe("run Cursor in WSL, then run tokenjuice install cursor");
   });
 });
 
@@ -235,5 +280,25 @@ describe("runCursorPreToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(output).toBe("");
+  });
+
+  it("denies native Windows shell interception with a WSL message", async () => {
+    setPlatform("win32");
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "git status --short",
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as {
+      permission: string;
+      user_message: string;
+    };
+
+    expect(code).toBe(0);
+    expect(response.permission).toBe("deny");
+    expect(response.user_message).toBe("tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.");
   });
 });

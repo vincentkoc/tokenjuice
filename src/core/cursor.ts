@@ -43,6 +43,9 @@ export type CursorDoctorReport = {
 };
 
 const TOKENJUICE_CURSOR_FIX_COMMAND = "tokenjuice install cursor";
+const TOKENJUICE_CURSOR_WSL_FIX_COMMAND = "run Cursor in WSL, then run tokenjuice install cursor";
+const TOKENJUICE_CURSOR_WINDOWS_ISSUE = "tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.";
+const TOKENJUICE_CURSOR_WINDOWS_HOOK_ISSUE = "configured Cursor hook cannot run on native Windows; use Cursor in WSL instead.";
 
 function getCursorHome(): string {
   return process.env.CURSOR_HOME || join(homedir(), ".cursor");
@@ -50,6 +53,10 @@ function getCursorHome(): string {
 
 function getDefaultHooksPath(): string {
   return join(getCursorHome(), "hooks.json");
+}
+
+function isNativeWindowsCursorUnsupported(): boolean {
+  return process.platform === "win32";
 }
 
 function shellQuote(value: string): string {
@@ -292,6 +299,10 @@ export async function installCursorHook(
   hooksPath = getDefaultHooksPath(),
   options: CursorHookCommandOptions = {},
 ): Promise<InstallCursorHookResult> {
+  if (isNativeWindowsCursorUnsupported()) {
+    throw new Error(TOKENJUICE_CURSOR_WINDOWS_ISSUE);
+  }
+
   const { config, backupPath } = await loadCursorHooksConfig(hooksPath);
   const command = await buildCursorHookCommand(options);
   const preToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
@@ -318,6 +329,22 @@ export async function doctorCursorHook(
   hooksPath = getDefaultHooksPath(),
   options: CursorHookCommandOptions = {},
 ): Promise<CursorDoctorReport> {
+  if (isNativeWindowsCursorUnsupported()) {
+    const { config, exists } = await readCursorHooksConfig(hooksPath);
+    const detectedCommand = findTokenjuiceCursorHookCommand(config);
+    const checkedPaths = detectedCommand ? extractHookCommandPaths(detectedCommand) : [];
+    return {
+      hooksPath,
+      status: exists && detectedCommand ? "broken" : "disabled",
+      issues: [exists && detectedCommand ? TOKENJUICE_CURSOR_WINDOWS_HOOK_ISSUE : TOKENJUICE_CURSOR_WINDOWS_ISSUE],
+      fixCommand: TOKENJUICE_CURSOR_WSL_FIX_COMMAND,
+      expectedCommand: TOKENJUICE_CURSOR_WSL_FIX_COMMAND,
+      ...(detectedCommand ? { detectedCommand } : {}),
+      checkedPaths,
+      missingPaths: [],
+    };
+  }
+
   const expectedCommand = await buildCursorHookCommand(options);
   const { config, exists } = await readCursorHooksConfig(hooksPath);
   const detectedCommand = findTokenjuiceCursorHookCommand(config);
@@ -389,7 +416,7 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
   if (process.platform === "win32") {
     const response = {
       permission: "deny",
-      user_message: "tokenjuice cursor integration does not support native Windows shells yet. please run Cursor in WSL.",
+      user_message: "tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.",
       agent_message: "Shell command blocked by tokenjuice: native Windows shell interception is not supported yet. Use Cursor in WSL and retry.",
     };
     process.stdout.write(`${JSON.stringify(response)}\n`);

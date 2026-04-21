@@ -1,4 +1,4 @@
-import type { CompactResult } from "../types.js";
+import type { CompactResult } from "../../../types.js";
 
 import { isRecord } from "./pi-types.js";
 
@@ -91,4 +91,3 @@ export function mergeDetails(existingDetails: unknown, tokenjuiceDetails: Tokenj
     tokenjuice: tokenjuiceDetails,
   };
 }
-

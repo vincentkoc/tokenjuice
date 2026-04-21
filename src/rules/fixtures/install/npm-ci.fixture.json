@@ -1,0 +1,16 @@
+{
+  "id": "install-npm-ci-basic",
+  "ruleId": "install/npm-ci",
+  "input": {
+    "toolName": "exec",
+    "argv": ["npm", "ci"],
+    "command": "npm ci",
+    "combinedText": "added 42 packages, and audited 43 packages in 2s\nfound 0 vulnerabilities\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "install/npm-ci",
+    "family": "dependency-install",
+    "contains": ["vulnerability", "audited 43 packages"]
+  }
+}

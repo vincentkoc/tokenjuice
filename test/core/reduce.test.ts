@@ -644,6 +644,19 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toBe("npm install: up to date");
   });
 
+  it("uses builtin matchOutput for up-to-date npm ci output", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "npm ci",
+      argv: ["npm", "ci"],
+      combinedText: "up to date, audited 42 packages in 612ms\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("install/npm-ci");
+    expect(result.inlineText).toBe("npm ci: up to date");
+  });
+
   it.each([
     {
       label: "pnpm up to date",

@@ -87,6 +87,7 @@ describe("rules", () => {
       "git/stash-list",
       "git/status",
       "install/bun-install",
+      "install/npm-ci",
       "install/npm-install",
       "install/pnpm-install",
       "install/yarn-install",
@@ -160,7 +161,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(108);
+    expect(fixtures).toHaveLength(110);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

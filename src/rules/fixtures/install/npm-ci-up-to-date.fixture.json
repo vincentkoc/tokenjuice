@@ -1,0 +1,19 @@
+{
+  "id": "install-npm-ci-up-to-date",
+  "ruleId": "install/npm-ci",
+  "input": {
+    "toolName": "exec",
+    "argv": ["npm", "ci"],
+    "command": "npm ci",
+    "combinedText": "up to date, audited 42 packages in 614ms\nfound 0 vulnerabilities\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "install/npm-ci",
+    "family": "dependency-install",
+    "inlineText": "npm ci: up to date",
+    "previewText": "npm ci: up to date",
+    "contains": ["npm ci: up to date"],
+    "excludes": ["found 0 vulnerabilities"]
+  }
+}

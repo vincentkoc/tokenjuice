@@ -24,6 +24,7 @@
   },
   "license": "MIT",
   "type": "module",
+  "packageManager": "pnpm@10.11.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {

@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Draft release notes
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         with:
           disable-releaser: ${{ github.event_name != 'workflow_dispatch' }}
         env:

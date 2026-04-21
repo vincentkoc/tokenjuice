@@ -1,6 +1,6 @@
 import { constants as fsConstants } from "node:fs";
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { delimiter, dirname, join } from "node:path";
+import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
@@ -56,6 +56,12 @@ export type ClaudeCodeDoctorReport = {
   missingPaths: string[];
 };
 
+export type ClaudeCodeHookCommandOptions = {
+  local?: boolean;
+  binaryPath?: string;
+  nodePath?: string;
+};
+
 const TOKENJUICE_CLAUDE_CODE_STATUS = "compacting bash output with tokenjuice";
 const TOKENJUICE_CLAUDE_CODE_FIX_COMMAND = "tokenjuice install claude-code";
 
@@ -102,14 +108,19 @@ async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
   return undefined;
 }
 
-async function buildClaudeCodeHookCommand(binaryPath = process.argv[1], nodePath = process.execPath): Promise<string> {
+async function buildClaudeCodeHookCommand(options: ClaudeCodeHookCommandOptions = {}): Promise<string> {
+  const rawBinaryPath = options.binaryPath ?? process.argv[1];
+  const binaryPath = rawBinaryPath && !isAbsolute(rawBinaryPath) ? resolve(rawBinaryPath) : rawBinaryPath;
+  const nodePath = options.nodePath ?? process.execPath;
   if (!binaryPath) {
     throw new Error("unable to resolve tokenjuice binary path for claude code install");
   }
 
-  const installedBinaryPath = await resolveInstalledTokenjuicePath();
-  if (installedBinaryPath) {
-    return `${shellQuote(installedBinaryPath)} claude-code-post-tool-use`;
+  if (!options.local) {
+    const installedBinaryPath = await resolveInstalledTokenjuicePath();
+    if (installedBinaryPath) {
+      return `${shellQuote(installedBinaryPath)} claude-code-post-tool-use`;
+    }
   }
 
   if (binaryPath.endsWith(".js")) {
@@ -117,6 +128,10 @@ async function buildClaudeCodeHookCommand(binaryPath = process.argv[1], nodePath
   }
 
   return `${shellQuote(binaryPath)} claude-code-post-tool-use`;
+}
+
+function getClaudeCodeFixCommand(local = false): string {
+  return local ? "tokenjuice install claude-code --local" : TOKENJUICE_CLAUDE_CODE_FIX_COMMAND;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -251,9 +266,12 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-export async function installClaudeCodeHook(settingsPath = getDefaultSettingsPath()): Promise<InstallClaudeCodeHookResult> {
+export async function installClaudeCodeHook(
+  settingsPath = getDefaultSettingsPath(),
+  options: ClaudeCodeHookCommandOptions = {},
+): Promise<InstallClaudeCodeHookResult> {
   const { config, backupPath } = await loadClaudeCodeSettings(settingsPath);
-  const command = await buildClaudeCodeHookCommand();
+  const command = await buildClaudeCodeHookCommand(options);
   const postToolUse = Array.isArray(config.hooks.PostToolUse) ? config.hooks.PostToolUse : [];
   const retained = postToolUse.filter((group) =>
     !(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceClaudeCodeHook(group as ClaudeCodeHookMatcherGroup)),
@@ -273,8 +291,12 @@ export async function installClaudeCodeHook(settingsPath = getDefaultSettingsPat
   };
 }
 
-export async function doctorClaudeCodeHook(settingsPath = getDefaultSettingsPath()): Promise<ClaudeCodeDoctorReport> {
-  const expectedCommand = await buildClaudeCodeHookCommand();
+export async function doctorClaudeCodeHook(
+  settingsPath = getDefaultSettingsPath(),
+  options: ClaudeCodeHookCommandOptions = {},
+): Promise<ClaudeCodeDoctorReport> {
+  const expectedCommand = await buildClaudeCodeHookCommand(options);
+  const fixCommand = getClaudeCodeFixCommand(options.local);
   const { config, exists } = await readClaudeCodeSettings(settingsPath);
   const detectedCommand = findTokenjuiceClaudeCodeHookCommand(config);
 
@@ -283,7 +305,7 @@ export async function doctorClaudeCodeHook(settingsPath = getDefaultSettingsPath
       settingsPath,
       status: "warn",
       issues: ["claude code settings.json is missing"],
-      fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+      fixCommand,
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
@@ -295,7 +317,7 @@ export async function doctorClaudeCodeHook(settingsPath = getDefaultSettingsPath
       settingsPath,
       status: "warn",
       issues: ["tokenjuice PostToolUse hook is not installed for Claude Code"],
-      fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+      fixCommand,
       expectedCommand,
       checkedPaths: [],
       missingPaths: [],
@@ -326,7 +348,7 @@ export async function doctorClaudeCodeHook(settingsPath = getDefaultSettingsPath
     settingsPath,
     status: missingPaths.length > 0 ? "broken" : issues.length > 0 ? "warn" : "ok",
     issues,
-    fixCommand: TOKENJUICE_CLAUDE_CODE_FIX_COMMAND,
+    fixCommand,
     expectedCommand,
     detectedCommand,
     checkedPaths,

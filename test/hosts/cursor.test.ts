@@ -93,6 +93,36 @@ describe("installCursorHook", () => {
     expect(parsed.hooks.preToolUse[0]?.command).toContain(`${launcherPath} cursor-pre-tool-use`);
   });
 
+  it("can force local repo routing instead of the PATH launcher", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const localCliPath = join(home, "dist", "cli", "main.js");
+    const localNodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(join(home, "dist", "cli"), { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(localCliPath, "console.log('tokenjuice');\n", "utf8");
+    await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const result = await installCursorHook(hooksPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+    const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+      hooks: Record<string, Array<{ command: string }>>;
+    };
+
+    const resolvedBinaryPath = resolve(localCliPath);
+    const expectedCommand = `${localNodePath} ${resolvedBinaryPath} cursor-pre-tool-use --wrap-launcher ${resolvedBinaryPath}`;
+    expect(result.command).toBe(expectedCommand);
+    expect(parsed.hooks.preToolUse[0]?.command).toBe(expectedCommand);
+  });
+
   it("persists absolute launcher path when installing from relative binaryPath", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");
@@ -132,6 +162,39 @@ describe("doctorCursorHook", () => {
     expect(report.status).toBe("ok");
     expect(report.detectedCommand).toContain(`${launcherPath} cursor-pre-tool-use`);
     expect(report.issues).toEqual([]);
+  });
+
+  it("reports a healthy local hook when asked to check local mode", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const localCliPath = join(home, "dist", "cli", "main.js");
+    const localNodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(join(home, "dist", "cli"), { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(localCliPath, "console.log('tokenjuice');\n", "utf8");
+    await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installCursorHook(hooksPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+
+    const report = await doctorCursorHook(hooksPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+
+    const resolvedBinaryPath = resolve(localCliPath);
+    expect(report.status).toBe("ok");
+    expect(report.expectedCommand).toBe(`${localNodePath} ${resolvedBinaryPath} cursor-pre-tool-use --wrap-launcher ${resolvedBinaryPath}`);
+    expect(report.detectedCommand).toBe(report.expectedCommand);
+    expect(report.fixCommand).toBe("tokenjuice install cursor --local");
   });
 
   it("flags a configured native Windows hook as broken", async () => {

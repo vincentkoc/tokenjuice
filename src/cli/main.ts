@@ -60,8 +60,8 @@ function printUsage(): void {
       "  tokenjuice wrap [--raw|--full] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install codex [--local]",
-      "  tokenjuice install claude-code",
-      "  tokenjuice install cursor",
+      "  tokenjuice install claude-code [--local]",
+      "  tokenjuice install cursor [--local]",
       "  tokenjuice install pi [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice ls",
@@ -373,7 +373,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "claude-code") {
-    const result = await installClaudeCodeHook();
+    const result = await installClaudeCodeHook(undefined, { local: args.local });
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
@@ -384,12 +384,12 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     if (result.backupPath) {
       process.stdout.write(`backup: ${result.backupPath}\n`);
     }
-    process.stdout.write("doctor: tokenjuice doctor hooks\n");
+    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
     return 0;
   }
 
   if (target === "cursor") {
-    const result = await installCursorHook();
+    const result = await installCursorHook(undefined, { local: args.local });
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
@@ -400,7 +400,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     if (result.backupPath) {
       process.stdout.write(`backup: ${result.backupPath}\n`);
     }
-    process.stdout.write("doctor: tokenjuice doctor hooks\n");
+    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
     process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
     return 0;
   }
@@ -724,7 +724,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   }
 
   if (args.positionals[0] === "cursor") {
-    const report = await doctorCursorHook();
+    const report = await doctorCursorHook(undefined, { local: args.local });
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -754,7 +754,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   }
 
   if (args.positionals[0] === "claude-code") {
-    const report = await doctorClaudeCodeHook();
+    const report = await doctorClaudeCodeHook(undefined, { local: args.local });
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

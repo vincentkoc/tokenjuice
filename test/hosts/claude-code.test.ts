@@ -1,10 +1,10 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
+import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installCursorHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -216,6 +216,39 @@ describe("installClaudeCodeHook", () => {
     expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(`${launcherPath} claude-code-post-tool-use`);
   });
 
+  it("can force local repo routing instead of the PATH launcher", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const localCliPath = join(home, "dist", "cli", "main.js");
+    const localNodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(join(home, "dist", "cli"), { recursive: true });
+    await writeFile(
+      launcherPath,
+      "#!/usr/bin/env bash\nexit 0\n",
+      { encoding: "utf8", mode: 0o755 },
+    );
+    await writeFile(localCliPath, "console.log('tokenjuice');\n", "utf8");
+    await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const result = await installClaudeCodeHook(settingsPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+
+    const expectedCommand = `${localNodePath} ${resolve(localCliPath)} claude-code-post-tool-use`;
+    expect(result.command).toBe(expectedCommand);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(expectedCommand);
+  });
+
   it("is idempotent and replaces old tokenjuice entries", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -310,6 +343,38 @@ describe("doctorClaudeCodeHook", () => {
     expect(report.status).toBe("ok");
     expect(report.detectedCommand).toBe(`${launcherPath} claude-code-post-tool-use`);
     expect(report.issues).toEqual([]);
+  });
+
+  it("reports a healthy local hook when asked to check local mode", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const localCliPath = join(home, "dist", "cli", "main.js");
+    const localNodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(join(home, "dist", "cli"), { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(localCliPath, "console.log('tokenjuice');\n", "utf8");
+    await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installClaudeCodeHook(settingsPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+
+    const report = await doctorClaudeCodeHook(settingsPath, {
+      local: true,
+      binaryPath: localCliPath,
+      nodePath: localNodePath,
+    });
+
+    expect(report.status).toBe("ok");
+    expect(report.expectedCommand).toBe(`${localNodePath} ${resolve(localCliPath)} claude-code-post-tool-use`);
+    expect(report.detectedCommand).toBe(report.expectedCommand);
+    expect(report.fixCommand).toBe("tokenjuice install claude-code --local");
   });
 
   it("flags stale Homebrew Cellar hook commands as broken", async () => {
@@ -407,6 +472,66 @@ describe("doctorInstalledHooks", () => {
     expect(report.integrations.codex.status).toBe("disabled");
     expect(report.integrations["claude-code"].status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
+  });
+
+  it("passes local hook expectations through to codex, claude-code, and cursor", async () => {
+    const home = await createTempDir();
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const codexHome = join(home, "codex");
+    const claudeHome = join(home, "claude");
+    const cursorHome = join(home, "cursor");
+    const piAgentDir = join(home, "pi-agent");
+    const localBinaryPath = join(home, "dist", "cli", "main.js");
+    const localNodePath = join(home, "node");
+    const expectedHookPrefix = `${localNodePath} ${resolve(localBinaryPath)}`;
+
+    process.env.PATH = binDir;
+    process.env.CODEX_HOME = codexHome;
+    process.env.CLAUDE_HOME = claudeHome;
+    process.env.CURSOR_HOME = cursorHome;
+    process.env.PI_CODING_AGENT_DIR = piAgentDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(join(home, "dist", "cli"), { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(localBinaryPath, "console.log('tokenjuice');\n", "utf8");
+    await writeFile(localNodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await mkdir(codexHome, { recursive: true });
+    await writeFile(join(codexHome, "config.toml"), "[features]\ncodex_hooks = true\n", "utf8");
+
+    await installCodexHook(undefined, {
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+      featureFlagConfigPath: join(codexHome, "config.toml"),
+    });
+    await installClaudeCodeHook(undefined, {
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+    });
+    await installCursorHook(undefined, {
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+    });
+    await installPiExtension(undefined, { local: true });
+
+    const report = await doctorInstalledHooks({
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+      featureFlagConfigPath: join(codexHome, "config.toml"),
+    });
+
+    expect(report.status).toBe("ok");
+    expect(report.integrations.codex.status).toBe("ok");
+    expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.cursor.status).toBe("ok");
+    expect(report.integrations.pi.status).toBe("ok");
+    expect(report.integrations.codex.expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations["claude-code"].expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations.cursor.expectedCommand).toContain(expectedHookPrefix);
   });
 });
 

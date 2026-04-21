@@ -3,7 +3,7 @@ import { doctorCodexHook } from "../codex/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 
-import type { ClaudeCodeDoctorReport } from "../claude-code/index.js";
+import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
@@ -22,6 +22,8 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions;
+
 function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealthStatus {
   if (left === "broken" || right === "broken") {
     return "broken";
@@ -38,10 +40,15 @@ function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealt
   return "ok";
 }
 
-export async function doctorInstalledHooks(codexOptions: CodexHookCommandOptions = {}): Promise<HookDoctorReport> {
-  const codex = await doctorCodexHook(undefined, codexOptions);
-  const claudeCode = await doctorClaudeCodeHook();
-  const cursor = await doctorCursorHook();
+export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {}): Promise<HookDoctorReport> {
+  const codex = await doctorCodexHook(undefined, options);
+  const hookCommandOptions = {
+    ...(typeof options.local === "boolean" ? { local: options.local } : {}),
+    ...(typeof options.binaryPath === "string" ? { binaryPath: options.binaryPath } : {}),
+    ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
+  };
+  const claudeCode = await doctorClaudeCodeHook(undefined, hookCommandOptions);
+  const cursor = await doctorCursorHook(undefined, hookCommandOptions);
   const pi = await doctorPiExtension();
 
   return {

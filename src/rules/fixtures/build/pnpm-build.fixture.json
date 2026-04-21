@@ -1,0 +1,18 @@
+{
+  "id": "build-pnpm-build-basic",
+  "ruleId": "build/pnpm-build",
+  "input": {
+    "toolName": "exec",
+    "argv": ["pnpm", "build"],
+    "command": "pnpm build",
+    "combinedText": "> tokenjuice@0.6.0 build /repo\n> rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json\n\n> tokenjuice@0.6.0 generate:builtin-rules /repo\n> node scripts/generate-builtin-rules.mjs\n\nDone in 2.4s\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "build/pnpm-build",
+    "family": "build-script",
+    "inlineText": "pnpm build: ok",
+    "previewText": "pnpm build: ok",
+    "contains": ["pnpm build: ok"]
+  }
+}

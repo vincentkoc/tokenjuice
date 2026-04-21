@@ -657,6 +657,27 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toBe("npm ci: up to date");
   });
 
+  it("uses pnpm build wrapper compaction when only lifecycle banners remain", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm build",
+      argv: ["pnpm", "build"],
+      combinedText: [
+        "> tokenjuice@0.6.0 build /repo",
+        "> rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json",
+        "",
+        "> tokenjuice@0.6.0 generate:builtin-rules /repo",
+        "> node scripts/generate-builtin-rules.mjs",
+        "",
+        "Done in 2.4s",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("build/pnpm-build");
+    expect(result.inlineText).toBe("pnpm build: ok");
+  });
+
   it.each([
     {
       label: "pnpm up to date",

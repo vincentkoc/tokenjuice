@@ -16,17 +16,17 @@ for cursor, tokenjuice installs a `preToolUse` shell hook and rewrites:
 to:
 
 ```text
-tokenjuice wrap -- bash -lc '<original shell command>'
+tokenjuice wrap -- sh -lc '<original shell command>'
 ```
 
 this is deliberate:
 
 - `wrap` makes compacted output the actual shell result returned to the agent.
-- `bash -lc` preserves shell semantics for complex command strings (quotes, pipes, redirects, `&&`, variables, etc.).
+- `sh -lc` preserves shell semantics for complex command strings (quotes, pipes, redirects, `&&`, variables, etc.).
 
 ## tradeoff and mitigation
 
-wrapping with `bash -lc` means raw command shape becomes launcher-like (`bash`, `-lc`, `<cmd>`), which can reduce reducer matching quality if classification only sees outer argv.
+wrapping with `sh -lc` means raw command shape becomes launcher-like (`sh`, `-lc`, `<cmd>`), which can reduce reducer matching quality if classification only sees outer argv.
 
 tokenjuice mitigates this by normalizing wrapped input before classification:
 
@@ -51,7 +51,7 @@ this avoids linux/mac permission issues from trying to execute a `.js` file dire
 for debugging classifier decisions, use `--trace` with json output:
 
 ```bash
-node dist/cli/main.js wrap --format json --trace -- bash -lc "git status --short"
+node dist/cli/main.js wrap --format json --trace -- sh -lc "git status --short"
 ```
 
 inspect:
@@ -67,7 +67,7 @@ inspect:
 pnpm build
 node dist/cli/main.js install cursor
 node dist/cli/main.js doctor cursor
-node dist/cli/main.js wrap --format json --trace -- bash -lc "git status --short"
+node dist/cli/main.js wrap --format json --trace -- sh -lc "git status --short"
 node dist/cli/main.js wrap --format json --trace -- pnpm --help
 node dist/cli/main.js wrap --format json --trace --raw -- pnpm --help
 ```
@@ -78,3 +78,10 @@ expected:
 - wrapped shell commands show nested normalized command/argv in trace
 - `--raw` keeps `ratio = 1`
 - non-raw wraps usually produce `ratio < 1`
+
+## platform boundary
+
+- supported: linux/macos, and cursor inside wsl
+- not supported yet: native windows shell interception (`process.platform === "win32"`)
+
+on native windows, the cursor pre-tool hook intentionally returns a deny response with a message that asks users to run cursor in wsl.

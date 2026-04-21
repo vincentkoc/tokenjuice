@@ -38,6 +38,7 @@ tokenjuice --help
 tokenjuice --version
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 tokenjuice uninstall codex
 ```
@@ -70,6 +71,7 @@ tokenjuice wrap --store -- <command> [args...]
 tokenjuice install codex
 tokenjuice install codex --local
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 tokenjuice install pi --local
 tokenjuice uninstall codex
@@ -92,6 +94,7 @@ tokenjuice can install host integrations for:
 | --- | --- | --- | --- | --- |
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
+| Cursor | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
@@ -105,7 +108,7 @@ shared behavior:
 - `tokenjuice install codex --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
-- Codex, Claude Code, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
+- Codex, Claude Code, Cursor, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
@@ -127,6 +130,7 @@ tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 ```
 
@@ -185,6 +189,8 @@ direct payload:
 
 - spec: `docs/spec.md`
 - rules: `docs/rules.md`
+- cursor integration: `docs/cursor-integration.md`
+- integration playbook: `docs/integration-playbook.md`
 - security: `SECURITY.md`
 
 ## status

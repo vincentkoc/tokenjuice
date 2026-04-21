@@ -52,6 +52,8 @@ host adapters should own:
 
 if reducer logic starts leaking into an adapter, the boundary is wrong.
 
+for contributor guidance on introducing a new host integration, see `docs/integration-playbook.md`.
+
 host adapters choose an inspection policy before calling the shared compactor. the Codex, Claude Code, and pi adapters use the safe-inventory policy:
 
 - exact file-content reads stay raw (`cat`, `sed`, `head`, `tail`, `nl`, `bat`, `jq`, `yq`)
@@ -155,6 +157,7 @@ install host wiring when tokenjuice can own it directly:
 ```bash
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install cursor
 tokenjuice install pi
 tokenjuice doctor hooks
 tokenjuice doctor pi
@@ -169,6 +172,7 @@ supported host hooks:
 | --- | --- | --- | --- |
 | Claude Code | `tokenjuice install claude-code` | `~/.claude/settings.json` | Preserves unrelated settings keys while updating `hooks.PostToolUse` |
 | Codex CLI | `tokenjuice install codex` | `~/.codex/hooks.json` | `tokenjuice install codex --local` is available for repo-local verification |
+| Cursor | `tokenjuice install cursor` | `~/.cursor/hooks.json` | Uses `preToolUse` shell input rewriting to route commands through `tokenjuice wrap`; see `docs/cursor-integration.md` |
 | pi | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | `tokenjuice install pi --local` forces the extension bundle to be rebuilt from the current repo source and adds `/tj` controls inside pi |
 
 `tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor pi` is the direct Pi-only check. the `--local` variant is for codex dev verification and expects that hook to point at the current repo build instead of the installed launcher on `PATH`.

@@ -24,7 +24,7 @@ for pre-tool wrapping, preserve shell semantics (for example `bash -lc '<cmd>'`)
 
 ## implementation checklist
 
-for a new host adapter in `src/core/<host>.ts`:
+for a new host adapter in `src/hosts/<host>/index.ts`:
 
 - install flow
   - write/update host config atomically
@@ -51,14 +51,14 @@ then wire CLI + exports:
 - `src/index.ts`
   - runtime/install/doctor exports
   - result/report type exports
-- `src/core/hook-doctor.ts`
+- `src/hosts/shared/hook-doctor.ts`
   - add the host to aggregate doctor report
 
 ## test strategy (required)
 
 add host-specific tests and aggregate tests:
 
-- `test/<host>.test.ts`
+- `test/hosts/<host>.test.ts`
   - install idempotency
   - preserve unrelated config fields
   - doctor status matrix (`disabled`, `warn`, `broken`, `ok`)
@@ -83,7 +83,7 @@ minimum gate for a new host adapter:
 
 ```bash
 pnpm typecheck
-pnpm vitest run test/<host>.test.ts
+pnpm vitest run test/hosts/<host>.test.ts
 pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/pi.test.ts
 ```
 

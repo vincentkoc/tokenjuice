@@ -81,6 +81,7 @@ tokenjuice doctor
 tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice stats
+tokenjuice stats --timezone utc
 ```
 
 ## overview

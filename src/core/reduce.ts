@@ -562,6 +562,14 @@ export async function reduceExecutionWithRules(
   const rawText = buildRawText(normalizedInput);
   const measuredRawChars = countTextChars(stripAnsi(rawText));
   const classification = classifyExecution(normalizedInput, rules, opts.classifier);
+  const trace = opts.trace
+    ? {
+        ...(normalizedInput.command ? { normalizedCommand: normalizedInput.command } : {}),
+        ...(normalizedInput.argv?.length ? { normalizedArgv: normalizedInput.argv } : {}),
+        ...(classification.matchedReducer ? { matchedReducer: classification.matchedReducer } : {}),
+        family: classification.family,
+      }
+    : undefined;
 
   if (opts.raw) {
     const rawRef = opts.store
@@ -597,6 +605,7 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: rawText,
+      ...(trace ? { trace } : {}),
       ...(rawRef ? { rawRef } : {}),
       stats: {
         rawChars: measuredRawChars,
@@ -626,6 +635,7 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: rawText,
+      ...(trace ? { trace } : {}),
       stats: {
         rawChars: measuredRawChars,
         reducedChars: measuredRawChars,
@@ -693,6 +703,7 @@ export async function reduceExecutionWithRules(
     inlineText,
     ...(summary ? { previewText: summary } : {}),
     ...(Object.keys(facts).length > 0 ? { facts } : {}),
+    ...(trace ? { trace } : {}),
     ...(rawRef ? { rawRef } : {}),
     stats,
     classification,

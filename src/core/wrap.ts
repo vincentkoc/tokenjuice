@@ -104,6 +104,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
           },
           {
             raw: opts.raw ?? false,
+            trace: opts.trace ?? false,
             recordStats: opts.recordStats ?? false,
             store: opts.store ?? false,
             ...(opts.storeDir ? { storeDir: opts.storeDir } : {}),

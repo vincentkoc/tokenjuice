@@ -8,6 +8,7 @@ import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifa
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../core/claude-code.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../core/codex.js";
+import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../core/cursor.js";
 import { doctorInstalledHooks } from "../core/hook-doctor.js";
 import { doctorPiExtension, installPiExtension } from "../core/pi.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
@@ -35,6 +36,8 @@ type ParsedArgs = {
   maxCaptureBytes: number | undefined;
   maxInputBytes: number | undefined;
   timeZone: string | undefined;
+  wrapLauncher: string | undefined;
+  trace: boolean;
   positionals: string[];
   passthrough: string[];
 };
@@ -55,15 +58,17 @@ function printUsage(): void {
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full]",
       "  tokenjuice reduce-json [file]",
       "  tokenjuice wrap [--raw|--full] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code",
+      "  tokenjuice install cursor",
       "  tokenjuice install pi [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|pi] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|cursor|pi] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
     ].join("\n"),
   );
@@ -89,6 +94,8 @@ function parseArgs(argv: string[]): ParsedArgs {
   let maxCaptureBytes: number | undefined;
   let maxInputBytes: number | undefined;
   let timeZone: string | undefined;
+  let wrapLauncher: string | undefined;
+  let trace = false;
 
   let index = 1;
   while (index < argv.length) {
@@ -197,6 +204,17 @@ function parseArgs(argv: string[]): ParsedArgs {
         timeZone = next;
         index += 2;
         break;
+      case "--wrap-launcher":
+        if (!next) {
+          throw new Error("--wrap-launcher requires a value");
+        }
+        wrapLauncher = next;
+        index += 2;
+        break;
+      case "--trace":
+        trace = true;
+        index += 1;
+        break;
       default:
         throw new Error(`unknown flag: ${current}`);
     }
@@ -219,6 +237,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     maxCaptureBytes,
     maxInputBytes,
     timeZone,
+    wrapLauncher,
+    trace,
     positionals,
     passthrough,
   };
@@ -276,6 +296,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
     {
       ...(args.classifier ? { classifier: args.classifier } : {}),
       ...(args.raw ? { raw: true } : {}),
+      ...(args.trace ? { trace: true } : {}),
       recordStats: true,
       ...(args.store ? { store: true } : {}),
       ...(args.storeDir ? { storeDir: args.storeDir } : {}),
@@ -298,6 +319,7 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
     ...(request.options ?? {}),
     ...(args.classifier ? { classifier: args.classifier } : {}),
     ...(args.raw ? { raw: true } : {}),
+    ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
     ...(args.storeDir ? { storeDir: args.storeDir } : {}),
@@ -311,6 +333,7 @@ async function runWrap(args: ParsedArgs): Promise<number> {
   const wrapped = await runWrappedCommand(args.passthrough, {
     tee: args.tee,
     ...(args.raw ? { raw: true } : {}),
+    ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
     ...(args.storeDir ? { storeDir: args.storeDir } : {}),
@@ -365,6 +388,23 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "cursor") {
+    const result = await installCursorHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`installed cursor hook: ${result.hooksPath}\n`);
+    process.stdout.write(`command: ${result.command}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("doctor: tokenjuice doctor hooks\n");
+    process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
+    return 0;
+  }
+
   if (target === "pi") {
     const result = await installPiExtension(undefined, { local: args.local });
     if (args.format === "json") {
@@ -381,7 +421,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, pi");
+  throw new Error("install currently supports: codex, claude-code, cursor, pi");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -683,6 +723,36 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "cursor") {
+    const report = await doctorCursorHook();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hooks path: ${report.hooksPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "claude-code") {
     const report = await doctorClaudeCodeHook();
 
@@ -847,6 +917,8 @@ async function main(): Promise<number> {
       return await runCodexPostToolUseHook(await readStdin(args.maxInputBytes));
     case "claude-code-post-tool-use":
       return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes));
+    case "cursor-pre-tool-use":
+      return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     default:
       printUsage();
       return 1;

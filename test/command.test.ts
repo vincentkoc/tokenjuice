@@ -48,6 +48,26 @@ describe("normalizeExecutionInput", () => {
       command: "rg --files | rg TODO src",
     }).argv).toBeUndefined();
   });
+
+  it("unwraps bash -lc wrappers and classifies the nested command", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "bash -lc 'git status --short'",
+      argv: ["bash", "-lc", "git status --short"],
+    });
+    expect(normalized.command).toBe("git status --short");
+    expect(normalized.argv).toEqual(["git", "status", "--short"]);
+  });
+
+  it("unwraps bash -lc but keeps compound nested commands as command-only", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "bash -lc 'rg --files | rg TODO src'",
+      argv: ["bash", "-lc", "rg --files | rg TODO src"],
+    });
+    expect(normalized.command).toBe("rg --files | rg TODO src");
+    expect(normalized.argv).toBeUndefined();
+  });
 });
 
 describe("hasSequentialShellCommands", () => {

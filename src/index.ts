@@ -12,6 +12,7 @@ export {
   uninstallCodexHook,
 } from "./core/codex.js";
 export type { CodexFeatureFlagStatus } from "./core/codex.js";
+export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./core/cursor.js";
 export { doctorInstalledHooks } from "./core/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./core/pi.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
@@ -41,4 +42,5 @@ export type {
   WrapResult,
 } from "./types.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./core/pi.js";
+export type { CursorDoctorReport, InstallCursorHookResult } from "./core/cursor.js";
 export type { StatsOptions, StatsReport } from "./core/analysis.js";

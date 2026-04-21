@@ -7,6 +7,7 @@ type ShellOperator = ";" | "\n" | "|" | "&&" | "||";
 const FILE_CONTENT_INSPECTION_COMMANDS = new Set(["cat", "sed", "head", "tail", "nl", "bat", "batcat", "jq", "yq"]);
 const COMPOUND_SHELL_OPERATORS = new Set<ShellOperator>([";", "\n", "|", "&&", "||"]);
 const SEQUENTIAL_SHELL_OPERATORS = new Set<ShellOperator>([";", "\n", "&&", "||"]);
+const SHELL_COMMAND_LAUNCHERS = new Set(["bash", "sh", "zsh", "fish"]);
 
 function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
   if (input.argv?.length) {
@@ -292,6 +293,32 @@ function matchLeadingCdChain(command: string): string | null {
 
 
 export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutionInput {
+  const shellWrapped = unwrapShellLauncherCommand(input);
+  if (shellWrapped) {
+    const effectiveCommand = stripLeadingCdPrefix(shellWrapped);
+    if (isCompoundShellCommand(effectiveCommand)) {
+      const { argv: _argv, ...restInput } = input;
+      return {
+        ...restInput,
+        command: effectiveCommand,
+      };
+    }
+
+    const argv = tokenizeCommand(effectiveCommand);
+    if (argv.length === 0) {
+      return {
+        ...input,
+        command: effectiveCommand,
+      };
+    }
+
+    return {
+      ...input,
+      command: effectiveCommand,
+      argv,
+    };
+  }
+
   if (input.argv?.length || !input.command) {
     return input;
   }
@@ -310,4 +337,26 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
     ...input,
     argv,
   };
+}
+
+function unwrapShellLauncherCommand(input: ToolExecutionInput): string | null {
+  const argv = input.argv;
+  if (!argv || argv.length < 3) {
+    return null;
+  }
+
+  const launcher = getCommandName(argv);
+  const launchFlag = argv[1];
+  const nestedCommand = argv[2];
+  if (
+    !launcher
+    || !SHELL_COMMAND_LAUNCHERS.has(launcher)
+    || (launchFlag !== "-c" && launchFlag !== "-lc")
+    || typeof nestedCommand !== "string"
+    || nestedCommand.trim().length === 0
+  ) {
+    return null;
+  }
+
+  return nestedCommand;
 }

@@ -134,6 +134,12 @@ export type CompactResult = {
   inlineText: string;
   previewText?: string;
   facts?: Record<string, number>;
+  trace?: {
+    normalizedCommand?: string;
+    normalizedArgv?: string[];
+    matchedReducer?: string;
+    family: string;
+  };
   rawRef?: StoredArtifactRef;
   stats: {
     rawChars: number;
@@ -163,6 +169,7 @@ export type StoredArtifact = {
 export type ReduceOptions = {
   classifier?: string;
   maxInlineChars?: number;
+  trace?: boolean;
   raw?: boolean;
   recordStats?: boolean;
   store?: boolean;
@@ -207,6 +214,7 @@ export type WrapOptions = {
   storeDir?: string;
   tee?: boolean;
   raw?: boolean;
+  trace?: boolean;
   maxInlineChars?: number;
   maxCaptureBytes?: number;
 };

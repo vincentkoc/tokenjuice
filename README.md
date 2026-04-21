@@ -36,10 +36,7 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install codex
-tokenjuice install claude-code
-tokenjuice install cursor
-tokenjuice install pi
+tokenjuice install [codex|claude-code|cursor|pi]
 tokenjuice uninstall codex
 ```
 
@@ -68,12 +65,8 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install codex
-tokenjuice install codex --local
-tokenjuice install claude-code
-tokenjuice install cursor
-tokenjuice install pi
-tokenjuice install pi --local
+tokenjuice install [codex|claude-code|cursor|pi]
+tokenjuice install [codex|pi] --local
 tokenjuice uninstall codex
 tokenjuice ls
 tokenjuice cat <artifact-id>
@@ -128,10 +121,7 @@ if the hook itself goes stale after a package upgrade, repair it with:
 ```bash
 tokenjuice doctor hooks
 tokenjuice doctor pi
-tokenjuice install codex
-tokenjuice install claude-code
-tokenjuice install cursor
-tokenjuice install pi
+tokenjuice install [codex|claude-code|cursor|pi]
 ```
 
 for machine callers, set:

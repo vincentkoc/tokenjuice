@@ -16,17 +16,19 @@ for cursor, tokenjuice installs a `preToolUse` shell hook and rewrites:
 to:
 
 ```text
-tokenjuice wrap -- sh -lc '<original shell command>'
+tokenjuice wrap -- <host-shell> -lc '<original shell command>'
 ```
 
 this is deliberate:
 
 - `wrap` makes compacted output the actual shell result returned to the agent.
-- `sh -lc` preserves shell semantics for complex command strings (quotes, pipes, redirects, `&&`, variables, etc.).
+- host-shell `-lc` preserves shell semantics for complex command strings (quotes, pipes, redirects, `&&`, variables, etc.).
+- tokenjuice resolves host shell in this order: `tool_input.shell`, `TOKENJUICE_CURSOR_SHELL`, `SHELL`, then `sh`.
+- if no usable shell is found, tokenjuice leaves the command unchanged (no pre-tool rewrite).
 
 ## tradeoff and mitigation
 
-wrapping with `sh -lc` means raw command shape becomes launcher-like (`sh`, `-lc`, `<cmd>`), which can reduce reducer matching quality if classification only sees outer argv.
+wrapping with `<host-shell> -lc` means raw command shape becomes launcher-like (`<shell>`, `-lc`, `<cmd>`), which can reduce reducer matching quality if classification only sees outer argv.
 
 tokenjuice mitigates this by normalizing wrapped input before classification:
 
@@ -51,7 +53,7 @@ this avoids linux/mac permission issues from trying to execute a `.js` file dire
 for debugging classifier decisions, use `--trace` with json output:
 
 ```bash
-node dist/cli/main.js wrap --format json --trace -- sh -lc "git status --short"
+node dist/cli/main.js wrap --format json --trace -- "$SHELL" -lc "git status --short"
 ```
 
 inspect:
@@ -67,7 +69,7 @@ inspect:
 pnpm build
 node dist/cli/main.js install cursor
 node dist/cli/main.js doctor cursor
-node dist/cli/main.js wrap --format json --trace -- sh -lc "git status --short"
+node dist/cli/main.js wrap --format json --trace -- "$SHELL" -lc "git status --short"
 node dist/cli/main.js wrap --format json --trace -- pnpm --help
 node dist/cli/main.js wrap --format json --trace --raw -- pnpm --help
 ```

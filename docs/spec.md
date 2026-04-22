@@ -157,12 +157,14 @@ install host wiring when tokenjuice can own it directly:
 ```bash
 tokenjuice install codex
 tokenjuice install claude-code
+tokenjuice install codebuddy
 tokenjuice install cursor
 tokenjuice install pi
 tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice install codex --local
 tokenjuice install claude-code --local
+tokenjuice install codebuddy --local
 tokenjuice install cursor --local
 tokenjuice install pi --local
 tokenjuice doctor hooks --local
@@ -175,9 +177,10 @@ supported host hooks:
 | Claude Code | `tokenjuice install claude-code` | `~/.claude/settings.json` | Preserves unrelated settings keys while updating `hooks.PostToolUse`; `tokenjuice install claude-code --local` is available for repo-local verification |
 | Codex CLI | `tokenjuice install codex` | `~/.codex/hooks.json` | `tokenjuice install codex --local` is available for repo-local verification |
 | Cursor (Linux/macOS/WSL) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | Uses `preToolUse` shell input rewriting to route commands through `tokenjuice wrap`; `tokenjuice install cursor --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/cursor-integration.md` |
+| CodeBuddy Code (Linux/macOS/WSL) | `tokenjuice install codebuddy` | `~/.codebuddy/settings.json` | Uses `PreToolUse` shell input rewriting (same pattern as Cursor) to route Bash commands through `tokenjuice wrap`; preserves unrelated hooks that share a matcher group with the tokenjuice entry; `tokenjuice install codebuddy --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/codebuddy-integration.md` |
 | pi | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | `tokenjuice install pi --local` forces the extension bundle to be rebuilt from the current repo source and adds `/tj` controls inside pi |
 
-`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor pi` is the direct Pi-only check. the `--local` variant expects Codex, Claude Code, and Cursor hooks to point at the current repo build instead of the installed launcher on `PATH`.
+`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor pi` is the direct Pi-only check. the `--local` variant expects Codex, Claude Code, CodeBuddy, and Cursor hooks to point at the current repo build instead of the installed launcher on `PATH`.
 
 `tokenjuice uninstall codex` removes the tokenjuice Codex PostToolUse hook from `~/.codex/hooks.json`. once removed, `tokenjuice doctor codex` and `tokenjuice doctor hooks` report that state as `disabled` instead of treating it like a broken install.
 

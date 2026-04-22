@@ -36,7 +36,7 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [codex|claude-code|cursor|pi]
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi]
 tokenjuice uninstall codex
 ```
 
@@ -74,8 +74,8 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [codex|claude-code|cursor|pi]
-tokenjuice install [codex|claude-code|cursor|pi] --local
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi]
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi] --local
 tokenjuice uninstall codex
 tokenjuice ls
 tokenjuice cat <artifact-id>
@@ -97,6 +97,7 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
 | <img width="48px" src="docs/client-cursor.jpg" alt="Cursor" /> | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
+| <img width="48px" src="docs/client-codebuddy.png" alt="CodeBuddy" /> | [CodeBuddy Code](https://codebuddy.tencent.com/) | `tokenjuice install codebuddy` | `~/.codebuddy/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes (`2026.4.22+`) |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
@@ -108,11 +109,11 @@ shared behavior:
 - `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
 - `tokenjuice doctor pi` inspects the installed Pi extension directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
-- `tokenjuice install [codex|claude-code|cursor] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install [codex|claude-code|codebuddy|cursor] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
-- Codex, Claude Code, Cursor, OpenClaw, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
+- Codex, Claude Code, CodeBuddy, Cursor, OpenClaw, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
@@ -142,7 +143,7 @@ if the hook itself goes stale after a package upgrade, repair it with:
 ```bash
 tokenjuice doctor hooks
 tokenjuice doctor pi
-tokenjuice install [codex|claude-code|cursor|pi]
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi]
 ```
 
 for machine callers, set:
@@ -201,6 +202,7 @@ direct payload:
 - spec: `docs/spec.md`
 - rules: `docs/rules.md`
 - cursor integration: `docs/cursor-integration.md`
+- codebuddy integration: `docs/codebuddy-integration.md`
 - integration playbook: `docs/integration-playbook.md`
 - security: `SECURITY.md`
 

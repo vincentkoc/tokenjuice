@@ -154,6 +154,47 @@ describe("installCodeBuddyHook", () => {
     expect(parsed.hooks.PreToolUse[0]?.hooks[0]?.command).toBe(result.command);
   });
 
+  it("picks the first tokenjuice on PATH when multiple directories have one", async () => {
+    // Pins first-match-wins semantics of the PATH walk. A refactor that
+    // reordered the walk (e.g. reversing delimiter.split) would change
+    // which launcher ends up baked into the settings file.
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const firstDir = join(home, "a-bin");
+    const secondDir = join(home, "b-bin");
+    const firstLauncher = join(firstDir, "tokenjuice");
+    const secondLauncher = join(secondDir, "tokenjuice");
+
+    await mkdir(firstDir, { recursive: true });
+    await mkdir(secondDir, { recursive: true });
+    await writeFile(firstLauncher, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(secondLauncher, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    process.env.PATH = `${firstDir}:${secondDir}`;
+
+    const result = await installCodeBuddyHook(settingsPath);
+
+    expect(result.command).toContain(firstLauncher);
+    expect(result.command).not.toContain(secondLauncher);
+  });
+
+  it("tolerates empty segments in PATH", async () => {
+    // Pins that empty PATH segments (leading/trailing ':' or '::') are
+    // skipped rather than resolved to something like the cwd's tokenjuice
+    // or throwing on a join with "".
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    process.env.PATH = `:${binDir}::`;
+
+    const result = await installCodeBuddyHook(settingsPath);
+
+    expect(result.command).toContain(launcherPath);
+  });
+
   it("can force local repo routing instead of the PATH launcher", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -676,6 +717,117 @@ describe("runCodeBuddyPreToolUseHook", () => {
     );
   });
 
+  it("prefers TOKENJUICE_CODEBUDDY_SHELL over SHELL when both resolve", async () => {
+    // Pins precedence of the candidate chain:
+    //   tool_input.shell > TOKENJUICE_CODEBUDDY_SHELL > SHELL > bash > sh
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CODEBUDDY_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+
+    expect(code).toBe(0);
+    expect(response.hookSpecificOutput.modifiedInput.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${tjShellPath} -lc 'git status --short'`,
+    );
+  });
+
+  it("prefers tool_input.shell over TOKENJUICE_CODEBUDDY_SHELL and SHELL", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const payloadShellPath = join(home, "payload-shell");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CODEBUDDY_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(payloadShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short", shell: payloadShellPath },
+    });
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+
+    expect(code).toBe(0);
+    expect(response.hookSpecificOutput.modifiedInput.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${payloadShellPath} -lc 'git status --short'`,
+    );
+  });
+
+  it("falls back to bash before sh when no configured shell resolves", async () => {
+    // Codebuddy-specific: the candidate chain ends `... > bash > sh`, so
+    // if bash is on PATH it must win over sh. A refactor that dropped this
+    // extra fallback rung (e.g. flattening with cursor's `... > sh` chain)
+    // would change which interpreter runs the wrapped command.
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const bashPath = join(shellDir, "bash");
+    const shPath = join(shellDir, "sh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "/definitely/missing";
+    process.env.TOKENJUICE_CODEBUDDY_SHELL = "/also/missing";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(bashPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(shPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+
+    expect(code).toBe(0);
+    expect(response.hookSpecificOutput.modifiedInput.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${bashPath} -lc 'git status --short'`,
+    );
+  });
+
+  it("falls back to sh only when bash is also missing", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const shPath = join(shellDir, "sh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "/definitely/missing";
+    process.env.TOKENJUICE_CODEBUDDY_SHELL = "/also/missing";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(shPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    // Note: no bash in shellDir — only sh.
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+
+    expect(code).toBe(0);
+    expect(response.hookSpecificOutput.modifiedInput.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${shPath} -lc 'git status --short'`,
+    );
+  });
+
   it("leaves command unchanged when no host shell can be resolved", async () => {
     process.env.PATH = "";
     process.env.SHELL = "/definitely/missing-shell";
@@ -712,6 +864,32 @@ describe("runCodeBuddyPreToolUseHook", () => {
     expect(response.hookSpecificOutput.permissionDecision).toBe("deny");
     expect(response.hookSpecificOutput.permissionDecisionReason).toBe(
       "tokenjuice codebuddy integration does not support native Windows shells yet. run CodeBuddy in WSL instead.",
+    );
+  });
+
+  it("quotes commands containing single quotes using POSIX '\\'' escape", async () => {
+    // Pins the exact POSIX quoting of the wrapped command string so that
+    // swapping the host's local shellQuote for the shared implementation
+    // during refactor cannot silently change escape semantics.
+    const home = await createTempDir();
+    const hostShellPath = join(home, "host-shell");
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "echo it's raining",
+        shell: hostShellPath,
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+
+    expect(code).toBe(0);
+    expect(response.hookSpecificOutput.modifiedInput.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'echo it'\\''s raining'`,
     );
   });
 

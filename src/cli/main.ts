@@ -14,6 +14,11 @@ import { runWrappedCommand } from "../core/wrap.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
+import {
+  doctorOpenCodeExtension,
+  installOpenCodeExtension,
+  uninstallOpenCodeExtension,
+} from "../hosts/opencode/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 
@@ -63,12 +68,14 @@ function printUsage(): void {
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install pi [--local]",
+      "  tokenjuice install opencode [--local]",
       "  tokenjuice uninstall codex",
+      "  tokenjuice uninstall opencode",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|cursor|pi] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|cursor|pi|opencode] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
     ].join("\n"),
   );
@@ -421,7 +428,23 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, cursor, pi");
+  if (target === "opencode") {
+    const result = await installOpenCodeExtension(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`installed opencode extension: ${result.extensionPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("reload: restart opencode (the plugin is auto-loaded on session start)\n");
+    process.stdout.write(`doctor: tokenjuice doctor opencode\n`);
+    return 0;
+  }
+
+  throw new Error("install currently supports: codex, claude-code, cursor, pi, opencode");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -442,7 +465,20 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex");
+  if (target === "opencode") {
+    const result = await uninstallOpenCodeExtension();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed opencode extension: ${result.removed ? "yes" : "missing"}\n`);
+    process.stdout.write(`extension path: ${result.extensionPath}\n`);
+    process.stdout.write("enable: tokenjuice install opencode\n");
+    return 0;
+  }
+
+  throw new Error("uninstall currently supports: codex, opencode");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -720,6 +756,26 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "opencode") {
+    const report = await doctorOpenCodeExtension();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`extension path: ${report.extensionPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
       }
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);

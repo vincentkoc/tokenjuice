@@ -1,0 +1,17 @@
+{
+  "id": "git-worktree-list-basic",
+  "ruleId": "git/worktree-list",
+  "input": {
+    "toolName": "exec",
+    "argv": ["git", "worktree", "list"],
+    "command": "git worktree list",
+    "combinedText": "/Users/vincentkoc/GIT/_Perso/tokenjuice                                               8c5971e [main]\n/Users/vincentkoc/.codex/worktrees/tokenjuice/feat-openclaw-plugin                    f120aa8 [feat/openclaw-plugin]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/feat-local-routing-all-hosts 19aa27e [feat/local-routing-all-hosts]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-git-worktree-list-rule   8c5971e [fix/git-worktree-list-rule]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-rules-npm-ci             0bc1d71 [fix/rules-npm-ci]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-rules-pnpm-build         c3aa9f4 [fix/rules-pnpm-build]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/refactor-host-folders        b2383ff [refactor/host-folders]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/tokenjuice-pr14-review       a382c63 [tokenjuice-pr14-review]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/tokenjuice-pr15-review       74544c0 [tokenjuice-pr15-review]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/tokenjuice-pr20-review       7987077 [pr20-head]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-gh-run-view-rule         91bf0a2 [fix/gh-run-view-rule]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-system-ps-summary        d5c34aa [fix/system-ps-summary]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-openclaw-session-history 4cc9a87 [fix/openclaw-session-history]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/fix-rg-no-gain-guard         1f2a334 [fix/rg-no-gain-guard]\n/Users/vincentkoc/.codex/worktrees/vincentkoc-tokenjuice/review-pr-28                 73ad210 [review/pr-28]\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "git/worktree-list",
+    "family": "git-worktree",
+    "contains": ["worktree", "[main]", "[review/pr-28]"],
+    "excludes": ["[fix-system-ps-summary]"]
+  }
+}

@@ -1,7 +1,7 @@
 const POSIX_SAFE_SHELL_WORD = /^[A-Za-z0-9_./:-]+$/u;
 const WINDOWS_SAFE_SHELL_WORD = /^[A-Za-z0-9_./:\\-]+$/u;
 
-function isTokenjuiceExecutablePath(value: string): boolean {
+export function isTokenjuiceExecutablePath(value: string): boolean {
   return /(?:^|[\\/])tokenjuice(?:\.(?:exe|cmd|bat))?$/iu.test(value);
 }
 

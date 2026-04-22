@@ -4,6 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import { tokenizeCommand } from "../../core/command.js";
+import { isTokenjuiceExecutablePath } from "../shared/hook-command.js";
 
 type CodeBuddyHook = Record<string, unknown>;
 
@@ -200,21 +201,31 @@ function createTokenjuiceCodeBuddyHook(command: string): CodeBuddyHookMatcherGro
   };
 }
 
-function isTokenjuiceCodeBuddyHook(group: CodeBuddyHookMatcherGroup): boolean {
-  return group.hooks.some((hook) =>
-    isRecord(hook) && (
-      hook.statusMessage === TOKENJUICE_CODEBUDDY_STATUS
-      || (typeof hook.command === "string" && (
-        hook.command.includes(TOKENJUICE_CODEBUDDY_HOOK_SUBCOMMAND)
-        // Match the legacy PostToolUse subcommand so `install` can migrate
-        // users who installed an earlier version of this host.
-        || hook.command.includes("codebuddy-post-tool-use")
-      ))
-      // Legacy PostToolUse status message from an earlier iteration of this
-      // host. Treat it as a tokenjuice entry so `install` replaces it.
-      || hook.statusMessage === "compacting bash output with tokenjuice"
-    ),
+function isTokenjuiceCodeBuddyHookEntry(hook: unknown): boolean {
+  if (!isRecord(hook)) {
+    return false;
+  }
+  if (hook.statusMessage === TOKENJUICE_CODEBUDDY_STATUS) {
+    return true;
+  }
+  // Legacy PostToolUse status message from an earlier iteration of this
+  // host. Treat it as a tokenjuice entry so `install` replaces it.
+  if (hook.statusMessage === "compacting bash output with tokenjuice") {
+    return true;
+  }
+  if (typeof hook.command !== "string") {
+    return false;
+  }
+  return (
+    hook.command.includes(TOKENJUICE_CODEBUDDY_HOOK_SUBCOMMAND)
+    // Match the legacy PostToolUse subcommand so `install` can migrate users
+    // who installed an earlier version of this host.
+    || hook.command.includes("codebuddy-post-tool-use")
   );
+}
+
+function isTokenjuiceCodeBuddyHook(group: CodeBuddyHookMatcherGroup): boolean {
+  return group.hooks.some(isTokenjuiceCodeBuddyHookEntry);
 }
 
 function findTokenjuiceCodeBuddyHookCommand(config: CodeBuddySettings): string | undefined {
@@ -324,14 +335,21 @@ function commandAlreadyWrapped(command: string): boolean {
     return false;
   }
 
-  if (argv[0] === "tokenjuice" && argv[1] === "wrap") {
+  const first = argv[0];
+  const second = argv[1];
+
+  // Direct tokenjuice invocation: `tokenjuice wrap ...` OR
+  // `/abs/path/to/tokenjuice wrap ...` OR Windows `.exe/.cmd/.bat` variants.
+  if (typeof first === "string" && isTokenjuiceExecutablePath(first) && second === "wrap") {
     return true;
   }
+
+  // Node-based invocation of a local build: `node dist/cli/main.js ... wrap ...`.
   if (
-    typeof argv[0] === "string"
-    && (argv[0] === "node" || argv[0] === "node.exe" || argv[0].endsWith("/node") || argv[0].endsWith("\\node.exe"))
-    && typeof argv[1] === "string"
-    && argv[1].endsWith(".js")
+    typeof first === "string"
+    && (first === "node" || first === "node.exe" || first.endsWith("/node") || first.endsWith("\\node.exe"))
+    && typeof second === "string"
+    && second.endsWith(".js")
     && argv.slice(2).includes("wrap")
   ) {
     return true;
@@ -340,22 +358,32 @@ function commandAlreadyWrapped(command: string): boolean {
 }
 
 /**
- * Remove legacy PostToolUse tokenjuice entries from a prior version of this
- * host. Idempotent — safe to call when no such entries exist.
+ * Return `groups` with every tokenjuice hook entry removed from each group's
+ * `.hooks[]`. Unrelated hooks are preserved; groups that end up empty are
+ * dropped.
+ *
+ * This is the surgical counterpart to a simple group-level filter — dropping
+ * a whole group would silently delete any user-authored hook that happens to
+ * share a matcher group with the tokenjuice entry.
  */
-function stripLegacyPostToolUseEntries(config: CodeBuddySettings): void {
-  const postToolUse = config.hooks.PostToolUse;
-  if (!Array.isArray(postToolUse)) {
-    return;
+function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
+  const pruned: unknown[] = [];
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      pruned.push(group);
+      continue;
+    }
+    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceCodeBuddyHookEntry(hook));
+    if (retainedHooks.length === 0) {
+      continue;
+    }
+    if (retainedHooks.length === group.hooks.length) {
+      pruned.push(group);
+      continue;
+    }
+    pruned.push({ ...group, hooks: retainedHooks });
   }
-  const retained = postToolUse.filter((group) =>
-    !(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceCodeBuddyHook(group as CodeBuddyHookMatcherGroup)),
-  );
-  if (retained.length === 0) {
-    delete config.hooks.PostToolUse;
-  } else {
-    config.hooks.PostToolUse = retained;
-  }
+  return pruned;
 }
 
 export async function installCodeBuddyHook(
@@ -369,12 +397,20 @@ export async function installCodeBuddyHook(
   const { config, backupPath } = await loadCodeBuddySettings(settingsPath);
   const command = await buildCodeBuddyHookCommand(options);
 
-  stripLegacyPostToolUseEntries(config);
+  // Drop any legacy PostToolUse tokenjuice entries left behind by a prior
+  // version of this host, but preserve unrelated hooks that happen to live in
+  // the same matcher group.
+  if (Array.isArray(config.hooks.PostToolUse)) {
+    const prunedPost = pruneTokenjuiceHookEntries(config.hooks.PostToolUse);
+    if (prunedPost.length === 0) {
+      delete config.hooks.PostToolUse;
+    } else {
+      config.hooks.PostToolUse = prunedPost;
+    }
+  }
 
   const preToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
-  const retained = preToolUse.filter((group) =>
-    !(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceCodeBuddyHook(group as CodeBuddyHookMatcherGroup)),
-  );
+  const retained = pruneTokenjuiceHookEntries(preToolUse);
   retained.push(createTokenjuiceCodeBuddyHook(command));
   config.hooks.PreToolUse = retained;
 

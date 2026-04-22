@@ -229,6 +229,66 @@ describe("installCodeBuddyHook", () => {
     expect(tokenjuiceHooks[0]?.hooks[0]?.command).toContain("codebuddy-pre-tool-use");
   });
 
+  it("preserves unrelated hooks that live in the same matcher group as the tokenjuice hook", async () => {
+    // Regression for review finding P2: reinstalling must not delete
+    // user-authored hooks just because they share a matcher group with the
+    // tokenjuice entry.
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "echo pre-bash-audit", statusMessage: "audit hook" },
+                {
+                  type: "command",
+                  command: "tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice",
+                  statusMessage: "wrapping bash through tokenjuice for compaction",
+                },
+                { type: "agent", prompt: "summarize this bash call" },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await installCodeBuddyHook(settingsPath);
+
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<Record<string, unknown>> }>>;
+    };
+
+    // Two groups now: the original Bash group (tokenjuice entry removed,
+    // siblings preserved) and the fresh tokenjuice-only Bash group appended
+    // by install.
+    expect(parsed.hooks.PreToolUse).toHaveLength(2);
+
+    const preservedGroup = parsed.hooks.PreToolUse[0];
+    expect(preservedGroup?.matcher).toBe("Bash");
+    expect(preservedGroup?.hooks).toHaveLength(2);
+    expect(preservedGroup?.hooks[0]).toEqual({
+      type: "command",
+      command: "echo pre-bash-audit",
+      statusMessage: "audit hook",
+    });
+    expect(preservedGroup?.hooks[1]).toEqual({
+      type: "agent",
+      prompt: "summarize this bash call",
+    });
+
+    const tokenjuiceGroup = parsed.hooks.PreToolUse[1];
+    expect(tokenjuiceGroup?.matcher).toBe("Bash");
+    expect(tokenjuiceGroup?.hooks).toHaveLength(1);
+    expect(tokenjuiceGroup?.hooks[0]?.command).toContain("codebuddy-pre-tool-use");
+  });
+
   it("migrates a legacy PostToolUse install to the new PreToolUse install", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -276,6 +336,48 @@ describe("installCodeBuddyHook", () => {
     // New tokenjuice PreToolUse entry written.
     expect(parsed.hooks.PreToolUse).toHaveLength(1);
     expect(parsed.hooks.PreToolUse?.[0]?.matcher).toBe("Bash");
+    expect(parsed.hooks.PreToolUse?.[0]?.hooks[0]?.command).toContain("codebuddy-pre-tool-use");
+  });
+
+  it("preserves sibling hooks when migrating a legacy PostToolUse group", async () => {
+    // Regression for review finding P2 on the legacy-migration path: if the
+    // old PostToolUse Bash group also had user-authored siblings, they must
+    // survive the migration.
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "echo keep-me" },
+                {
+                  type: "command",
+                  command: "tokenjuice codebuddy-post-tool-use",
+                  statusMessage: "compacting bash output with tokenjuice",
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await installCodeBuddyHook(settingsPath);
+
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(parsed.hooks.PostToolUse).toHaveLength(1);
+    expect(parsed.hooks.PostToolUse?.[0]?.matcher).toBe("Bash");
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks).toHaveLength(1);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe("echo keep-me");
     expect(parsed.hooks.PreToolUse?.[0]?.hooks[0]?.command).toContain("codebuddy-pre-tool-use");
   });
 
@@ -499,6 +601,28 @@ describe("runCodeBuddyPreToolUseHook", () => {
     expect(code).toBe(0);
     expect(output).toBe("");
   });
+
+  it.each([
+    ["/usr/local/bin/tokenjuice wrap -- bash -lc 'git status'", "absolute POSIX path"],
+    ["/root/.local/share/pnpm/tokenjuice wrap --raw -- git log", "pnpm-linked absolute path"],
+  ])(
+    "skips already-wrapped commands invoked via %s (%s)",
+    async (command) => {
+      // Regression for review finding P3: absolute tokenjuice launchers must
+      // also be recognised as already wrapped, otherwise the hook will nest
+      // wrap invocations.
+      const payload = JSON.stringify({
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command },
+      });
+
+      const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+
+      expect(code).toBe(0);
+      expect(output).toBe("");
+    },
+  );
 
   it("uses node to execute a js wrap launcher path", async () => {
     const home = await createTempDir();

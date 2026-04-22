@@ -28,22 +28,7 @@ function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
   return tokenizeCommand(input.command);
 }
 
-<<<<<<< HEAD
 export function getCommandName(argv: string[]): string | null {
-=======
-function getCommandText(input: Pick<ToolExecutionInput, "argv" | "command">): string {
-  if (typeof input.command === "string") {
-    return input.command.trim();
-  }
-  return getNormalizedArgv(input).join(" ");
-}
-
-function isShellCommandStringOption(token: string): boolean {
-  return /^-[A-Za-z]*c[A-Za-z]*$/u.test(token);
-}
-
-function getNormalizedArgv0(argv: string[]): string | null {
->>>>>>> 5fad275 (fix(command): handle clustered shell wrappers and argv-only env prefixes)
   const first = argv[0];
   if (!first) {
     return null;
@@ -165,6 +150,19 @@ function isRepositoryInspectionArgv(argv: string[]): boolean {
   return false;
 }
 
+function getCandidateArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
+  if (input.argv?.length) {
+    return input.argv;
+  }
+
+  const command = typeof input.command === "string" ? input.command.trim() : "";
+  if (!command || isCompoundShellCommand(command)) {
+    return [];
+  }
+
+  return tokenizeCommand(command);
+}
+
 function buildCandidate(
   input: Pick<ToolExecutionInput, "argv" | "command">,
   source: CommandMatchSource,
@@ -173,7 +171,7 @@ function buildCandidate(
     ...(typeof input.command === "string" && input.command.trim()
       ? { command: input.command.trim() }
       : {}),
-    argv: getNormalizedArgv(input),
+    argv: getCandidateArgv(input),
     source,
   };
 }

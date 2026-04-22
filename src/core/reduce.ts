@@ -1,5 +1,5 @@
 import { loadRules } from "./rules.js";
-import { applyCommandMatchCandidate, buildClassificationResult, classifyExecution, findBestRuleMatch } from "./classify.js";
+import { classifyExecution, resolveRuleMatch } from "./classify.js";
 import { isFileContentInspectionCommand, normalizeExecutionInput } from "./command.js";
 import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
@@ -561,15 +561,12 @@ export async function reduceExecutionWithRules(
   const normalizedInput = normalizeExecutionInput(input);
   const rawText = buildRawText(normalizedInput);
   const measuredRawChars = countTextChars(stripAnsi(rawText));
-  const match = opts.classifier
+  const resolvedMatch = opts.classifier
     ? undefined
-    : findBestRuleMatch(normalizedInput, rules);
-  const classification = match
-    ? buildClassificationResult(match.rule, match.candidate)
-    : classifyExecution(normalizedInput, rules, opts.classifier);
-  const reducerInput = match
-    ? applyCommandMatchCandidate(normalizedInput, match.candidate)
-    : normalizedInput;
+    : resolveRuleMatch(input, rules);
+  const classification = resolvedMatch?.classification
+    ?? classifyExecution(input, rules, opts.classifier);
+  const reducerInput = resolvedMatch?.candidateInput ?? normalizedInput;
   const trace = opts.trace
     ? {
         ...(normalizedInput.command ? { normalizedCommand: normalizedInput.command } : {}),
@@ -726,11 +723,10 @@ export async function reduceExecutionWithRules(
 
 export async function classifyOnly(input: ToolExecutionInput, forcedRuleId?: string) {
   const rules = await loadRules();
-  return classifyExecution(normalizeExecutionInput(input), rules, forcedRuleId);
+  return classifyExecution(input, rules, forcedRuleId);
 }
 
 export async function findMatchingRule(input: ToolExecutionInput): Promise<CompiledRule | undefined> {
   const rules = await loadRules();
-  const normalizedInput = normalizeExecutionInput(input);
-  return findBestRuleMatch(normalizedInput, rules)?.rule;
+  return resolveRuleMatch(input, rules)?.rule;
 }

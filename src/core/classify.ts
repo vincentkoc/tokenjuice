@@ -44,9 +44,16 @@ function includesCommandPart(command: string, part: string): boolean {
 
 type RuleLike = JsonRule | CompiledRule;
 
-export type RuleMatchSelection<T extends RuleLike> = {
+type RuleMatchSelection<T extends RuleLike> = {
   rule: T;
   candidate: CommandMatchCandidate;
+};
+
+export type ResolvedRuleMatch<T extends RuleLike = RuleLike> = {
+  rule: T;
+  candidate: CommandMatchCandidate;
+  candidateInput: ToolExecutionInput;
+  classification: ClassificationResult;
 };
 
 function getJsonRule(rule: RuleLike): JsonRule {
@@ -65,10 +72,11 @@ function getCandidatePriority(candidate: CommandMatchCandidate): number {
   }
 }
 
-export function applyCommandMatchCandidate(input: ToolExecutionInput, candidate: CommandMatchCandidate): ToolExecutionInput {
+function applyCommandMatchCandidate(input: ToolExecutionInput, candidate: CommandMatchCandidate): ToolExecutionInput {
+  const { command: _command, ...rest } = input;
   return {
-    ...input,
-    command: candidate.command,
+    ...rest,
+    ...(candidate.command ? { command: candidate.command } : {}),
     argv: candidate.argv,
   };
 }
@@ -170,7 +178,7 @@ export function findBestRuleMatch<T extends RuleLike>(
   return fallbackSelection;
 }
 
-export function buildClassificationResult(
+function buildClassificationResult(
   ruleLike: RuleLike,
   candidate: CommandMatchCandidate,
 ): ClassificationResult {
@@ -180,7 +188,25 @@ export function buildClassificationResult(
     confidence: rule.id === "generic/fallback" ? 0.2 : 0.9,
     matchedReducer: rule.id,
     matchedVia: candidate.source,
-    matchedCommand: candidate.command,
+    matchedCommand: candidate.command ?? candidate.argv.join(" "),
+  };
+}
+
+export function resolveRuleMatch<T extends RuleLike>(
+  input: ToolExecutionInput,
+  rules: T[],
+): ResolvedRuleMatch<T> | undefined {
+  const match = findBestRuleMatch(input, rules);
+  if (!match) {
+    return undefined;
+  }
+
+  const candidateInput = applyCommandMatchCandidate(input, match.candidate);
+  return {
+    rule: match.rule,
+    candidate: match.candidate,
+    candidateInput,
+    classification: buildClassificationResult(match.rule, match.candidate),
   };
 }
 
@@ -201,13 +227,13 @@ export function classifyExecution(
     }
   }
 
-  const match = findBestRuleMatch(input, rules);
-  if (!match) {
+  const resolved = resolveRuleMatch(input, rules);
+  if (!resolved) {
     return {
       family: "generic",
       confidence: 0.2,
     };
   }
 
-  return buildClassificationResult(match.rule, match.candidate);
+  return resolved.classification;
 }

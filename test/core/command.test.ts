@@ -95,7 +95,7 @@ describe("deriveCommandMatchCandidates", () => {
       },
       {
         command: "cd repo && pnpm test",
-        argv: ["cd", "repo", "&&", "pnpm", "test"],
+        argv: [],
         source: "shell-body",
       },
       {

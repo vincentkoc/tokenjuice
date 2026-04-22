@@ -40,6 +40,13 @@ tokenjuice install [codex|claude-code|cursor|pi]
 tokenjuice uninstall codex
 ```
 
+OpenClaw support is bundled on the OpenClaw side. Do not run
+`tokenjuice install openclaw`; enable the bundled plugin instead:
+
+```bash
+openclaw config set plugins.entries.tokenjuice.enabled true
+```
+
 ## why
 
 tool output wastes absurd amounts of context. your llm needs a diet.
@@ -81,13 +88,14 @@ tokenjuice stats --timezone utc
 
 ## overview
 
-tokenjuice can install host integrations for:
+tokenjuice has host integrations for:
 
 | Logo | Client | Install | Hook file | Supported |
 | --- | --- | --- | --- | --- |
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
 | <img width="48px" src="docs/client-cursor.jpg" alt="Cursor" /> | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
+| <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
@@ -99,15 +107,24 @@ shared behavior:
 - `tokenjuice doctor pi` inspects the installed Pi extension directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice install [codex|claude-code|cursor] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
-- Codex, Claude Code, Cursor, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
+- Codex, Claude Code, Cursor, OpenClaw, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
 repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
+
+for OpenClaw, tokenjuice ships as a bundled plugin. enable it with:
+
+```bash
+openclaw config set plugins.entries.tokenjuice.enabled true
+```
+
+there is no `tokenjuice install openclaw` command.
 
 when a reducer gets it wrong or the engine needs the untouched output, use the explicit bypass:
 

@@ -7,38 +7,55 @@ on:
   pull_request:
 
 jobs:
-  verify:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 22
-
-      - name: Enable Corepack pnpm
-        run: |
-          corepack enable
-          corepack install
-          pnpm --version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test
+      - name: Verify quality gates
+        run: pnpm verify
 
-      - name: Build
-        run: pnpm build
+  package:
+    runs-on: ubuntu-latest
+    needs: quality
 
-      - name: Build release artifacts
-        run: pnpm release:artifacts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: Write release checksums
-        run: pnpm release:checksums
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
 
-      - name: Generate Homebrew formula
-        run: pnpm release:formula
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify package outputs
+        run: pnpm verify:package

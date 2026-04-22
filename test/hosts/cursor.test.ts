@@ -266,6 +266,27 @@ describe("runCursorPreToolUseHook", () => {
     expect(output).toBe("");
   });
 
+  it.each([
+    ["/usr/local/bin/tokenjuice wrap -- bash -lc 'git status'", "absolute POSIX path"],
+    ["/root/.local/share/pnpm/tokenjuice wrap --raw -- git log", "pnpm-linked absolute path"],
+  ])(
+    "skips already-wrapped commands invoked via %s (%s)",
+    async (command) => {
+      // Mirror of the codebuddy P3 regression: cursor's commandAlreadyWrapped
+      // must also recognise absolute tokenjuice paths so the shell input
+      // rewrite does not nest `tokenjuice wrap` invocations.
+      const payload = JSON.stringify({
+        tool_name: "Shell",
+        tool_input: { command },
+      });
+
+      const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+
+      expect(code).toBe(0);
+      expect(output).toBe("");
+    },
+  );
+
   it("uses node to execute a js wrap launcher path", async () => {
     const home = await createTempDir();
     const hostShellPath = join(home, "host-shell");
@@ -343,6 +364,78 @@ describe("runCursorPreToolUseHook", () => {
     expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
   });
 
+  it("prefers TOKENJUICE_CURSOR_SHELL over SHELL when both resolve", async () => {
+    // Pins precedence of the candidate chain:
+    //   tool_input.shell > TOKENJUICE_CURSOR_SHELL > SHELL > sh
+    // This would silently regress if a refactor reshuffled the list.
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CURSOR_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${tjShellPath} -lc 'git status --short'`);
+  });
+
+  it("prefers tool_input.shell over TOKENJUICE_CURSOR_SHELL and SHELL", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const payloadShellPath = join(home, "payload-shell");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CURSOR_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(payloadShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short", shell: payloadShellPath },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${payloadShellPath} -lc 'git status --short'`);
+  });
+
+  it("falls back to sh when SHELL and TOKENJUICE_CURSOR_SHELL are unresolvable", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const shPath = join(shellDir, "sh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "/definitely/missing";
+    process.env.TOKENJUICE_CURSOR_SHELL = "/also/missing";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(shPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${shPath} -lc 'git status --short'`);
+  });
+
   it("leaves command unchanged when no host shell can be resolved", async () => {
     process.env.PATH = "";
     process.env.SHELL = "/definitely/missing-shell";
@@ -358,6 +451,31 @@ describe("runCursorPreToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(output).toBe("");
+  });
+
+  it("quotes commands containing single quotes using POSIX '\\'' escape", async () => {
+    // Pins the exact POSIX quoting of the wrapped command string so that
+    // swapping the host's local shellQuote for the shared implementation
+    // during refactor cannot silently change escape semantics.
+    const home = await createTempDir();
+    const hostShellPath = join(home, "host-shell");
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "echo it's raining",
+        shell: hostShellPath,
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    expect(response.updated_input.command).toBe(
+      `/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'echo it'\\''s raining'`,
+    );
   });
 
   it("denies native Windows shell interception with a WSL message", async () => {

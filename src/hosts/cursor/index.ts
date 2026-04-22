@@ -4,6 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import { stripLeadingCdPrefix, tokenizeCommand } from "../../core/command.js";
+import { isTokenjuiceExecutablePath } from "../shared/hook-command.js";
 
 type CursorHooksConfig = Record<string, unknown> & {
   version?: number;
@@ -288,14 +289,21 @@ function commandAlreadyWrapped(command: string): boolean {
     return false;
   }
 
-  if (argv[0] === "tokenjuice" && argv[1] === "wrap") {
+  const first = argv[0];
+  const second = argv[1];
+
+  // Direct tokenjuice invocation: `tokenjuice wrap ...` OR
+  // `/abs/path/to/tokenjuice wrap ...` OR Windows `.exe/.cmd/.bat` variants.
+  if (typeof first === "string" && isTokenjuiceExecutablePath(first) && second === "wrap") {
     return true;
   }
+
+  // Node-based invocation of a local build: `node dist/cli/main.js ... wrap ...`.
   if (
-    typeof argv[0] === "string"
-    && (argv[0] === "node" || argv[0] === "node.exe" || argv[0].endsWith("/node") || argv[0].endsWith("\\node.exe"))
-    && typeof argv[1] === "string"
-    && argv[1].endsWith(".js")
+    typeof first === "string"
+    && (first === "node" || first === "node.exe" || first.endsWith("/node") || first.endsWith("\\node.exe"))
+    && typeof second === "string"
+    && second.endsWith(".js")
     && argv.slice(2).includes("wrap")
   ) {
     return true;

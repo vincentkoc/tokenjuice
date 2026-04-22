@@ -1,6 +1,6 @@
 {
   "name": "tokenjuice",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Lean output compaction for terminal-heavy agent workflows.",
   "keywords": [
     "cli",
@@ -31,7 +31,11 @@
     "tokenjuice": "dist/cli/main.js"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./openclaw": {
+      "types": "./dist/hosts/openclaw/index.d.ts",
+      "default": "./dist/hosts/openclaw/index.js"
+    }
   },
   "files": [
     "dist",

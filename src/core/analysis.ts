@@ -1,5 +1,5 @@
 import type { CompactResult, StoredArtifactMetadata, ToolExecutionInput } from "../types.js";
-import { normalizeCommandSignature } from "./command.js";
+import { normalizeCommandSignature } from "./command-identity.js";
 import { buildCalendarDayFormatter } from "./time.js";
 
 export type AnalysisEntry = {

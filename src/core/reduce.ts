@@ -1,6 +1,7 @@
 import { loadRules } from "./rules.js";
 import { classifyExecution, resolveRuleMatch } from "./classify.js";
-import { isFileContentInspectionCommand, normalizeExecutionInput } from "./command.js";
+import { isFileContentInspectionCommand } from "./command-identity.js";
+import { normalizeExecutionInput } from "./execution-input.js";
 import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
 

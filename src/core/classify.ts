@@ -1,8 +1,7 @@
-import { deriveCommandMatchCandidates, type CommandMatchCandidate } from "./command.js";
-
 import type { ClassificationResult, CompiledRule, JsonRule, ToolExecutionInput } from "../types.js";
 
-import { getGitSubcommand } from "./command.js";
+import { getGitSubcommand } from "./command-identity.js";
+import { deriveCommandMatchCandidates, type CommandMatchCandidate } from "./command-match.js";
 
 function includesAll(argv: string[], expected: string[]): boolean {
   return expected.every((part) => argv.includes(part));

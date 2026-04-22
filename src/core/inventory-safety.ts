@@ -1,11 +1,13 @@
 import {
   getCommandName,
   getGitSubcommand,
-  hasSequentialShellCommands,
   isFileContentInspectionCommand,
+} from "./command-identity.js";
+import {
+  hasSequentialShellCommands,
   stripLeadingCdPrefix,
   tokenizeCommand,
-} from "./command.js";
+} from "./command-shell.js";
 
 import type { ToolExecutionInput } from "../types.js";
 

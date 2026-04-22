@@ -1,6 +1,6 @@
 {
   "name": "tokenjuice",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Lean output compaction for terminal-heavy agent workflows.",
   "keywords": [
     "cli",
@@ -31,7 +31,11 @@
     "tokenjuice": "dist/cli/main.js"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./openclaw": {
+      "types": "./dist/hosts/openclaw/index.d.ts",
+      "default": "./dist/hosts/openclaw/index.js"
+    }
   },
   "files": [
     "dist",
@@ -47,8 +51,7 @@
     "bench:fixtures": "node scripts/bench.mjs fixtures",
     "bench:verify": "node scripts/bench.mjs verify",
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
-    "build": "rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && node scripts/build-openclaw-plugin.mjs && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
-    "build:openclaw-plugin": "node scripts/build-openclaw-plugin.mjs",
+    "build": "rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
     "release:artifacts": "node scripts/build-release.mjs",
     "release:checksums": "node scripts/write-checksums.mjs",
     "release:formula": "node scripts/generate-homebrew-formula.mjs",

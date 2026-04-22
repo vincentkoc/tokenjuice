@@ -109,8 +109,6 @@ repository inventory compaction is deliberately narrow. standalone inventory com
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 
-for OpenClaw, `pnpm build` now emits a dedicated native plugin package at `dist/openclaw-plugin/`. install that package with `openclaw plugins install /path/to/tokenjuice/dist/openclaw-plugin`, restart the gateway, and tokenjuice will compact noisy `exec` / `bash` tool results through OpenClaw's embedded runner without wrapping the command itself.
-
 when a reducer gets it wrong or the engine needs the untouched output, use the explicit bypass:
 
 ```bash

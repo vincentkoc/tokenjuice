@@ -80,7 +80,7 @@ function isCompletedExecDetails(details: unknown): details is OpenClawExecDetail
   return details.status === "completed" || details.status === "failed";
 }
 
-export function createTokenjuiceOpenClawExtension() {
+export function createTokenjuiceOpenClawEmbeddedExtension() {
   return function tokenjuiceOpenClawExtension(pi: OpenClawPi): void {
     pi.on("tool_result", async (rawEvent, ctx) => {
       const event = rawEvent as OpenClawToolResultEvent;

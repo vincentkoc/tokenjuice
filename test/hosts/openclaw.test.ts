@@ -1,21 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import openclawPlugin from "../../src/openclaw-plugin.js";
+import { createTokenjuiceOpenClawEmbeddedExtension } from "../../src/hosts/openclaw/index.js";
 
-describe("OpenClaw plugin", () => {
-  it("registers an embedded extension factory that compacts exec tool results", async () => {
-    const embeddedExtensionFactories: Array<(pi: unknown) => void | Promise<void>> = [];
-
-    openclawPlugin.register({
-      registerEmbeddedExtensionFactory(factory) {
-        embeddedExtensionFactories.push(factory);
-      },
-    });
-
-    expect(embeddedExtensionFactories).toHaveLength(1);
+describe("OpenClaw adapter", () => {
+  it("creates an embedded extension that compacts exec tool results", async () => {
+    const embeddedExtension = createTokenjuiceOpenClawEmbeddedExtension();
 
     const handlers = new Map<string, Function>();
-    embeddedExtensionFactories[0]?.({
+    embeddedExtension({
       on(event: string, handler: Function) {
         handlers.set(event, handler);
       },
@@ -37,7 +29,7 @@ describe("OpenClaw plugin", () => {
             "On branch feat/openclaw-plugin",
             "",
             "Changes not staged for commit:",
-            "\tmodified:   src/openclaw-plugin.ts",
+            "\tmodified:   src/hosts/openclaw/index.ts",
             "\tmodified:   src/hosts/openclaw/extension.ts",
             "",
             "no changes added to commit",
@@ -48,22 +40,16 @@ describe("OpenClaw plugin", () => {
       { cwd: "/tmp/openclaw" },
     );
 
-    expect(result?.content[0].text).toContain("M: src/openclaw-plugin.ts");
+    expect(result?.content[0].text).toContain("M: src/hosts/openclaw/index.ts");
     expect(result?.content[0].text).toContain("tokenjuice compacted bash output");
     expect(result?.details?.tokenjuice?.compacted).toBe(true);
   });
 
   it("ignores non-exec tool results", async () => {
-    const embeddedExtensionFactories: Array<(pi: unknown) => void | Promise<void>> = [];
-
-    openclawPlugin.register({
-      registerEmbeddedExtensionFactory(factory) {
-        embeddedExtensionFactories.push(factory);
-      },
-    });
+    const embeddedExtension = createTokenjuiceOpenClawEmbeddedExtension();
 
     const handlers = new Map<string, Function>();
-    embeddedExtensionFactories[0]?.({
+    embeddedExtension({
       on(event: string, handler: Function) {
         handlers.set(event, handler);
       },

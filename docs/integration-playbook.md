@@ -1,6 +1,6 @@
 # host integration playbook
 
-this document is the implementation checklist for adding a new host integration (like codex, claude-code, cursor, pi).
+this document is the implementation checklist for adding a new host integration (like codex, claude-code, codebuddy, cursor, pi).
 
 ## when to use this
 
@@ -84,7 +84,7 @@ minimum gate for a new host adapter:
 ```bash
 pnpm typecheck
 pnpm vitest run test/hosts/<host>.test.ts
-pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/pi.test.ts
+pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/codebuddy.test.ts test/hosts/cursor.test.ts test/hosts/pi.test.ts
 ```
 
 if you changed normalization/classification paths, also run:

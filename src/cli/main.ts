@@ -78,7 +78,6 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-<<<<<<< HEAD
       "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|pi|opencode] [--local] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
     ].join("\n"),

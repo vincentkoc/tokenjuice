@@ -1,5 +1,5 @@
 import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
@@ -409,6 +409,42 @@ function truncateHookCommand(command: string, maxLength = 80): string {
   return `${trimmed.slice(0, maxLength - 3)}...`;
 }
 
+function extractHomebrewCellarVersion(path: string): string | undefined {
+  const normalized = path.replace(/\\/gu, "/");
+  const match = normalized.match(/\/Cellar\/tokenjuice\/([^/]+)\//u);
+  return match?.[1];
+}
+
+async function detectResolvedHomebrewVersionMismatch(
+  commandPaths: string[],
+): Promise<{ launcherPath: string; resolvedPath: string; resolvedVersion: string } | undefined> {
+  for (const path of commandPaths) {
+    if (!path.endsWith("/tokenjuice") && !path.endsWith("\\tokenjuice") && !path.endsWith("\\tokenjuice.exe")) {
+      continue;
+    }
+
+    let resolvedPath: string;
+    try {
+      resolvedPath = await realpath(path);
+    } catch {
+      continue;
+    }
+
+    const resolvedVersion = extractHomebrewCellarVersion(resolvedPath);
+    if (!resolvedVersion || resolvedVersion === packageJson.version) {
+      continue;
+    }
+
+    return {
+      launcherPath: path,
+      resolvedPath,
+      resolvedVersion,
+    };
+  }
+
+  return undefined;
+}
+
 function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
   const issues: string[] = [];
 
@@ -706,6 +742,13 @@ export async function doctorCodexHook(
   }
   if (missingPaths.length > 0) {
     issues.push(`configured Codex hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
+  }
+  const resolvedVersionMismatch = await detectResolvedHomebrewVersionMismatch(checkedPaths);
+  if (resolvedVersionMismatch) {
+    issues.push(
+      `configured Codex hook launcher resolves to Homebrew tokenjuice ${resolvedVersionMismatch.resolvedVersion}, but this tokenjuice is ${packageJson.version}`,
+    );
+    fixCommand = "brew upgrade tokenjuice";
   }
   if (options.local && await detectStaleLocalBuild(checkedPaths)) {
     issues.push("local Codex hook target is older than the source tree");

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -198,6 +198,34 @@ describe("doctorCodexHook", () => {
     expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
     expect(report.issues).toEqual([]);
     expect(report.featureFlag.enabled).toBe(true);
+  });
+
+  it("warns when the stable launcher resolves to an older Homebrew tokenjuice version", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "opt", "homebrew", "bin");
+    const cellarBinDir = join(home, "opt", "homebrew", "Cellar", "tokenjuice", "0.0.1", "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const resolvedLauncherPath = join(cellarBinDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(cellarBinDir, { recursive: true });
+    await writeFile(resolvedLauncherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await symlink(resolvedLauncherPath, launcherPath);
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+    await installCodexHook(hooksPath, { featureFlagConfigPath });
+
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+    expect(report.status).toBe("warn");
+    expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(report.fixCommand).toBe("brew upgrade tokenjuice");
+    expect(report.issues).toContain(
+      `configured Codex hook launcher resolves to Homebrew tokenjuice 0.0.1, but this tokenjuice is ${PACKAGE_VERSION}`,
+    );
+    expect(report.issues).not.toContain("configured Codex hook command does not match the current recommended command");
   });
 
   it("warns when codex_hooks feature flag is not enabled", async () => {

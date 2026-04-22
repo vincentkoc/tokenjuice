@@ -47,6 +47,8 @@ OpenClaw support is bundled on the OpenClaw side. Do not run
 openclaw config set plugins.entries.tokenjuice.enabled true
 ```
 
+this requires OpenClaw `2026.4.22` or newer.
+
 ## why
 
 tool output wastes absurd amounts of context. your llm needs a diet.
@@ -95,7 +97,7 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="Codex" /> | [Codex CLI](https://github.com/openai/codex) | `tokenjuice install codex` | `~/.codex/hooks.json` | ✅ Yes |
 | <img width="48px" src="docs/client-cursor.jpg" alt="Cursor" /> | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
-| <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes |
+| <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes (`2026.4.22+`) |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 
 shared behavior:
@@ -123,6 +125,8 @@ for OpenClaw, tokenjuice ships as a bundled plugin. enable it with:
 ```bash
 openclaw config set plugins.entries.tokenjuice.enabled true
 ```
+
+this requires OpenClaw `2026.4.22` or newer.
 
 there is no `tokenjuice install openclaw` command.
 

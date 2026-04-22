@@ -209,6 +209,24 @@ describe("normalizeExecutionInput", () => {
     expect(normalized.command).toBe("rg --files | rg TODO src");
     expect(normalized.argv).toBeUndefined();
   });
+
+  it("unwraps env prefixes before deriving the effective argv", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "GIT_DIR=/repo/.git GIT_WORK_TREE=/repo git status --short",
+    });
+    expect(normalized.command).toBe("git status --short");
+    expect(normalized.argv).toEqual(["git", "status", "--short"]);
+  });
+
+  it("unwraps env launcher prefixes before deriving the effective argv", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "env GIT_DIR=/repo/.git GIT_WORK_TREE=/repo git ls-files src",
+    });
+    expect(normalized.command).toBe("git ls-files src");
+    expect(normalized.argv).toEqual(["git", "ls-files", "src"]);
+  });
 });
 
 describe("hasSequentialShellCommands", () => {
@@ -257,12 +275,18 @@ describe("isFileContentInspectionCommand", () => {
     { label: "git show blob piped to sed", command: "git show HEAD:README.md | sed -n '1,40p'" },
     { label: "wrapped cat", command: "cd repo && cat README.md" },
     { label: "clustered shell wrapper", command: "bash -ec 'cat README.md'" },
+    { label: "git show blob", command: "git show HEAD:src/core/reduce.ts" },
+    { label: "gh contents decode", command: "gh api repos/gumadeiras/tokenjuice/contents/src/core/reduce.ts --jq .content | base64 -d" },
   ])("detects $label as file inspection from command text", ({ command }) => {
     expect(isFileContentInspectionCommand({ command })).toBe(true);
   });
 
   it("detects file inspection after a safe cd prefix", () => {
     expect(isFileContentInspectionCommand({ command: "cd /repo && cat README.md" })).toBe(true);
+  });
+
+  it("detects file inspection after env prefixes", () => {
+    expect(isFileContentInspectionCommand({ command: "env GIT_DIR=/repo/.git git show HEAD:README.md" })).toBe(true);
   });
 
   it("returns false for normal search commands", () => {

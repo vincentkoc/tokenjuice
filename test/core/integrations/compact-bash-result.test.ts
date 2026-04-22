@@ -118,6 +118,77 @@ describe("compactBashResult", () => {
     });
   });
 
+  it("treats git show blob reads as file content under the safe-inventory inspection policy", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "git show HEAD:src/core/reduce.ts",
+      visibleText: "export function reduceExecution() {}\n",
+      inspectionPolicy: "allow-safe-inventory",
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "keep",
+      reason: "file-content-inspection-command",
+    });
+  });
+
+  it("allows package-lock inspection through the summary reducer", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "jq . package-lock.json",
+      visibleText: JSON.stringify({
+        name: "tokenjuice",
+        lockfileVersion: 3,
+        packages: Object.fromEntries(Array.from({ length: 80 }, (_, index) => [`node_modules/pkg-${index}`, { version: "1.0.0" }])),
+      }, null, 2),
+      inspectionPolicy: "allow-safe-inventory",
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "rewrite",
+      result: {
+        classification: {
+          matchedReducer: "generic/package-lock-summary",
+        },
+        inlineText: expect.stringContaining("packages: 80"),
+      },
+    });
+  });
+
+  it("allows large document-shaped file inspections through the summary reducer", async () => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command: "sed -n '1,260p' notes.txt",
+      visibleText: [
+        "# Review",
+        "intro",
+        "## Evidence",
+        ...Array.from({ length: 260 }, (_, index) => `paragraph ${index} ${"x".repeat(40)}`),
+      ].join("\n"),
+      inspectionPolicy: "allow-safe-inventory",
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "rewrite",
+      result: {
+        classification: {
+          matchedReducer: "generic/large-document-summary",
+        },
+      },
+    });
+  });
+
   it("keeps tree output raw under the safe-inventory inspection policy", async () => {
     const outcome = await compactBashResult({
       source: "pi",

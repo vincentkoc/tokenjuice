@@ -5,8 +5,7 @@ import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { storeArtifactMetadata } from "../../core/artifacts.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import { getInspectionCommandSkipReason } from "../../core/inventory-safety.js";
+import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, stripAnsi } from "../../core/text.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
@@ -995,7 +994,7 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
     return 0;
   }
 
-  const inspectionSkipReason = getInspectionCommandSkipReason(command, "allow-safe-inventory");
+  const inspectionSkipReason = getOutputAwareInspectionSkipReason("allow-safe-inventory", executionInput);
   if (inspectionSkipReason) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);
     const stats = buildImmediateSkipStats(combinedText);

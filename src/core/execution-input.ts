@@ -1,6 +1,6 @@
 import type { ToolExecutionInput } from "../types.js";
 
-import { unwrapShellRunner } from "./command-match.js";
+import { resolveEffectiveCommand, unwrapShellRunner } from "./command-match.js";
 import { isCompoundShellCommand, stripLeadingCdPrefix, tokenizeCommand } from "./command-shell.js";
 
 export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutionInput {
@@ -15,7 +15,7 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
       };
     }
 
-    const argv = tokenizeCommand(effectiveCommand);
+    const argv = resolveEffectiveCommand({ command: effectiveCommand })?.argv ?? tokenizeCommand(effectiveCommand);
     if (argv.length === 0) {
       return {
         ...input,
@@ -25,8 +25,17 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
 
     return {
       ...input,
-      command: effectiveCommand,
+      command: argv.join(" "),
       argv,
+    };
+  }
+
+  const effective = resolveEffectiveCommand(input);
+  if (effective?.argv.length) {
+    return {
+      ...input,
+      ...(effective.command ? { command: effective.command } : {}),
+      argv: effective.argv,
     };
   }
 
@@ -46,6 +55,7 @@ export function normalizeExecutionInput(input: ToolExecutionInput): ToolExecutio
 
   return {
     ...input,
+    command: argv.join(" "),
     argv,
   };
 }

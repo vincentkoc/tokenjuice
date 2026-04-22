@@ -16,6 +16,8 @@ export type CommandMatchCandidate = {
 
 const SETUP_WRAPPER_COMMANDS = new Set(["cd", "pwd", "set", "source", ".", "export", "unset", "trap"]);
 const SHELL_COMMAND_LAUNCHERS = new Set(["bash", "sh", "zsh", "fish"]);
+const ENV_FLAGS_WITH_VALUES = new Set(["-u", "--unset", "-C", "--chdir", "-S", "--split-string"]);
+const ENV_FLAGS = new Set(["-i", "--ignore-environment", "-0", "--null", "--debug"]);
 
 function getArgv0Name(argv: string[]): string | null {
   const first = argv[0];
@@ -168,6 +170,33 @@ export function stripLeadingEnvAssignments(argv: string[]): string[] {
   while (index < argv.length && ENV_ASSIGNMENT_PATTERN.test(argv[index] ?? "")) {
     index += 1;
   }
+
+  if (getArgv0Name(argv.slice(index)) !== "env") {
+    return argv.slice(index);
+  }
+
+  index += 1;
+  while (index < argv.length) {
+    const arg = argv[index] ?? "";
+    if (ENV_ASSIGNMENT_PATTERN.test(arg)) {
+      index += 1;
+      continue;
+    }
+    if (ENV_FLAGS.has(arg)) {
+      index += 1;
+      continue;
+    }
+    if (ENV_FLAGS_WITH_VALUES.has(arg)) {
+      index += 2;
+      continue;
+    }
+    if (arg.startsWith("--unset=") || arg.startsWith("--chdir=") || arg.startsWith("--split-string=")) {
+      index += 1;
+      continue;
+    }
+    break;
+  }
+
   return argv.slice(index);
 }
 
@@ -199,7 +228,7 @@ export function buildEffectiveCandidate(
   }
 
   return {
-    ...(command ? { command } : {}),
+    ...(command ? { command: strippedArgv.length === argv.length ? command : strippedArgv.join(" ") } : {}),
     argv: strippedArgv,
     source: "effective",
   };
@@ -235,6 +264,10 @@ export function resolveEffectiveCommand(input: Pick<ToolExecutionInput, "argv" |
   }
 
   return null;
+}
+
+export function getEffectiveCommandArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
+  return resolveEffectiveCommand(input)?.argv ?? getCandidateArgv(input);
 }
 
 export function deriveCommandMatchCandidates(

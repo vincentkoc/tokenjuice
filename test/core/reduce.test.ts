@@ -1060,6 +1060,23 @@ describe("reduceExecution", () => {
     expect(result.stats.ratio).toBe(1);
   });
 
+  it("clips huge ripgrep match lines before selecting inline output", async () => {
+    const longPayload = "x".repeat(4_000);
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n payload fixtures",
+      argv: ["rg", "-n", "payload", "fixtures"],
+      combinedText: `fixtures/blob.json:1:${longPayload}`,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("search/rg");
+    expect(result.inlineText).toContain("fixtures/blob.json:1:");
+    expect(result.inlineText).toContain("chars omitted");
+    expect(result.inlineText).toContain("sha256:");
+    expect(result.inlineText.length).toBeLessThan(900);
+  });
+
   it("formats gh issue json-line output into compact issue summaries", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -1109,6 +1126,111 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("#67473");
     expect(result.inlineText).toContain("{bug, bug:behavior}");
     expect(result.inlineText).not.toContain("\"labels\"");
+  });
+
+  it("formats gh review comments into compact body hashes", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh api repos/openclaw/openclaw/pulls/1/comments --paginate",
+      argv: ["gh", "api", "repos/openclaw/openclaw/pulls/1/comments", "--paginate"],
+      combinedText: JSON.stringify([
+        {
+          id: 123,
+          user: { login: "reviewer" },
+          path: "src/index.ts",
+          line: 42,
+          body: `Please fix this path. ${"details ".repeat(80)}`,
+          created_at: "2026-04-20T12:00:00Z",
+        },
+      ]),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("comment #123 @reviewer src/index.ts:42");
+    expect(result.inlineText).toContain("sha256:");
+    expect(result.inlineText).not.toContain("\"body\"");
+  });
+
+  it("clips large git diff hunks while keeping exact file and hunk headers", async () => {
+    const changedLines = Array.from({ length: 30 }, (_, index) => `+const value${index} = "${"x".repeat(80)}";`);
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git diff -- src/index.ts",
+      argv: ["git", "diff", "--", "src/index.ts"],
+      combinedText: [
+        "diff --git a/src/index.ts b/src/index.ts",
+        "index 1111111..2222222 100644",
+        "--- a/src/index.ts",
+        "+++ b/src/index.ts",
+        "@@ -1,3 +1,33 @@",
+        "-const old = true;",
+        ...changedLines,
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/diff");
+    expect(result.inlineText).toContain("diff --git a/src/index.ts b/src/index.ts");
+    expect(result.inlineText).toContain("@@ -1,3 +1,33 @@");
+    expect(result.inlineText).toContain("hunk clipped");
+    expect(result.inlineText).not.toContain("value29");
+    expect(result.facts?.["added line"]).toBe(30);
+  });
+
+  it("summarizes package-lock JSON file inspection instead of replaying the whole lockfile", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "jq . package-lock.json",
+      argv: ["jq", ".", "package-lock.json"],
+      combinedText: JSON.stringify({
+        name: "tokenjuice",
+        version: "0.6.0",
+        lockfileVersion: 3,
+        packages: Object.fromEntries(Array.from({ length: 80 }, (_, index) => [`node_modules/pkg-${index}`, { version: "1.0.0" }])),
+        dependencies: Object.fromEntries(Array.from({ length: 20 }, (_, index) => [`pkg-${index}`, { version: "1.0.0" }])),
+      }, null, 2),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/package-lock-summary");
+    expect(result.inlineText).toContain("package-lock summary");
+    expect(result.inlineText).toContain("packages: 80");
+    expect(result.inlineText).not.toContain("\"node_modules/pkg-79\"");
+  });
+
+  it("summarizes large document-shaped file inspections without path allowlists", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "sed -n '1,260p' notes.txt",
+      argv: ["sed", "-n", "1,260p", "notes.txt"],
+      combinedText: [
+        "# Review",
+        "intro",
+        "## Evidence",
+        ...Array.from({ length: 260 }, (_, index) => `paragraph ${index} ${"x".repeat(40)}`),
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/large-document-summary");
+    expect(result.inlineText).toContain("large document summary");
+    expect(result.inlineText).toContain("- # Review");
+    expect(result.inlineText).toContain("- ## Evidence");
+  });
+
+  it("keeps large code-shaped file inspections raw", async () => {
+    const code = Array.from({ length: 260 }, (_, index) => `export function value${index}() { return ${index}; }`).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cat src/generated.ts",
+      argv: ["cat", "src/generated.ts"],
+      combinedText: code,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(code);
   });
 
   it("formats gh run json objects and nested jobs into compact summaries", async () => {

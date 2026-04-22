@@ -1,4 +1,5 @@
 import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv } from "../inventory-safety.js";
+import { buildInspectionSummary } from "../reduce-inspection-summary.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
@@ -51,6 +52,22 @@ function resolveInspectionPolicy(input: CompactBashResultInput): InspectionComma
   return input.skipInspectionCommands ? "skip-all" : "compact-all";
 }
 
+export function getOutputAwareInspectionSkipReason(
+  policy: InspectionCommandPolicy,
+  executionInput: ToolExecutionInput,
+): InspectionCommandSkipReason | null {
+  const command = executionInput.command ?? "";
+  const rawText = executionInput.combinedText ?? "";
+  const inspectionSkipReason = getInspectionCommandSkipReason(command, policy);
+  if (
+    inspectionSkipReason === "file-content-inspection-command"
+    && buildInspectionSummary(executionInput, rawText)
+  ) {
+    return null;
+  }
+  return inspectionSkipReason;
+}
+
 export async function compactBashResult(input: CompactBashResultInput): Promise<CompactBashResultOutput> {
   const command = input.command.trim();
   if (!command) {
@@ -73,16 +90,6 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     };
   }
 
-  const inspectionSkipReason = getInspectionCommandSkipReason(command, resolveInspectionPolicy(input));
-  if (inspectionSkipReason) {
-    return {
-      action: "keep",
-      reason: inspectionSkipReason,
-      rawText,
-      usedTrustedFullText,
-    };
-  }
-
   const safeInventoryArgv = getSafeRepositoryInventorySourceArgv(command);
   const executionInput: ToolExecutionInput = {
     toolName: "exec",
@@ -93,6 +100,17 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     ...(typeof input.exitCode === "number" ? { exitCode: input.exitCode } : {}),
     ...(input.metadata ? { metadata: input.metadata } : {}),
   };
+
+  const inspectionSkipReason = getOutputAwareInspectionSkipReason(resolveInspectionPolicy(input), executionInput);
+  if (inspectionSkipReason) {
+    return {
+      action: "keep",
+      reason: inspectionSkipReason,
+      rawText,
+      usedTrustedFullText,
+    };
+  }
+
   const options: ReduceOptions = {
     ...(typeof input.cwd === "string" && input.cwd.trim() ? { cwd: input.cwd } : {}),
     ...(typeof input.maxInlineChars === "number" ? { maxInlineChars: input.maxInlineChars } : {}),

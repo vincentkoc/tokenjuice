@@ -1,5 +1,4 @@
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import { getInspectionCommandSkipReason } from "../../core/inventory-safety.js";
+import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import {
   buildCompactionNotice,
   buildTokenjuiceDetails,
@@ -95,12 +94,16 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
       if (!command) {
         return undefined;
       }
-      if (getInspectionCommandSkipReason(command, "allow-safe-inventory")) {
-        return undefined;
-      }
-
       const outputText = readAggregatedText(event.details, event.content);
       if (!outputText.trim()) {
+        return undefined;
+      }
+      const executionInput = {
+        toolName: "exec",
+        command,
+        combinedText: outputText,
+      };
+      if (getOutputAwareInspectionSkipReason("allow-safe-inventory", executionInput)) {
         return undefined;
       }
 

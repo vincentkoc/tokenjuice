@@ -72,6 +72,10 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     "find src -type f | sort -k 1 | head -40",
     "find src -type f | sort --batch-size 4M --sort name | head -40",
     "find src -type f | uniq -c",
+    "git ls-files | sed -n '1,20p'",
+    "rg --files | sed 's#^src/##'",
+    "find src -type f | wc -l",
+    "env GIT_DIR=/repo/.git GIT_WORK_TREE=/repo git ls-files src | wc -l",
   ])("allows `%s`", (command) => {
     expect(isSafeRepositoryInventoryPipeline(command)).toBe(true);
   });
@@ -89,6 +93,8 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     "git -C repo ls-files | jq -R .",
     "rg --files | rg TODO src",
     "find src -type f | sed -n '1,5p' src/core/reduce.ts",
+    "find src -type f | sed -f script.sed",
+    "find src -type f | wc -lm",
     "git ls-files | grep -R TODO src",
     "find src -type f | head -n 5 README.md",
     "git ls-files | tail -n 5 README.md",
@@ -117,6 +123,8 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     { command: "find src -type f | xargs wc -l", safety: "unsafe-pipeline" },
     { command: "find src -type f -exec cat {} +", safety: "unsafe-pipeline" },
     { command: "fd --exec cat", safety: "unsafe-pipeline" },
+    { command: "git ls-files | sed -n '1,20p'", safety: "safe" },
+    { command: "git ls-files | wc -l", safety: "safe" },
   ])("classifies `%s` as $safety", ({ command, safety }) => {
     expect(getRepositoryInventorySafety(command)).toBe(safety);
   });
@@ -140,5 +148,8 @@ describe("getInspectionCommandSkipReason", () => {
   it("allows safe inventory with allow-safe-inventory", () => {
     expect(getInspectionCommandSkipReason("rg --files | sort | head -n 10", "allow-safe-inventory")).toBeNull();
     expect(getInspectionCommandSkipReason("cd /repo && rg --files src", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("git ls-files | sed -n '1,20p'", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("jq '.packages' package-lock.json", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("sed -n '1,260p' /tmp/paper.review.md", "allow-safe-inventory")).toBe("file-content-inspection-command");
   });
 });

@@ -47,33 +47,8 @@ function isGitGlobalOptionWithInlineValue(option: string): boolean {
 }
 
 export function getGitSubcommand(argv: string[]): string | null {
-  if (getCommandName(argv) !== "git") {
-    return null;
-  }
-
-  for (let index = 1; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (!arg) {
-      continue;
-    }
-
-    if (gitGlobalOptionTakesValue(arg)) {
-      index += 1;
-      continue;
-    }
-
-    if (isGitGlobalOptionWithInlineValue(arg)) {
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      continue;
-    }
-
-    return arg;
-  }
-
-  return null;
+  const index = getGitSubcommandIndex(argv);
+  return index === null ? null : argv[index] ?? null;
 }
 
 function getGitSubcommandIndex(argv: string[]): number | null {
@@ -141,6 +116,16 @@ export function isFileContentInspectionArgv(argv: string[]): boolean {
     return false;
   }
   return FILE_CONTENT_INSPECTION_COMMANDS.has(argv0) || isGitShowFileContentArgv(argv);
+}
+
+function isGhApiContentsDecodeCommand(command: string | undefined): boolean {
+  if (!command) {
+    return false;
+  }
+  return /\bgh\s+api\b/u.test(command)
+    && /\/contents\//u.test(command)
+    && /--jq(?:=|\s+)['"]?\.content['"]?/u.test(command)
+    && /\|\s*base64\s+(?:-[dD]\b|--decode\b)/u.test(command);
 }
 
 export function isRepositoryInspectionArgv(argv: string[]): boolean {
@@ -227,7 +212,8 @@ function getInspectionArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
 }
 
 export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  return isFileContentInspectionArgv(getInspectionArgv(input));
+  return isFileContentInspectionArgv(getInspectionArgv(input))
+    || deriveCommandMatchCandidates(input).some((candidate) => isGhApiContentsDecodeCommand(candidate.command));
 }
 
 export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {

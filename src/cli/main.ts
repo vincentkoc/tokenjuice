@@ -529,6 +529,9 @@ async function loadDirectAnalysisEntry(args: ParsedArgs) {
   }
 
   const rawText = await readTextInput(file, args.maxInputBytes);
+  if (!file && rawText.length === 0) {
+    return null;
+  }
   const input = {
     toolName: args.toolName ?? "exec",
     command: args.sourceCommand ?? (file ? `analyze:${file}` : "stdin"),

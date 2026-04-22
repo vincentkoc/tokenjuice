@@ -9,6 +9,7 @@ export {
 export type { CommandMatchCandidate } from "./command-match.js";
 export {
   deriveCommandMatchCandidates,
+  getEffectiveCommandArgv,
   isSetupWrapperSegment,
   resolveEffectiveCommand,
   stripLeadingEnvAssignments,

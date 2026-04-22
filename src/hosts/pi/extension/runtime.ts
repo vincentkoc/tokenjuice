@@ -1,7 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 
-import { compactBashResult } from "../../../core/integrations/compact-bash-result.js";
-import { getInspectionCommandSkipReason } from "../../../core/inventory-safety.js";
+import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../../core/integrations/compact-bash-result.js";
 
 import type { Pi, PiContext, PiToolResultEvent } from "./pi-types.js";
 import { isRecord } from "./pi-types.js";
@@ -170,7 +169,15 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
         };
       }
 
-      if (getInspectionCommandSkipReason(command, "allow-safe-inventory")) {
+      const exitCode = parseExitCode(outputText, Boolean(event.isError));
+      const visibleText = stripPiBashEpilogue(outputText);
+      const visibleExecutionInput = {
+        toolName: "exec",
+        command,
+        combinedText: visibleText,
+        exitCode,
+      };
+      if (getOutputAwareInspectionSkipReason("allow-safe-inventory", visibleExecutionInput)) {
         return undefined;
       }
 
@@ -179,15 +186,13 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
         return undefined;
       }
 
-      const exitCode = parseExitCode(outputText, Boolean(event.isError));
-
       let outcome;
       try {
         outcome = await compactBashResult({
           source: "pi",
           command,
           cwd: ctx.cwd,
-          visibleText: stripPiBashEpilogue(outputText),
+          visibleText,
           ...(typeof trustedFullOutputText === "string" ? { trustedFullText: trustedFullOutputText } : {}),
           exitCode,
           maxInlineChars: DEFAULT_MAX_INLINE_CHARS,

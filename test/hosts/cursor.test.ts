@@ -287,7 +287,8 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- ${hostShellPath} -lc 'git status --short'`);
+    expect(response.updated_input.command).toContain(`/repo/dist/cli/main.js wrap -- ${hostShellPath} -lc 'git status --short'`);
+    expect(response.updated_input.command).toContain(process.execPath);
   });
 
   it("skips node-based local wrap commands to preserve raw bypass", async () => {

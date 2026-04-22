@@ -3,6 +3,7 @@ import {
   getGitSubcommand,
   isFileContentInspectionCommand,
 } from "./command-identity.js";
+import { getEffectiveCommandArgv } from "./command-match.js";
 import {
   hasSequentialShellCommands,
   stripLeadingCdPrefix,
@@ -92,11 +93,15 @@ const UNIQ_FILTER: StdinFilterSpec = {
   inlineValuePrefixes: ["--skip-fields=", "--skip-chars=", "--check-chars=", "--all-repeated="],
   compactValueFlags: [/^-[fsw].+/u],
 };
+const WC_FILTER: StdinFilterSpec = {
+  flags: ["-l", "--lines"],
+};
 const REPO_INVENTORY_PIPE_FILTERS = new Map<string, StdinFilterSpec>([
   ["head", HEAD_FILTER],
   ["sort", SORT_FILTER],
   ["tail", TAIL_FILTER],
   ["uniq", UNIQ_FILTER],
+  ["wc", WC_FILTER],
 ]);
 
 export type RepositoryInventorySafety = "not-inventory" | "safe" | "sequential-command" | "unsafe-pipeline";
@@ -109,8 +114,53 @@ export type InspectionCommandSkipReason =
 
 function getRepositoryInventorySourceArgv(command: string): string[] {
   const effectiveCommand = stripLeadingCdPrefix(command);
-  const sourceCommand = splitUnquotedPipes(effectiveCommand)[0] ?? effectiveCommand;
-  return tokenizeCommand(sourceCommand);
+  const leadingCommand = getLeadingSequentialSegment(effectiveCommand);
+  const sourceCommand = splitUnquotedPipes(leadingCommand)[0] ?? leadingCommand;
+  return getEffectiveCommandArgv({ command: sourceCommand });
+}
+
+function getLeadingSequentialSegment(command: string): string {
+  let current = "";
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index]!;
+
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      current += char;
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      current += char;
+      if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      current += char;
+      quote = char;
+      continue;
+    }
+
+    if (char === ";" || char === "\n" || (char === "&" && command[index + 1] === "&") || (char === "|" && command[index + 1] === "|")) {
+      return current.trim();
+    }
+
+    current += char;
+  }
+
+  return current.trim();
 }
 
 function splitUnquotedPipes(command: string): string[] {
@@ -197,11 +247,51 @@ function isStdinOnlyFilter(argv: string[], spec: StdinFilterSpec): boolean {
 }
 
 function isSafeRepositoryInventoryPipeSegment(commandName: string, argv: string[]): boolean {
+  if (commandName === "sed") {
+    return isSafeSedInventoryFilter(argv);
+  }
+
   const spec = REPO_INVENTORY_PIPE_FILTERS.get(commandName);
   if (!spec) {
     return false;
   }
   return isStdinOnlyFilter(argv, spec);
+}
+
+function isSafeSedInventoryFilter(argv: string[]): boolean {
+  const scripts: string[] = [];
+  for (let index = 1; index < argv.length; index += 1) {
+    const arg = argv[index]!;
+    if (arg === "-") {
+      continue;
+    }
+    if (arg === "-n" || arg === "-E" || arg === "-r") {
+      continue;
+    }
+    if (arg === "-e") {
+      index += 1;
+      if (index >= argv.length) {
+        return false;
+      }
+      scripts.push(argv[index]!);
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      return false;
+    }
+    scripts.push(arg);
+  }
+
+  if (scripts.length === 0 || scripts.length > 2) {
+    return false;
+  }
+
+  return scripts.every((script) => {
+    if (/^(?:\d+|\$)?(?:,\s*(?:\d+|\$))?p$/u.test(script)) {
+      return true;
+    }
+    return /^s(.)(?:\^?[^\\\n]*)\1(?:[^\\\n]*)\1[gIp]*$/u.test(script);
+  });
 }
 
 function isSafeRepositoryInventorySource(argv: string[]): boolean {
@@ -216,7 +306,7 @@ function isSafeRepositoryInventorySource(argv: string[]): boolean {
 }
 
 export function isRepositoryInventoryCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  const argv = input.argv?.length ? input.argv : getRepositoryInventorySourceArgv(input.command ?? "");
+  const argv = input.argv?.length ? getEffectiveCommandArgv(input) : getRepositoryInventorySourceArgv(input.command ?? "");
   const argv0 = getCommandName(argv);
   if (!argv0) {
     return false;
@@ -264,7 +354,7 @@ export function isSafeRepositoryInventoryPipeline(command: string): boolean {
 }
 
 export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  const argv = input.argv?.length ? input.argv : getRepositoryInventorySourceArgv(input.command ?? "");
+  const argv = input.argv?.length ? getEffectiveCommandArgv(input) : getRepositoryInventorySourceArgv(input.command ?? "");
   const argv0 = getCommandName(argv);
   if (isFileContentInspectionCommand(input)) {
     return true;
@@ -276,6 +366,11 @@ export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "a
     return true;
   }
   return false;
+}
+
+export function hasCommandOnlyFileContentSummary(command: string): boolean {
+  const effectiveCommand = stripLeadingCdPrefix(command);
+  return /\bpackage-lock\.json\b/u.test(effectiveCommand);
 }
 
 export function getSafeRepositoryInventorySourceArgv(command: string): string[] | null {
@@ -296,7 +391,7 @@ export function getInspectionCommandSkipReason(
     return isRepositoryInspectionCommand({ command }) ? "inspection-command" : null;
   }
 
-  if (isFileContentInspectionCommand({ command })) {
+  if (isFileContentInspectionCommand({ command }) && !hasCommandOnlyFileContentSummary(command)) {
     return "file-content-inspection-command";
   }
 

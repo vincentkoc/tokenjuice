@@ -1,10 +1,17 @@
-import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
-import { tokenizeCommand } from "../../core/command.js";
-import { isTokenjuiceExecutablePath } from "../shared/hook-command.js";
+import { extractHookCommandPaths } from "../shared/hook-command.js";
+import {
+  buildWrapLauncherHookCommand,
+  buildWrappedCommand,
+  commandAlreadyWrapped,
+  isExecutableFile,
+  isRecord,
+  pathExists,
+  resolveHostShell,
+} from "../shared/pre-tool-wrap.js";
 
 type CodeBuddyHook = Record<string, unknown>;
 
@@ -74,118 +81,16 @@ function getDefaultSettingsPath(): string {
   return join(getCodeBuddyHome(), "settings.json");
 }
 
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:-]+$/u.test(value)) {
-    return value;
-  }
-  return `'${value.replace(/'/gu, `'\\''`)}'`;
-}
-
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-async function resolveShellPath(shell: string): Promise<string | undefined> {
-  const trimmed = shell.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  if (trimmed.includes("/") || trimmed.includes("\\")) {
-    return await isExecutableFile(trimmed) ? trimmed : undefined;
-  }
-
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-    const candidatePath = join(segment, trimmed);
-    if (await isExecutableFile(candidatePath)) {
-      return candidatePath;
-    }
-  }
-  return undefined;
-}
-
-async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Promise<string | undefined> {
-  const shellCandidates = [
-    typeof toolInput.shell === "string" ? toolInput.shell : undefined,
-    process.env.TOKENJUICE_CODEBUDDY_SHELL,
-    process.env.SHELL,
-    "bash",
-    "sh",
-  ].filter((candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0);
-
-  for (const candidate of shellCandidates) {
-    const resolved = await resolveShellPath(candidate);
-    if (resolved) {
-      return resolved;
-    }
-  }
-
-  return undefined;
-}
-
 async function buildCodeBuddyHookCommand(options: CodeBuddyHookCommandOptions = {}): Promise<string> {
-  const rawBinaryPath = options.binaryPath ?? process.argv[1];
-  const binaryPath = rawBinaryPath && !isAbsolute(rawBinaryPath) ? resolve(rawBinaryPath) : rawBinaryPath;
-  const nodePath = options.nodePath ?? process.execPath;
-  if (!binaryPath) {
-    throw new Error("unable to resolve tokenjuice binary path for codebuddy install");
-  }
-
-  let launcher = binaryPath;
-  if (!options.local) {
-    const installedBinaryPath = await resolveInstalledTokenjuicePath();
-    launcher = installedBinaryPath ?? binaryPath;
-  }
-  const launcherCommand = launcher.endsWith(".js")
-    ? `${shellQuote(nodePath)} ${shellQuote(launcher)}`
-    : shellQuote(launcher);
-
-  return `${launcherCommand} ${TOKENJUICE_CODEBUDDY_HOOK_SUBCOMMAND} --wrap-launcher ${shellQuote(launcher)}`;
+  return buildWrapLauncherHookCommand({
+    ...options,
+    subcommand: TOKENJUICE_CODEBUDDY_HOOK_SUBCOMMAND,
+    hostName: "codebuddy",
+  });
 }
 
 function getCodeBuddyFixCommand(local = false): string {
   return local ? "tokenjuice install codebuddy --local" : TOKENJUICE_CODEBUDDY_FIX_COMMAND;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function createTokenjuiceCodeBuddyHook(command: string): CodeBuddyHookMatcherGroup {
@@ -300,61 +205,14 @@ async function readCodeBuddySettings(settingsPath: string): Promise<{ config: Co
   }
 }
 
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function extractHookCommandPaths(command: string): string[] {
-  const argv = tokenizeCommand(command);
-  if (argv.length === 0) {
-    return [];
-  }
-
-  const paths = new Set<string>();
-  const first = argv[0];
-  if (first && (first.includes("/") || first.includes("\\"))) {
-    paths.add(first);
-  }
-
-  const second = argv[1];
-  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
-    paths.add(second);
-  }
-
-  return [...paths];
-}
-
-function commandAlreadyWrapped(command: string): boolean {
-  const argv = tokenizeCommand(command);
-  if (argv.length < 2) {
-    return false;
-  }
-
-  const first = argv[0];
-  const second = argv[1];
-
-  // Direct tokenjuice invocation: `tokenjuice wrap ...` OR
-  // `/abs/path/to/tokenjuice wrap ...` OR Windows `.exe/.cmd/.bat` variants.
-  if (typeof first === "string" && isTokenjuiceExecutablePath(first) && second === "wrap") {
-    return true;
-  }
-
-  // Node-based invocation of a local build: `node dist/cli/main.js ... wrap ...`.
-  if (
-    typeof first === "string"
-    && (first === "node" || first === "node.exe" || first.endsWith("/node") || first.endsWith("\\node.exe"))
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    return true;
-  }
-  return false;
+async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Promise<string | undefined> {
+  return resolveHostShell([
+    typeof toolInput.shell === "string" ? toolInput.shell : undefined,
+    process.env.TOKENJUICE_CODEBUDDY_SHELL,
+    process.env.SHELL,
+    "bash",
+    "sh",
+  ]);
 }
 
 /**
@@ -535,10 +393,7 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
     return 0;
   }
 
-  const launcherCommand = wrapLauncher.endsWith(".js")
-    ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
-    : shellQuote(wrapLauncher);
-  const wrappedCommand = `${launcherCommand} wrap -- ${shellQuote(shellPath)} -lc ${shellQuote(command)}`;
+  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command });
 
   const response = {
     hookSpecificOutput: {

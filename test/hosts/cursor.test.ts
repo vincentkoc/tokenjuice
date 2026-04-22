@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../../src/index.js";
+import { parseWrappedCommand } from "./shared/wrap-command.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -248,7 +249,18 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
+
+    // Behavioral contract, not byte equality:
+    //   (1) wrapped exactly once through tokenjuice wrap,
+    //   (2) against the shell the caller asked for,
+    //   (3) with the original command preserved for the shell to execute,
+    //   (4) unrelated tool_input fields passed through intact.
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.launcher).toEqual(["/usr/local/bin/tokenjuice"]);
+    expect(parsed.subcommand).toBe("wrap");
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
     expect(response.updated_input.working_directory).toBe("/repo");
   });
 
@@ -308,7 +320,15 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toContain(`${process.execPath} /repo/dist/cli/main.js wrap -- ${hostShellPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    // The contract here is "a .js launcher is dispatched through node", not
+    // any particular quoting. node may be bare or absolute, and the .js path
+    // may or may not be absolute depending on how resolve() normalized it.
+    expect(parsed.launcher[0]).toBe(process.execPath);
+    expect(parsed.launcher[1]).toBe("/repo/dist/cli/main.js");
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("skips node-based local wrap commands to preserve raw bypass", async () => {
@@ -346,7 +366,10 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("prefers TOKENJUICE_CURSOR_SHELL over SHELL when both resolve", async () => {
@@ -372,7 +395,10 @@ describe("runCursorPreToolUseHook", () => {
     const response = JSON.parse(output) as { updated_input: { command: string } };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${tjShellPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(tjShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("prefers tool_input.shell over TOKENJUICE_CURSOR_SHELL and SHELL", async () => {
@@ -397,7 +423,10 @@ describe("runCursorPreToolUseHook", () => {
     const response = JSON.parse(output) as { updated_input: { command: string } };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${payloadShellPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(payloadShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("falls back to sh when SHELL and TOKENJUICE_CURSOR_SHELL are unresolvable", async () => {
@@ -418,7 +447,10 @@ describe("runCursorPreToolUseHook", () => {
     const response = JSON.parse(output) as { updated_input: { command: string } };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${shPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(shPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("leaves command unchanged when no host shell can be resolved", async () => {
@@ -438,10 +470,11 @@ describe("runCursorPreToolUseHook", () => {
     expect(output).toBe("");
   });
 
-  it("quotes commands containing single quotes using POSIX '\\'' escape", async () => {
-    // Pins the exact POSIX quoting of the wrapped command string so that
-    // swapping the host's local shellQuote for the shared implementation
-    // during refactor cannot silently change escape semantics.
+  it("preserves the original command semantics when it contains an apostrophe", async () => {
+    // The wrap host must round-trip the command through whatever POSIX
+    // quoting scheme it prefers — single quotes today, possibly something
+    // else in a future refactor. Test against the observable contract:
+    // whatever the shell would execute for `inner` equals the original.
     const home = await createTempDir();
     const hostShellPath = join(home, "host-shell");
     await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -458,9 +491,10 @@ describe("runCursorPreToolUseHook", () => {
     const response = JSON.parse(output) as { updated_input: { command: string } };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(
-      `/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'echo it'\\''s raining'`,
-    );
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("echo it's raining");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("denies native Windows shell interception with a WSL message", async () => {

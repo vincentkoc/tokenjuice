@@ -1,7 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 
 import { compactBashResult } from "../../../core/integrations/compact-bash-result.js";
-import { getInspectionCommandSkipReason } from "../../../core/inventory-safety.js";
 import {
   buildCompactionNotice,
   buildTokenjuiceDetails,
@@ -91,9 +90,6 @@ export function createTokenjuiceOpenCodeExtension(_config: OpenCodeExtensionRunt
 
         const command = readCommand(input.args);
         if (!command) {
-          return;
-        }
-        if (getInspectionCommandSkipReason(command, "allow-safe-inventory")) {
           return;
         }
 

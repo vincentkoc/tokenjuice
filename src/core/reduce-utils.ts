@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { countTextChars } from "./text.js";
+import { countTextChars, sliceTextChars } from "./text.js";
 
 export function compactWhitespace(text: string): string {
   return text.replace(/\s+/gu, " ").trim();
@@ -17,7 +17,7 @@ export function clipMiddleWithHash(text: string, maxChars: number): string {
   const omitted = countTextChars(text) - maxChars;
   const headChars = Math.max(20, Math.floor(maxChars * 0.55));
   const tailChars = Math.max(20, maxChars - headChars);
-  return `${text.slice(0, headChars)} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${text.slice(-tailChars)}`;
+  return `${sliceTextChars(text, 0, headChars)} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${sliceTextChars(text, -tailChars)}`;
 }
 
 export function parseJsonObjectLine(line: string): Record<string, unknown> | null {

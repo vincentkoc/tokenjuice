@@ -5,12 +5,22 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { findMatchingRule, getArtifact, listArtifactMetadata, reduceExecution, statsArtifacts } from "../../src/index.js";
+import { clipMiddleWithHash } from "../../src/core/reduce-utils.js";
 import { countTextChars } from "../../src/core/text.js";
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+});
+
+describe("clipMiddleWithHash", () => {
+  it("clips on grapheme boundaries instead of splitting surrogate pairs", () => {
+    const clipped = clipMiddleWithHash("😀".repeat(80), 42);
+    const hasUnpairedSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(clipped);
+
+    expect(hasUnpairedSurrogate).toBe(false);
+  });
 });
 
 async function createTempDir(): Promise<string> {

@@ -49,6 +49,10 @@ export function countTextChars(text: string): number {
   return graphemes(text).length;
 }
 
+export function sliceTextChars(text: string, start: number, end?: number): string {
+  return graphemes(text).slice(start, end).join("");
+}
+
 function codePointWidth(codePoint: number): number {
   if (
     codePoint === 0

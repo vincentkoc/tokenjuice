@@ -19,6 +19,7 @@ describe("isRepositoryInventoryCommand", () => {
     "cd /repo && rg --files src/rules",
     "git -C repo ls-files src",
     "git --no-pager ls-files src",
+    "env -- git ls-files src",
   ])("detects `%s` as repository inventory", (command) => {
     expect(isRepositoryInventoryCommand({ command })).toBe(true);
   });
@@ -46,6 +47,7 @@ describe("isRepositoryInspectionCommand", () => {
     "git ls-files src",
     "git -C repo ls-files src",
     "git --no-pager ls-files src",
+    "env -- git ls-files src",
   ])("detects `%s` as repository inspection", (command) => {
     expect(isRepositoryInspectionCommand({ command })).toBe(true);
   });
@@ -76,6 +78,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     "rg --files | sed 's#^src/##'",
     "find src -type f | wc -l",
     "env GIT_DIR=/repo/.git GIT_WORK_TREE=/repo git ls-files src | wc -l",
+    "env -- git ls-files src | wc -l",
   ])("allows `%s`", (command) => {
     expect(isSafeRepositoryInventoryPipeline(command)).toBe(true);
   });
@@ -125,6 +128,7 @@ describe("isSafeRepositoryInventoryPipeline", () => {
     { command: "fd --exec cat", safety: "unsafe-pipeline" },
     { command: "git ls-files | sed -n '1,20p'", safety: "safe" },
     { command: "git ls-files | wc -l", safety: "safe" },
+    { command: "env -- git ls-files src | wc -l", safety: "safe" },
   ])("classifies `%s` as $safety", ({ command, safety }) => {
     expect(getRepositoryInventorySafety(command)).toBe(safety);
   });

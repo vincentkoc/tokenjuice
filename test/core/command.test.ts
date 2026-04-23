@@ -227,6 +227,15 @@ describe("normalizeExecutionInput", () => {
     expect(normalized.command).toBe("git ls-files src");
     expect(normalized.argv).toEqual(["git", "ls-files", "src"]);
   });
+
+  it("unwraps env end-of-options markers before deriving the effective argv", () => {
+    const normalized = normalizeExecutionInput({
+      toolName: "exec",
+      command: "env -- git ls-files src",
+    });
+    expect(normalized.command).toBe("git ls-files src");
+    expect(normalized.argv).toEqual(["git", "ls-files", "src"]);
+  });
 });
 
 describe("hasSequentialShellCommands", () => {
@@ -287,6 +296,10 @@ describe("isFileContentInspectionCommand", () => {
 
   it("detects file inspection after env prefixes", () => {
     expect(isFileContentInspectionCommand({ command: "env GIT_DIR=/repo/.git git show HEAD:README.md" })).toBe(true);
+  });
+
+  it("detects file inspection after env end-of-options markers", () => {
+    expect(isFileContentInspectionCommand({ command: "env -- git show HEAD:README.md" })).toBe(true);
   });
 
   it("returns false for normal search commands", () => {

@@ -178,6 +178,10 @@ export function stripLeadingEnvAssignments(argv: string[]): string[] {
   index += 1;
   while (index < argv.length) {
     const arg = argv[index] ?? "";
+    if (arg === "--") {
+      index += 1;
+      break;
+    }
     if (ENV_ASSIGNMENT_PATTERN.test(arg)) {
       index += 1;
       continue;

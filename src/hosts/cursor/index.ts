@@ -3,7 +3,7 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
-import { tokenizeCommand } from "../../core/command.js";
+import { stripLeadingCdPrefix, tokenizeCommand } from "../../core/command.js";
 
 type CursorHooksConfig = Record<string, unknown> & {
   version?: number;
@@ -283,7 +283,7 @@ function extractHookCommandPaths(command: string): string[] {
 }
 
 function commandAlreadyWrapped(command: string): boolean {
-  const argv = tokenizeCommand(command);
+  const argv = tokenizeCommand(stripLeadingCdPrefix(command));
   if (argv.length < 2) {
     return false;
   }

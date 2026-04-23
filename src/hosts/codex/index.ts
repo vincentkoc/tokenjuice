@@ -4,6 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
+import { stripLeadingCdPrefix } from "../../core/command.js";
 import { storeArtifactMetadata } from "../../core/artifacts.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
@@ -582,7 +583,7 @@ function isTokenjuiceExecutableArg(value: string | undefined): boolean {
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(command);
+  const argv = parseShellWords(stripLeadingCdPrefix(command));
   if (argv.length < 3) {
     return false;
   }

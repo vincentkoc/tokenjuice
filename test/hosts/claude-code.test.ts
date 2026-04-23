@@ -723,6 +723,31 @@ describe("runClaudeCodePostToolUseHook", () => {
     expect(debug.skipped).toBe("explicit-raw-bypass");
   });
 
+  it("honors tokenjuice raw bypass commands with leading cd prefixes", async () => {
+    const home = await createTempDir();
+    process.env.CLAUDE_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "cd /data/code/lighthouse/helper && tokenjuice wrap --raw -- python scripts/query_cls_log.py --limit 500",
+      },
+      tool_response: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
   it("honors tokenjuice full bypass commands without re-compacting them", async () => {
     const home = await createTempDir();
     process.env.CLAUDE_HOME = home;

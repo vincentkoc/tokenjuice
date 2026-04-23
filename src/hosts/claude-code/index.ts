@@ -3,6 +3,7 @@ import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
+import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
 
@@ -365,7 +366,7 @@ function shouldStoreFromEnv(): boolean {
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(command);
+  const argv = parseShellWords(stripLeadingCdPrefix(command));
   if (argv.length < 3) {
     return false;
   }

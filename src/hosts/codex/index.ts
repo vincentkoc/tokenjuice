@@ -608,6 +608,10 @@ function buildCodexHint(rawRefId?: string): string {
   return hints.join(" ");
 }
 
+function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
+  return `${inlineText}\n\n${buildCodexHint(rawRefId)}`;
+}
+
 function parseExitCodeValue(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isInteger(value)) {
     return value;
@@ -1043,18 +1047,9 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
       return 0;
     }
 
-    const hookOutput: Record<string, unknown> = {
-      decision: "block",
-      reason: outcome.result.inlineText,
-      hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        additionalContext: buildCodexHint(outcome.result.rawRef?.id),
-      },
-    };
-
-    process.stdout.write(`${JSON.stringify(hookOutput)}\n`);
+    process.stderr.write(`${buildCodexFeedback(outcome.result.inlineText, outcome.result.rawRef?.id)}\n`);
     await writeHookDebug({ ...debug, rewrote: true });
-    return 0;
+    return 2;
   } catch (error) {
     await writeHookDebug({
       ...debug,

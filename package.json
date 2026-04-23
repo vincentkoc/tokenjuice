@@ -1,6 +1,6 @@
 {
   "name": "tokenjuice",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Lean output compaction for terminal-heavy agent workflows.",
   "keywords": [
     "cli",

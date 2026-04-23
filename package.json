@@ -54,7 +54,7 @@
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
     "prepare": "pnpm repair:pnpm-bin-shims",
     "repair:pnpm-bin-shims": "node scripts/repair-pnpm-bin-shims.mjs",
-    "build": "rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
+    "build": "rm -rf dist && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && node scripts/build-opencode-runtime.mjs && mkdir -p dist/rules && cp -R src/rules/. dist/rules/",
     "lint": "oxlint --deny-warnings src test scripts",
     "lint:circular": "madge --circular --extensions ts,mjs --ts-config tsconfig.json src",
     "release:artifacts": "node scripts/build-release.mjs",

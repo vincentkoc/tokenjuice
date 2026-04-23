@@ -15,6 +15,11 @@ export type { CodexFeatureFlagStatus } from "./hosts/codex/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
+export {
+  doctorOpenCodeExtension,
+  installOpenCodeExtension,
+  uninstallOpenCodeExtension,
+} from "./hosts/opencode/index.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
@@ -42,5 +47,11 @@ export type {
   WrapResult,
 } from "./types.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
+export type {
+  InstallOpenCodeExtensionResult,
+  OpenCodeDoctorReport,
+  OpenCodeExtensionCommandOptions,
+  UninstallOpenCodeExtensionResult,
+} from "./hosts/opencode/index.js";
 export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
 export type { StatsOptions, StatsReport } from "./core/analysis.js";

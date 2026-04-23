@@ -404,6 +404,10 @@ function buildClaudeCodeHint(rawRefId?: string): string {
   return hints.join(" ");
 }
 
+function buildClaudeCodeAdditionalContext(inlineText: string, rawRefId?: string): string {
+  return `${inlineText}\n\n${buildClaudeCodeHint(rawRefId)}`;
+}
+
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
   const debugPath = join(getClaudeCodeHome(), "tokenjuice-hook.last.json");
   await mkdir(dirname(debugPath), { recursive: true });
@@ -482,11 +486,13 @@ export async function runClaudeCodePostToolUseHook(rawText: string): Promise<num
     }
 
     const hookOutput: Record<string, unknown> = {
-      decision: "block",
-      reason: outcome.result.inlineText,
+      suppressOutput: true,
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: buildClaudeCodeHint(outcome.result.rawRef?.id),
+        additionalContext: buildClaudeCodeAdditionalContext(
+          outcome.result.inlineText,
+          outcome.result.rawRef?.id,
+        ),
       },
     };
 

@@ -537,7 +537,7 @@ describe("doctorInstalledHooks", () => {
 });
 
 describe("runClaudeCodePostToolUseHook", () => {
-  it("writes a block/reason decision on compactable bash output", async () => {
+  it("adds compacted bash output as context without a block decision", async () => {
     const home = await createTempDir();
     process.env.CLAUDE_HOME = home;
 
@@ -562,8 +562,9 @@ describe("runClaudeCodePostToolUseHook", () => {
 
     const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
     const response = JSON.parse(output) as {
-      decision: string;
-      reason: string;
+      decision?: string;
+      reason?: string;
+      suppressOutput?: boolean;
       hookSpecificOutput?: { additionalContext?: string };
     };
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
@@ -572,10 +573,12 @@ describe("runClaudeCodePostToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.decision).toBe("block");
-    expect(response.reason).toContain("Changes not staged:");
-    expect(response.reason).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.reason).not.toContain("and have 8 and 642");
+    expect(response).not.toHaveProperty("decision");
+    expect(response).not.toHaveProperty("reason");
+    expect(response.suppressOutput).toBe(true);
+    expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
+    expect(response.hookSpecificOutput?.additionalContext).not.toContain("and have 8 and 642");
     expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
     expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
@@ -622,8 +625,9 @@ describe("runClaudeCodePostToolUseHook", () => {
 
     const { code, output } = await captureStdout(() => runClaudeCodePostToolUseHook(payload));
     const response = JSON.parse(output) as {
-      decision: string;
-      reason: string;
+      decision?: string;
+      reason?: string;
+      hookSpecificOutput?: { additionalContext?: string };
     };
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
@@ -631,8 +635,9 @@ describe("runClaudeCodePostToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.decision).toBe("block");
-    expect(response.reason).toContain("30 paths");
+    expect(response).not.toHaveProperty("decision");
+    expect(response).not.toHaveProperty("reason");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("30 paths");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("filesystem/rg-files");
   });

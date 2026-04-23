@@ -1,0 +1,40 @@
+name: Auto Assign
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign maintainer
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const assignee = "vincentkoc";
+            const issueNumber =
+              context.payload.issue?.number ?? context.payload.pull_request?.number;
+
+            if (!issueNumber) {
+              core.setFailed("Could not determine issue or pull request number.");
+              return;
+            }
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              assignees: [assignee],
+            });

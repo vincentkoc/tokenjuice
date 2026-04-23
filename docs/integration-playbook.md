@@ -119,6 +119,12 @@ verify:
 node dist/cli/main.js wrap --format json --trace --raw -- <command>
 ```
 
+for truncation-related debugging, verify both boundaries explicitly:
+
+- reducer truncation: if output includes `... omitted ...` / `... lines omitted ...`, rerun with `--raw` first.
+- capture truncation: if output includes `[tokenjuice: output truncated]`, rerun with a larger capture ceiling (for example `--max-capture-bytes 52428800`).
+- do not treat these as the same failure mode; reducer bypass and capture-size tuning solve different problems.
+
 ## docs updates required in same PR
 
 when adding a host integration, update:

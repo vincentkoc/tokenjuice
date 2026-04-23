@@ -51,6 +51,7 @@
     "bench:fixtures": "node scripts/bench.mjs fixtures",
     "bench:verify": "node scripts/bench.mjs verify",
     "contracts": "publint run --strict --pack pnpm",
+    "e2e:local": "pnpm build && node scripts/local-host-e2e.mjs",
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
     "prepare": "pnpm repair:pnpm-bin-shims",
     "repair:pnpm-bin-shims": "node scripts/repair-pnpm-bin-shims.mjs",

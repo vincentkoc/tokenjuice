@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { listArtifacts, runWrappedCommand } from "../../src/index.js";
+import { listArtifactMetadata, listArtifacts, runWrappedCommand } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -58,6 +58,24 @@ describe("runWrappedCommand", () => {
     expect(wrapped.stdout.length).toBeLessThan(300);
     expect(wrapped.stdout).toContain("[tokenjuice: output truncated]");
     expect(wrapped.result.inlineText).toContain("[tokenjuice: output truncated]");
+  });
+
+  it("records capture truncation state in stored metadata", async () => {
+    const storeDir = await createTempDir();
+
+    await runWrappedCommand([
+      "node",
+      "-e",
+      "process.stdout.write('a'.repeat(2000));",
+    ], {
+      maxCaptureBytes: 128,
+      store: true,
+      storeDir,
+    });
+
+    const metadata = await listArtifactMetadata(storeDir);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]?.metadata.captureTruncated).toBe(true);
   });
 
   it("supports a raw bypass for wrapped commands", async () => {

@@ -120,6 +120,7 @@ export type StoredArtifactMetadata = {
   toolName?: string;
   command?: string;
   exitCode?: number;
+  captureTruncated?: boolean;
   classification: ClassificationResult;
   rawChars: number;
   reducedChars?: number;

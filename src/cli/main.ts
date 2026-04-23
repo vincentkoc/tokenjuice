@@ -843,6 +843,8 @@ async function runStats(args: ParsedArgs): Promise<number> {
   }
 
   process.stdout.write(`entries: ${formatMetric(report.totals.entries)}\n`);
+  process.stdout.write(`capture-truncated entries: ${formatMetric(report.totals.captureTruncatedEntries)}\n`);
+  process.stdout.write(`observed entries: ${formatMetric(report.totals.observedEntries)}\n`);
   process.stdout.write(`raw chars: ${formatMetric(report.totals.rawChars)}\n`);
   process.stdout.write(`reduced chars: ${formatMetric(report.totals.reducedChars)}\n`);
   process.stdout.write(`saved chars: ${formatMetric(report.totals.savedChars)}\n`);

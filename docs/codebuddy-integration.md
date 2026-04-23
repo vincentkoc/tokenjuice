@@ -2,7 +2,7 @@
 
 ## why codebuddy uses pre-tool-use wrapping
 
-codebuddy code exposes the same hook surface as claude code (`hooks.PreToolUse` / `hooks.PostToolUse` in `~/.codebuddy/settings.json`), so the first prototype of this host was a direct port of `claude-code` — a PostToolUse hook that returned `decision: "block"` with compacted text as the tool's `reason`, letting the agent see the compacted output in place of the raw one.
+codebuddy exposes the same hook surface as claude code (`hooks.PreToolUse` / `hooks.PostToolUse` in `~/.codebuddy/settings.json`), so the first prototype of this host was a direct port of `claude-code` — a PostToolUse hook that returned `decision: "block"` with compacted text as the tool's `reason`, letting the agent see the compacted output in place of the raw one.
 
 that shape works today, but codebuddy's own hook docs flag a problem:
 
@@ -137,7 +137,7 @@ expected:
 
 ## platform boundary
 
-- supported: linux/macos, and codebuddy code inside wsl
+- supported: linux/macos, and codebuddy inside wsl
 - not supported yet: native windows shell interception (`process.platform === "win32"`)
 
-on native windows, the codebuddy pre-tool hook intentionally returns a deny response with `permissionDecisionReason` that asks users to run codebuddy code in wsl. `tokenjuice doctor codebuddy` reports that state as `broken` (when an install exists) or `disabled` (when it does not) so users aren't silently left without compaction.
+on native windows, the codebuddy pre-tool hook intentionally returns a deny response with `permissionDecisionReason` that asks users to run codebuddy in wsl. `tokenjuice doctor codebuddy` reports that state as `broken` (when an install exists) or `disabled` (when it does not) so users aren't silently left without compaction.

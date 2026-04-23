@@ -253,6 +253,8 @@ describe("isFileContentInspectionCommand", () => {
     { label: "bat", command: "bat README.md" },
     { label: "jq", command: "jq '.version' package.json" },
     { label: "yq", command: "yq '.name' pnpm-workspace.yaml" },
+    { label: "git show blob", command: "git show HEAD:README.md" },
+    { label: "git show blob piped to sed", command: "git show HEAD:README.md | sed -n '1,40p'" },
     { label: "wrapped cat", command: "cd repo && cat README.md" },
     { label: "clustered shell wrapper", command: "bash -ec 'cat README.md'" },
   ])("detects $label as file inspection from command text", ({ command }) => {
@@ -265,6 +267,10 @@ describe("isFileContentInspectionCommand", () => {
 
   it("returns false for normal search commands", () => {
     expect(isFileContentInspectionCommand({ command: "rg AssertionError src" })).toBe(false);
+  });
+
+  it("does not treat git show commit summaries as file inspection", () => {
+    expect(isFileContentInspectionCommand({ command: "git show HEAD --stat" })).toBe(false);
   });
 });
 

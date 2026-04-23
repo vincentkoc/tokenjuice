@@ -126,6 +126,7 @@ describe("getInspectionCommandSkipReason", () => {
   it.each([
     { command: "cat README.md", reason: "file-content-inspection-command" },
     { command: "cd /repo && cat README.md", reason: "file-content-inspection-command" },
+    { command: "git show HEAD:README.md | sed -n '1,40p'", reason: "file-content-inspection-command" },
     { command: "tree src", reason: "inspection-command" },
     { command: "ls src && rg TODO src", reason: "sequential-inventory-command" },
     { command: "git -C repo ls-files | jq -R .", reason: "unsafe-inventory-pipeline" },

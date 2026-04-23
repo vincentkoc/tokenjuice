@@ -1,5 +1,5 @@
 import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
+import { access, appendFile, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
@@ -47,6 +47,9 @@ const HOOK_REWRITE_MIN_SAVED_CHARS = 8;
 const CODEX_HOOK_LAST_LOG = "tokenjuice-hook.last.json";
 const CODEX_HOOK_HISTORY_LOG = "tokenjuice-hook.history.jsonl";
 const CODEX_HOOK_HISTORY_LIMIT = 200;
+const CODEX_HOOK_HISTORY_LOCK_STALE_MS = 30_000;
+const CODEX_HOOK_HISTORY_LOCK_RETRY_MS = 25;
+const CODEX_HOOK_HISTORY_LOCK_RETRIES = 8;
 const LOW_NON_TOKENJUICE_TIMEOUT_SECONDS = 2;
 const RECOMMENDED_NON_TOKENJUICE_TIMEOUT_SECONDS = 6;
 
@@ -801,24 +804,96 @@ async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
   await mkdir(dirname(debugPath), { recursive: true });
   await writeFile(debugPath, `${JSON.stringify(enrichedRecord, null, 2)}\n`, "utf8");
 
-  let historyLines: string[] = [];
-  try {
-    const currentHistory = await readFile(historyPath, "utf8");
-    historyLines = currentHistory
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-  } catch (error) {
-    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") {
-      throw error;
+  await writeHookHistoryEntry(historyPath, JSON.stringify(enrichedRecord));
+}
+
+function sanitizeHookHistoryLines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => {
+      try {
+        JSON.parse(line);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => {
+    setTimeout(resolvePromise, ms);
+  });
+}
+
+async function acquireHistoryLock(lockPath: string): Promise<boolean> {
+  for (let attempt = 0; attempt <= CODEX_HOOK_HISTORY_LOCK_RETRIES; attempt += 1) {
+    try {
+      await mkdir(lockPath);
+      return true;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "EEXIST") {
+        throw error;
+      }
+
+      try {
+        const details = await stat(lockPath);
+        if (Date.now() - details.mtimeMs > CODEX_HOOK_HISTORY_LOCK_STALE_MS) {
+          await rm(lockPath, { recursive: true, force: true });
+          continue;
+        }
+      } catch (statError) {
+        const statCode = (statError as NodeJS.ErrnoException).code;
+        if (statCode !== "ENOENT") {
+          throw statError;
+        }
+        continue;
+      }
+
+      if (attempt < CODEX_HOOK_HISTORY_LOCK_RETRIES) {
+        await wait(CODEX_HOOK_HISTORY_LOCK_RETRY_MS);
+      }
     }
   }
 
-  historyLines.push(JSON.stringify(enrichedRecord));
-  if (historyLines.length > CODEX_HOOK_HISTORY_LIMIT) {
-    historyLines = historyLines.slice(-CODEX_HOOK_HISTORY_LIMIT);
+  return false;
+}
+
+async function writeHookHistoryEntry(historyPath: string, line: string): Promise<void> {
+  const lockPath = `${historyPath}.lock`;
+  const tempPath = `${historyPath}.${process.pid}.tmp`;
+  const hasLock = await acquireHistoryLock(lockPath);
+
+  if (!hasLock) {
+    await appendFile(historyPath, `${line}\n`, "utf8");
+    return;
   }
-  await writeFile(historyPath, `${historyLines.join("\n")}\n`, "utf8");
+
+  try {
+    let historyLines: string[] = [];
+    try {
+      historyLines = sanitizeHookHistoryLines(await readFile(historyPath, "utf8"));
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    historyLines.push(line);
+    if (historyLines.length > CODEX_HOOK_HISTORY_LIMIT) {
+      historyLines = historyLines.slice(-CODEX_HOOK_HISTORY_LIMIT);
+    }
+
+    await writeFile(tempPath, `${historyLines.join("\n")}\n`, "utf8");
+    await rename(tempPath, historyPath);
+  } finally {
+    await rm(tempPath, { force: true }).catch(() => {});
+    await rm(lockPath, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 function buildImmediateSkipStats(text: string): {

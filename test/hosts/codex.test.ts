@@ -658,6 +658,43 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.ratio).toBe(1);
   });
 
+  it("skips auto-rewrite for git blob inspections piped through line filters", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "git show HEAD:src/core/reduce.ts | sed -n '1,40p'",
+      },
+      tool_response: [
+        "import { loadRules } from \"./rules.js\";",
+        "throw new AssertionError();",
+        "export function reduceExecution() {}",
+      ].join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      matchedReducer?: string;
+      rawChars?: number;
+      reducedChars?: number;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("file-content-inspection-command");
+    expect(debug.matchedReducer).toBeUndefined();
+    expect(debug.rawChars).toBeGreaterThan(0);
+    expect(debug.reducedChars).toBe(debug.rawChars);
+    expect(debug.savedChars).toBe(0);
+    expect(debug.ratio).toBe(1);
+  });
+
   it("keeps unsafe inventory pipelines unmodified", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;
@@ -861,5 +898,49 @@ describe("runCodexPostToolUseHook", () => {
     expect(history[1]?.rewrote).toBe(false);
     expect(history[1]?.skipped).toBe("low-savings-compaction");
     expect(history[1]?.savedChars).toBe(1);
+  });
+
+  it("repairs malformed hook history lines before appending a new entry", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const validHistoryLine = JSON.stringify({
+      timestamp: "2026-04-23T00:00:00.000Z",
+      command: "git status --short",
+      rewrote: false,
+    });
+    await writeFile(
+      join(home, "tokenjuice-hook.history.jsonl"),
+      `${validHistoryLine}\nnot-json\n{"truncated":true\n`,
+      "utf8",
+    );
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "sed -n '1,40p' src/hosts/codex/index.ts",
+      },
+      tool_response: [
+        "function example() {",
+        "  throw new AssertionError();",
+        "}",
+      ].join("\n"),
+    });
+
+    await captureStdout(() => runCodexPostToolUseHook(payload));
+
+    const historyLines = (await readFile(join(home, "tokenjuice-hook.history.jsonl"), "utf8"))
+      .trim()
+      .split("\n");
+    const history = historyLines.map((line) => JSON.parse(line) as {
+      command?: string;
+      skipped?: string;
+    });
+
+    expect(history).toHaveLength(2);
+    expect(history[0]?.command).toBe("git status --short");
+    expect(history[1]?.command).toBe("sed -n '1,40p' src/hosts/codex/index.ts");
+    expect(history[1]?.skipped).toBe("file-content-inspection-command");
   });
 });

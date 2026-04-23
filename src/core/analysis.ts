@@ -35,6 +35,13 @@ export type DoctorReport = {
 
 export type StatsReport = {
   totals: {
+    observedEntries: number;
+    captureTruncatedEntries: number;
+    observedRawChars: number;
+    observedReducedChars: number;
+    observedSavedChars: number;
+    observedAvgRatio: number | null;
+    observedSavingsPercent: number | null;
     entries: number;
     rawChars: number;
     reducedChars: number;
@@ -104,6 +111,7 @@ function effectiveRatio(metadata: StoredArtifactMetadata): number | null {
 }
 
 export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactResult): AnalysisEntry {
+  const captureTruncated = input.metadata?.tokenjuiceCaptureTruncated;
   return {
     metadata: {
       createdAt: new Date().toISOString(),
@@ -114,6 +122,7 @@ export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactRes
       ...(input.toolName ? { toolName: input.toolName } : {}),
       ...(input.command ? { command: input.command } : {}),
       ...(typeof input.exitCode === "number" ? { exitCode: input.exitCode } : {}),
+      ...(typeof captureTruncated === "boolean" ? { captureTruncated } : {}),
     },
   };
 }
@@ -246,12 +255,11 @@ type StatsGroup = {
   ratioCount: number;
 };
 
-function addToStatsGroup(group: StatsGroup | undefined, entry: AnalysisEntry): StatsGroup {
-  const ratio = effectiveRatio(entry.metadata);
+function addToStatsGroup(group: StatsGroup | undefined, rawChars: number, reducedChars: number, ratio: number | null): StatsGroup {
   return {
     count: (group?.count ?? 0) + 1,
-    rawChars: (group?.rawChars ?? 0) + entry.metadata.rawChars,
-    reducedChars: (group?.reducedChars ?? 0) + effectiveReducedChars(entry.metadata),
+    rawChars: (group?.rawChars ?? 0) + rawChars,
+    reducedChars: (group?.reducedChars ?? 0) + reducedChars,
     ratioSum: (group?.ratioSum ?? 0) + (ratio ?? 0),
     ratioCount: (group?.ratioCount ?? 0) + (ratio !== null ? 1 : 0),
   };
@@ -267,17 +275,35 @@ export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions =
   const daily = new Map<string, StatsGroup>();
   const formatDay = buildCalendarDayFormatter(options.timeZone);
 
+  let observedRawChars = 0;
+  let observedReducedChars = 0;
+  let observedRatioSum = 0;
+  let observedRatioCount = 0;
+  let captureTruncatedEntries = 0;
+
   let rawChars = 0;
   let reducedChars = 0;
   let ratioSum = 0;
   let ratioCount = 0;
 
   for (const entry of entries) {
+    const reduced = effectiveReducedChars(entry.metadata);
+    const ratio = effectiveRatio(entry.metadata);
+    observedRawChars += entry.metadata.rawChars;
+    observedReducedChars += reduced;
+    if (ratio !== null) {
+      observedRatioSum += ratio;
+      observedRatioCount += 1;
+    }
+
+    if (entry.metadata.captureTruncated) {
+      captureTruncatedEntries += 1;
+      continue;
+    }
+
     const reducer = entry.metadata.classification.matchedReducer ?? "generic/fallback";
     const signature = normalizeCommandSignature(entry.metadata.command) ?? "(unknown)";
     const day = formatDay(entry.metadata.createdAt);
-    const reduced = effectiveReducedChars(entry.metadata);
-    const ratio = effectiveRatio(entry.metadata);
 
     rawChars += entry.metadata.rawChars;
     reducedChars += reduced;
@@ -286,18 +312,28 @@ export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions =
       ratioCount += 1;
     }
 
-    reducers.set(reducer, addToStatsGroup(reducers.get(reducer), entry));
-    commands.set(signature, addToStatsGroup(commands.get(signature), entry));
-    daily.set(day, addToStatsGroup(daily.get(day), entry));
+    reducers.set(reducer, addToStatsGroup(reducers.get(reducer), entry.metadata.rawChars, reduced, ratio));
+    commands.set(signature, addToStatsGroup(commands.get(signature), entry.metadata.rawChars, reduced, ratio));
+    daily.set(day, addToStatsGroup(daily.get(day), entry.metadata.rawChars, reduced, ratio));
   }
 
   const totalSavedChars = Math.max(rawChars - reducedChars, 0);
   const avgRatio = ratioCount > 0 ? ratioSum / ratioCount : null;
   const savingsPercent = rawChars > 0 ? totalSavedChars / rawChars : null;
+  const observedSavedChars = Math.max(observedRawChars - observedReducedChars, 0);
+  const observedAvgRatio = observedRatioCount > 0 ? observedRatioSum / observedRatioCount : null;
+  const observedSavingsPercent = observedRawChars > 0 ? observedSavedChars / observedRawChars : null;
 
   return {
     totals: {
-      entries: entries.length,
+      observedEntries: entries.length,
+      captureTruncatedEntries,
+      observedRawChars,
+      observedReducedChars,
+      observedSavedChars,
+      observedAvgRatio,
+      observedSavingsPercent,
+      entries: entries.length - captureTruncatedEntries,
       rawChars,
       reducedChars,
       savedChars: totalSavedChars,

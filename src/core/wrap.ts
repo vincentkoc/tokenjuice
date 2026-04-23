@@ -101,6 +101,9 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
             stderr: stderr.text,
             combinedText: combined.text,
             exitCode: code ?? 1,
+            metadata: {
+              tokenjuiceCaptureTruncated: combined.truncated,
+            },
           },
           {
             raw: opts.raw ?? false,

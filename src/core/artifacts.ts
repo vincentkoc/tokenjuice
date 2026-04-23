@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 
 import { countTextChars, stripAnsi } from "./text.js";
 
-import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef } from "../types.js";
+import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
 const ARTIFACT_ID_PATTERN = /^tj_[0-9a-f-]{12}$/iu;
 
@@ -35,6 +35,9 @@ function isStoredArtifactMetadata(value: unknown): value is StoredArtifactMetada
   if ("exitCode" in value && value.exitCode !== undefined && typeof value.exitCode !== "number") {
     return false;
   }
+  if ("captureTruncated" in value && value.captureTruncated !== undefined && typeof value.captureTruncated !== "boolean") {
+    return false;
+  }
   if ("reducedChars" in value && value.reducedChars !== undefined && typeof value.reducedChars !== "number") {
     return false;
   }
@@ -43,6 +46,11 @@ function isStoredArtifactMetadata(value: unknown): value is StoredArtifactMetada
   }
 
   return true;
+}
+
+function extractCaptureTruncatedFlag(input: ToolExecutionInput): boolean | undefined {
+  const value = input.metadata?.tokenjuiceCaptureTruncated;
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function artifactBaseDir(storeDir?: string): string {
@@ -78,6 +86,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
   const id = `tj_${randomUUID().slice(0, 12)}`;
   const ref = buildArtifactPaths(id, storeDir);
   await mkdir(artifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
+  const captureTruncated = extractCaptureTruncatedFlag(input.input);
 
   const artifact: StoredArtifact = {
     id,
@@ -89,6 +98,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
       ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
       ...(input.input.command ? { command: input.input.command } : {}),
       ...(typeof input.input.exitCode === "number" ? { exitCode: input.input.exitCode } : {}),
+      ...(captureTruncated !== undefined ? { captureTruncated } : {}),
       ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
     },
   };
@@ -104,6 +114,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
 export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir?: string): Promise<ArtifactMetadataRef> {
   const id = `tj_${randomUUID().slice(0, 12)}`;
   const metadataPath = buildMetadataOnlyPath(id, storeDir);
+  const captureTruncated = extractCaptureTruncatedFlag(input.input);
   const metadata: StoredArtifactMetadata = {
     createdAt: new Date().toISOString(),
     classification: input.classification,
@@ -111,6 +122,7 @@ export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir
     ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
     ...(input.input.command ? { command: input.input.command } : {}),
     ...(typeof input.input.exitCode === "number" ? { exitCode: input.input.exitCode } : {}),
+    ...(captureTruncated !== undefined ? { captureTruncated } : {}),
     ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
   };
 

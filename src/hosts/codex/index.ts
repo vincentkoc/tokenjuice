@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { storeArtifactMetadata } from "../../core/artifacts.js";
+import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { getInspectionCommandSkipReason } from "../../core/inventory-safety.js";
 import { classifyOnly } from "../../core/reduce.js";
@@ -567,7 +568,7 @@ async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(command);
+  const argv = parseShellWords(stripLeadingCdPrefix(command));
   if (argv.length < 3) {
     return false;
   }

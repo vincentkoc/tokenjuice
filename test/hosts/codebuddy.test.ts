@@ -652,6 +652,21 @@ describe("runCodeBuddyPreToolUseHook", () => {
     expect(output).toBe("");
   });
 
+  it("skips cd-prefixed commands that are already wrapped", async () => {
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "cd /repo && tokenjuice wrap --raw -- git status",
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload));
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+  });
+
   it.each([
     ["/usr/local/bin/tokenjuice wrap -- bash -lc 'git status'", "absolute POSIX path"],
     ["/root/.local/share/pnpm/tokenjuice wrap --raw -- git log", "pnpm-linked absolute path"],

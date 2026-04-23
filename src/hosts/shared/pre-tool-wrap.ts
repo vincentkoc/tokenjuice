@@ -17,7 +17,7 @@ import { constants as fsConstants } from "node:fs";
 import { access } from "node:fs/promises";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 
-import { tokenizeCommand } from "../../core/command.js";
+import { stripLeadingCdPrefix, tokenizeCommand } from "../../core/command.js";
 
 import { isNodeExecutablePath, isTokenjuiceExecutablePath, shellQuote } from "./hook-command.js";
 
@@ -207,7 +207,7 @@ export function buildWrappedCommand(params: {
  * (e.g. the user invoked `tokenjuice wrap --raw -- <cmd>` explicitly).
  */
 export function commandAlreadyWrapped(command: string): boolean {
-  const argv = tokenizeCommand(command);
+  const argv = tokenizeCommand(stripLeadingCdPrefix(command));
   if (argv.length < 2) {
     return false;
   }

@@ -345,6 +345,20 @@ describe("runCursorPreToolUseHook", () => {
     expect(output).toBe("");
   });
 
+  it("skips cd-prefixed commands that are already wrapped", async () => {
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "cd /repo && tokenjuice wrap --raw -- git status",
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload));
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+  });
+
   it("falls back to SHELL when tool_input.shell is absent", async () => {
     const home = await createTempDir();
     const shellDir = join(home, "bin");

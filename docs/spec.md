@@ -26,6 +26,21 @@ the package reduces observed output after execution, can store raw output as a l
 - becoming a shell framework
 - trying to solve every tool class in one release
 
+## truncation model
+
+tokenjuice intentionally uses deterministic truncation as a default strategy for prompt-facing output. this is a cost/clarity tradeoff, not an error path.
+
+there are two independent boundaries:
+
+- reducer boundary: rule summaries (especially `generic/fallback`) keep head/tail slices and may omit middle sections.
+- capture boundary: `tokenjuice wrap` enforces `--max-capture-bytes` (default `4mb`) to avoid unbounded memory growth while collecting tool output.
+
+important implications:
+
+- `--raw` is the explicit escape hatch for reducer compaction.
+- `--raw` does not bypass capture limits; increase `--max-capture-bytes` when full capture is required.
+- frequent `generic/fallback` matches on a command family are a reducer-coverage signal, not a reason to make fallback "smarter".
+
 ## architecture
 
 ### core package

@@ -122,6 +122,14 @@ that checks:
 - preserve failure detail more than success noise
 - use project overrides for local weirdness, not built-ins
 
+## fallback expectations
+
+`generic/fallback` is intentionally deterministic and lossy. it is a safety net, not a high-quality summarizer.
+
+- omitted middle sections are expected behavior under fallback head/tail retention.
+- if a command family regularly needs middle-body details, add a specific reducer instead of complicating fallback.
+- use `tokenjuice wrap --raw -- <command>` when a one-off run needs full reducer bypass.
+
 ## repository inventory reducers
 
 built-in filesystem inventory reducers cover:

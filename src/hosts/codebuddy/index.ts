@@ -71,7 +71,7 @@ function isNativeWindowsCodeBuddyUnsupported(): boolean {
 }
 
 function getCodeBuddyHome(): string {
-  // CodeBuddy Code resolves its config directory from CODEBUDDY_CONFIG_DIR when
+  // CodeBuddy resolves its config directory from CODEBUDDY_CONFIG_DIR when
   // set, matching the environment knob used by other hosts (CLAUDE_CONFIG_DIR).
   // CODEBUDDY_HOME is kept as a compatibility fallback.
   return process.env.CODEBUDDY_CONFIG_DIR || process.env.CODEBUDDY_HOME || join(homedir(), ".codebuddy");

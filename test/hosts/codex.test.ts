@@ -41,6 +41,29 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   }
 }
 
+async function captureStdio(run: () => Promise<number>): Promise<{ code: number; stdout: string; stderr: string }> {
+  let stdout = "";
+  let stderr = "";
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    stdout += typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
+    return true;
+  }) as typeof process.stdout.write;
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    stderr += typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
+    return true;
+  }) as typeof process.stderr.write;
+
+  try {
+    const code = await run();
+    return { code, stdout, stderr };
+  } finally {
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+  }
+}
+
 describe("installCodexHook", () => {
   it("installs a single tokenjuice PostToolUse hook and preserves unrelated hooks", async () => {
     const home = await createTempDir();
@@ -438,7 +461,7 @@ describe("doctorCodexHook", () => {
 });
 
 describe("runCodexPostToolUseHook", () => {
-  it("rewrites bash post-tool output when tokenjuice compacts it", async () => {
+  it("returns post-tool feedback without a block decision when tokenjuice compacts output", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;
 
@@ -461,24 +484,19 @@ describe("runCodexPostToolUseHook", () => {
       ].join("\n"),
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      decision: string;
-      reason: string;
-      hookSpecificOutput?: { additionalContext?: string };
-    };
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       matchedReducer?: string;
     };
 
-    expect(code).toBe(0);
-    expect(response.decision).toBe("block");
-    expect(response.reason).toContain("Changes not staged:");
-    expect(response.reason).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.reason).not.toContain("and have 8 and 642");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --full -- <command>");
+    expect(code).toBe(2);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Changes not staged:");
+    expect(stderr).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
+    expect(stderr).not.toContain("and have 8 and 642");
+    expect(stderr).toContain("tokenjuice wrap --raw -- <command>");
+    expect(stderr).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
   });
@@ -504,7 +522,7 @@ describe("runCodexPostToolUseHook", () => {
       }).join("\n"),
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       skipped?: string;
@@ -512,7 +530,8 @@ describe("runCodexPostToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(output).toBe("");
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("generic-compound-command");
     expect(debug.matchedReducer).toBe("generic/fallback");
@@ -531,7 +550,7 @@ describe("runCodexPostToolUseHook", () => {
       tool_response: Array.from({ length: 18 }, (_, index) => `line ${index + 1} ${"x".repeat(24)}`).join("\n"),
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       skipped?: string;
@@ -539,7 +558,8 @@ describe("runCodexPostToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(output).toBe("");
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("generic-weak-compaction");
     expect(debug.matchedReducer).toBe("generic/fallback");
@@ -558,7 +578,7 @@ describe("runCodexPostToolUseHook", () => {
       tool_response: " M src/hosts/codex/index.ts\n",
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       skipped?: string;
@@ -570,7 +590,8 @@ describe("runCodexPostToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(output).toBe("");
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("low-savings-compaction");
     expect(debug.matchedReducer).toBe("git/status");
@@ -593,7 +614,7 @@ describe("runCodexPostToolUseHook", () => {
       tool_response: Array.from({ length: 40 }, (_, index) => `src/rules/example-${index + 1}.json`).join("\n"),
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
     const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
       rewrote: boolean;
       skipped?: string;
@@ -603,15 +624,11 @@ describe("runCodexPostToolUseHook", () => {
       savedChars?: number;
       ratio?: number;
     };
-    const hookOutput = JSON.parse(output) as {
-      decision: string;
-      reason: string;
-    };
 
-    expect(code).toBe(0);
-    expect(hookOutput.decision).toBe("block");
-    expect(hookOutput.reason).toContain("40 matches");
-    expect(hookOutput.reason).toContain("src/rules/example-1.json");
+    expect(code).toBe(2);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("40 matches");
+    expect(stderr).toContain("src/rules/example-1.json");
     expect(debug.rewrote).toBe(true);
     expect(debug.skipped).toBeUndefined();
     expect(debug.matchedReducer).toBe("filesystem/find");
@@ -746,15 +763,11 @@ describe("runCodexPostToolUseHook", () => {
       },
     });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const hookOutput = JSON.parse(output) as {
-      decision: string;
-      reason: string;
-    };
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
 
-    expect(code).toBe(0);
-    expect(hookOutput.decision).toBe("block");
-    expect(hookOutput.reason).toContain("exit 2");
+    expect(code).toBe(2);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("exit 2");
   });
 
   it("honors tokenjuice raw bypass commands without re-compacting them", async () => {

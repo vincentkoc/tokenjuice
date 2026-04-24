@@ -683,6 +683,46 @@ describe("reduceExecution", () => {
     expect(result.stats.ratio).toBe(1);
   });
 
+  it("makes GitHub Actions multi-command shell failures actionable", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      combinedText: [
+        "Run set -euo pipefail",
+        "  set -euo pipefail",
+        "  plugin-extension-boundary",
+        "  lint:tmp:no-random-messaging",
+        "  lint:tmp:channel-agnostic-boundaries",
+        "  lint:tmp:tsgo-core-boundary",
+        "  lint:tmp:no-raw-channel-fetch",
+        "  lint:agent:ingress-owner",
+        "  lint:plugins:no-register-http-handler",
+        "  lint:plugins:no-monolithic-plugin-sdk-entry-imports",
+        "  lint:plugins:no-extension-src-imports",
+        "  lint:plugins:no-extension-test-core-imports",
+        "  lint:plugins:plugin-sdk-subpaths-exported",
+        "  deps:root-ownership:check",
+        "  web-search-provider-boundary",
+        "  web-fetch-provider-boundary",
+        "  extension-src-outside-plugin-sdk-boundary",
+        "  extension-plugin-sdk-internal-boundary",
+        "  extension-relative-outside-package-boundary",
+        "  lint:ui:no-raw-window-open",
+        "  shell: /usr/bin/bash -e {0}",
+        "Error: Process completed with exit code 1.",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("GitHub Actions shell step failed (exit 1).");
+    expect(result.inlineText).toContain("Failing command: not visible");
+    expect(result.inlineText).toContain("this shell step ran 18 commands");
+    expect(result.inlineText).toContain("- plugin-extension-boundary");
+    expect(result.inlineText).toContain("- lint:ui:no-raw-window-open");
+    expect(result.inlineText).not.toContain("- set -euo pipefail");
+    expect(result.inlineText).toContain("Error: Process completed with exit code 1.");
+  });
+
   it("finds the same wrapped rule match used by classification", async () => {
     const rule = await findMatchingRule({
       toolName: "exec",

@@ -4,6 +4,7 @@ import { isFileContentInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampText, clampTextMiddle, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
+import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
 import { buildInspectionSummary } from "./reduce-inspection-summary.js";
 
@@ -370,6 +371,52 @@ export async function reduceExecutionWithRules(
 
   if (!matchedRule) {
     throw new Error("missing generic fallback rule");
+  }
+
+  const githubActionsFailureSummary = classification.matchedReducer === "generic/fallback"
+    ? buildGithubActionsFailureSummary(reducerInput, rawText)
+    : null;
+  if (githubActionsFailureSummary) {
+    const maxInlineChars = opts.maxInlineChars ?? 1200;
+    const inlineText = clampTextMiddle(githubActionsFailureSummary, maxInlineChars);
+    const reducedChars = countTextChars(inlineText);
+    const stats = {
+      rawChars: measuredRawChars,
+      reducedChars,
+      ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
+    };
+    const rawRef = opts.store
+      ? await storeArtifact(
+          {
+            input: normalizedInput,
+            rawText,
+            classification,
+            stats,
+          },
+          opts.storeDir,
+        )
+      : undefined;
+
+    if (!opts.store && opts.recordStats) {
+      await storeArtifactMetadata(
+        {
+          input: normalizedInput,
+          rawText,
+          classification,
+          stats,
+        },
+        opts.storeDir,
+      );
+    }
+
+    return {
+      inlineText,
+      previewText: githubActionsFailureSummary,
+      ...(trace ? { trace } : {}),
+      ...(rawRef ? { rawRef } : {}),
+      stats,
+      classification,
+    };
   }
 
   const { summary, facts } = applyRule(matchedRule, reducerInput, rawText);

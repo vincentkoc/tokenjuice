@@ -18,6 +18,7 @@ afterEach(async () => {
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
+  delete process.env.COPILOT_HOME;
   process.env.PATH = originalPath;
   if (originalHome === undefined) {
     delete process.env.HOME;
@@ -434,6 +435,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -464,6 +466,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -512,6 +515,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = claudeHome;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = cursorHome;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });
     await mkdir(join(home, "dist", "cli"), { recursive: true });

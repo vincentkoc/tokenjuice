@@ -7,7 +7,7 @@ import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../typ
 import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../inventory-safety.js";
 
 export type CompactBashResultInput = {
-  source: "claude-code" | "codex" | "openclaw" | "opencode" | "pi";
+  source: "claude-code" | "codex" | "copilot-cli" | "openclaw" | "opencode" | "pi";
   command: string;
   cwd?: string;
   visibleText: string;

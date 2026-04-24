@@ -13,6 +13,13 @@ export {
   uninstallCodexHook,
 } from "./hosts/codex/index.js";
 export type { CodexFeatureFlagStatus } from "./hosts/codex/index.js";
+export {
+  doctorCopilotCliHook,
+  getCopilotCliInstructionsSnippet,
+  installCopilotCliHook,
+  runCopilotCliPostToolUseHook,
+  uninstallCopilotCliHook,
+} from "./hosts/copilot-cli/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export {
   doctorVscodeCopilotHook,
@@ -68,4 +75,10 @@ export type {
   VscodeCopilotDoctorReport,
   VscodeCopilotHookCommandOptions,
 } from "./hosts/vscode-copilot/index.js";
+export type {
+  CopilotCliDoctorReport,
+  CopilotCliHookCommandOptions,
+  InstallCopilotCliHookResult,
+  UninstallCopilotCliHookResult,
+} from "./hosts/copilot-cli/index.js";
 export type { StatsOptions, StatsReport } from "./core/analysis.js";

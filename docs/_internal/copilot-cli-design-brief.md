@@ -185,15 +185,26 @@ plugin dir under `~/.copilot/installed-plugins/<marketplace>/<name>/`.
   result through `compactBashResult`.
 - Matcher set to the shell-tool name so we only rewrite shell output.
   **Live-verified 2026-04-23**: matcher `"shell"` fires on CLI
-  payloads whose `tool_name` is the literal string `"bash"`. So
+  payloads whose tool-name field is the literal string `"bash"`. So
   matcher values are tool *categories/aliases*, NOT strict equality
-  against `tool_name`. Use `"shell"` for the CLI adapter. The
-  captured fixture is
-  [test/hosts/fixtures/copilot-cli-posttool.json](../../test/hosts/fixtures/copilot-cli-posttool.json):
-  `tool_name="bash"`, `tool_input={command, description, mode,
-  initial_wait}`, `tool_result={result_type, text_result_for_llm}`.
-  Note the key is `tool_result` (object), distinct from VS Code's
-  `tool_response` (string) — see the VS Code brief.
+  against the tool-name field. Use `"shell"` for the CLI adapter.
+- **Wire format (live-captured 2026-04-23 via `tee` trace on CLI
+  1.0.35)**: the PostToolUse stdin payload is **camelCase**:
+  `toolName`, `toolArgs` (object with `command`, `timeout`, `intent`,
+  `language`), `toolResult` (object with `resultType`,
+  `textResultForLlm`), plus `sessionId`, `timestamp`, `cwd`. An
+  earlier captured fixture used snake_case (`tool_name`,
+  `tool_input`, `tool_result`, `result_type`, `text_result_for_llm`)
+  — that shape still exists in the brief and the Zod schema (some
+  CLI versions or IDE hosts may send snake_case), so the adapter
+  reads **both** and emits **both** key variants inside
+  `modifiedResult`. See
+  [test/hosts/fixtures/copilot-cli-posttool-live.json](../../test/hosts/fixtures/copilot-cli-posttool-live.json)
+  for the live shape and
+  [test/hosts/fixtures/copilot-cli-posttool.json](../../test/hosts/fixtures/copilot-cli-posttool.json)
+  for the snake_case fallback. Note the key is `toolResult` (object),
+  distinct from VS Code's `tool_response` (string) — see the VS Code
+  brief.
 - Env vars to snapshot in tests: `COPILOT_HOME`, `HOME`, `PATH`,
   `SHELL`, `process.platform`.
 

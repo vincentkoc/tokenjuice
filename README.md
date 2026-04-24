@@ -36,7 +36,7 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot]
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli]
 tokenjuice uninstall [codex|opencode]
 ```
 
@@ -74,10 +74,11 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot]
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot] --local
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli] --local
 tokenjuice uninstall [codex|opencode]
 tokenjuice uninstall vscode-copilot
+tokenjuice uninstall copilot-cli
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -104,6 +105,7 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-opencode.png" alt="OpenCode" /> | [OpenCode](https://opencode.ai/) | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` | ✅ Yes |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 | <img width="48px" src="docs/client-openai.jpg" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | ✅ Yes |
+| <img width="48px" src="docs/client-openai.jpg" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | ✅ Yes |
 
 shared behavior:
 
@@ -121,6 +123,7 @@ shared behavior:
 - `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`
 - `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
 - after `tokenjuice install vscode-copilot`, run `tokenjuice doctor vscode-copilot --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so Copilot Chat treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required
+- after `tokenjuice install copilot-cli`, run `tokenjuice doctor copilot-cli --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the GitHub Copilot CLI agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required
 - Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
 - Codex, Claude Code, CodeBuddy, Cursor, OpenClaw, OpenCode, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
 

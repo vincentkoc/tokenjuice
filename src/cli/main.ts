@@ -15,6 +15,13 @@ import type { WrapResult } from "../types.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
+import {
+  doctorCopilotCliHook,
+  getCopilotCliInstructionsSnippet,
+  installCopilotCliHook,
+  runCopilotCliPostToolUseHook,
+  uninstallCopilotCliHook,
+} from "../hosts/copilot-cli/index.js";
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import {
   doctorOpenCodeExtension,
@@ -82,14 +89,16 @@ function printUsage(): void {
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install vscode-copilot [--local]",
+      "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall vscode-copilot",
+      "  tokenjuice uninstall copilot-cli",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
     ].join("\n"),
   );
@@ -537,7 +546,28 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, codebuddy, cursor, pi, opencode, vscode-copilot");
+  if (target === "copilot-cli") {
+    const result = await installCopilotCliHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.hooksPath },
+      { label: "Command", value: result.command },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    details.push({ label: "Guidance", value: "tokenjuice doctor copilot-cli --print-instructions" });
+    details.push({ label: "Verify", value: `tokenjuice doctor copilot-cli${args.local ? " --local" : ""}` });
+    details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
+    process.stdout.write(formatInstallSuccess("copilot-cli", "hook", details));
+    return 0;
+  }
+
+  throw new Error("install currently supports: codex, claude-code, codebuddy, cursor, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -584,7 +614,20 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex, opencode, vscode-copilot");
+  if (target === "copilot-cli") {
+    const result = await uninstallCopilotCliHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed copilot-cli entries: ${result.removed}\n`);
+    process.stdout.write(`hooks path: ${result.hooksPath}${result.deletedFile ? " (file deleted)" : ""}\n`);
+    process.stdout.write("enable: tokenjuice install copilot-cli\n");
+    return 0;
+  }
+
+  throw new Error("uninstall currently supports: codex, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -958,6 +1001,46 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "copilot-cli") {
+    if (args.printInstructions) {
+      process.stdout.write(getCopilotCliInstructionsSnippet());
+      return 0;
+    }
+    const report = await doctorCopilotCliHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hooks path: ${report.hooksPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "claude-code") {
     const report = await doctorClaudeCodeHook(undefined, { local: args.local });
 
@@ -1160,6 +1243,8 @@ async function main(): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "vscode-copilot-pre-tool-use":
       return await runVscodeCopilotPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "copilot-cli-post-tool-use":
+      return await runCopilotCliPostToolUseHook(await readStdin(args.maxInputBytes));
     default:
       printUsage();
       return 1;

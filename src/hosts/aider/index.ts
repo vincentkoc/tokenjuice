@@ -1,6 +1,6 @@
 import { join } from "node:path";
 
-import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type AiderConventionOptions = {
   projectDir?: string;
@@ -87,19 +87,28 @@ export async function doctorAiderConvention(
     };
   }
 
-  const issues: string[] = [];
-  if (!existing.text.includes(TOKENJUICE_AIDER_MARKER)) {
-    issues.push("configured Aider convention file does not look like the tokenjuice convention");
-  }
-  if (!existing.text.includes(TOKENJUICE_AIDER_WRAP_COMMAND)) {
-    issues.push("configured Aider convention file is missing tokenjuice wrap guidance");
-  }
-  if (!existing.text.includes(TOKENJUICE_AIDER_RAW_COMMAND)) {
-    issues.push("configured Aider convention file is missing the raw escape hatch");
-  }
-  if (existing.text.includes("tokenjuice wrap --full -- <command>")) {
-    issues.push("configured Aider convention file still suggests the full escape hatch");
-  }
+  const issues = collectGuidanceIssues(existing.text, {
+    required: [
+      {
+        requiredText: TOKENJUICE_AIDER_MARKER,
+        missingIssue: "configured Aider convention file does not look like the tokenjuice convention",
+      },
+      {
+        requiredText: TOKENJUICE_AIDER_WRAP_COMMAND,
+        missingIssue: "configured Aider convention file is missing tokenjuice wrap guidance",
+      },
+      {
+        requiredText: TOKENJUICE_AIDER_RAW_COMMAND,
+        missingIssue: "configured Aider convention file is missing the raw escape hatch",
+      },
+    ],
+    forbidden: [
+      {
+        forbiddenText: "tokenjuice wrap --full -- <command>",
+        presentIssue: "configured Aider convention file still suggests the full escape hatch",
+      },
+    ],
+  });
 
   return {
     conventionPath: resolvedConventionPath,

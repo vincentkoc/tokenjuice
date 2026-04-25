@@ -2,8 +2,6 @@ import { rm, writeFile } from "node:fs/promises";
 
 import { readInstructionFile, writeInstructionFile } from "./instruction-file.js";
 
-export { readInstructionFile } from "./instruction-file.js";
-
 export type MarkerDelimitedBlockConfig = {
   beginMarker: string;
   endMarker: string;
@@ -14,6 +12,11 @@ export type MarkerDelimitedBlockState = {
   hasBegin: boolean;
   hasEnd: boolean;
   completeBlockCount: number;
+};
+
+export type MarkerDelimitedBlockIssueOptions = {
+  configuredLabel: string;
+  repairCommand: string;
 };
 
 export type InstallMarkerDelimitedBlockResult = {
@@ -40,6 +43,22 @@ export function inspectMarkerDelimitedBlock(text: string, config: MarkerDelimite
     hasEnd: text.includes(config.endMarker),
     completeBlockCount: [...text.matchAll(buildBlockPattern(config))].length,
   };
+}
+
+export function collectMarkerDelimitedBlockIssues(
+  state: MarkerDelimitedBlockState,
+  options: MarkerDelimitedBlockIssueOptions,
+): string[] {
+  if (state.hasBegin && !state.hasEnd) {
+    return [`configured ${options.configuredLabel} have a tokenjuice start marker without an end marker`];
+  }
+  if (!state.hasBegin && state.hasEnd) {
+    return [`configured ${options.configuredLabel} have a tokenjuice end marker without a start marker`];
+  }
+  if (state.completeBlockCount !== 1) {
+    return [`configured ${options.configuredLabel} have multiple tokenjuice blocks; run ${options.repairCommand} to repair`];
+  }
+  return [];
 }
 
 export function removeMarkerDelimitedBlock(text: string, config: MarkerDelimitedBlockConfig): { text: string; removed: boolean } {

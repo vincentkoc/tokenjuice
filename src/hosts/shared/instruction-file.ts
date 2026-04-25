@@ -16,6 +16,21 @@ export type RemoveInstructionFileResult = {
   removed: boolean;
 };
 
+export type GuidanceIssueCheck = {
+  requiredText: string;
+  missingIssue: string;
+};
+
+export type ForbiddenGuidanceCheck = {
+  forbiddenText: string;
+  presentIssue: string;
+};
+
+export type GuidanceIssueOptions = {
+  required: GuidanceIssueCheck[];
+  forbidden?: ForbiddenGuidanceCheck[];
+};
+
 export async function readInstructionFile(filePath: string): Promise<InstructionFileSnapshot> {
   try {
     return { text: await readFile(filePath, "utf8"), exists: true };
@@ -51,4 +66,19 @@ export async function removeInstructionFile(filePath: string): Promise<RemoveIns
     await rm(filePath, { force: true });
   }
   return { filePath, removed: existing.exists };
+}
+
+export function collectGuidanceIssues(text: string, options: GuidanceIssueOptions): string[] {
+  const issues: string[] = [];
+  for (const check of options.required) {
+    if (!text.includes(check.requiredText)) {
+      issues.push(check.missingIssue);
+    }
+  }
+  for (const check of options.forbidden ?? []) {
+    if (text.includes(check.forbiddenText)) {
+      issues.push(check.presentIssue);
+    }
+  }
+  return issues;
 }

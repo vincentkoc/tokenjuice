@@ -3,6 +3,7 @@ import { doctorCodeBuddyHook } from "../codebuddy/index.js";
 import { doctorCodexHook } from "../codex/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
+import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 
@@ -11,6 +12,7 @@ import type { CodeBuddyDoctorReport, CodeBuddyHookCommandOptions } from "../code
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
+import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 
@@ -21,6 +23,7 @@ export type HookIntegrationDoctorReport = {
   "claude-code": ClaudeCodeDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
   cursor: CursorDoctorReport;
+  "gemini-cli": GeminiCliDoctorReport;
   pi: PiDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
@@ -59,6 +62,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
   const claudeCode = await doctorClaudeCodeHook(undefined, hookCommandOptions);
   const codebuddy = await doctorCodeBuddyHook(undefined, hookCommandOptions);
   const cursor = await doctorCursorHook(undefined, hookCommandOptions);
+  const geminiCli = await doctorGeminiCliHook(undefined, hookCommandOptions);
   const pi = await doctorPiExtension();
   const vscodeCopilot = await doctorVscodeCopilotHook(undefined, hookCommandOptions);
   const copilotCli = await doctorCopilotCliHook(undefined, hookCommandOptions);
@@ -69,7 +73,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
         mergeStatus(
           mergeStatus(
             mergeStatus(mergeStatus(codex.status, claudeCode.status), codebuddy.status),
-            cursor.status,
+            mergeStatus(cursor.status, geminiCli.status),
           ),
           pi.status,
         ),
@@ -82,6 +86,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
       "claude-code": claudeCode,
       codebuddy,
       cursor,
+      "gemini-cli": geminiCli,
       pi,
       "vscode-copilot": vscodeCopilot,
       "copilot-cli": copilotCli,

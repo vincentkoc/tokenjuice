@@ -34,6 +34,7 @@ export {
   runVscodeCopilotPreToolUseHook,
   uninstallVscodeCopilotHook,
 } from "./hosts/vscode-copilot/index.js";
+export { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "./hosts/zed/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
 export {
@@ -118,6 +119,12 @@ export type {
   VscodeCopilotDoctorReport,
   VscodeCopilotHookCommandOptions,
 } from "./hosts/vscode-copilot/index.js";
+export type {
+  InstallZedInstructionsResult,
+  UninstallZedInstructionsResult,
+  ZedDoctorReport,
+  ZedInstructionsOptions,
+} from "./hosts/zed/index.js";
 export type {
   CopilotCliDoctorReport,
   CopilotCliHookCommandOptions,

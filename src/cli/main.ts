@@ -42,6 +42,7 @@ import {
   runVscodeCopilotPreToolUseHook,
   uninstallVscodeCopilotHook,
 } from "../hosts/vscode-copilot/index.js";
+import { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "../hosts/zed/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { formatInstallSuccess } from "./install-output.js";
 
@@ -104,6 +105,7 @@ function printUsage(): void {
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
+      "  tokenjuice install zed",
       "  tokenjuice uninstall aider",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
@@ -114,11 +116,12 @@ function printUsage(): void {
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall vscode-copilot",
       "  tokenjuice uninstall copilot-cli",
+      "  tokenjuice uninstall zed",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -733,7 +736,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, junie, openhands, pi, opencode, vscode-copilot, copilot-cli");
+  if (target === "zed") {
+    const result = await installZedInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rules", value: result.instructionsPath },
+      { label: "Beta", value: "rule-based guidance; Zed still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor zed" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("zed", "rules", details));
+    return 0;
+  }
+
+  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, junie, openhands, pi, opencode, vscode-copilot, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -871,7 +894,20 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, junie, openhands, opencode, vscode-copilot, copilot-cli");
+  if (target === "zed") {
+    const result = await uninstallZedInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed zed rules: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rules path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install zed\n");
+    return 0;
+  }
+
+  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, junie, openhands, opencode, vscode-copilot, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1370,6 +1406,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "zed") {
+    const report = await doctorZedInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rules path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
       }
     }
     if (report.advisories.length > 0) {

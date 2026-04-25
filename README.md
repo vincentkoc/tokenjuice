@@ -36,8 +36,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -74,9 +74,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
-tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -104,6 +104,7 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-cursor.jpg" alt="Cursor" /> | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | ✅ Yes |
 | ✴️ | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` | ✴️ Beta |
 | <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | ✅ Yes |
+| ✴️ | [Junie](https://junie.jetbrains.com/docs/junie-cli-usage.html) | `tokenjuice install junie` | `.junie/AGENTS.md` | ✴️ Beta |
 | <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes (`2026.4.22+`) |
 | <img width="48px" src="docs/client-opencode.png" alt="OpenCode" /> | [OpenCode](https://opencode.ai/) | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` | ✅ Yes |
 | ✴️ | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` | ✴️ Beta |
@@ -120,7 +121,7 @@ shared behavior:
 - `tokenjuice doctor opencode` inspects the installed OpenCode plugin directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice uninstall opencode` cleanly removes the OpenCode plugin and points back to `tokenjuice install opencode` for re-enabling
-- `tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `pnpm e2e:local` builds the repo and smoke-tests the local Codex app-server CLI and Claude Code CLI hook pass-through paths
 - OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
 - `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`
@@ -141,6 +142,8 @@ for OpenCode, `tokenjuice install opencode` installs a project-agnostic plugin i
 for Cline, `tokenjuice install cline` installs a beta global hook script into `~/Documents/Cline/Hooks/tokenjuice-post-tool-use`. enable it as a `PostToolUse` hook in Cline's Hooks tab after install.
 
 for Continue, `tokenjuice install continue` installs a beta workspace rule into `.continue/rules/tokenjuice.md`. this is guidance-only: Continue still owns command execution, but the rule tells the agent to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
+
+for Junie, `tokenjuice install junie` inserts a marker-delimited beta block into `.junie/AGENTS.md`. this is guidance-only: Junie still owns command execution, but the instructions tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
 
 for OpenHands, `tokenjuice install openhands` installs a project-local beta hook into `.openhands/hooks.json`. tokenjuice listens to `PostToolUse` events for the `terminal` tool and injects compacted context alongside the original output.
 

@@ -5,9 +5,9 @@ import { homedir } from "node:os";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
-  findMissingHookCommandPaths,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
+import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -50,6 +50,8 @@ type GeminiCliAfterToolPayload = {
 
 const TOKENJUICE_GEMINI_CLI_SUBCOMMAND = "gemini-cli-after-tool";
 const TOKENJUICE_GEMINI_CLI_FIX_COMMAND = "tokenjuice install gemini-cli";
+const TOKENJUICE_GEMINI_CLI_DISABLED_ADVISORY = "Gemini CLI support is beta; verify live hook behavior after install.";
+const TOKENJUICE_GEMINI_CLI_ADVISORY = "Gemini CLI support is beta; AfterTool replacement depends on current hook semantics.";
 
 function getGeminiCliHome(): string {
   return process.env.GEMINI_HOME || join(homedir(), ".gemini");
@@ -198,38 +200,17 @@ export async function doctorGeminiCliHook(
   const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_GEMINI_CLI_SUBCOMMAND, "gemini-cli", options);
   const { config, exists } = await readGeminiSettings(settingsPath);
   const detectedCommand = findTokenjuiceGeminiHookCommand(config);
-  if (!exists || !detectedCommand) {
-    return {
-      settingsPath,
-      status: "disabled",
-      issues: ["tokenjuice AfterTool hook is not installed for Gemini CLI"],
-      advisories: ["Gemini CLI support is beta; verify live hook behavior after install."],
-      fixCommand: TOKENJUICE_GEMINI_CLI_FIX_COMMAND,
-      expectedCommand,
-      checkedPaths: [],
-      missingPaths: [],
-    };
-  }
-
-  const missingPaths = await findMissingHookCommandPaths(detectedCommand);
-  const issues: string[] = [];
-  if (detectedCommand !== expectedCommand) {
-    issues.push("configured Gemini CLI hook command does not match the current recommended command");
-  }
-  if (missingPaths.length > 0) {
-    issues.push(`configured Gemini CLI hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
-  }
 
   return {
     settingsPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: ["Gemini CLI support is beta; AfterTool replacement depends on current hook semantics."],
-    fixCommand: TOKENJUICE_GEMINI_CLI_FIX_COMMAND,
-    expectedCommand,
-    detectedCommand,
-    checkedPaths: [],
-    missingPaths,
+    ...(await buildHookCommandDoctorFields({
+      expectedCommand,
+      detectedCommand: exists ? detectedCommand : undefined,
+      disabledIssue: "tokenjuice AfterTool hook is not installed for Gemini CLI",
+      hostLabel: "Gemini CLI",
+      advisory: detectedCommand ? TOKENJUICE_GEMINI_CLI_ADVISORY : TOKENJUICE_GEMINI_CLI_DISABLED_ADVISORY,
+      fixCommand: TOKENJUICE_GEMINI_CLI_FIX_COMMAND,
+    })),
   };
 }
 

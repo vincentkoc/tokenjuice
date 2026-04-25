@@ -5,10 +5,10 @@ import { homedir } from "node:os";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
-  findMissingHookCommandPaths,
   pathExists,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
+import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -46,6 +46,8 @@ type ClinePostToolUsePayload = {
 
 const TOKENJUICE_CLINE_SUBCOMMAND = "cline-post-tool-use";
 const TOKENJUICE_CLINE_FIX_COMMAND = "tokenjuice install cline";
+const TOKENJUICE_CLINE_DISABLED_ADVISORY = "Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.";
+const TOKENJUICE_CLINE_ADVISORY = "Cline support is beta and currently injects compacted context without suppressing the original tool result.";
 const TOKENJUICE_CLINE_HOOK_FILENAME = process.platform === "win32"
   ? "tokenjuice-post-tool-use.ps1"
   : "tokenjuice-post-tool-use";
@@ -124,38 +126,17 @@ export async function doctorClineHook(
   const resolvedHookPath = hookPath ?? getDefaultHookPath(options);
   const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_CLINE_SUBCOMMAND, "cline", options);
   const detectedCommand = await readConfiguredCommand(resolvedHookPath);
-  if (!detectedCommand) {
-    return {
-      hookPath: resolvedHookPath,
-      status: "disabled",
-      issues: ["tokenjuice PostToolUse hook script is not installed for Cline"],
-      advisories: ["Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install."],
-      fixCommand: TOKENJUICE_CLINE_FIX_COMMAND,
-      expectedCommand,
-      checkedPaths: [],
-      missingPaths: [],
-    };
-  }
-
-  const missingPaths = await findMissingHookCommandPaths(detectedCommand);
-  const issues: string[] = [];
-  if (detectedCommand !== expectedCommand) {
-    issues.push("configured Cline hook command does not match the current recommended command");
-  }
-  if (missingPaths.length > 0) {
-    issues.push(`configured Cline hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
-  }
 
   return {
     hookPath: resolvedHookPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: ["Cline support is beta and currently injects compacted context without suppressing the original tool result."],
-    fixCommand: TOKENJUICE_CLINE_FIX_COMMAND,
-    expectedCommand,
-    detectedCommand,
-    checkedPaths: [],
-    missingPaths,
+    ...(await buildHookCommandDoctorFields({
+      expectedCommand,
+      detectedCommand,
+      disabledIssue: "tokenjuice PostToolUse hook script is not installed for Cline",
+      hostLabel: "Cline",
+      advisory: detectedCommand ? TOKENJUICE_CLINE_ADVISORY : TOKENJUICE_CLINE_DISABLED_ADVISORY,
+      fixCommand: TOKENJUICE_CLINE_FIX_COMMAND,
+    })),
   };
 }
 

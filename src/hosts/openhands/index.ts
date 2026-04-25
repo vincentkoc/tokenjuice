@@ -4,9 +4,9 @@ import { dirname, join } from "node:path";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
-  findMissingHookCommandPaths,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
+import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -51,6 +51,7 @@ type OpenHandsPostToolUsePayload = {
 
 const TOKENJUICE_OPENHANDS_SUBCOMMAND = "openhands-post-tool-use";
 const TOKENJUICE_OPENHANDS_FIX_COMMAND = "tokenjuice install openhands";
+const TOKENJUICE_OPENHANDS_ADVISORY = "OpenHands support is beta and currently injects compacted context without suppressing the original tool result.";
 
 function getProjectDir(options: OpenHandsHookCommandOptions = {}): string {
   return options.projectDir || process.env.OPENHANDS_PROJECT_DIR || process.cwd();
@@ -193,38 +194,17 @@ export async function doctorOpenHandsHook(
   const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_OPENHANDS_SUBCOMMAND, "openhands", options);
   const { config, exists } = await readOpenHandsHooksConfig(resolvedHooksPath);
   const detectedCommand = findTokenjuiceOpenHandsHookCommand(config);
-  if (!exists || !detectedCommand) {
-    return {
-      hooksPath: resolvedHooksPath,
-      status: "disabled",
-      issues: ["tokenjuice PostToolUse hook is not installed for OpenHands"],
-      advisories: ["OpenHands support is beta and currently injects compacted context without suppressing the original tool result."],
-      fixCommand: TOKENJUICE_OPENHANDS_FIX_COMMAND,
-      expectedCommand,
-      checkedPaths: [],
-      missingPaths: [],
-    };
-  }
-
-  const missingPaths = await findMissingHookCommandPaths(detectedCommand);
-  const issues: string[] = [];
-  if (detectedCommand !== expectedCommand) {
-    issues.push("configured OpenHands hook command does not match the current recommended command");
-  }
-  if (missingPaths.length > 0) {
-    issues.push(`configured OpenHands hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
-  }
 
   return {
     hooksPath: resolvedHooksPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: ["OpenHands support is beta and currently injects compacted context without suppressing the original tool result."],
-    fixCommand: TOKENJUICE_OPENHANDS_FIX_COMMAND,
-    expectedCommand,
-    detectedCommand,
-    checkedPaths: [],
-    missingPaths,
+    ...(await buildHookCommandDoctorFields({
+      expectedCommand,
+      detectedCommand: exists ? detectedCommand : undefined,
+      disabledIssue: "tokenjuice PostToolUse hook is not installed for OpenHands",
+      hostLabel: "OpenHands",
+      advisory: TOKENJUICE_OPENHANDS_ADVISORY,
+      fixCommand: TOKENJUICE_OPENHANDS_FIX_COMMAND,
+    })),
   };
 }
 

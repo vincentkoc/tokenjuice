@@ -22,6 +22,7 @@ export {
 } from "./hosts/copilot-cli/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export {
   doctorVscodeCopilotHook,
   getVscodeCopilotInstructionsSnippet,
@@ -77,6 +78,12 @@ export type {
   InstallGeminiCliHookResult,
   UninstallGeminiCliHookResult,
 } from "./hosts/gemini-cli/index.js";
+export type {
+  InstallOpenHandsHookResult,
+  OpenHandsDoctorReport,
+  OpenHandsHookCommandOptions,
+  UninstallOpenHandsHookResult,
+} from "./hosts/openhands/index.js";
 export type {
   InstallVscodeCopilotHookResult,
   UninstallVscodeCopilotHookResult,

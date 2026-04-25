@@ -15,6 +15,7 @@ import type { WrapResult } from "../types.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
+import { doctorContinueRule, installContinueRule, uninstallContinueRule } from "../hosts/continue/index.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
 import {
   doctorCopilotCliHook,
@@ -91,6 +92,7 @@ function printUsage(): void {
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cline [--local]",
       "  tokenjuice install codebuddy [--local]",
+      "  tokenjuice install continue",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install gemini-cli [--local]",
       "  tokenjuice install openhands [--local]",
@@ -100,6 +102,7 @@ function printUsage(): void {
       "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
+      "  tokenjuice uninstall continue",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
@@ -109,7 +112,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|cline|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -518,6 +521,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "continue") {
+    const result = await installContinueRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "rule-based guidance; Continue still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor continue" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("continue", "rule", details));
+    return 0;
+  }
+
   if (target === "cursor") {
     const result = await installCursorHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -664,7 +687,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, cline, codebuddy, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
+  throw new Error("install currently supports: codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -695,6 +718,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed cline hook: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`hook path: ${result.hookPath}\n`);
     process.stdout.write("enable: tokenjuice install cline\n");
+    return 0;
+  }
+
+  if (target === "continue") {
+    const result = await uninstallContinueRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed continue rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install continue\n");
     return 0;
   }
 
@@ -763,7 +799,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex, cline, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
+  throw new Error("uninstall currently supports: codex, cline, continue, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -947,7 +983,9 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
           ? integrationReport.settingsPath
           : "hookPath" in integrationReport
             ? integrationReport.hookPath
-            : integrationReport.extensionPath;
+            : "rulePath" in integrationReport
+              ? integrationReport.rulePath
+              : integrationReport.extensionPath;
       process.stdout.write(`${name}:\n`);
       process.stdout.write(`- path: ${pathLabel}\n`);
       process.stdout.write(`- health: ${integrationReport.status}\n`);
@@ -1346,6 +1384,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "continue") {
+    const report = await doctorContinueRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
       }
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);

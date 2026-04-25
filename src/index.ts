@@ -2,6 +2,7 @@ export { getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, st
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
+export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
@@ -66,6 +67,12 @@ export type {
   WrapOptions,
   WrapResult,
 } from "./types.js";
+export type {
+  AiderConventionOptions,
+  AiderDoctorReport,
+  InstallAiderConventionResult,
+  UninstallAiderConventionResult,
+} from "./hosts/aider/index.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
 export type {
   ClineDoctorReport,

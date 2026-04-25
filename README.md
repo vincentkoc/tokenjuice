@@ -36,8 +36,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice uninstall [codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -74,9 +74,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice install [codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
-tokenjuice uninstall [codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -95,6 +95,7 @@ tokenjuice has host integrations for:
 
 | Logo | Client | Install | Hook file | Supported |
 | --- | --- | --- | --- | --- |
+| ✴️ | [Aider](https://aider.chat/) | `tokenjuice install aider` | `CONVENTIONS.tokenjuice.md` | ✴️ Beta |
 | <img width="48px" src="docs/client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` | ✅ Yes |
 | ✴️ | [Cline](https://docs.cline.bot/features/hooks/hook-reference) | `tokenjuice install cline` | `~/Documents/Cline/Hooks/tokenjuice-post-tool-use` | ✴️ Beta |
 | <img width="48px" src="docs/client-codebuddy.png" alt="CodeBuddy" /> | [CodeBuddy](https://codebuddy.tencent.com/) | `tokenjuice install codebuddy` | `~/.codebuddy/settings.json` | ✅ Yes |
@@ -119,7 +120,7 @@ shared behavior:
 - `tokenjuice doctor opencode` inspects the installed OpenCode plugin directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice uninstall opencode` cleanly removes the OpenCode plugin and points back to `tokenjuice install opencode` for re-enabling
-- `tokenjuice install [codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `pnpm e2e:local` builds the repo and smoke-tests the local Codex app-server CLI and Claude Code CLI hook pass-through paths
 - OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
 - `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`
@@ -132,6 +133,8 @@ shared behavior:
 library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
 
 repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
+
+for Aider, `tokenjuice install aider` installs a beta convention file at `CONVENTIONS.tokenjuice.md`. load it with `aider --read CONVENTIONS.tokenjuice.md` or add it to `.aider.conf.yml`.
 
 for OpenCode, `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`. restart OpenCode after install; the plugin is auto-loaded on session start.
 

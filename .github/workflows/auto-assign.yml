@@ -13,7 +13,7 @@ on:
 
 permissions:
   issues: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   assign:
@@ -32,9 +32,15 @@ jobs:
               return;
             }
 
-            await github.rest.issues.addAssignees({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              assignees: [assignee],
-            });
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                assignees: [assignee],
+              });
+            } catch (error) {
+              const status = typeof error?.status === "number" ? `status ${error.status}: ` : "";
+              const message = error?.message ?? String(error);
+              core.warning(`Could not assign ${assignee}: ${status}${message}`);
+            }

@@ -11,6 +11,8 @@ import { buildInspectionSummary } from "./reduce-inspection-summary.js";
 import type { CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } from "../types.js";
 
 const TINY_OUTPUT_MAX_CHARS = 240;
+const SMALL_OUTPUT_PASSTHROUGH_MIN_SAVED_CHARS = 120;
+const SMALL_OUTPUT_PASSTHROUGH_MAX_RATIO = 0.75;
 
 function buildRawText(input: ToolExecutionInput): string {
   if (input.combinedText) {
@@ -152,6 +154,53 @@ function buildPassthroughText(input: ToolExecutionInput, rawText: string): strin
   return normalized;
 }
 
+function buildLiteralPassthroughText(input: ToolExecutionInput, rawText: string): string {
+  const normalized = stripAnsi(rawText).trimEnd();
+  if (!normalized) {
+    return buildPassthroughText(input, rawText);
+  }
+
+  if (input.exitCode && input.exitCode !== 0) {
+    return `exit ${input.exitCode}\n${normalized}`;
+  }
+
+  return normalized;
+}
+
+function shouldKeepSmallOutput(
+  classification: { family: string },
+  input: ToolExecutionInput,
+  rawChars: number,
+  compactChars: number,
+  maxInlineChars: number,
+): boolean {
+  if (rawChars === 0 || rawChars > maxInlineChars || (input.exitCode ?? 0) !== 0) {
+    return false;
+  }
+  if (!isTerseDiscoveryCommand(classification, input)) {
+    return false;
+  }
+
+  const savedChars = rawChars - compactChars;
+  const ratio = rawChars === 0 ? 1 : compactChars / rawChars;
+  return savedChars < SMALL_OUTPUT_PASSTHROUGH_MIN_SAVED_CHARS
+    || ratio > SMALL_OUTPUT_PASSTHROUGH_MAX_RATIO;
+}
+
+function isTerseDiscoveryCommand(classification: { family: string }, input: ToolExecutionInput): boolean {
+  const argv = input.argv ?? [];
+  if (classification.family === "git-status") {
+    return argv.some((arg) => arg === "--short" || arg === "-s" || arg.startsWith("--porcelain"));
+  }
+  if (classification.family === "git-remote") {
+    return argv.includes("-v") || argv.includes("--verbose");
+  }
+  if (classification.family === "git-worktree") {
+    return argv.includes("--porcelain");
+  }
+  return false;
+}
+
 function formatInline(
   classification: { family: string },
   input: ToolExecutionInput,
@@ -189,13 +238,15 @@ function selectInlineText(
   compactText: string,
   maxInlineChars: number,
 ): string {
-  if (classification.family === "git-status") {
-    return compactText;
-  }
-
   const passthroughText = buildPassthroughText(input, rawText);
   const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
+  if (shouldKeepSmallOutput(classification, input, rawChars, compactChars, maxInlineChars)) {
+    return buildLiteralPassthroughText(input, rawText);
+  }
+  if (classification.family === "git-status") {
+    return compactText;
+  }
   if (rawChars <= maxInlineChars && compactChars >= rawChars) {
     return passthroughText;
   }

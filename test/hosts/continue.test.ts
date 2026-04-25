@@ -1,4 +1,4 @@
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -54,6 +54,7 @@ describe("continue rules", () => {
 
     expect(result.backupPath).toBe(`${rulePath}.bak`);
     await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toBe("custom local rule\n");
+    await expect(readFile(rulePath, "utf8")).resolves.toContain("tokenjuice wrap --raw -- <command>");
   });
 
   it("reports installed and uninstalled rule health", async () => {
@@ -71,6 +72,42 @@ describe("continue rules", () => {
 
     expect(removed.removed).toBe(true);
     expect(disabled.status).toBe("disabled");
+  });
+
+  it("reports broken rules when required tokenjuice guidance is stale", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".continue", "rules", "tokenjuice.md");
+    await mkdir(join(home, ".continue", "rules"), { recursive: true });
+    await writeFile(
+      rulePath,
+      [
+        "---",
+        "name: tokenjuice terminal output compaction",
+        "---",
+        "",
+        "- Prefer `tokenjuice wrap -- <command>`.",
+        "- If output looks wrong, rerun with `tokenjuice wrap --full -- <command>`.",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const doctor = await doctorContinueRule(rulePath);
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.issues).toContain("configured Continue rule file is missing the raw escape hatch");
+    expect(doctor.issues).toContain("configured Continue rule file still suggests the full escape hatch");
+  });
+
+  it("removes an existing rule file without requiring tokenjuice content", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".continue", "rules", "tokenjuice.md");
+    await mkdir(join(home, ".continue", "rules"), { recursive: true });
+    await writeFile(rulePath, "custom local rule\n", "utf8");
+
+    const removed = await uninstallContinueRule(rulePath);
+
+    expect(removed.removed).toBe(true);
+    await expect(access(rulePath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("uses CONTINUE_PROJECT_DIR for the default workspace rule", async () => {

@@ -1,5 +1,6 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+
+import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type ContinueRuleOptions = {
   projectDir?: string;
@@ -27,6 +28,9 @@ export type ContinueDoctorReport = {
 
 const TOKENJUICE_CONTINUE_FIX_COMMAND = "tokenjuice install continue";
 const TOKENJUICE_CONTINUE_RULE_MARKER = "tokenjuice terminal output compaction";
+const TOKENJUICE_CONTINUE_ADVISORY = "Continue support is beta and rule-based; it guides command usage but does not intercept tool output.";
+const TOKENJUICE_CONTINUE_WRAP_COMMAND = "tokenjuice wrap -- <command>";
+const TOKENJUICE_CONTINUE_RAW_COMMAND = "tokenjuice wrap --raw -- <command>";
 
 function getProjectDir(options: ContinueRuleOptions = {}): string {
   return options.projectDir || process.env.CONTINUE_PROJECT_DIR || process.cwd();
@@ -36,59 +40,33 @@ function getDefaultRulePath(options: ContinueRuleOptions = {}): string {
   return join(getProjectDir(options), ".continue", "rules", "tokenjuice.md");
 }
 
-function buildContinueRule(): string {
-  return [
-    "---",
-    `name: ${TOKENJUICE_CONTINUE_RULE_MARKER}`,
-    "---",
-    "",
-    "- When running terminal commands through Continue, prefer `tokenjuice wrap -- <command>` for commands likely to produce long output.",
-    "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
-    "- If raw bytes are required, rerun the command with exactly `tokenjuice wrap --raw -- <command>`.",
-    "- Do not suggest both raw and full reruns; use the raw escape hatch.",
-    "",
-  ].join("\n");
-}
-
-async function readRule(rulePath: string): Promise<{ text: string; exists: boolean }> {
-  try {
-    return { text: await readFile(rulePath, "utf8"), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { text: "", exists: false };
-    }
-    throw error;
-  }
-}
+const TOKENJUICE_CONTINUE_RULE = [
+  "---",
+  `name: ${TOKENJUICE_CONTINUE_RULE_MARKER}`,
+  "---",
+  "",
+  `- When running terminal commands through Continue, prefer \`${TOKENJUICE_CONTINUE_WRAP_COMMAND}\` for commands likely to produce long output.`,
+  "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
+  `- If raw bytes are required, rerun the command with exactly \`${TOKENJUICE_CONTINUE_RAW_COMMAND}\`.`,
+  "- Do not suggest both raw and full reruns; use the raw escape hatch.",
+  "",
+].join("\n");
 
 export async function installContinueRule(
   rulePath?: string,
   options: ContinueRuleOptions = {},
 ): Promise<InstallContinueRuleResult> {
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
-  const existing = await readRule(resolvedRulePath);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = `${resolvedRulePath}.bak`;
-    await writeFile(backupPath, existing.text, "utf8");
-  }
-
-  await mkdir(dirname(resolvedRulePath), { recursive: true });
-  const tempPath = `${resolvedRulePath}.tmp`;
-  await writeFile(tempPath, buildContinueRule(), "utf8");
-  await rename(tempPath, resolvedRulePath);
+  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_CONTINUE_RULE);
   return {
-    rulePath: resolvedRulePath,
-    ...(backupPath ? { backupPath } : {}),
+    rulePath: result.filePath,
+    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
   };
 }
 
 export async function uninstallContinueRule(rulePath = getDefaultRulePath()): Promise<UninstallContinueRuleResult> {
-  const existing = await readRule(rulePath);
-  if (existing.exists) {
-    await rm(rulePath, { force: true });
-  }
-  return { rulePath, removed: existing.exists };
+  const result = await removeInstructionFile(rulePath);
+  return { rulePath: result.filePath, removed: result.removed };
 }
 
 export async function doctorContinueRule(
@@ -96,28 +74,38 @@ export async function doctorContinueRule(
   options: ContinueRuleOptions = {},
 ): Promise<ContinueDoctorReport> {
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
-  const existing = await readRule(resolvedRulePath);
+  const existing = await readInstructionFile(resolvedRulePath);
   if (!existing.exists) {
     return {
       rulePath: resolvedRulePath,
       status: "disabled",
       issues: ["tokenjuice Continue rule is not installed"],
-      advisories: ["Continue support is beta and rule-based; it guides command usage but does not intercept tool output."],
+      advisories: [TOKENJUICE_CONTINUE_ADVISORY],
       fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
       checkedPaths: [],
       missingPaths: [],
     };
   }
 
-  const issues = existing.text.includes(TOKENJUICE_CONTINUE_RULE_MARKER)
-    ? []
-    : ["configured Continue rule file does not look like the tokenjuice rule"];
+  const issues: string[] = [];
+  if (!existing.text.includes(TOKENJUICE_CONTINUE_RULE_MARKER)) {
+    issues.push("configured Continue rule file does not look like the tokenjuice rule");
+  }
+  if (!existing.text.includes(TOKENJUICE_CONTINUE_WRAP_COMMAND)) {
+    issues.push("configured Continue rule file is missing tokenjuice wrap guidance");
+  }
+  if (!existing.text.includes(TOKENJUICE_CONTINUE_RAW_COMMAND)) {
+    issues.push("configured Continue rule file is missing the raw escape hatch");
+  }
+  if (existing.text.includes("tokenjuice wrap --full -- <command>")) {
+    issues.push("configured Continue rule file still suggests the full escape hatch");
+  }
 
   return {
     rulePath: resolvedRulePath,
     status: issues.length > 0 ? "broken" : "ok",
     issues,
-    advisories: ["Continue support is beta and rule-based; it guides command usage but does not intercept tool output."],
+    advisories: [TOKENJUICE_CONTINUE_ADVISORY],
     fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
     checkedPaths: [],
     missingPaths: [],

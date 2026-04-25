@@ -27,6 +27,7 @@ import {
 } from "../hosts/copilot-cli/index.js";
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
+import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -97,6 +98,7 @@ function printUsage(): void {
       "  tokenjuice install continue",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install gemini-cli [--local]",
+      "  tokenjuice install junie",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
@@ -107,6 +109,7 @@ function printUsage(): void {
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall gemini-cli",
+      "  tokenjuice uninstall junie",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall vscode-copilot",
@@ -115,7 +118,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -605,6 +608,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "junie") {
+    const result = await installJunieInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-based guidance; Junie still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor junie" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("junie", "instructions", details));
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await installOpenHandsHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -710,7 +733,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
+  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, junie, openhands, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -783,6 +806,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "junie") {
+    const result = await uninstallJunieInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed junie instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install junie\n");
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await uninstallOpenHandsHook();
     if (args.format === "json") {
@@ -835,7 +871,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
+  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, junie, openhands, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1023,7 +1059,9 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
               ? integrationReport.rulePath
               : "conventionPath" in integrationReport
                 ? integrationReport.conventionPath
-                : integrationReport.extensionPath;
+                : "instructionsPath" in integrationReport
+                  ? integrationReport.instructionsPath
+                  : integrationReport.extensionPath;
       process.stdout.write(`${name}:\n`);
       process.stdout.write(`- path: ${pathLabel}\n`);
       process.stdout.write(`- health: ${integrationReport.status}\n`);
@@ -1230,6 +1268,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "junie") {
+    const report = await doctorJunieInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
       }
     }
     if (report.advisories.length > 0) {

@@ -25,6 +25,7 @@ export {
 } from "./hosts/copilot-cli/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export {
   doctorVscodeCopilotHook,
@@ -99,6 +100,12 @@ export type {
   InstallGeminiCliHookResult,
   UninstallGeminiCliHookResult,
 } from "./hosts/gemini-cli/index.js";
+export type {
+  InstallJunieInstructionsResult,
+  JunieDoctorReport,
+  JunieInstructionsOptions,
+  UninstallJunieInstructionsResult,
+} from "./hosts/junie/index.js";
 export type {
   InstallOpenHandsHookResult,
   OpenHandsDoctorReport,

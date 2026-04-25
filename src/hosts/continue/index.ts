@@ -2,6 +2,10 @@ import { join } from "node:path";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  buildInstructionDoctorReportFields,
+  instructionDoctorStatusFromIssues,
+} from "../shared/instruction-doctor.js";
 
 export type ContinueRuleOptions = {
   projectDir?: string;
@@ -76,12 +80,12 @@ export async function doctorContinueRule(
   if (!existing.exists) {
     return {
       rulePath: resolvedRulePath,
-      status: "disabled",
-      issues: ["tokenjuice Continue rule is not installed"],
-      advisories: [TOKENJUICE_CONTINUE_ADVISORY],
-      fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
-      checkedPaths: [],
-      missingPaths: [],
+      ...buildInstructionDoctorReportFields({
+        status: "disabled",
+        issues: ["tokenjuice Continue rule is not installed"],
+        advisory: TOKENJUICE_CONTINUE_ADVISORY,
+        fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
+      }),
     };
   }
 
@@ -110,11 +114,11 @@ export async function doctorContinueRule(
 
   return {
     rulePath: resolvedRulePath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: [TOKENJUICE_CONTINUE_ADVISORY],
-    fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
-    checkedPaths: [],
-    missingPaths: [],
+    ...buildInstructionDoctorReportFields({
+      status: instructionDoctorStatusFromIssues(issues),
+      issues,
+      advisory: TOKENJUICE_CONTINUE_ADVISORY,
+      fixCommand: TOKENJUICE_CONTINUE_FIX_COMMAND,
+    }),
   };
 }

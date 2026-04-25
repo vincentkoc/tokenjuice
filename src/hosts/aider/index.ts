@@ -2,6 +2,10 @@ import { join } from "node:path";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  buildInstructionDoctorReportFields,
+  instructionDoctorStatusFromIssues,
+} from "../shared/instruction-doctor.js";
 
 export type AiderConventionOptions = {
   projectDir?: string;
@@ -74,12 +78,12 @@ export async function doctorAiderConvention(
   if (!existing.exists) {
     return {
       conventionPath: resolvedConventionPath,
-      status: "disabled",
-      issues: ["tokenjuice Aider convention file is not installed"],
-      advisories: [TOKENJUICE_AIDER_ADVISORY],
-      fixCommand: TOKENJUICE_AIDER_FIX_COMMAND,
-      checkedPaths: [],
-      missingPaths: [],
+      ...buildInstructionDoctorReportFields({
+        status: "disabled",
+        issues: ["tokenjuice Aider convention file is not installed"],
+        advisory: TOKENJUICE_AIDER_ADVISORY,
+        fixCommand: TOKENJUICE_AIDER_FIX_COMMAND,
+      }),
     };
   }
 
@@ -108,11 +112,11 @@ export async function doctorAiderConvention(
 
   return {
     conventionPath: resolvedConventionPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: [TOKENJUICE_AIDER_ADVISORY],
-    fixCommand: TOKENJUICE_AIDER_FIX_COMMAND,
-    checkedPaths: [],
-    missingPaths: [],
+    ...buildInstructionDoctorReportFields({
+      status: instructionDoctorStatusFromIssues(issues),
+      issues,
+      advisory: TOKENJUICE_AIDER_ADVISORY,
+      fixCommand: TOKENJUICE_AIDER_FIX_COMMAND,
+    }),
   };
 }

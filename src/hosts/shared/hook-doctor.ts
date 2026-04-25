@@ -11,6 +11,7 @@ import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
+import { doctorZedInstructions } from "../zed/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
@@ -25,6 +26,7 @@ import type { JunieDoctorReport } from "../junie/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
+import type { ZedDoctorReport } from "../zed/index.js";
 
 type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
@@ -41,6 +43,7 @@ export type HookIntegrationDoctorReport = {
   openhands: OpenHandsDoctorReport;
   pi: PiDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
+  zed: ZedDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
 };
 
@@ -85,6 +88,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
   const openhands = await doctorOpenHandsHook(undefined, hookCommandOptions);
   const pi = await doctorPiExtension();
   const vscodeCopilot = await doctorVscodeCopilotHook(undefined, hookCommandOptions);
+  const zed = await doctorZedInstructions();
   const copilotCli = await doctorCopilotCliHook(undefined, hookCommandOptions);
 
   return {
@@ -103,7 +107,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
           ),
           mergeStatus(openhands.status, pi.status),
         ),
-        vscodeCopilot.status,
+        mergeStatus(vscodeCopilot.status, zed.status),
       ),
       copilotCli.status,
     ),
@@ -120,6 +124,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
       openhands,
       pi,
       "vscode-copilot": vscodeCopilot,
+      zed,
       "copilot-cli": copilotCli,
     },
   };

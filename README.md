@@ -36,8 +36,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed]
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -74,9 +74,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
-tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed]
+tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed] --local
+tokenjuice uninstall [aider|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -110,6 +110,7 @@ tokenjuice has host integrations for:
 | ✴️ | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` | ✴️ Beta |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 | <img width="48px" src="docs/client-copilot.png" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) (Stable **and** Insiders) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | ✅ Yes |
+| ✴️ | [Zed](https://zed.dev/docs/ai/rules.html) | `tokenjuice install zed` | `.rules` | ✴️ Beta |
 
 shared behavior:
 
@@ -144,6 +145,8 @@ for Cline, `tokenjuice install cline` installs a beta global hook script into `~
 for Continue, `tokenjuice install continue` installs a beta workspace rule into `.continue/rules/tokenjuice.md`. this is guidance-only: Continue still owns command execution, but the rule tells the agent to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
 
 for Junie, `tokenjuice install junie` inserts a marker-delimited beta block into `.junie/AGENTS.md`. this is guidance-only: Junie still owns command execution, but the instructions tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
+
+for Zed, `tokenjuice install zed` inserts a marker-delimited beta block into `.rules`. this is guidance-only: Zed still owns command execution, but the rules tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
 
 for OpenHands, `tokenjuice install openhands` installs a project-local beta hook into `.openhands/hooks.json`. tokenjuice listens to `PostToolUse` events for the `terminal` tool and injects compacted context alongside the original output.
 

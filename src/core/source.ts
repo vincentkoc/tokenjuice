@@ -22,6 +22,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("claude-code") || source === "claude") {
     return "claude-code";
   }
+  if (source.startsWith("cline")) {
+    return "cline";
+  }
   if (source.startsWith("codex")) {
     return "codex";
   }

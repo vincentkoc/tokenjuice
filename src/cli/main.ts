@@ -13,6 +13,7 @@ import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
+import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
 import {
@@ -88,6 +89,7 @@ function printUsage(): void {
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
+      "  tokenjuice install cline [--local]",
       "  tokenjuice install codebuddy [--local]",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install gemini-cli [--local]",
@@ -97,6 +99,7 @@ function printUsage(): void {
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice uninstall codex",
+      "  tokenjuice uninstall cline",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
@@ -106,7 +109,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|cline|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -481,6 +484,24 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "cline") {
+    const result = await installClineHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.hookPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "enable this PostToolUse hook in Cline's Hooks tab after install" },
+      { label: "Verify", value: `tokenjuice doctor cline${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    process.stdout.write(formatInstallSuccess("cline", "hook", details));
+    return 0;
+  }
+
   if (target === "codebuddy") {
     const result = await installCodeBuddyHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -643,7 +664,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, codebuddy, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
+  throw new Error("install currently supports: codex, claude-code, cline, codebuddy, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -661,6 +682,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
       process.stdout.write(`backup: ${result.backupPath}\n`);
     }
     process.stdout.write("enable: tokenjuice install codex\n");
+    return 0;
+  }
+
+  if (target === "cline") {
+    const result = await uninstallClineHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed cline hook: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`hook path: ${result.hookPath}\n`);
+    process.stdout.write("enable: tokenjuice install cline\n");
     return 0;
   }
 
@@ -729,7 +763,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
+  throw new Error("uninstall currently supports: codex, cline, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -911,7 +945,9 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
         ? integrationReport.hooksPath
         : "settingsPath" in integrationReport
           ? integrationReport.settingsPath
-          : integrationReport.extensionPath;
+          : "hookPath" in integrationReport
+            ? integrationReport.hookPath
+            : integrationReport.extensionPath;
       process.stdout.write(`${name}:\n`);
       process.stdout.write(`- path: ${pathLabel}\n`);
       process.stdout.write(`- health: ${integrationReport.status}\n`);
@@ -1250,6 +1286,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "cline") {
+    const report = await doctorClineHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hook path: ${report.hookPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "codebuddy") {
     const report = await doctorCodeBuddyHook(undefined, { local: args.local });
 
@@ -1439,6 +1511,8 @@ async function main(): Promise<number> {
       return await runCodexPostToolUseHook(await readStdin(args.maxInputBytes));
     case "claude-code-post-tool-use":
       return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes));
+    case "cline-post-tool-use":
+      return await runClinePostToolUseHook(await readStdin(args.maxInputBytes));
     case "codebuddy-pre-tool-use":
       return await runCodeBuddyPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "cursor-pre-tool-use":

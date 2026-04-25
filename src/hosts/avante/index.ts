@@ -6,6 +6,7 @@ import {
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AvanteInstructionsOptions = {
@@ -49,10 +50,7 @@ const TOKENJUICE_AVANTE_BLOCK = [
   TOKENJUICE_AVANTE_BEGIN,
   "## tokenjuice terminal output compaction",
   "",
-  "- For terminal commands likely to produce long output, run them through `tokenjuice wrap -- <command>`.",
-  "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
-  "- If raw bytes are required, rerun the command with exactly `tokenjuice wrap --raw -- <command>`.",
-  "- Do not suggest both raw and full reruns; use the raw escape hatch.",
+  ...buildTokenjuiceGuidanceBullets(),
   TOKENJUICE_AVANTE_END,
 ].join("\n");
 

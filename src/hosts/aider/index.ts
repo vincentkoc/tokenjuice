@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type AiderConventionOptions = {
@@ -29,8 +30,6 @@ export type AiderDoctorReport = {
 const TOKENJUICE_AIDER_FIX_COMMAND = "tokenjuice install aider";
 const TOKENJUICE_AIDER_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_AIDER_ADVISORY = "Aider support is beta and convention-based; load it with aider --read CONVENTIONS.tokenjuice.md.";
-const TOKENJUICE_AIDER_WRAP_COMMAND = "tokenjuice wrap -- <command>";
-const TOKENJUICE_AIDER_RAW_COMMAND = "tokenjuice wrap --raw -- <command>";
 
 function getProjectDir(options: AiderConventionOptions = {}): string {
   return options.projectDir || process.env.AIDER_PROJECT_DIR || process.cwd();
@@ -43,10 +42,7 @@ function getDefaultConventionPath(options: AiderConventionOptions = {}): string 
 const TOKENJUICE_AIDER_CONVENTION = [
   `# ${TOKENJUICE_AIDER_MARKER}`,
   "",
-  `- For terminal commands likely to produce long output, run them through \`${TOKENJUICE_AIDER_WRAP_COMMAND}\`.`,
-  "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
-  `- If raw bytes are required, rerun the command with exactly \`${TOKENJUICE_AIDER_RAW_COMMAND}\`.`,
-  "- Do not suggest both raw and full reruns; use the raw escape hatch.",
+  ...buildTokenjuiceGuidanceBullets(),
   "",
   "Load this file with `aider --read CONVENTIONS.tokenjuice.md` or add it to `.aider.conf.yml`.",
   "",
@@ -94,17 +90,17 @@ export async function doctorAiderConvention(
         missingIssue: "configured Aider convention file does not look like the tokenjuice convention",
       },
       {
-        requiredText: TOKENJUICE_AIDER_WRAP_COMMAND,
+        requiredText: TOKENJUICE_WRAP_COMMAND,
         missingIssue: "configured Aider convention file is missing tokenjuice wrap guidance",
       },
       {
-        requiredText: TOKENJUICE_AIDER_RAW_COMMAND,
+        requiredText: TOKENJUICE_RAW_COMMAND,
         missingIssue: "configured Aider convention file is missing the raw escape hatch",
       },
     ],
     forbidden: [
       {
-        forbiddenText: "tokenjuice wrap --full -- <command>",
+        forbiddenText: TOKENJUICE_FULL_COMMAND,
         presentIssue: "configured Aider convention file still suggests the full escape hatch",
       },
     ],

@@ -131,6 +131,49 @@ describe("analysis", () => {
     expect(report.daily.length).toBe(1);
   });
 
+  it("excludes capture-truncated entries from compaction totals", () => {
+    const report = statsArtifacts([
+      {
+        metadata: {
+          createdAt: "2026-04-23T00:00:00.000Z",
+          command: "python query_cls_log.py",
+          classification: {
+            family: "generic",
+            confidence: 1,
+            matchedReducer: "generic/fallback",
+          },
+          rawChars: 1000,
+          reducedChars: 100,
+          ratio: 0.1,
+          captureTruncated: true,
+        },
+      },
+      {
+        metadata: {
+          createdAt: "2026-04-23T00:01:00.000Z",
+          command: "rg TODO src",
+          classification: {
+            family: "search",
+            confidence: 1,
+            matchedReducer: "search/rg",
+          },
+          rawChars: 200,
+          reducedChars: 50,
+          ratio: 0.25,
+        },
+      },
+    ]);
+
+    expect(report.totals.observedEntries).toBe(2);
+    expect(report.totals.captureTruncatedEntries).toBe(1);
+    expect(report.totals.entries).toBe(1);
+    expect(report.totals.rawChars).toBe(200);
+    expect(report.totals.reducedChars).toBe(50);
+    expect(report.totals.savedChars).toBe(150);
+    expect(report.commands[0]?.signature).toBe("rg");
+    expect(report.reducers.some((entry) => entry.reducer === "generic/fallback")).toBe(false);
+  });
+
   it("buckets daily stats by the requested timezone", () => {
     const entries = [
       {

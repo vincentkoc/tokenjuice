@@ -13,6 +13,7 @@ import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "../hosts/aider/index.js";
+import { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "../hosts/avante/index.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
@@ -92,6 +93,7 @@ function printUsage(): void {
       "  tokenjuice wrap [--raw|--full] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install aider",
+      "  tokenjuice install avante",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cline [--local]",
@@ -107,6 +109,7 @@ function printUsage(): void {
       "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice install zed",
       "  tokenjuice uninstall aider",
+      "  tokenjuice uninstall avante",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall continue",
@@ -121,7 +124,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -468,6 +471,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "avante") {
+    const result = await installAvanteInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-based guidance; Avante still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor avante" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("avante", "instructions", details));
+    return 0;
+  }
+
   if (target === "codex") {
     const result = await installCodexHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -756,7 +779,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, junie, openhands, pi, opencode, vscode-copilot, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, junie, openhands, pi, opencode, vscode-copilot, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -771,6 +794,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed aider convention: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`convention path: ${result.conventionPath}\n`);
     process.stdout.write("enable: tokenjuice install aider\n");
+    return 0;
+  }
+
+  if (target === "avante") {
+    const result = await uninstallAvanteInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed avante instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install avante\n");
     return 0;
   }
 
@@ -907,7 +943,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, junie, openhands, opencode, vscode-copilot, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, gemini-cli, junie, openhands, opencode, vscode-copilot, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1146,6 +1182,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`convention path: ${report.conventionPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "avante") {
+    const report = await doctorAvanteInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

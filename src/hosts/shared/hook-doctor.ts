@@ -1,4 +1,5 @@
 import { doctorAiderConvention } from "../aider/index.js";
+import { doctorAvanteInstructions } from "../avante/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
 import { doctorClineHook } from "../cline/index.js";
 import { doctorCodeBuddyHook } from "../codebuddy/index.js";
@@ -14,6 +15,7 @@ import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
+import type { AvanteDoctorReport } from "../avante/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { ClineDoctorReport } from "../cline/index.js";
 import type { CodeBuddyDoctorReport, CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
@@ -32,6 +34,7 @@ type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
+  avante: AvanteDoctorReport;
   codex: CodexDoctorReport;
   "claude-code": ClaudeCodeDoctorReport;
   cline: ClineDoctorReport;
@@ -72,6 +75,7 @@ function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealt
 
 export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {}): Promise<HookDoctorReport> {
   const aider = await doctorAiderConvention();
+  const avante = await doctorAvanteInstructions();
   const codex = await doctorCodexHook(undefined, options);
   const hookCommandOptions = {
     ...(typeof options.local === "boolean" ? { local: options.local } : {}),
@@ -98,7 +102,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
           mergeStatus(
             mergeStatus(
               mergeStatus(
-                mergeStatus(mergeStatus(mergeStatus(aider.status, codex.status), claudeCode.status), cline.status),
+                mergeStatus(mergeStatus(mergeStatus(mergeStatus(aider.status, avante.status), codex.status), claudeCode.status), cline.status),
                 codebuddy.status,
               ),
               continueRule.status,
@@ -113,6 +117,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
     ),
     integrations: {
       aider,
+      avante,
       codex,
       "claude-code": claudeCode,
       cline,

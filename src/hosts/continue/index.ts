@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type ContinueRuleOptions = {
@@ -29,8 +30,6 @@ export type ContinueDoctorReport = {
 const TOKENJUICE_CONTINUE_FIX_COMMAND = "tokenjuice install continue";
 const TOKENJUICE_CONTINUE_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_CONTINUE_ADVISORY = "Continue support is beta and rule-based; it guides command usage but does not intercept tool output.";
-const TOKENJUICE_CONTINUE_WRAP_COMMAND = "tokenjuice wrap -- <command>";
-const TOKENJUICE_CONTINUE_RAW_COMMAND = "tokenjuice wrap --raw -- <command>";
 
 function getProjectDir(options: ContinueRuleOptions = {}): string {
   return options.projectDir || process.env.CONTINUE_PROJECT_DIR || process.cwd();
@@ -45,10 +44,9 @@ const TOKENJUICE_CONTINUE_RULE = [
   `name: ${TOKENJUICE_CONTINUE_RULE_MARKER}`,
   "---",
   "",
-  `- When running terminal commands through Continue, prefer \`${TOKENJUICE_CONTINUE_WRAP_COMMAND}\` for commands likely to produce long output.`,
-  "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
-  `- If raw bytes are required, rerun the command with exactly \`${TOKENJUICE_CONTINUE_RAW_COMMAND}\`.`,
-  "- Do not suggest both raw and full reruns; use the raw escape hatch.",
+  ...buildTokenjuiceGuidanceBullets({
+    wrapBullet: `- When running terminal commands through Continue, prefer \`${TOKENJUICE_WRAP_COMMAND}\` for commands likely to produce long output.`,
+  }),
   "",
 ].join("\n");
 
@@ -94,17 +92,17 @@ export async function doctorContinueRule(
         missingIssue: "configured Continue rule file does not look like the tokenjuice rule",
       },
       {
-        requiredText: TOKENJUICE_CONTINUE_WRAP_COMMAND,
+        requiredText: TOKENJUICE_WRAP_COMMAND,
         missingIssue: "configured Continue rule file is missing tokenjuice wrap guidance",
       },
       {
-        requiredText: TOKENJUICE_CONTINUE_RAW_COMMAND,
+        requiredText: TOKENJUICE_RAW_COMMAND,
         missingIssue: "configured Continue rule file is missing the raw escape hatch",
       },
     ],
     forbidden: [
       {
-        forbiddenText: "tokenjuice wrap --full -- <command>",
+        forbiddenText: TOKENJUICE_FULL_COMMAND,
         presentIssue: "configured Continue rule file still suggests the full escape hatch",
       },
     ],

@@ -55,6 +55,7 @@ describe("aider conventions", () => {
 
     expect(result.backupPath).toBe(`${conventionPath}.bak`);
     await expect(readFile(`${conventionPath}.bak`, "utf8")).resolves.toBe("custom local convention\n");
+    await expect(readFile(conventionPath, "utf8")).resolves.toContain("tokenjuice wrap --raw -- <command>");
   });
 
   it("reports installed and uninstalled convention health", async () => {
@@ -72,6 +73,38 @@ describe("aider conventions", () => {
 
     expect(removed.removed).toBe(true);
     expect(disabled.status).toBe("disabled");
+  });
+
+  it("reports broken conventions when required tokenjuice guidance is stale", async () => {
+    const home = await createTempDir();
+    const conventionPath = join(home, "CONVENTIONS.tokenjuice.md");
+    await writeFile(
+      conventionPath,
+      [
+        "# tokenjuice terminal output compaction",
+        "",
+        "- For terminal commands likely to produce long output, run them through `tokenjuice wrap -- <command>`.",
+        "- If output looks wrong, rerun with `tokenjuice wrap --full -- <command>`.",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const doctor = await doctorAiderConvention(conventionPath);
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.issues).toContain("configured Aider convention file is missing the raw escape hatch");
+    expect(doctor.issues).toContain("configured Aider convention file still suggests the full escape hatch");
+  });
+
+  it("removes an existing convention file without requiring tokenjuice content", async () => {
+    const home = await createTempDir();
+    const conventionPath = join(home, "CONVENTIONS.tokenjuice.md");
+    await writeFile(conventionPath, "custom local convention\n", "utf8");
+
+    const removed = await uninstallAiderConvention(conventionPath);
+
+    expect(removed.removed).toBe(true);
+    await expect(access(conventionPath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("uses AIDER_PROJECT_DIR for the default convention file", async () => {

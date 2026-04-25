@@ -1,15 +1,13 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { rm, writeFile } from "node:fs/promises";
+
+import { readInstructionFile, writeInstructionFile } from "./instruction-file.js";
+
+export { readInstructionFile } from "./instruction-file.js";
 
 export type MarkerDelimitedBlockConfig = {
   beginMarker: string;
   endMarker: string;
   block: string;
-};
-
-export type InstructionFileSnapshot = {
-  text: string;
-  exists: boolean;
 };
 
 export type MarkerDelimitedBlockState = {
@@ -34,17 +32,6 @@ function escapeRegExp(value: string): string {
 
 function buildBlockPattern(config: MarkerDelimitedBlockConfig): RegExp {
   return new RegExp(`\\n?${escapeRegExp(config.beginMarker)}[\\s\\S]*?${escapeRegExp(config.endMarker)}\\n?`, "gu");
-}
-
-export async function readInstructionFile(filePath: string): Promise<InstructionFileSnapshot> {
-  try {
-    return { text: await readFile(filePath, "utf8"), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { text: "", exists: false };
-    }
-    throw error;
-  }
 }
 
 export function inspectMarkerDelimitedBlock(text: string, config: MarkerDelimitedBlockConfig): MarkerDelimitedBlockState {
@@ -76,19 +63,10 @@ export function upsertMarkerDelimitedBlock(text: string, config: MarkerDelimited
 
 export async function installMarkerDelimitedBlock(filePath: string, config: MarkerDelimitedBlockConfig): Promise<InstallMarkerDelimitedBlockResult> {
   const existing = await readInstructionFile(filePath);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = `${filePath}.bak`;
-    await writeFile(backupPath, existing.text, "utf8");
-  }
-
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.tmp`;
-  await writeFile(tempPath, upsertMarkerDelimitedBlock(existing.text, config), "utf8");
-  await rename(tempPath, filePath);
+  const result = await writeInstructionFile(filePath, upsertMarkerDelimitedBlock(existing.text, config));
   return {
-    filePath,
-    ...(backupPath ? { backupPath } : {}),
+    filePath: result.filePath,
+    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
   };
 }
 

@@ -36,8 +36,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice uninstall [codex|opencode]
+tokenjuice install [codex|claude-code|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice uninstall [codex|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -74,11 +74,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli]
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli] --local
-tokenjuice uninstall [codex|opencode]
-tokenjuice uninstall vscode-copilot
-tokenjuice uninstall copilot-cli
+tokenjuice install [codex|claude-code|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli]
+tokenjuice install [codex|claude-code|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] --local
+tokenjuice uninstall [codex|gemini-cli|openhands|opencode|vscode-copilot|copilot-cli]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -105,6 +103,7 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | ✅ Yes |
 | <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes (`2026.4.22+`) |
 | <img width="48px" src="docs/client-opencode.png" alt="OpenCode" /> | [OpenCode](https://opencode.ai/) | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` | ✅ Yes |
+| ✴️ | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` | ✴️ Beta |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
 | <img width="48px" src="docs/client-copilot.png" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) (Stable **and** Insiders) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | ✅ Yes |
 
@@ -118,7 +117,7 @@ shared behavior:
 - `tokenjuice doctor opencode` inspects the installed OpenCode plugin directly when you only care about that surface
 - `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
 - `tokenjuice uninstall opencode` cleanly removes the OpenCode plugin and points back to `tokenjuice install opencode` for re-enabling
-- `tokenjuice install [codex|claude-code|codebuddy|cursor|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
+- `tokenjuice install [codex|claude-code|codebuddy|cursor|gemini-cli|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
 - `pnpm e2e:local` builds the repo and smoke-tests the local Codex app-server CLI and Claude Code CLI hook pass-through paths
 - OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
 - `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`
@@ -133,6 +132,8 @@ library-side adapters can also use `runReduceJsonCli(...)` to call the CLI witho
 repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
 
 for OpenCode, `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`. restart OpenCode after install; the plugin is auto-loaded on session start.
+
+for OpenHands, `tokenjuice install openhands` installs a project-local beta hook into `.openhands/hooks.json`. tokenjuice listens to `PostToolUse` events for the `terminal` tool and injects compacted context alongside the original output.
 
 for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
 

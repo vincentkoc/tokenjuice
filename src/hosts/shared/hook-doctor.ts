@@ -4,6 +4,7 @@ import { doctorCodexHook } from "../codex/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
+import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 
@@ -13,6 +14,7 @@ import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
+import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 
@@ -24,6 +26,7 @@ export type HookIntegrationDoctorReport = {
   codebuddy: CodeBuddyDoctorReport;
   cursor: CursorDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
+  openhands: OpenHandsDoctorReport;
   pi: PiDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
@@ -63,6 +66,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
   const codebuddy = await doctorCodeBuddyHook(undefined, hookCommandOptions);
   const cursor = await doctorCursorHook(undefined, hookCommandOptions);
   const geminiCli = await doctorGeminiCliHook(undefined, hookCommandOptions);
+  const openhands = await doctorOpenHandsHook(undefined, hookCommandOptions);
   const pi = await doctorPiExtension();
   const vscodeCopilot = await doctorVscodeCopilotHook(undefined, hookCommandOptions);
   const copilotCli = await doctorCopilotCliHook(undefined, hookCommandOptions);
@@ -75,7 +79,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
             mergeStatus(mergeStatus(codex.status, claudeCode.status), codebuddy.status),
             mergeStatus(cursor.status, geminiCli.status),
           ),
-          pi.status,
+          mergeStatus(openhands.status, pi.status),
         ),
         vscodeCopilot.status,
       ),
@@ -87,6 +91,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
       codebuddy,
       cursor,
       "gemini-cli": geminiCli,
+      openhands,
       pi,
       "vscode-copilot": vscodeCopilot,
       "copilot-cli": copilotCli,

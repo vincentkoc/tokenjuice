@@ -34,6 +34,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("openclaw")) {
     return "openclaw";
   }
+  if (source.startsWith("openhands")) {
+    return "openhands";
+  }
   if (source.startsWith("opencode") || source.startsWith("open-code")) {
     return "opencode";
   }

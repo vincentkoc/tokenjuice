@@ -29,6 +29,7 @@ import {
   installOpenCodeExtension,
   uninstallOpenCodeExtension,
 } from "../hosts/opencode/index.js";
+import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "../hosts/openhands/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
 import {
   doctorVscodeCopilotHook,
@@ -90,12 +91,14 @@ function printUsage(): void {
       "  tokenjuice install codebuddy [--local]",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install gemini-cli [--local]",
+      "  tokenjuice install openhands [--local]",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall gemini-cli",
+      "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall vscode-copilot",
       "  tokenjuice uninstall copilot-cli",
@@ -103,7 +106,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|gemini-cli|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -535,6 +538,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "openhands") {
+    const result = await installOpenHandsHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.hooksPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "project-local PostToolUse hook; compacted context is injected alongside original output" },
+      { label: "Verify", value: `tokenjuice doctor openhands${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("openhands", "hook", details));
+    return 0;
+  }
+
   if (target === "pi") {
     const result = await installPiExtension(undefined, { local: args.local });
     if (args.format === "json") {
@@ -619,7 +643,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, codebuddy, cursor, gemini-cli, pi, opencode, vscode-copilot, copilot-cli");
+  throw new Error("install currently supports: codex, claude-code, codebuddy, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -650,6 +674,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
     process.stdout.write(`settings path: ${result.settingsPath}\n`);
     process.stdout.write("enable: tokenjuice install gemini-cli\n");
+    return 0;
+  }
+
+  if (target === "openhands") {
+    const result = await uninstallOpenHandsHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed openhands entries: ${result.removed}\n`);
+    process.stdout.write(`hooks path: ${result.hooksPath}\n`);
+    process.stdout.write("enable: tokenjuice install openhands\n");
     return 0;
   }
 
@@ -692,7 +729,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex, gemini-cli, opencode, vscode-copilot, copilot-cli");
+  throw new Error("uninstall currently supports: codex, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1067,6 +1104,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "openhands") {
+    const report = await doctorOpenHandsHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hooks path: ${report.hooksPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "vscode-copilot") {
     if (args.printInstructions) {
       process.stdout.write(getVscodeCopilotInstructionsSnippet());
@@ -1372,6 +1445,8 @@ async function main(): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
+    case "openhands-post-tool-use":
+      return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
     case "vscode-copilot-pre-tool-use":
       return await runVscodeCopilotPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "copilot-cli-post-tool-use":

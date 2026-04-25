@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { buildCompactionHint } from "../shared/hook-output.js";
 
 type ClaudeCodeHook = Record<string, unknown>;
 
@@ -395,18 +396,8 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
 }
 
-function buildClaudeCodeHint(rawRefId?: string): string {
-  const hints = [
-    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>` or `tokenjuice wrap --full -- <command>`.",
-  ];
-  if (rawRefId) {
-    hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);
-  }
-  return hints.join(" ");
-}
-
 function buildClaudeCodeAdditionalContext(inlineText: string, rawRefId?: string): string {
-  return `${inlineText}\n\n${buildClaudeCodeHint(rawRefId)}`;
+  return `${inlineText}\n\n${buildCompactionHint(rawRefId)}`;
 }
 
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {

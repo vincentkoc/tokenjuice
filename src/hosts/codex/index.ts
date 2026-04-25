@@ -10,6 +10,7 @@ import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../cor
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, stripAnsi } from "../../core/text.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { buildCompactionHint } from "../shared/hook-output.js";
 
 import type { ToolExecutionInput } from "../../types.js";
 
@@ -612,18 +613,8 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
 }
 
-function buildCodexHint(rawRefId?: string): string {
-  const hints = [
-    "if this compaction looks wrong, rerun with `tokenjuice wrap --raw -- <command>`.",
-  ];
-  if (rawRefId) {
-    hints.unshift(`tokenjuice stored raw bash output as artifact ${rawRefId}. use \`tokenjuice cat ${rawRefId}\` only if the compacted output is insufficient.`);
-  }
-  return hints.join(" ");
-}
-
 function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
-  return `${inlineText}\n\n${buildCodexHint(rawRefId)}`;
+  return `${inlineText}\n\n${buildCompactionHint(rawRefId)}`;
 }
 
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {

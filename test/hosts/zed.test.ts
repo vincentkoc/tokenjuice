@@ -29,6 +29,10 @@ async function createTempDir(): Promise<string> {
 }
 
 describe("zed rules", () => {
+  function countTokenjuiceBlocks(text: string): number {
+    return text.match(/<!-- tokenjuice:begin -->/gu)?.length ?? 0;
+  }
+
   it("installs a marker-delimited rule block", async () => {
     const home = await createTempDir();
     const instructionsPath = join(home, ".rules");
@@ -60,6 +64,35 @@ describe("zed rules", () => {
     expect(instructions).toContain("<!-- tokenjuice:begin -->");
   });
 
+  it("replaces stale tokenjuice rules without duplicating the block", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, ".rules");
+    await writeFile(
+      instructionsPath,
+      [
+        "# project rules",
+        "",
+        "- keep this",
+        "",
+        "<!-- tokenjuice:begin -->",
+        "stale tokenjuice block",
+        "<!-- tokenjuice:end -->",
+        "",
+        "<!-- tokenjuice:begin -->",
+        "another stale tokenjuice block",
+        "<!-- tokenjuice:end -->",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await installZedInstructions(instructionsPath);
+    const instructions = await readFile(instructionsPath, "utf8");
+
+    expect(instructions).toContain("- keep this");
+    expect(instructions).not.toContain("stale tokenjuice block");
+    expect(countTokenjuiceBlocks(instructions)).toBe(1);
+  });
+
   it("reports installed and uninstalled rule health", async () => {
     const home = await createTempDir();
     const instructionsPath = join(home, ".rules");
@@ -75,6 +108,29 @@ describe("zed rules", () => {
 
     expect(removed.removed).toBe(true);
     expect(disabled.status).toBe("disabled");
+  });
+
+  it("reports broken rules with unmatched tokenjuice markers", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, ".rules");
+    await writeFile(instructionsPath, "<!-- tokenjuice:begin -->\nmissing end marker\n", "utf8");
+
+    const doctor = await doctorZedInstructions(instructionsPath);
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.issues[0]).toContain("without an end marker");
+  });
+
+  it("leaves unrelated rules untouched when uninstall finds no tokenjuice block", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, ".rules");
+    await writeFile(instructionsPath, "# project rules\n\n- keep this\n", "utf8");
+
+    const removed = await uninstallZedInstructions(instructionsPath);
+    const instructions = await readFile(instructionsPath, "utf8");
+
+    expect(removed.removed).toBe(false);
+    expect(instructions).toBe("# project rules\n\n- keep this\n");
   });
 
   it("uses ZED_PROJECT_DIR for the default rules file", async () => {

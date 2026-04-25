@@ -5,6 +5,7 @@ export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normaliz
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
+export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
   doctorCodexHook,
   inspectCodexHooksFeatureFlag,
@@ -72,6 +73,12 @@ export type {
   InstallClineHookResult,
   UninstallClineHookResult,
 } from "./hosts/cline/index.js";
+export type {
+  ContinueDoctorReport,
+  ContinueRuleOptions,
+  InstallContinueRuleResult,
+  UninstallContinueRuleResult,
+} from "./hosts/continue/index.js";
 export type {
   InstallOpenCodeExtensionResult,
   OpenCodeDoctorReport,

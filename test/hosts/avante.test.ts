@@ -29,6 +29,10 @@ async function createTempDir(): Promise<string> {
 }
 
 describe("avante instructions", () => {
+  function countTokenjuiceBlocks(text: string): number {
+    return text.match(/<!-- tokenjuice:begin -->/gu)?.length ?? 0;
+  }
+
   it("installs a marker-delimited instruction block", async () => {
     const home = await createTempDir();
     const instructionsPath = join(home, "avante.md");
@@ -60,6 +64,35 @@ describe("avante instructions", () => {
     expect(instructions).toContain("<!-- tokenjuice:begin -->");
   });
 
+  it("replaces stale tokenjuice instructions without duplicating the block", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, "avante.md");
+    await writeFile(
+      instructionsPath,
+      [
+        "# project instructions",
+        "",
+        "- keep this",
+        "",
+        "<!-- tokenjuice:begin -->",
+        "stale tokenjuice block",
+        "<!-- tokenjuice:end -->",
+        "",
+        "<!-- tokenjuice:begin -->",
+        "another stale tokenjuice block",
+        "<!-- tokenjuice:end -->",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await installAvanteInstructions(instructionsPath);
+    const instructions = await readFile(instructionsPath, "utf8");
+
+    expect(instructions).toContain("- keep this");
+    expect(instructions).not.toContain("stale tokenjuice block");
+    expect(countTokenjuiceBlocks(instructions)).toBe(1);
+  });
+
   it("reports installed and uninstalled instruction health", async () => {
     const home = await createTempDir();
     const instructionsPath = join(home, "avante.md");
@@ -75,6 +108,29 @@ describe("avante instructions", () => {
 
     expect(removed.removed).toBe(true);
     expect(disabled.status).toBe("disabled");
+  });
+
+  it("reports broken instructions with unmatched tokenjuice markers", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, "avante.md");
+    await writeFile(instructionsPath, "<!-- tokenjuice:begin -->\nmissing end marker\n", "utf8");
+
+    const doctor = await doctorAvanteInstructions(instructionsPath);
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.issues[0]).toContain("without an end marker");
+  });
+
+  it("leaves unrelated instructions untouched when uninstall finds no tokenjuice block", async () => {
+    const home = await createTempDir();
+    const instructionsPath = join(home, "avante.md");
+    await writeFile(instructionsPath, "# project instructions\n\n- keep this\n", "utf8");
+
+    const removed = await uninstallAvanteInstructions(instructionsPath);
+    const instructions = await readFile(instructionsPath, "utf8");
+
+    expect(removed.removed).toBe(false);
+    expect(instructions).toBe("# project instructions\n\n- keep this\n");
   });
 
   it("uses AVANTE_PROJECT_DIR for the default instructions file", async () => {

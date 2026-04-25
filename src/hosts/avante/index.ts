@@ -1,5 +1,11 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+
+import {
+  inspectMarkerDelimitedBlock,
+  installMarkerDelimitedBlock,
+  readInstructionFile,
+  uninstallMarkerDelimitedBlock,
+} from "../shared/marker-instructions.js";
 
 export type AvanteInstructionsOptions = {
   projectDir?: string;
@@ -28,6 +34,7 @@ export type AvanteDoctorReport = {
 const TOKENJUICE_AVANTE_FIX_COMMAND = "tokenjuice install avante";
 const TOKENJUICE_AVANTE_BEGIN = "<!-- tokenjuice:begin -->";
 const TOKENJUICE_AVANTE_END = "<!-- tokenjuice:end -->";
+const TOKENJUICE_AVANTE_ADVISORY = "Avante support is beta and instruction-based; it guides command usage but does not intercept tool output.";
 
 function getProjectDir(options: AvanteInstructionsOptions = {}): string {
   return options.projectDir || process.env.AVANTE_PROJECT_DIR || process.cwd();
@@ -37,86 +44,38 @@ function getDefaultInstructionsPath(options: AvanteInstructionsOptions = {}): st
   return join(getProjectDir(options), "avante.md");
 }
 
-function buildAvanteBlock(): string {
-  return [
-    TOKENJUICE_AVANTE_BEGIN,
-    "## tokenjuice terminal output compaction",
-    "",
-    "- For terminal commands likely to produce long output, run them through `tokenjuice wrap -- <command>`.",
-    "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
-    "- If raw bytes are required, rerun the command with exactly `tokenjuice wrap --raw -- <command>`.",
-    "- Do not suggest both raw and full reruns; use the raw escape hatch.",
-    TOKENJUICE_AVANTE_END,
-  ].join("\n");
-}
+const TOKENJUICE_AVANTE_BLOCK = [
+  TOKENJUICE_AVANTE_BEGIN,
+  "## tokenjuice terminal output compaction",
+  "",
+  "- For terminal commands likely to produce long output, run them through `tokenjuice wrap -- <command>`.",
+  "- Treat compacted tokenjuice output as authoritative unless it explicitly says raw output is required.",
+  "- If raw bytes are required, rerun the command with exactly `tokenjuice wrap --raw -- <command>`.",
+  "- Do not suggest both raw and full reruns; use the raw escape hatch.",
+  TOKENJUICE_AVANTE_END,
+].join("\n");
 
-async function readInstructions(instructionsPath: string): Promise<{ text: string; exists: boolean }> {
-  try {
-    return { text: await readFile(instructionsPath, "utf8"), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { text: "", exists: false };
-    }
-    throw error;
-  }
-}
-
-function removeTokenjuiceBlock(text: string): { text: string; removed: boolean } {
-  const pattern = new RegExp(`\\n?${TOKENJUICE_AVANTE_BEGIN}[\\s\\S]*?${TOKENJUICE_AVANTE_END}\\n?`, "u");
-  if (!pattern.test(text)) {
-    return { text, removed: false };
-  }
-  return {
-    text: text.replace(pattern, "\n").replace(/\n{3,}/gu, "\n\n").trim(),
-    removed: true,
-  };
-}
-
-function upsertTokenjuiceBlock(text: string): string {
-  const withoutBlock = removeTokenjuiceBlock(text).text.trim();
-  if (!withoutBlock) {
-    return `${buildAvanteBlock()}\n`;
-  }
-  return `${withoutBlock}\n\n${buildAvanteBlock()}\n`;
-}
+const TOKENJUICE_AVANTE_BLOCK_CONFIG = {
+  beginMarker: TOKENJUICE_AVANTE_BEGIN,
+  endMarker: TOKENJUICE_AVANTE_END,
+  block: TOKENJUICE_AVANTE_BLOCK,
+};
 
 export async function installAvanteInstructions(
   instructionsPath?: string,
   options: AvanteInstructionsOptions = {},
 ): Promise<InstallAvanteInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? getDefaultInstructionsPath(options);
-  const existing = await readInstructions(resolvedInstructionsPath);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = `${resolvedInstructionsPath}.bak`;
-    await writeFile(backupPath, existing.text, "utf8");
-  }
-
-  await mkdir(dirname(resolvedInstructionsPath), { recursive: true });
-  const tempPath = `${resolvedInstructionsPath}.tmp`;
-  await writeFile(tempPath, upsertTokenjuiceBlock(existing.text), "utf8");
-  await rename(tempPath, resolvedInstructionsPath);
+  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AVANTE_BLOCK_CONFIG);
   return {
-    instructionsPath: resolvedInstructionsPath,
-    ...(backupPath ? { backupPath } : {}),
+    instructionsPath: result.filePath,
+    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
   };
 }
 
 export async function uninstallAvanteInstructions(instructionsPath = getDefaultInstructionsPath()): Promise<UninstallAvanteInstructionsResult> {
-  const existing = await readInstructions(instructionsPath);
-  if (!existing.exists) {
-    return { instructionsPath, removed: false };
-  }
-  const removed = removeTokenjuiceBlock(existing.text);
-  if (!removed.removed) {
-    return { instructionsPath, removed: false };
-  }
-  if (removed.text.trim()) {
-    await writeFile(instructionsPath, `${removed.text.trim()}\n`, "utf8");
-  } else {
-    await rm(instructionsPath, { force: true });
-  }
-  return { instructionsPath, removed: true };
+  const result = await uninstallMarkerDelimitedBlock(instructionsPath, TOKENJUICE_AVANTE_BLOCK_CONFIG);
+  return { instructionsPath: result.filePath, removed: result.removed };
 }
 
 export async function doctorAvanteInstructions(
@@ -124,28 +83,34 @@ export async function doctorAvanteInstructions(
   options: AvanteInstructionsOptions = {},
 ): Promise<AvanteDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? getDefaultInstructionsPath(options);
-  const existing = await readInstructions(resolvedInstructionsPath);
-  if (!existing.exists || !existing.text.includes(TOKENJUICE_AVANTE_BEGIN)) {
+  const existing = await readInstructionFile(resolvedInstructionsPath);
+  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AVANTE_BLOCK_CONFIG);
+  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
     return {
       instructionsPath: resolvedInstructionsPath,
       status: "disabled",
       issues: ["tokenjuice Avante instructions are not installed"],
-      advisories: ["Avante support is beta and instruction-based; it guides command usage but does not intercept tool output."],
+      advisories: [TOKENJUICE_AVANTE_ADVISORY],
       fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
       checkedPaths: [],
       missingPaths: [],
     };
   }
 
-  const issues = existing.text.includes(TOKENJUICE_AVANTE_END)
-    ? []
-    : ["configured Avante instructions have a tokenjuice start marker without an end marker"];
+  const issues: string[] = [];
+  if (markerState.hasBegin && !markerState.hasEnd) {
+    issues.push("configured Avante instructions have a tokenjuice start marker without an end marker");
+  } else if (!markerState.hasBegin && markerState.hasEnd) {
+    issues.push("configured Avante instructions have a tokenjuice end marker without a start marker");
+  } else if (markerState.completeBlockCount !== 1) {
+    issues.push("configured Avante instructions have multiple tokenjuice blocks; run tokenjuice install avante to repair");
+  }
 
   return {
     instructionsPath: resolvedInstructionsPath,
     status: issues.length > 0 ? "broken" : "ok",
     issues,
-    advisories: ["Avante support is beta and instruction-based; it guides command usage but does not intercept tool output."],
+    advisories: [TOKENJUICE_AVANTE_ADVISORY],
     fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
     checkedPaths: [],
     missingPaths: [],

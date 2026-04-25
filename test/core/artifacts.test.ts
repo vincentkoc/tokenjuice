@@ -98,5 +98,30 @@ describe("artifacts", () => {
     expect(metadata[0]?.id).toBe(metadataRef.id);
     expect(metadata[0]?.path).toBeUndefined();
     expect(metadata[0]?.metadata.command).toBe("pnpm test");
+    expect(metadata[0]?.metadata.source).toBe("cli");
+  });
+
+  it("persists normalized source metadata when provided", async () => {
+    const storeDir = await createTempDir();
+
+    const metadataRef = await storeArtifactMetadata(
+      {
+        input: {
+          toolName: "exec",
+          command: "pnpm test",
+          exitCode: 0,
+          metadata: { source: "codex-post-tool-use" },
+        },
+        rawText: "test output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/pnpm-test" },
+        stats: { rawChars: 11, reducedChars: 5, ratio: 0.45 },
+      },
+      storeDir,
+    );
+
+    const metadata = await listArtifactMetadata(storeDir);
+
+    expect(metadata[0]?.id).toBe(metadataRef.id);
+    expect(metadata[0]?.metadata.source).toBe("codex");
   });
 });

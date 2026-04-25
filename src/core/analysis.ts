@@ -1,5 +1,6 @@
 import type { CompactResult, StoredArtifactMetadata, ToolExecutionInput } from "../types.js";
 import { normalizeCommandSignature } from "./command-identity.js";
+import { readStoredArtifactSource, resolveArtifactSource } from "./source.js";
 import { buildCalendarDayFormatter } from "./time.js";
 
 export type AnalysisEntry = {
@@ -8,6 +9,7 @@ export type AnalysisEntry = {
 
 export type DiscoverCandidate = {
   kind: "missing-rule" | "weak-rule";
+  source?: string;
   signature: string;
   count: number;
   totalRawChars: number;
@@ -34,6 +36,7 @@ export type DoctorReport = {
 };
 
 export type StatsReport = {
+  source?: string;
   totals: {
     observedEntries: number;
     captureTruncatedEntries: number;
@@ -72,14 +75,27 @@ export type StatsReport = {
     reducedChars: number;
     savedChars: number;
   }>;
+  sources?: StatsSourceReport[];
 };
 
 export type StatsOptions = {
   timeZone?: string;
+  source?: string;
+  bySource?: boolean;
+};
+
+export type DiscoverOptions = {
+  source?: string;
+  bySource?: boolean;
+};
+
+export type StatsSourceReport = Omit<StatsReport, "sources"> & {
+  source: string;
 };
 
 type GroupState = {
   kind: DiscoverCandidate["kind"];
+  source?: string;
   signature: string;
   count: number;
   totalRawChars: number;
@@ -115,6 +131,7 @@ export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactRes
   return {
     metadata: {
       createdAt: new Date().toISOString(),
+      source: resolveArtifactSource(input),
       classification: result.classification,
       rawChars: result.stats.rawChars,
       reducedChars: result.stats.reducedChars,
@@ -127,8 +144,25 @@ export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactRes
   };
 }
 
-function groupCandidates(entries: Array<AnalysisEntry & { kind: DiscoverCandidate["kind"] }>): DiscoverCandidate[] {
+function entrySource(entry: AnalysisEntry): string {
+  return readStoredArtifactSource(entry.metadata.source);
+}
+
+function filterEntriesBySource(entries: AnalysisEntry[], source: string | undefined): AnalysisEntry[] {
+  const normalized = readStoredArtifactSource(source);
+  if (!source) {
+    return entries;
+  }
+
+  return entries.filter((entry) => entrySource(entry) === normalized);
+}
+
+function groupCandidates(
+  entries: Array<AnalysisEntry & { kind: DiscoverCandidate["kind"] }>,
+  options: DiscoverOptions = {},
+): DiscoverCandidate[] {
   const groups = new Map<string, GroupState>();
+  const includeSource = options.bySource || Boolean(options.source);
 
   for (const entry of entries) {
     const signature = normalizeCommandSignature(entry.metadata.command);
@@ -136,9 +170,16 @@ function groupCandidates(entries: Array<AnalysisEntry & { kind: DiscoverCandidat
       continue;
     }
 
-    const key = `${entry.kind}:${signature}:${entry.metadata.classification.matchedReducer ?? ""}`;
+    const source = entrySource(entry);
+    const key = [
+      entry.kind,
+      includeSource ? source : "",
+      signature,
+      entry.metadata.classification.matchedReducer ?? "",
+    ].join(":");
     const existing = groups.get(key) ?? {
       kind: entry.kind,
+      ...(includeSource ? { source } : {}),
       signature,
       count: 0,
       totalRawChars: 0,
@@ -162,6 +203,7 @@ function groupCandidates(entries: Array<AnalysisEntry & { kind: DiscoverCandidat
   return [...groups.values()]
     .map((group) => ({
       kind: group.kind,
+      ...(group.source ? { source: group.source } : {}),
       signature: group.signature,
       count: group.count,
       totalRawChars: group.totalRawChars,
@@ -178,8 +220,9 @@ function groupCandidates(entries: Array<AnalysisEntry & { kind: DiscoverCandidat
     });
 }
 
-export function discoverCandidates(entries: AnalysisEntry[]): DiscoverCandidate[] {
-  const missing = entries
+export function discoverCandidates(entries: AnalysisEntry[], options: DiscoverOptions = {}): DiscoverCandidate[] {
+  const filteredEntries = filterEntriesBySource(entries, options.source);
+  const missing = filteredEntries
     .filter((entry) => GENERIC_REDUCERS.has(entry.metadata.classification.matchedReducer))
     .filter((entry) => entry.metadata.rawChars >= MISSING_RAW_CHARS_THRESHOLD)
     .map((entry) => ({
@@ -187,7 +230,7 @@ export function discoverCandidates(entries: AnalysisEntry[]): DiscoverCandidate[
       kind: "missing-rule" as const,
     }));
 
-  const weak = entries
+  const weak = filteredEntries
     .filter((entry) => !GENERIC_REDUCERS.has(entry.metadata.classification.matchedReducer))
     .filter((entry) => typeof entry.metadata.ratio === "number" && entry.metadata.ratio >= WEAK_RATIO_THRESHOLD)
     .filter((entry) => entry.metadata.rawChars >= WEAK_RAW_CHARS_THRESHOLD)
@@ -197,8 +240,8 @@ export function discoverCandidates(entries: AnalysisEntry[]): DiscoverCandidate[
     }));
 
   return [
-    ...groupCandidates(missing),
-    ...groupCandidates(weak),
+    ...groupCandidates(missing, options),
+    ...groupCandidates(weak, options),
   ].sort((left, right) => {
     if (left.kind !== right.kind) {
       return left.kind.localeCompare(right.kind);
@@ -269,7 +312,7 @@ function avgRatioFromGroup(group: StatsGroup): number | null {
   return group.ratioCount > 0 ? group.ratioSum / group.ratioCount : null;
 }
 
-export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions = {}): StatsReport {
+function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, source?: string): StatsReport {
   const reducers = new Map<string, StatsGroup>();
   const commands = new Map<string, StatsGroup>();
   const daily = new Map<string, StatsGroup>();
@@ -325,6 +368,7 @@ export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions =
   const observedSavingsPercent = observedRawChars > 0 ? observedSavedChars / observedRawChars : null;
 
   return {
+    ...(source ? { source } : {}),
     totals: {
       observedEntries: entries.length,
       captureTruncatedEntries,
@@ -371,6 +415,32 @@ export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions =
         savedChars: Math.max(group.rawChars - group.reducedChars, 0),
       }))
       .sort((left, right) => left.day.localeCompare(right.day)),
+  };
+}
+
+export function statsArtifacts(entries: AnalysisEntry[], options: StatsOptions = {}): StatsReport {
+  const filteredEntries = filterEntriesBySource(entries, options.source);
+  const report = buildStatsReport(
+    filteredEntries,
+    options,
+    options.source ? readStoredArtifactSource(options.source) : undefined,
+  );
+
+  if (!options.bySource) {
+    return report;
+  }
+
+  const sources = [...new Set(filteredEntries.map((entry) => entrySource(entry)))]
+    .sort()
+    .map((source) => buildStatsReport(
+      filteredEntries.filter((entry) => entrySource(entry) === source),
+      options,
+      source,
+    ) as StatsSourceReport);
+
+  return {
+    ...report,
+    sources,
   };
 }
 

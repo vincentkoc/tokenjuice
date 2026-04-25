@@ -40,6 +40,7 @@ export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from ".
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
 export { classifyOnly, findMatchingRule, reduceExecution, reduceExecutionWithRules } from "./core/reduce.js";
 export { clearRuleCache, loadBuiltinRules, loadRules, verifyBuiltinRules, verifyRules } from "./core/rules.js";
+export { normalizeArtifactSource, readStoredArtifactSource, resolveArtifactSource } from "./core/source.js";
 export { clampText, countTerminalCells, countTextChars, stripAnsi } from "./core/text.js";
 export { runWrappedCommand } from "./core/wrap.js";
 export { assertValidRule, validateRule } from "./core/validate-rules.js";
@@ -81,4 +82,4 @@ export type {
   InstallCopilotCliHookResult,
   UninstallCopilotCliHookResult,
 } from "./hosts/copilot-cli/index.js";
-export type { StatsOptions, StatsReport } from "./core/analysis.js";
+export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } from "./core/analysis.js";

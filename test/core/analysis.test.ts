@@ -88,6 +88,7 @@ describe("analysis", () => {
 
     expect(entry.metadata.classification.matchedReducer).toBe("tests/vitest");
     expect(entry.metadata.rawChars).toBeGreaterThan(0);
+    expect(entry.metadata.source).toBe("cli");
   });
 
   it("aggregates stats across stored artifacts", async () => {
@@ -136,6 +137,7 @@ describe("analysis", () => {
       {
         metadata: {
           createdAt: "2026-04-23T00:00:00.000Z",
+          source: "codex",
           command: "python query_cls_log.py",
           classification: {
             family: "generic",
@@ -151,6 +153,7 @@ describe("analysis", () => {
       {
         metadata: {
           createdAt: "2026-04-23T00:01:00.000Z",
+          source: "cursor",
           command: "rg TODO src",
           classification: {
             family: "search",
@@ -172,6 +175,116 @@ describe("analysis", () => {
     expect(report.totals.savedChars).toBe(150);
     expect(report.commands[0]?.signature).toBe("rg");
     expect(report.reducers.some((entry) => entry.reducer === "generic/fallback")).toBe(false);
+  });
+
+  it("segments stats by normalized artifact source", () => {
+    const entries = [
+      {
+        metadata: {
+          createdAt: "2026-04-20T00:00:00.000Z",
+          source: "codex",
+          command: "pnpm test",
+          classification: {
+            family: "tests",
+            confidence: 1,
+            matchedReducer: "tests/pnpm-test",
+          },
+          rawChars: 100,
+          reducedChars: 40,
+          ratio: 0.4,
+        },
+      },
+      {
+        metadata: {
+          createdAt: "2026-04-20T01:00:00.000Z",
+          source: "cursor",
+          command: "grep TODO src",
+          classification: {
+            family: "search",
+            confidence: 1,
+            matchedReducer: "search/grep",
+          },
+          rawChars: 200,
+          reducedChars: 100,
+          ratio: 0.5,
+        },
+      },
+      {
+        metadata: {
+          createdAt: "2026-04-20T02:00:00.000Z",
+          command: "custom-tool check",
+          classification: {
+            family: "generic",
+            confidence: 1,
+            matchedReducer: "generic/fallback",
+          },
+          rawChars: 50,
+          reducedChars: 50,
+          ratio: 1,
+        },
+      },
+    ];
+
+    const grouped = statsArtifacts(entries, { bySource: true });
+    expect(grouped.totals.entries).toBe(3);
+    expect(grouped.sources?.map((source) => source.source)).toEqual(["codex", "cursor", "unknown"]);
+    expect(grouped.sources?.find((source) => source.source === "cursor")?.commands[0]?.signature).toBe("grep");
+
+    const cursorOnly = statsArtifacts(entries, { source: "cursor" });
+    expect(cursorOnly.source).toBe("cursor");
+    expect(cursorOnly.totals.entries).toBe(1);
+    expect(cursorOnly.commands[0]?.signature).toBe("grep");
+  });
+
+  it("can segment and filter discover candidates by source", () => {
+    const entries = [
+      {
+        metadata: {
+          createdAt: "2026-04-20T00:00:00.000Z",
+          source: "codex",
+          command: "custom-tool check",
+          classification: {
+            family: "generic",
+            confidence: 1,
+            matchedReducer: "generic/fallback",
+          },
+          rawChars: 300,
+          reducedChars: 300,
+          ratio: 1,
+        },
+      },
+      {
+        metadata: {
+          createdAt: "2026-04-20T01:00:00.000Z",
+          source: "cursor",
+          command: "custom-tool check",
+          classification: {
+            family: "generic",
+            confidence: 1,
+            matchedReducer: "generic/fallback",
+          },
+          rawChars: 400,
+          reducedChars: 400,
+          ratio: 1,
+        },
+      },
+    ];
+
+    const defaultCandidates = discoverCandidates(entries);
+    expect(defaultCandidates).toHaveLength(1);
+    expect(defaultCandidates[0]?.count).toBe(2);
+    expect(defaultCandidates[0]?.source).toBeUndefined();
+
+    const grouped = discoverCandidates(entries, { bySource: true });
+    expect(grouped.map((candidate) => candidate.source).sort()).toEqual(["codex", "cursor"]);
+
+    const codexOnly = discoverCandidates(entries, { source: "codex", bySource: true });
+    expect(codexOnly).toHaveLength(1);
+    expect(codexOnly[0]?.source).toBe("codex");
+    expect(codexOnly[0]?.count).toBe(1);
+
+    const filtered = discoverCandidates(entries, { source: "cursor" });
+    expect(filtered[0]?.source).toBe("cursor");
   });
 
   it("buckets daily stats by the requested timezone", () => {

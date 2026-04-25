@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 import { countTextChars, stripAnsi } from "./text.js";
+import { resolveArtifactSource } from "./source.js";
 
 import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
@@ -27,6 +28,9 @@ function isStoredArtifactMetadata(value: unknown): value is StoredArtifactMetada
   }
 
   if ("toolName" in value && value.toolName !== undefined && typeof value.toolName !== "string") {
+    return false;
+  }
+  if ("source" in value && value.source !== undefined && typeof value.source !== "string") {
     return false;
   }
   if ("command" in value && value.command !== undefined && typeof value.command !== "string") {
@@ -93,6 +97,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
     rawText: input.rawText,
     metadata: {
       createdAt: new Date().toISOString(),
+      source: resolveArtifactSource(input.input),
       classification: input.classification,
       rawChars: input.stats?.rawChars ?? countTextChars(stripAnsi(input.rawText)),
       ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
@@ -117,6 +122,7 @@ export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir
   const captureTruncated = extractCaptureTruncatedFlag(input.input);
   const metadata: StoredArtifactMetadata = {
     createdAt: new Date().toISOString(),
+    source: resolveArtifactSource(input.input),
     classification: input.classification,
     rawChars: input.stats?.rawChars ?? countTextChars(stripAnsi(input.rawText)),
     ...(input.input.toolName ? { toolName: input.input.toolName } : {}),

@@ -302,7 +302,7 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
     return 0;
   }
 
-  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command });
+  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command, source: "cursor" });
   const response = {
     permission: "allow",
     updated_input: {

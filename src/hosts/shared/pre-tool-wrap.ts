@@ -185,13 +185,15 @@ export function buildWrappedCommand(params: {
   wrapLauncher: string;
   shellPath: string;
   command: string;
+  source?: string;
   nodePath?: string;
 }): string {
   const nodePath = params.nodePath ?? process.execPath;
   const launcherCommand = params.wrapLauncher.endsWith(".js")
     ? `${shellQuote(nodePath)} ${shellQuote(params.wrapLauncher)}`
     : shellQuote(params.wrapLauncher);
-  return `${launcherCommand} wrap -- ${shellQuote(params.shellPath)} -lc ${shellQuote(params.command)}`;
+  const sourceArgs = params.source ? ` --source ${shellQuote(params.source)}` : "";
+  return `${launcherCommand} wrap${sourceArgs} -- ${shellQuote(params.shellPath)} -lc ${shellQuote(params.command)}`;
 }
 
 /**

@@ -73,6 +73,10 @@ function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealt
   return "ok";
 }
 
+function mergeStatuses(statuses: readonly HookHealthStatus[]): HookHealthStatus {
+  return statuses.reduce(mergeStatus, "disabled");
+}
+
 export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {}): Promise<HookDoctorReport> {
   const aider = await doctorAiderConvention();
   const avante = await doctorAvanteInstructions();
@@ -96,25 +100,23 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
   const copilotCli = await doctorCopilotCliHook(undefined, hookCommandOptions);
 
   return {
-    status: mergeStatus(
-      mergeStatus(
-        mergeStatus(
-          mergeStatus(
-            mergeStatus(
-              mergeStatus(
-                mergeStatus(mergeStatus(mergeStatus(mergeStatus(aider.status, avante.status), codex.status), claudeCode.status), cline.status),
-                codebuddy.status,
-              ),
-              continueRule.status,
-            ),
-            mergeStatus(mergeStatus(cursor.status, geminiCli.status), junie.status),
-          ),
-          mergeStatus(openhands.status, pi.status),
-        ),
-        mergeStatus(vscodeCopilot.status, zed.status),
-      ),
+    status: mergeStatuses([
+      aider.status,
+      avante.status,
+      codex.status,
+      claudeCode.status,
+      cline.status,
+      codebuddy.status,
+      continueRule.status,
+      cursor.status,
+      geminiCli.status,
+      junie.status,
+      openhands.status,
+      pi.status,
+      vscodeCopilot.status,
+      zed.status,
       copilotCli.status,
-    ),
+    ]),
     integrations: {
       aider,
       avante,

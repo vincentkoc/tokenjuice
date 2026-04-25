@@ -7,6 +7,10 @@ import {
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  buildInstructionDoctorReportFields,
+  instructionDoctorStatusFromIssues,
+} from "../shared/instruction-doctor.js";
 import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type ZedInstructionsOptions = {
@@ -87,12 +91,12 @@ export async function doctorZedInstructions(
   if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
     return {
       instructionsPath: resolvedInstructionsPath,
-      status: "disabled",
-      issues: ["tokenjuice Zed rules are not installed"],
-      advisories: [TOKENJUICE_ZED_ADVISORY],
-      fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
-      checkedPaths: [],
-      missingPaths: [],
+      ...buildInstructionDoctorReportFields({
+        status: "disabled",
+        issues: ["tokenjuice Zed rules are not installed"],
+        advisory: TOKENJUICE_ZED_ADVISORY,
+        fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
+      }),
     };
   }
 
@@ -103,11 +107,11 @@ export async function doctorZedInstructions(
 
   return {
     instructionsPath: resolvedInstructionsPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: [TOKENJUICE_ZED_ADVISORY],
-    fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
-    checkedPaths: [],
-    missingPaths: [],
+    ...buildInstructionDoctorReportFields({
+      status: instructionDoctorStatusFromIssues(issues),
+      issues,
+      advisory: TOKENJUICE_ZED_ADVISORY,
+      fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
+    }),
   };
 }

@@ -7,6 +7,10 @@ import {
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  buildInstructionDoctorReportFields,
+  instructionDoctorStatusFromIssues,
+} from "../shared/instruction-doctor.js";
 import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AvanteInstructionsOptions = {
@@ -87,12 +91,12 @@ export async function doctorAvanteInstructions(
   if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
     return {
       instructionsPath: resolvedInstructionsPath,
-      status: "disabled",
-      issues: ["tokenjuice Avante instructions are not installed"],
-      advisories: [TOKENJUICE_AVANTE_ADVISORY],
-      fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
-      checkedPaths: [],
-      missingPaths: [],
+      ...buildInstructionDoctorReportFields({
+        status: "disabled",
+        issues: ["tokenjuice Avante instructions are not installed"],
+        advisory: TOKENJUICE_AVANTE_ADVISORY,
+        fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
+      }),
     };
   }
 
@@ -103,11 +107,11 @@ export async function doctorAvanteInstructions(
 
   return {
     instructionsPath: resolvedInstructionsPath,
-    status: issues.length > 0 ? "broken" : "ok",
-    issues,
-    advisories: [TOKENJUICE_AVANTE_ADVISORY],
-    fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
-    checkedPaths: [],
-    missingPaths: [],
+    ...buildInstructionDoctorReportFields({
+      status: instructionDoctorStatusFromIssues(issues),
+      issues,
+      advisory: TOKENJUICE_AVANTE_ADVISORY,
+      fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
+    }),
   };
 }

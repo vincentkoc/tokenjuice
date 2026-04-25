@@ -104,8 +104,8 @@ tokenjuice has host integrations for:
 | <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` | ✅ Yes (`2026.4.22+`) |
 | <img width="48px" src="docs/client-opencode.png" alt="OpenCode" /> | [OpenCode](https://opencode.ai/) | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` | ✅ Yes |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | ✅ Yes |
-| <img width="48px" src="docs/client-openai.jpg" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) (Stable **and** Insiders) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | ✅ Yes |
-| <img width="48px" src="docs/client-openai.jpg" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | ✅ Yes |
+| <img width="48px" src="docs/client-copilot.png" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) (Stable **and** Insiders) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | ✅ Yes |
+| <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | ✅ Yes |
 
 shared behavior:
 

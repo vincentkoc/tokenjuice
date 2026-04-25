@@ -12,6 +12,7 @@ import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
+import { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "../hosts/aider/index.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
@@ -88,6 +89,7 @@ function printUsage(): void {
       "  tokenjuice reduce-json [file]",
       "  tokenjuice wrap [--raw|--full] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
+      "  tokenjuice install aider",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cline [--local]",
@@ -100,6 +102,7 @@ function printUsage(): void {
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
+      "  tokenjuice uninstall aider",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall continue",
@@ -112,7 +115,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|openhands|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -439,6 +442,26 @@ function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): str
 
 async function runInstall(args: ParsedArgs): Promise<number> {
   const target = args.positionals[0];
+  if (target === "aider") {
+    const result = await installAiderConvention();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Convention", value: result.conventionPath },
+      { label: "Beta", value: "convention-based guidance; load it with aider --read CONVENTIONS.tokenjuice.md" },
+      { label: "Verify", value: "tokenjuice doctor aider" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("aider", "convention", details));
+    return 0;
+  }
+
   if (target === "codex") {
     const result = await installCodexHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -687,11 +710,24 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
+  throw new Error("install currently supports: aider, codex, claude-code, cline, codebuddy, continue, cursor, gemini-cli, openhands, pi, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
   const target = args.positionals[0];
+  if (target === "aider") {
+    const result = await uninstallAiderConvention();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed aider convention: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`convention path: ${result.conventionPath}\n`);
+    process.stdout.write("enable: tokenjuice install aider\n");
+    return 0;
+  }
+
   if (target === "codex") {
     const result = await uninstallCodexHook();
     if (args.format === "json") {
@@ -799,7 +835,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: codex, cline, continue, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
+  throw new Error("uninstall currently supports: aider, codex, cline, continue, gemini-cli, openhands, opencode, vscode-copilot, copilot-cli");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -985,7 +1021,9 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
             ? integrationReport.hookPath
             : "rulePath" in integrationReport
               ? integrationReport.rulePath
-              : integrationReport.extensionPath;
+              : "conventionPath" in integrationReport
+                ? integrationReport.conventionPath
+                : integrationReport.extensionPath;
       process.stdout.write(`${name}:\n`);
       process.stdout.write(`- path: ${pathLabel}\n`);
       process.stdout.write(`- health: ${integrationReport.status}\n`);
@@ -1022,6 +1060,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       }
       process.stdout.write(`- repair: ${integrationReport.fixCommand}\n`);
     }
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "aider") {
+    const report = await doctorAiderConvention();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`convention path: ${report.conventionPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
     return report.status === "broken" ? 1 : 0;
   }
 

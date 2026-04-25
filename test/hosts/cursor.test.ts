@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../../src/index.js";
+import { parseWrappedCommand } from "./shared/wrap-command.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -248,7 +249,18 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
+
+    // Behavioral contract, not byte equality:
+    //   (1) wrapped exactly once through tokenjuice wrap,
+    //   (2) against the shell the caller asked for,
+    //   (3) with the original command preserved for the shell to execute,
+    //   (4) unrelated tool_input fields passed through intact.
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.launcher).toEqual(["/usr/local/bin/tokenjuice"]);
+    expect(parsed.subcommand).toBe("wrap");
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
     expect(response.updated_input.working_directory).toBe("/repo");
   });
 
@@ -265,6 +277,27 @@ describe("runCursorPreToolUseHook", () => {
     expect(code).toBe(0);
     expect(output).toBe("");
   });
+
+  it.each([
+    ["/usr/local/bin/tokenjuice wrap -- bash -lc 'git status'", "absolute POSIX path"],
+    ["/root/.local/share/pnpm/tokenjuice wrap --raw -- git log", "pnpm-linked absolute path"],
+  ])(
+    "skips already-wrapped commands invoked via %s (%s)",
+    async (command) => {
+      // Mirror of the codebuddy P3 regression: cursor's commandAlreadyWrapped
+      // must also recognise absolute tokenjuice paths so the shell input
+      // rewrite does not nest `tokenjuice wrap` invocations.
+      const payload = JSON.stringify({
+        tool_name: "Shell",
+        tool_input: { command },
+      });
+
+      const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+
+      expect(code).toBe(0);
+      expect(output).toBe("");
+    },
+  );
 
   it("uses node to execute a js wrap launcher path", async () => {
     const home = await createTempDir();
@@ -287,8 +320,15 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toContain(`/repo/dist/cli/main.js wrap -- ${hostShellPath} -lc 'git status --short'`);
-    expect(response.updated_input.command).toContain(process.execPath);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    // The contract here is "a .js launcher is dispatched through node", not
+    // any particular quoting. node may be bare or absolute, and the .js path
+    // may or may not be absolute depending on how resolve() normalized it.
+    expect(parsed.launcher[0]).toBe(process.execPath);
+    expect(parsed.launcher[1]).toBe("/repo/dist/cli/main.js");
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("skips node-based local wrap commands to preserve raw bypass", async () => {
@@ -340,7 +380,91 @@ describe("runCursorPreToolUseHook", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.updated_input.command).toBe(`/usr/local/bin/tokenjuice wrap -- ${hostShellPath} -lc 'git status --short'`);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
+  });
+
+  it("prefers TOKENJUICE_CURSOR_SHELL over SHELL when both resolve", async () => {
+    // Pins precedence of the candidate chain:
+    //   tool_input.shell > TOKENJUICE_CURSOR_SHELL > SHELL > sh
+    // This would silently regress if a refactor reshuffled the list.
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CURSOR_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(tjShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
+  });
+
+  it("prefers tool_input.shell over TOKENJUICE_CURSOR_SHELL and SHELL", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const payloadShellPath = join(home, "payload-shell");
+    const tjShellPath = join(shellDir, "fish");
+    const defaultShellPath = join(shellDir, "zsh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "zsh";
+    process.env.TOKENJUICE_CURSOR_SHELL = "fish";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(payloadShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(tjShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(defaultShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short", shell: payloadShellPath },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(payloadShellPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
+  });
+
+  it("falls back to sh when SHELL and TOKENJUICE_CURSOR_SHELL are unresolvable", async () => {
+    const home = await createTempDir();
+    const shellDir = join(home, "bin");
+    const shPath = join(shellDir, "sh");
+    process.env.PATH = shellDir;
+    process.env.SHELL = "/definitely/missing";
+    process.env.TOKENJUICE_CURSOR_SHELL = "/also/missing";
+    await mkdir(shellDir, { recursive: true });
+    await writeFile(shPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: { command: "git status --short" },
+    });
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(shPath);
+    expect(parsed.inner).toBe("git status --short");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("leaves command unchanged when no host shell can be resolved", async () => {
@@ -358,6 +482,33 @@ describe("runCursorPreToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(output).toBe("");
+  });
+
+  it("preserves the original command semantics when it contains an apostrophe", async () => {
+    // The wrap host must round-trip the command through whatever POSIX
+    // quoting scheme it prefers — single quotes today, possibly something
+    // else in a future refactor. Test against the observable contract:
+    // whatever the shell would execute for `inner` equals the original.
+    const home = await createTempDir();
+    const hostShellPath = join(home, "host-shell");
+    await writeFile(hostShellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const payload = JSON.stringify({
+      tool_name: "Shell",
+      tool_input: {
+        command: "echo it's raining",
+        shell: hostShellPath,
+      },
+    });
+
+    const { code, output } = await captureStdout(() => runCursorPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
+    const response = JSON.parse(output) as { updated_input: { command: string } };
+
+    expect(code).toBe(0);
+    const parsed = parseWrappedCommand(response.updated_input.command);
+    expect(parsed.shellPath).toBe(hostShellPath);
+    expect(parsed.inner).toBe("echo it's raining");
+    expect(parsed.wrapDepth).toBe(1);
   });
 
   it("denies native Windows shell interception with a WSL message", async () => {

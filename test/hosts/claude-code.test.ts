@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodexHook, installCursorHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
+import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodeBuddyHook, installCodexHook, installCursorHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
@@ -12,6 +12,8 @@ const originalPath = process.env.PATH;
 afterEach(async () => {
   delete process.env.CLAUDE_CONFIG_DIR;
   delete process.env.CLAUDE_HOME;
+  delete process.env.CODEBUDDY_CONFIG_DIR;
+  delete process.env.CODEBUDDY_HOME;
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
@@ -418,10 +420,12 @@ describe("doctorInstalledHooks", () => {
     const home = await createTempDir();
     const binDir = join(home, "bin");
     const launcherPath = join(binDir, "tokenjuice");
+    const codebuddyHome = join(home, "codebuddy");
 
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
@@ -429,6 +433,7 @@ describe("doctorInstalledHooks", () => {
     await writeFile(join(home, "config.toml"), "[features]\ncodex_hooks = true\n", "utf8");
     await installCodexHook(join(home, "hooks.json"));
     await installClaudeCodeHook(join(home, "settings.json"));
+    await installCodeBuddyHook();
     await installPiExtension(undefined, { local: true });
 
     const report = await doctorInstalledHooks();
@@ -436,6 +441,7 @@ describe("doctorInstalledHooks", () => {
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("ok");
     expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
   });
 
@@ -443,10 +449,12 @@ describe("doctorInstalledHooks", () => {
     const home = await createTempDir();
     const binDir = join(home, "bin");
     const launcherPath = join(binDir, "tokenjuice");
+    const codebuddyHome = join(home, "codebuddy");
 
     process.env.PATH = binDir;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
+    process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
@@ -465,6 +473,7 @@ describe("doctorInstalledHooks", () => {
       "utf8",
     );
     await installClaudeCodeHook(join(home, "settings.json"));
+    await installCodeBuddyHook();
     await installPiExtension(undefined, { local: true });
 
     const report = await doctorInstalledHooks();
@@ -472,6 +481,7 @@ describe("doctorInstalledHooks", () => {
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("disabled");
     expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
   });
 
@@ -481,6 +491,7 @@ describe("doctorInstalledHooks", () => {
     const launcherPath = join(binDir, "tokenjuice");
     const codexHome = join(home, "codex");
     const claudeHome = join(home, "claude");
+    const codebuddyHome = join(home, "codebuddy");
     const cursorHome = join(home, "cursor");
     const piAgentDir = join(home, "pi-agent");
     const localBinaryPath = join(home, "dist", "cli", "main.js");
@@ -490,6 +501,7 @@ describe("doctorInstalledHooks", () => {
     process.env.PATH = binDir;
     process.env.CODEX_HOME = codexHome;
     process.env.CLAUDE_HOME = claudeHome;
+    process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = cursorHome;
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });
@@ -511,6 +523,11 @@ describe("doctorInstalledHooks", () => {
       binaryPath: localBinaryPath,
       nodePath: localNodePath,
     });
+    await installCodeBuddyHook(undefined, {
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+    });
     await installCursorHook(undefined, {
       local: true,
       binaryPath: localBinaryPath,
@@ -528,10 +545,12 @@ describe("doctorInstalledHooks", () => {
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("ok");
     expect(report.integrations["claude-code"].status).toBe("ok");
+    expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.cursor.status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
     expect(report.integrations.codex.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations["claude-code"].expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations.codebuddy.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.cursor.expectedCommand).toContain(expectedHookPrefix);
   });
 });

@@ -1,9 +1,17 @@
-import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
-import { stripLeadingCdPrefix, tokenizeCommand } from "../../core/command.js";
+import { extractHookCommandPaths } from "../shared/hook-command.js";
+import {
+  buildWrapLauncherHookCommand,
+  buildWrappedCommand,
+  commandAlreadyWrapped,
+  isExecutableFile,
+  isRecord,
+  pathExists,
+  resolveHostShell,
+} from "../shared/pre-tool-wrap.js";
 
 type CursorHooksConfig = Record<string, unknown> & {
   version?: number;
@@ -47,6 +55,7 @@ const TOKENJUICE_CURSOR_FIX_COMMAND = "tokenjuice install cursor";
 const TOKENJUICE_CURSOR_WSL_FIX_COMMAND = "run Cursor in WSL, then run tokenjuice install cursor";
 const TOKENJUICE_CURSOR_WINDOWS_ISSUE = "tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.";
 const TOKENJUICE_CURSOR_WINDOWS_HOOK_ISSUE = "configured Cursor hook cannot run on native Windows; use Cursor in WSL instead.";
+const TOKENJUICE_CURSOR_HOOK_SUBCOMMAND = "cursor-pre-tool-use";
 
 function getCursorHome(): string {
   return process.env.CURSOR_HOME || join(homedir(), ".cursor");
@@ -60,124 +69,23 @@ function isNativeWindowsCursorUnsupported(): boolean {
   return process.platform === "win32";
 }
 
-function shellQuote(value: string): string {
-  if (/^[A-Za-z0-9_./:-]+$/u.test(value)) {
-    return value;
-  }
-  return `'${value.replace(/'/gu, `'\\''`)}'`;
-}
-
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
-}
-
-async function resolveShellPath(shell: string): Promise<string | undefined> {
-  const trimmed = shell.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  if (trimmed.includes("/") || trimmed.includes("\\")) {
-    return await isExecutableFile(trimmed) ? trimmed : undefined;
-  }
-
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-    const candidatePath = join(segment, trimmed);
-    if (await isExecutableFile(candidatePath)) {
-      return candidatePath;
-    }
-  }
-  return undefined;
-}
-
-async function resolveCursorHostShell(toolInput: CursorToolInput): Promise<string | undefined> {
-  const shellCandidates = [
-    typeof toolInput.shell === "string" ? toolInput.shell : undefined,
-    process.env.TOKENJUICE_CURSOR_SHELL,
-    process.env.SHELL,
-    "sh",
-  ].filter((candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0);
-
-  for (const candidate of shellCandidates) {
-    const resolved = await resolveShellPath(candidate);
-    if (resolved) {
-      return resolved;
-    }
-  }
-
-  return undefined;
-}
-
 async function buildCursorHookCommand(options: CursorHookCommandOptions = {}): Promise<string> {
-  const rawBinaryPath = options.binaryPath ?? process.argv[1];
-  const binaryPath = rawBinaryPath && !isAbsolute(rawBinaryPath) ? resolve(rawBinaryPath) : rawBinaryPath;
-  const nodePath = options.nodePath ?? process.execPath;
-  if (!binaryPath) {
-    throw new Error("unable to resolve tokenjuice binary path for cursor install");
-  }
-
-  let launcher = binaryPath;
-  if (!options.local) {
-    const installedBinaryPath = await resolveInstalledTokenjuicePath();
-    launcher = installedBinaryPath ?? binaryPath;
-  }
-  const launcherCommand = launcher.endsWith(".js")
-    ? `${shellQuote(nodePath)} ${shellQuote(launcher)}`
-    : shellQuote(launcher);
-
-  return `${launcherCommand} cursor-pre-tool-use --wrap-launcher ${shellQuote(launcher)}`;
+  return buildWrapLauncherHookCommand({
+    ...options,
+    subcommand: TOKENJUICE_CURSOR_HOOK_SUBCOMMAND,
+    hostName: "cursor",
+  });
 }
 
 function getCursorFixCommand(local = false): string {
   return local ? "tokenjuice install cursor --local" : TOKENJUICE_CURSOR_FIX_COMMAND;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function isTokenjuiceCursorHook(rawHook: unknown): boolean {
   if (!isRecord(rawHook) || typeof rawHook.command !== "string") {
     return false;
   }
-  return rawHook.command.includes("cursor-pre-tool-use");
+  return rawHook.command.includes(TOKENJUICE_CURSOR_HOOK_SUBCOMMAND);
 }
 
 function createTokenjuiceCursorHook(command: string): Record<string, unknown> {
@@ -253,54 +161,13 @@ function findTokenjuiceCursorHookCommand(config: CursorHooksConfig): string | un
   return undefined;
 }
 
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function extractHookCommandPaths(command: string): string[] {
-  const argv = tokenizeCommand(command);
-  if (argv.length === 0) {
-    return [];
-  }
-
-  const paths = new Set<string>();
-  const first = argv[0];
-  if (first && (first.includes("/") || first.includes("\\"))) {
-    paths.add(first);
-  }
-
-  const second = argv[1];
-  if (first && second && (first.endsWith("/node") || first.endsWith("\\node.exe")) && second.endsWith(".js")) {
-    paths.add(second);
-  }
-
-  return [...paths];
-}
-
-function commandAlreadyWrapped(command: string): boolean {
-  const argv = tokenizeCommand(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-
-  if (argv[0] === "tokenjuice" && argv[1] === "wrap") {
-    return true;
-  }
-  if (
-    typeof argv[0] === "string"
-    && (argv[0] === "node" || argv[0] === "node.exe" || argv[0].endsWith("/node") || argv[0].endsWith("\\node.exe"))
-    && typeof argv[1] === "string"
-    && argv[1].endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    return true;
-  }
-  return false;
+async function resolveCursorHostShell(toolInput: CursorToolInput): Promise<string | undefined> {
+  return resolveHostShell([
+    typeof toolInput.shell === "string" ? toolInput.shell : undefined,
+    process.env.TOKENJUICE_CURSOR_SHELL,
+    process.env.SHELL,
+    "sh",
+  ]);
 }
 
 export async function installCursorHook(
@@ -435,10 +302,7 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
     return 0;
   }
 
-  const launcherCommand = wrapLauncher.endsWith(".js")
-    ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
-    : shellQuote(wrapLauncher);
-  const wrappedCommand = `${launcherCommand} wrap -- ${shellQuote(shellPath)} -lc ${shellQuote(command)}`;
+  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command });
   const response = {
     permission: "allow",
     updated_input: {

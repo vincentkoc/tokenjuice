@@ -1,9 +1,11 @@
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
+import { doctorCodeBuddyHook } from "../codebuddy/index.js";
 import { doctorCodexHook } from "../codex/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
+import type { CodeBuddyDoctorReport, CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
@@ -13,6 +15,7 @@ type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 export type HookIntegrationDoctorReport = {
   codex: CodexDoctorReport;
   "claude-code": ClaudeCodeDoctorReport;
+  codebuddy: CodeBuddyDoctorReport;
   cursor: CursorDoctorReport;
   pi: PiDoctorReport;
 };
@@ -22,7 +25,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions;
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions;
 
 function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealthStatus {
   if (left === "broken" || right === "broken") {
@@ -48,14 +51,22 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
   };
   const claudeCode = await doctorClaudeCodeHook(undefined, hookCommandOptions);
+  const codebuddy = await doctorCodeBuddyHook(undefined, hookCommandOptions);
   const cursor = await doctorCursorHook(undefined, hookCommandOptions);
   const pi = await doctorPiExtension();
 
   return {
-    status: mergeStatus(mergeStatus(mergeStatus(codex.status, claudeCode.status), cursor.status), pi.status),
+    status: mergeStatus(
+      mergeStatus(
+        mergeStatus(mergeStatus(codex.status, claudeCode.status), codebuddy.status),
+        cursor.status,
+      ),
+      pi.status,
+    ),
     integrations: {
       codex,
       "claude-code": claudeCode,
+      codebuddy,
       cursor,
       pi,
     },

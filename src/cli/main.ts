@@ -21,6 +21,7 @@ import {
 } from "../hosts/opencode/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
+import { formatInstallSuccess } from "./install-output.js";
 
 type Format = "text" | "json";
 
@@ -360,22 +361,25 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed codex hook: ${result.hooksPath}\n`);
+    const details = [
+      { label: "Hook", value: result.hooksPath },
+      { label: "Command", value: result.command },
+    ];
     if (result.featureFlag.enabled) {
-      process.stdout.write(`feature flag: codex_hooks is enabled (${result.featureFlag.configPath})\n`);
+      details.push({ label: "Feature flag", value: `codex_hooks is enabled (${result.featureFlag.configPath})` });
     } else {
       const where = result.featureFlag.configExists
         ? `${result.featureFlag.configPath} (missing or disabled)`
         : `no ${result.featureFlag.configPath}`;
-      process.stdout.write(`feature flag: codex_hooks not enabled — ${where}\n`);
-      process.stdout.write(`   ${result.featureFlag.fixHint}\n`);
+      details.push({ label: "Feature flag", value: `codex_hooks not enabled - ${where}` });
+      details.push({ label: "Enable", value: result.featureFlag.fixHint });
     }
-    process.stdout.write(`command: ${result.command}\n`);
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
-    process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
+    details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
+    details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
+    process.stdout.write(formatInstallSuccess("codex", "hook", details));
     return 0;
   }
 
@@ -386,12 +390,15 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed claude-code hook: ${result.settingsPath}\n`);
-    process.stdout.write(`command: ${result.command}\n`);
+    const details = [
+      { label: "Hook", value: result.settingsPath },
+      { label: "Command", value: result.command },
+    ];
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
+    details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
+    process.stdout.write(formatInstallSuccess("claude-code", "hook", details));
     return 0;
   }
 
@@ -402,13 +409,16 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed cursor hook: ${result.hooksPath}\n`);
-    process.stdout.write(`command: ${result.command}\n`);
+    const details = [
+      { label: "Hook", value: result.hooksPath },
+      { label: "Command", value: result.command },
+    ];
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
-    process.stdout.write("escape hatch: tokenjuice wrap --raw -- <command>\n");
+    details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
+    details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
+    process.stdout.write(formatInstallSuccess("cursor", "hook", details));
     return 0;
   }
 
@@ -419,12 +429,15 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed pi extension: ${result.extensionPath}\n`);
+    const details = [
+      { label: "Extension", value: result.extensionPath },
+    ];
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write("reload: /reload\n");
-    process.stdout.write("usage in pi: /tj status | /tj on | /tj off | /tj raw-next\n");
+    details.push({ label: "Reload", value: "/reload" });
+    details.push({ label: "Usage in pi", value: "/tj status | /tj on | /tj off | /tj raw-next" });
+    process.stdout.write(formatInstallSuccess("pi", "extension", details));
     return 0;
   }
 
@@ -435,12 +448,15 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed opencode extension: ${result.extensionPath}\n`);
+    const details = [
+      { label: "Extension", value: result.extensionPath },
+    ];
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write("reload: restart opencode (the plugin is auto-loaded on session start)\n");
-    process.stdout.write(`doctor: tokenjuice doctor opencode\n`);
+    details.push({ label: "Reload", value: "restart opencode (the plugin is auto-loaded on session start)" });
+    details.push({ label: "Verify", value: "tokenjuice doctor opencode" });
+    process.stdout.write(formatInstallSuccess("opencode", "extension", details));
     return 0;
   }
 

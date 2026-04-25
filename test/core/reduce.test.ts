@@ -131,6 +131,21 @@ describe("reduceExecution", () => {
     expect(result.stats.reducedChars).toBeLessThanOrEqual(result.stats.rawChars);
   });
 
+  it("passes through small terse status output instead of rewriting columns", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git status --short",
+      argv: ["git", "status", "--short"],
+      combinedText: " M src/index.ts\n?? test/new.test.ts\n",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/status");
+    expect(result.inlineText).toBe(" M src/index.ts\n?? test/new.test.ts");
+    expect(result.inlineText).not.toContain("M:");
+    expect(result.stats.ratio).toBeGreaterThan(0.75);
+  });
+
   it("rewrites long git status output into compact branch and file summaries", async () => {
     const result = await reduceExecution({
       toolName: "exec",

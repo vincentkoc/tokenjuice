@@ -593,7 +593,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(stdout).toBe("");
     expect(stderr).toBe("");
     expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("low-savings-compaction");
+    expect(debug.skipped).toBe("no-compaction");
     expect(debug.matchedReducer).toBe("git/status");
     expect(debug.rawChars).toBe(28);
     expect(debug.reducedChars).toBe(27);
@@ -909,7 +909,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(history[0]?.ratio).toBe(1);
     expect(history[0]?.matchedReducer).toBeUndefined();
     expect(history[1]?.rewrote).toBe(false);
-    expect(history[1]?.skipped).toBe("low-savings-compaction");
+    expect(history[1]?.skipped).toBe("no-compaction");
     expect(history[1]?.savedChars).toBe(1);
   });
 

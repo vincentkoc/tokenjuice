@@ -64,8 +64,18 @@ async function captureStdio(run: () => Promise<number>): Promise<{ code: number;
   }
 }
 
-function parseCodexReplacementOutput(stdout: string): { continue?: boolean; stopReason?: string } {
-  return JSON.parse(stdout) as { continue?: boolean; stopReason?: string };
+function parseCodexReplacementOutput(stdout: string): {
+  hookSpecificOutput?: {
+    hookEventName?: string;
+    additionalContext?: string;
+  };
+} {
+  return JSON.parse(stdout) as {
+    hookSpecificOutput?: {
+      hookEventName?: string;
+      additionalContext?: string;
+    };
+  };
 }
 
 describe("installCodexHook", () => {
@@ -498,12 +508,12 @@ describe("runCodexPostToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(stderr).toBe("");
-    expect(response.continue).toBe(false);
-    expect(response.stopReason).toContain("Changes not staged:");
-    expect(response.stopReason).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.stopReason).not.toContain("and have 8 and 642");
-    expect(response.stopReason).toContain("tokenjuice wrap --raw -- <command>");
-    expect(response.stopReason).toContain("tokenjuice wrap --full -- <command>");
+    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
+    expect(response.hookSpecificOutput?.additionalContext).not.toContain("and have 8 and 642");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
   });
@@ -636,9 +646,9 @@ describe("runCodexPostToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(stderr).toBe("");
-    expect(response.continue).toBe(false);
-    expect(response.stopReason).toContain("40 matches");
-    expect(response.stopReason).toContain("src/rules/example-1.json");
+    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("40 matches");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("src/rules/example-1.json");
     expect(debug.rewrote).toBe(true);
     expect(debug.skipped).toBeUndefined();
     expect(debug.matchedReducer).toBe("filesystem/find");
@@ -779,8 +789,8 @@ describe("runCodexPostToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(stderr).toBe("");
-    expect(response.continue).toBe(false);
-    expect(response.stopReason).toContain("exit 2");
+    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
+    expect(response.hookSpecificOutput?.additionalContext).toContain("exit 2");
   });
 
   it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
@@ -792,6 +802,47 @@ describe("runCodexPostToolUseHook", () => {
       tool_name: "Bash",
       tool_input: {
         command: "tokenjuice wrap --raw -- bash -lc 'git show HEAD --stat'",
+      },
+      tool_response: [
+        "commit abcdef",
+        "Author: Example",
+        "",
+        " README.md | 10 +++++-----",
+        " src/hosts/codex/index.ts | 12 +++++++-----",
+      ].join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      matchedReducer?: string;
+      rawChars?: number;
+      reducedChars?: number;
+      savedChars?: number;
+      ratio?: number;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+    expect(debug.matchedReducer).toBeUndefined();
+    expect(debug.rawChars).toBeGreaterThan(0);
+    expect(debug.reducedChars).toBe(debug.rawChars);
+    expect(debug.savedChars).toBe(0);
+    expect(debug.ratio).toBe(1);
+  });
+
+  it("honors absolute tokenjuice raw bypass commands without re-compacting them", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "/opt/homebrew/bin/tokenjuice wrap --raw -- bash -lc 'git show HEAD --stat'",
       },
       tool_response: [
         "commit abcdef",

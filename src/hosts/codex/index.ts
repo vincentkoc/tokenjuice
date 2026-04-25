@@ -568,6 +568,19 @@ async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksC
   }
 }
 
+function isTokenjuiceExecutableArg(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.replace(/\\/gu, "/");
+  return normalized === "tokenjuice"
+    || normalized.endsWith("/tokenjuice")
+    || normalized.endsWith("/tokenjuice.exe")
+    || normalized.endsWith("/tokenjuice.cmd")
+    || normalized.endsWith("/tokenjuice.bat");
+}
+
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   const argv = parseShellWords(command);
   if (argv.length < 3) {
@@ -577,7 +590,7 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   const first = argv[0];
   const second = argv[1];
   let wrapIndex = -1;
-  if (first === "tokenjuice") {
+  if (isTokenjuiceExecutableArg(first)) {
     wrapIndex = 1;
   } else if (
     typeof first === "string"
@@ -613,9 +626,12 @@ function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
 }
 
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
+  const feedback = buildCodexFeedback(inlineText, rawRefId);
   return {
-    continue: false,
-    stopReason: buildCodexFeedback(inlineText, rawRefId),
+    hookSpecificOutput: {
+      hookEventName: "PostToolUse",
+      additionalContext: feedback,
+    },
   };
 }
 

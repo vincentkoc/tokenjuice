@@ -13,7 +13,21 @@ export {
   uninstallCodexHook,
 } from "./hosts/codex/index.js";
 export type { CodexFeatureFlagStatus } from "./hosts/codex/index.js";
+export {
+  doctorCopilotCliHook,
+  getCopilotCliInstructionsSnippet,
+  installCopilotCliHook,
+  runCopilotCliPostToolUseHook,
+  uninstallCopilotCliHook,
+} from "./hosts/copilot-cli/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export {
+  doctorVscodeCopilotHook,
+  getVscodeCopilotInstructionsSnippet,
+  installVscodeCopilotHook,
+  runVscodeCopilotPreToolUseHook,
+  uninstallVscodeCopilotHook,
+} from "./hosts/vscode-copilot/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
 export {
@@ -55,4 +69,16 @@ export type {
   UninstallOpenCodeExtensionResult,
 } from "./hosts/opencode/index.js";
 export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
+export type {
+  InstallVscodeCopilotHookResult,
+  UninstallVscodeCopilotHookResult,
+  VscodeCopilotDoctorReport,
+  VscodeCopilotHookCommandOptions,
+} from "./hosts/vscode-copilot/index.js";
+export type {
+  CopilotCliDoctorReport,
+  CopilotCliHookCommandOptions,
+  InstallCopilotCliHookResult,
+  UninstallCopilotCliHookResult,
+} from "./hosts/copilot-cli/index.js";
 export type { StatsOptions, StatsReport } from "./core/analysis.js";

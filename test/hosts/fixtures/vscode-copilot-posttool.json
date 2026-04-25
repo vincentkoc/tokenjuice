@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-04-24T01:23:34.254Z",
+  "hook_event_name": "PostToolUse",
+  "session_id": "73abd446-ffd9-4bc7-a296-4d4a19237b1d",
+  "transcript_path": "/Users/core/Library/Application Support/Code - Insiders/User/workspaceStorage/c066a70d95a8c86664a49522024a40a3/GitHub.copilot-chat/transcripts/73abd446-ffd9-4bc7-a296-4d4a19237b1d.jsonl",
+  "tool_name": "run_in_terminal",
+  "tool_input": {
+    "command": "ls -la /tmp/tj-cli-posttool*.json 2>&1; echo \"---\"; for f in /tmp/tj-cli-posttool*.json; do [ -f \"$f\" ] && echo \"=== $f ===\" && cat \"$f\" | head -80; done",
+    "explanation": "check probe output",
+    "goal": "verify fire",
+    "mode": "sync",
+    "timeout": 3000
+  },
+  "tool_response": "-rw-r--r--@ 1 core  wheel  349 Apr 23 21:23 /tmp/tj-cli-posttool.json\n---\n=== /tmp/tj-cli-posttool.json ===\n{\"hook_event_name\":\"PostToolUse\",\"session_id\":\"db454573-499f-4e9c-89e7-836c63b37b14\",\"timestamp\":\"2026-04-24T01:23:05.105Z\",\"cwd\":\"/Users/core\",\"tool_name\":\"bash\",\"tool_input\":{\"command\":\"echo hi\",\"description\":\"Print hi\",\"mode\":\"sync\",\"initial_wait\":30},\"tool_result\":{\"result_type\":\"success\",\"text_result_for_llm\":\"hi\\n<exited with exit code 0>\"}}",
+  "tool_use_id": "toolu_01TfDHR98JCQVnrKB5xKjuZW__vscode-1776992602227",
+  "cwd": "/Users/core/git/matthewcorven/tokenjuice"
+}

@@ -8,6 +8,7 @@ import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, inst
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
+const originalHome = process.env.HOME;
 
 afterEach(async () => {
   delete process.env.CLAUDE_CONFIG_DIR;
@@ -17,7 +18,13 @@ afterEach(async () => {
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
+  delete process.env.COPILOT_HOME;
   process.env.PATH = originalPath;
+  if (originalHome === undefined) {
+    delete process.env.HOME;
+  } else {
+    process.env.HOME = originalHome;
+  }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -423,10 +430,12 @@ describe("doctorInstalledHooks", () => {
     const codebuddyHome = join(home, "codebuddy");
 
     process.env.PATH = binDir;
+    process.env.HOME = home;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -452,10 +461,12 @@ describe("doctorInstalledHooks", () => {
     const codebuddyHome = join(home, "codebuddy");
 
     process.env.PATH = binDir;
+    process.env.HOME = home;
     process.env.CODEX_HOME = home;
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -499,10 +510,12 @@ describe("doctorInstalledHooks", () => {
     const expectedHookPrefix = `${localNodePath} ${resolve(localBinaryPath)}`;
 
     process.env.PATH = binDir;
+    process.env.HOME = home;
     process.env.CODEX_HOME = codexHome;
     process.env.CLAUDE_HOME = claudeHome;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = cursorHome;
+    process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });
     await mkdir(join(home, "dist", "cli"), { recursive: true });

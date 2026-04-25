@@ -1,0 +1,17 @@
+{
+  "hook_event_name": "PostToolUse",
+  "session_id": "db454573-499f-4e9c-89e7-836c63b37b14",
+  "timestamp": "2026-04-24T01:23:05.105Z",
+  "cwd": "/Users/core",
+  "tool_name": "bash",
+  "tool_input": {
+    "command": "echo hi",
+    "description": "Print hi",
+    "mode": "sync",
+    "initial_wait": 30
+  },
+  "tool_result": {
+    "result_type": "success",
+    "text_result_for_llm": "hi\n<exited with exit code 0>"
+  }
+}

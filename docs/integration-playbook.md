@@ -70,10 +70,15 @@ add host-specific tests and aggregate tests:
 
 new adapters often fail CI/local due to leaked machine config. isolate host homes explicitly:
 
-- set and reset host env vars in each suite (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `CLAUDE_HOME`, `CURSOR_HOME`, `PI_CODING_AGENT_DIR`, etc.)
+- set and reset host env vars in each suite (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `CLAUDE_HOME`, `CURSOR_HOME`, `PI_CODING_AGENT_DIR`, `OPENCODE_CONFIG_DIR`, `XDG_CONFIG_HOME`, `COPILOT_HOME`, `TOKENJUICE_CURSOR_SHELL`, `SHELL`, etc.)
+- `COPILOT_HOME` affects **copilot-cli only**; VS Code Copilot Chat ignores it and always resolves under `$HOME/.copilot/hooks/`. If your adapter should not depend on `COPILOT_HOME`, add an explicit test that sets it to a decoy path and asserts the install does not land there.
 - avoid reading real `~/.<host>` in tests
 - use temp dirs for all config paths
 - restore `PATH` after each test
+
+### shared hook dirs (hazard)
+
+copilot-cli and vscode-copilot both read every `*.json` under `~/.copilot/hooks/`. install each host under a per-host filename (`tokenjuice-cli.json` and `tokenjuice-vscode.json`) so neither host's install overwrites the other. doctor for both hosts scans sibling files and reports stray tokenjuice entries.
 
 if you add a new host to aggregate doctor logic, existing aggregate tests may start failing unless they set that host's env home to temp storage.
 

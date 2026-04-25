@@ -1,0 +1,13 @@
+{
+  "sessionId": "fc9be3c9-9eb7-41df-b559-36a48d95cc24",
+  "timestamp": 1776999825288,
+  "cwd": "/Users/core/git/matthewcorven/dog-trials",
+  "toolName": "bash",
+  "toolArgs": {
+    "command": "echo hi"
+  },
+  "toolResult": {
+    "resultType": "success",
+    "textResultForLlm": "hi\n<exited with exit code 0>"
+  }
+}

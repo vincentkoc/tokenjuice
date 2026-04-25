@@ -1,6 +1,6 @@
 import { join } from "node:path";
 
-import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type ContinueRuleOptions = {
   projectDir?: string;
@@ -87,19 +87,28 @@ export async function doctorContinueRule(
     };
   }
 
-  const issues: string[] = [];
-  if (!existing.text.includes(TOKENJUICE_CONTINUE_RULE_MARKER)) {
-    issues.push("configured Continue rule file does not look like the tokenjuice rule");
-  }
-  if (!existing.text.includes(TOKENJUICE_CONTINUE_WRAP_COMMAND)) {
-    issues.push("configured Continue rule file is missing tokenjuice wrap guidance");
-  }
-  if (!existing.text.includes(TOKENJUICE_CONTINUE_RAW_COMMAND)) {
-    issues.push("configured Continue rule file is missing the raw escape hatch");
-  }
-  if (existing.text.includes("tokenjuice wrap --full -- <command>")) {
-    issues.push("configured Continue rule file still suggests the full escape hatch");
-  }
+  const issues = collectGuidanceIssues(existing.text, {
+    required: [
+      {
+        requiredText: TOKENJUICE_CONTINUE_RULE_MARKER,
+        missingIssue: "configured Continue rule file does not look like the tokenjuice rule",
+      },
+      {
+        requiredText: TOKENJUICE_CONTINUE_WRAP_COMMAND,
+        missingIssue: "configured Continue rule file is missing tokenjuice wrap guidance",
+      },
+      {
+        requiredText: TOKENJUICE_CONTINUE_RAW_COMMAND,
+        missingIssue: "configured Continue rule file is missing the raw escape hatch",
+      },
+    ],
+    forbidden: [
+      {
+        forbiddenText: "tokenjuice wrap --full -- <command>",
+        presentIssue: "configured Continue rule file still suggests the full escape hatch",
+      },
+    ],
+  });
 
   return {
     rulePath: resolvedRulePath,

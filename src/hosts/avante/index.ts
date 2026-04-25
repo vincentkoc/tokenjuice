@@ -1,11 +1,12 @@
 import { join } from "node:path";
 
 import {
+  collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
-  readInstructionFile,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AvanteInstructionsOptions = {
   projectDir?: string;
@@ -97,14 +98,10 @@ export async function doctorAvanteInstructions(
     };
   }
 
-  const issues: string[] = [];
-  if (markerState.hasBegin && !markerState.hasEnd) {
-    issues.push("configured Avante instructions have a tokenjuice start marker without an end marker");
-  } else if (!markerState.hasBegin && markerState.hasEnd) {
-    issues.push("configured Avante instructions have a tokenjuice end marker without a start marker");
-  } else if (markerState.completeBlockCount !== 1) {
-    issues.push("configured Avante instructions have multiple tokenjuice blocks; run tokenjuice install avante to repair");
-  }
+  const issues = collectMarkerDelimitedBlockIssues(markerState, {
+    configuredLabel: "Avante instructions",
+    repairCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
+  });
 
   return {
     instructionsPath: resolvedInstructionsPath,

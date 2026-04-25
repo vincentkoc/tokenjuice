@@ -3,6 +3,7 @@ export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
+export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
 export {
   doctorCodexHook,
@@ -65,6 +66,12 @@ export type {
   WrapResult,
 } from "./types.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
+export type {
+  ClineDoctorReport,
+  ClineHookCommandOptions,
+  InstallClineHookResult,
+  UninstallClineHookResult,
+} from "./hosts/cline/index.js";
 export type {
   InstallOpenCodeExtensionResult,
   OpenCodeDoctorReport,

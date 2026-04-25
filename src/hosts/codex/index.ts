@@ -612,6 +612,13 @@ function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
   return `${inlineText}\n\n${buildCodexHint(rawRefId)}`;
 }
 
+function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
+  return {
+    continue: false,
+    stopReason: buildCodexFeedback(inlineText, rawRefId),
+  };
+}
+
 function parseExitCodeValue(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isInteger(value)) {
     return value;
@@ -1047,9 +1054,9 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
       return 0;
     }
 
-    process.stderr.write(`${buildCodexFeedback(outcome.result.inlineText, outcome.result.rawRef?.id)}\n`);
+    process.stdout.write(`${JSON.stringify(buildCodexReplacementOutput(outcome.result.inlineText, outcome.result.rawRef?.id))}\n`);
     await writeHookDebug({ ...debug, rewrote: true });
-    return 2;
+    return 0;
   } catch (error) {
     await writeHookDebug({
       ...debug,

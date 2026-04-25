@@ -64,6 +64,10 @@ async function captureStdio(run: () => Promise<number>): Promise<{ code: number;
   }
 }
 
+function parseCodexReplacementOutput(stdout: string): { continue?: boolean; stopReason?: string } {
+  return JSON.parse(stdout) as { continue?: boolean; stopReason?: string };
+}
+
 describe("installCodexHook", () => {
   it("installs a single tokenjuice PostToolUse hook and preserves unrelated hooks", async () => {
     const home = await createTempDir();
@@ -490,13 +494,16 @@ describe("runCodexPostToolUseHook", () => {
       matchedReducer?: string;
     };
 
-    expect(code).toBe(2);
-    expect(stdout).toBe("");
-    expect(stderr).toContain("Changes not staged:");
-    expect(stderr).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(stderr).not.toContain("and have 8 and 642");
-    expect(stderr).toContain("tokenjuice wrap --raw -- <command>");
-    expect(stderr).toContain("tokenjuice wrap --full -- <command>");
+    const response = parseCodexReplacementOutput(stdout);
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(response.continue).toBe(false);
+    expect(response.stopReason).toContain("Changes not staged:");
+    expect(response.stopReason).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
+    expect(response.stopReason).not.toContain("and have 8 and 642");
+    expect(response.stopReason).toContain("tokenjuice wrap --raw -- <command>");
+    expect(response.stopReason).toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
   });
@@ -625,10 +632,13 @@ describe("runCodexPostToolUseHook", () => {
       ratio?: number;
     };
 
-    expect(code).toBe(2);
-    expect(stdout).toBe("");
-    expect(stderr).toContain("40 matches");
-    expect(stderr).toContain("src/rules/example-1.json");
+    const response = parseCodexReplacementOutput(stdout);
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(response.continue).toBe(false);
+    expect(response.stopReason).toContain("40 matches");
+    expect(response.stopReason).toContain("src/rules/example-1.json");
     expect(debug.rewrote).toBe(true);
     expect(debug.skipped).toBeUndefined();
     expect(debug.matchedReducer).toBe("filesystem/find");
@@ -765,9 +775,12 @@ describe("runCodexPostToolUseHook", () => {
 
     const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
 
-    expect(code).toBe(2);
-    expect(stdout).toBe("");
-    expect(stderr).toContain("exit 2");
+    const response = parseCodexReplacementOutput(stdout);
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(response.continue).toBe(false);
+    expect(response.stopReason).toContain("exit 2");
   });
 
   it("honors tokenjuice raw bypass commands without re-compacting them", async () => {

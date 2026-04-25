@@ -91,4 +91,22 @@ describe("runWrappedCommand", () => {
     expect(wrapped.result.inlineText).toBe("usage: cmd\n\nflag\n");
     expect(wrapped.result.stats.ratio).toBe(1);
   });
+
+  it("records the requested source for wrapper stats", async () => {
+    const storeDir = await createTempDir();
+
+    await runWrappedCommand([
+      "node",
+      "-e",
+      "console.log('source tagged output');",
+    ], {
+      source: "cursor",
+      recordStats: true,
+      storeDir,
+    });
+
+    const metadata = await listArtifactMetadata(storeDir);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]?.metadata.source).toBe("cursor");
+  });
 });

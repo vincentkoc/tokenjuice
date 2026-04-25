@@ -393,7 +393,7 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
     return 0;
   }
 
-  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command });
+  const wrappedCommand = buildWrappedCommand({ wrapLauncher, shellPath, command, source: "codebuddy" });
 
   const response = {
     hookSpecificOutput: {

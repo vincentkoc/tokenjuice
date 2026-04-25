@@ -117,6 +117,7 @@ export type StoredArtifactRef = {
 
 export type StoredArtifactMetadata = {
   createdAt: string;
+  source?: string;
   toolName?: string;
   command?: string;
   exitCode?: number;
@@ -214,6 +215,7 @@ export type RuleFixture = {
 
 export type WrapOptions = {
   cwd?: string;
+  source?: string;
   recordStats?: boolean;
   store?: boolean;
   storeDir?: string;

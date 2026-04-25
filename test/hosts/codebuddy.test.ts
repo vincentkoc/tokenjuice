@@ -615,6 +615,7 @@ describe("runCodeBuddyPreToolUseHook", () => {
     const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
     expect(parsed.launcher).toEqual(["/usr/local/bin/tokenjuice"]);
     expect(parsed.subcommand).toBe("wrap");
+    expect(parsed.wrapArgs).toEqual(["--source", "codebuddy"]);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -699,6 +700,7 @@ describe("runCodeBuddyPreToolUseHook", () => {
     const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
     expect(parsed.launcher[0]).toBe(process.execPath);
     expect(parsed.launcher[1]).toBe("/repo/dist/cli/main.js");
+    expect(parsed.wrapArgs).toEqual(["--source", "codebuddy"]);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);

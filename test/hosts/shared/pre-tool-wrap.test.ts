@@ -240,6 +240,16 @@ describe("buildWrappedCommand", () => {
     expect(wrapped).toBe("/usr/bin/node /repo/dist/cli/main.js wrap -- /bin/bash -lc 'echo hi'");
   });
 
+  it("adds a source tag before the wrapped shell command", () => {
+    const wrapped = buildWrappedCommand({
+      wrapLauncher: "/usr/local/bin/tokenjuice",
+      shellPath: "/bin/bash",
+      command: "git status --short",
+      source: "cursor",
+    });
+    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --source cursor -- /bin/bash -lc 'git status --short'");
+  });
+
   it("escapes commands containing single quotes through POSIX shellQuote", () => {
     const wrapped = buildWrappedCommand({
       wrapLauncher: "/usr/local/bin/tokenjuice",

@@ -58,6 +58,8 @@ type ParsedArgs = {
   maxCaptureBytes: number | undefined;
   maxInputBytes: number | undefined;
   timeZone: string | undefined;
+  source: string | undefined;
+  bySource: boolean;
   wrapLauncher: string | undefined;
   trace: boolean;
   printInstructions: boolean;
@@ -80,7 +82,7 @@ function printUsage(): void {
       "  tokenjuice --version",
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full]",
       "  tokenjuice reduce-json [file]",
-      "  tokenjuice wrap [--raw|--full] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice wrap [--raw|--full] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
@@ -97,9 +99,9 @@ function printUsage(): void {
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
-      "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
       "  tokenjuice doctor [file|hooks|codex|claude-code|codebuddy|cursor|pi|opencode|vscode-copilot|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
-      "  tokenjuice stats [--timezone local|utc|<iana-timezone>]",
+      "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
   process.stderr.write("\n");
@@ -124,6 +126,8 @@ function parseArgs(argv: string[]): ParsedArgs {
   let maxCaptureBytes: number | undefined;
   let maxInputBytes: number | undefined;
   let timeZone: string | undefined;
+  let source: string | undefined;
+  let bySource = false;
   let wrapLauncher: string | undefined;
   let trace = false;
   let printInstructions = false;
@@ -235,6 +239,17 @@ function parseArgs(argv: string[]): ParsedArgs {
         timeZone = next;
         index += 2;
         break;
+      case "--source":
+        if (!next) {
+          throw new Error("--source requires a value");
+        }
+        source = next;
+        index += 2;
+        break;
+      case "--by-source":
+        bySource = true;
+        index += 1;
+        break;
       case "--wrap-launcher":
         if (!next) {
           throw new Error("--wrap-launcher requires a value");
@@ -272,6 +287,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     maxCaptureBytes,
     maxInputBytes,
     timeZone,
+    source,
+    bySource,
     wrapLauncher,
     trace,
     printInstructions,
@@ -328,6 +345,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
       command: file ? `reduce:${file}` : "stdin",
       combinedText: rawText,
       exitCode: 0,
+      ...(args.source ? { metadata: { source: args.source } } : {}),
     },
     {
       ...(args.classifier ? { classifier: args.classifier } : {}),
@@ -351,7 +369,16 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
   }
 
   const request = parseReduceJsonRequest(JSON.parse(rawText) as unknown);
-  const result = await reduceExecution(request.input, {
+  const requestInput = args.source
+    ? {
+        ...request.input,
+        metadata: {
+          ...request.input.metadata,
+          source: args.source,
+        },
+      }
+    : request.input;
+  const result = await reduceExecution(requestInput, {
     ...request.options,
     ...(args.classifier ? { classifier: args.classifier } : {}),
     ...(args.raw ? { raw: true } : {}),
@@ -375,6 +402,7 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(args.storeDir ? { storeDir: args.storeDir } : {}),
     ...(typeof args.maxInlineChars === "number" ? { maxInlineChars: args.maxInlineChars } : {}),
     ...(typeof args.maxCaptureBytes === "number" ? { maxCaptureBytes: args.maxCaptureBytes } : {}),
+    ...(args.source ? { source: args.source } : {}),
   });
   const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
   emit(args.format, wrapped, inlineText, args.raw);
@@ -722,6 +750,7 @@ async function loadDirectAnalysisEntry(args: ParsedArgs) {
     command: args.sourceCommand ?? (file ? `analyze:${file}` : "stdin"),
     combinedText: rawText,
     exitCode: args.exitCode ?? 0,
+    ...(args.source ? { metadata: { source: args.source } } : {}),
   } as const;
   const result = await reduceExecution(input, {
     ...(args.classifier ? { classifier: args.classifier } : {}),
@@ -755,7 +784,10 @@ function formatMetric(value: number): string {
 async function runDiscover(args: ParsedArgs): Promise<number> {
   const direct = await loadDirectAnalysisEntry(args);
   const entries = direct ? [direct.entry] : await listArtifactMetadata(args.storeDir);
-  const candidates = discoverCandidates(entries);
+  const candidates = discoverCandidates(entries, {
+    ...(args.source ? { source: args.source } : {}),
+    ...(args.bySource ? { bySource: true } : {}),
+  });
 
   if (args.format === "json") {
     process.stdout.write(`${JSON.stringify(direct ? { result: direct.result, candidates } : candidates, null, 2)}\n`);
@@ -776,6 +808,7 @@ async function runDiscover(args: ParsedArgs): Promise<number> {
     process.stdout.write(
       [
         candidate.kind,
+        candidate.source ? `source=${candidate.source}` : null,
         candidate.signature,
         `count=${formatMetric(candidate.count)}`,
         `raw=${formatMetric(candidate.totalRawChars)}`,
@@ -1153,7 +1186,11 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
 async function runStats(args: ParsedArgs): Promise<number> {
   const entries = await listArtifactMetadata(args.storeDir);
-  const report = statsArtifacts(entries, { timeZone: args.timeZone ?? "local" });
+  const report = statsArtifacts(entries, {
+    timeZone: args.timeZone ?? "local",
+    ...(args.source ? { source: args.source } : {}),
+    ...(args.bySource ? { bySource: true } : {}),
+  });
 
   if (args.format === "json") {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -1191,6 +1228,25 @@ async function runStats(args: ParsedArgs): Promise<number> {
     process.stdout.write("daily:\n");
     for (const day of report.daily.slice(-5)) {
       process.stdout.write(`- ${day.day} count=${formatMetric(day.count)} saved=${formatMetric(day.savedChars)}\n`);
+    }
+  }
+
+  if (report.sources && report.sources.length > 0) {
+    process.stdout.write("sources:\n");
+    for (const source of report.sources) {
+      process.stdout.write(
+        `source ${source.source}: entries=${formatMetric(source.totals.entries)} saved=${formatMetric(source.totals.savedChars)} avgRatio=${formatRatio(source.totals.avgRatio)}\n`,
+      );
+      if (source.reducers.length > 0) {
+        process.stdout.write(
+          `  reducers: ${source.reducers.slice(0, 3).map((reducer) => `${reducer.reducer}(${formatMetric(reducer.count)})`).join(", ")}\n`,
+        );
+      }
+      if (source.commands.length > 0) {
+        process.stdout.write(
+          `  commands: ${source.commands.slice(0, 3).map((command) => `${command.signature}(${formatMetric(command.count)})`).join(", ")}\n`,
+        );
+      }
     }
   }
 

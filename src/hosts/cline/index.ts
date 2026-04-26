@@ -9,7 +9,7 @@ import {
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext } from "../shared/hook-output.js";
+import { buildCompactedOutputContext, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
 export type ClineHookCommandOptions = TokenjuiceHookCommandOptions & {
@@ -162,26 +162,27 @@ function isShellToolName(value: unknown): boolean {
   return value === "execute_command" || value === "executeCommand" || value === "terminal";
 }
 
+function writeClineResponse(contextModification = ""): void {
+  writeHookJsonLine({ cancel: false, contextModification, errorMessage: "" });
+}
+
 export async function runClinePostToolUseHook(rawText: string): Promise<number> {
   let payload: ClinePostToolUsePayload;
   try {
     payload = JSON.parse(rawText) as ClinePostToolUsePayload;
   } catch {
-    process.stdout.write(JSON.stringify({ cancel: false, contextModification: "", errorMessage: "" }));
-    process.stdout.write("\n");
+    writeClineResponse();
     return 0;
   }
 
   if (payload.hookName !== "PostToolUse" || !isRecord(payload.postToolUse)) {
-    process.stdout.write(JSON.stringify({ cancel: false, contextModification: "", errorMessage: "" }));
-    process.stdout.write("\n");
+    writeClineResponse();
     return 0;
   }
 
   const tool = payload.postToolUse;
   if (!isShellToolName(tool.toolName) && !isShellToolName(tool.tool)) {
-    process.stdout.write(JSON.stringify({ cancel: false, contextModification: "", errorMessage: "" }));
-    process.stdout.write("\n");
+    writeClineResponse();
     return 0;
   }
 
@@ -189,8 +190,7 @@ export async function runClinePostToolUseHook(rawText: string): Promise<number> 
   const command = readStringField(parameters, ["command", "cmd"]) ?? readStringField(tool, ["command"]);
   const result = readStringField(tool, ["result"]);
   if (!command || !result) {
-    process.stdout.write(JSON.stringify({ cancel: false, contextModification: "", errorMessage: "" }));
-    process.stdout.write("\n");
+    writeClineResponse();
     return 0;
   }
 
@@ -208,18 +208,12 @@ export async function runClinePostToolUseHook(rawText: string): Promise<number> 
       skipGenericFallbackForCompoundCommands: true,
     });
 
-    process.stdout.write(JSON.stringify({
-      cancel: false,
-      contextModification: outcome.action === "rewrite"
-        ? buildCompactedOutputContext(outcome.result.inlineText)
-        : "",
-      errorMessage: "",
-    }));
-    process.stdout.write("\n");
+    writeClineResponse(
+      outcome.action === "rewrite" ? buildCompactedOutputContext(outcome.result.inlineText) : "",
+    );
     return 0;
   } catch {
-    process.stdout.write(JSON.stringify({ cancel: false, contextModification: "", errorMessage: "" }));
-    process.stdout.write("\n");
+    writeClineResponse();
     return 0;
   }
 }

@@ -1,5 +1,6 @@
 name-template: "tokenjuice v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
+category-template: "### $TITLE"
 change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
 change-title-escapes: '\<*_&'
 no-changes-template: "- No merged pull requests in this release."
@@ -14,7 +15,7 @@ categories:
     labels:
       - "bug"
       - "fix"
-  - title: "Maintenance"
+  - title: "Other Changes"
     labels:
       - "perf"
       - "chore"
@@ -27,8 +28,6 @@ categories:
       - "refactor"
       - "test"
       - "tests"
-  - title: "Other Changes"
-    labels:
       - "other"
 
 exclude-labels:
@@ -63,6 +62,9 @@ version-resolver:
   default: patch
 
 autolabeler:
+  - label: "skip-changelog"
+    title:
+      - '/^chore\(release\):/i'
   - label: "feat"
     title:
       - '/^feat(\(.+\))?:/i'
@@ -116,8 +118,7 @@ template: |
 
   lean output compaction for terminal-heavy agent workflows.
 
-  ### what's new
   $CHANGES
 
-  ### contributors
+  ### Contributors
   $CONTRIBUTORS

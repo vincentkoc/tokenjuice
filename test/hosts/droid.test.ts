@@ -124,7 +124,7 @@ describe("droid hooks", () => {
 
     expect(installed.status).toBe("ok");
     expect(installed.detectedCommand).toBe(`${launcherPath} droid-post-tool-use`);
-    expect(installed.advisories[0]).toContain("beta");
+    expect(installed.advisories[0]).toContain("PostToolUse");
 
     const removed = await uninstallDroidHook(settingsPath);
     const disabled = await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true });

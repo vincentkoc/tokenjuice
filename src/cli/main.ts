@@ -772,7 +772,6 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     const details = [
       { label: "Hook", value: result.settingsPath },
       { label: "Command", value: result.command },
-      { label: "Beta", value: "Droid PostToolUse hook compacts Execute tool output" },
       { label: "Verify", value: `tokenjuice doctor droid${args.local ? " --local" : ""}` },
       { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
     ];

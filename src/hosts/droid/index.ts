@@ -52,8 +52,8 @@ type DroidPostToolUsePayload = {
 
 const TOKENJUICE_DROID_SUBCOMMAND = "droid-post-tool-use";
 const TOKENJUICE_DROID_FIX_COMMAND = "tokenjuice install droid";
-const TOKENJUICE_DROID_ADVISORY = "Droid support is beta; verify live hook behavior after install.";
-const TOKENJUICE_DROID_DISABLED_ADVISORY = "Droid support is beta; PostToolUse output replacement depends on current hook semantics.";
+const TOKENJUICE_DROID_ADVISORY = "Droid PostToolUse hook compacts Execute shell output before it returns to the agent.";
+const TOKENJUICE_DROID_DISABLED_ADVISORY = "Droid PostToolUse hook is not installed.";
 
 function getFactoryHome(): string {
   return process.env.FACTORY_HOME || join(homedir(), ".factory");

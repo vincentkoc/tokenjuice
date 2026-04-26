@@ -2,12 +2,14 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -223,6 +225,33 @@ export async function doctorDroidHook(
   };
 }
 
+function commandRequestsTokenjuiceRawBypass(command: string): boolean {
+  let argv: string[];
+  try {
+    argv = parseShellWords(stripLeadingCdPrefix(command));
+  } catch {
+    return false;
+  }
+  if (argv.length < 3) {
+    return false;
+  }
+
+  const first = argv[0];
+  const wrapIndex = typeof first === "string" && isTokenjuiceExecutablePath(first) ? 1 : -1;
+
+  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
+    return false;
+  }
+
+  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
+  if (optionEndIndex === -1) {
+    return false;
+  }
+
+  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
+  return optionArgs.includes("--raw") || optionArgs.includes("--full");
+}
+
 function readPositiveIntegerEnv(name: string): number | undefined {
   const value = process.env[name];
   if (!value) {
@@ -309,6 +338,12 @@ export async function runDroidPostToolUseHook(rawText: string): Promise<number> 
   }
 
   const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_DROID_MAX_INLINE_CHARS");
+
+  if (commandRequestsTokenjuiceRawBypass(command)) {
+    await writeHookDebug({ ...debug, skipped: "explicit-raw-bypass" });
+    writeEmptyHookJsonLine();
+    return 0;
+  }
 
   try {
     const outcome = await compactBashResult({

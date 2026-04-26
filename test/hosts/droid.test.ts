@@ -246,6 +246,108 @@ describe("droid hooks", () => {
     expect(output).toBe("{}\n");
   });
 
+  it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
+    const home = await createTempDir();
+    process.env.FACTORY_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Execute",
+      cwd: "/repo",
+      tool_input: {
+        command: "tokenjuice wrap --raw -- git log --oneline -50",
+      },
+      tool_response: Array.from({ length: 50 }, (_, i) => `${String(i).padStart(7, "0")} commit message ${i}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("{}\n");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
+  it("honors tokenjuice raw bypass commands with leading cd prefixes", async () => {
+    const home = await createTempDir();
+    process.env.FACTORY_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Execute",
+      cwd: "/repo",
+      tool_input: {
+        command: "cd /data/code/project && tokenjuice wrap --raw -- python scripts/dump.py --limit 500",
+      },
+      tool_response: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("{}\n");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
+  it("does not treat inner command flags as a raw bypass without the wrap separator", async () => {
+    const home = await createTempDir();
+    process.env.FACTORY_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Execute",
+      cwd: "/repo",
+      tool_input: {
+        command: "tokenjuice wrap git diff --raw",
+      },
+      tool_response: Array.from({ length: 40 }, (_, i) => `diff line ${i + 1}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(() => JSON.parse(output)).not.toThrow();
+    expect(debug.skipped).not.toBe("explicit-raw-bypass");
+  });
+
+  it("honors absolute tokenjuice raw bypass commands", async () => {
+    const home = await createTempDir();
+    process.env.FACTORY_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Execute",
+      cwd: "/repo",
+      tool_input: {
+        command: "/usr/local/bin/tokenjuice wrap --raw -- git status",
+      },
+      tool_response: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
+    });
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(output).toBe("{}\n");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("explicit-raw-bypass");
+  });
+
   it("uninstall removes tokenjuice hooks but preserves other hooks", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");

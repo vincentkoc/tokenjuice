@@ -1,5 +1,5 @@
 import { isFileContentInspectionCommand } from "./command-identity.js";
-import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { clipMiddleWithHash, parseJsonValue } from "./reduce-utils.js";
 import { countTextChars, headTail, normalizeLines, stripAnsi, trimEmptyEdges } from "./text.js";
 
@@ -45,19 +45,43 @@ function buildPackageLockSummary(value: unknown): string[] {
   return lines;
 }
 
-function buildLargeDocumentSummary(lines: string[], rawText: string): string[] {
+function buildLargeDocumentSummary(lines: string[], rawText: string): { lines: string[]; compaction: CompactionMetadata } {
   const headings = lines
     .map((line) => line.trim())
     .filter((line) => /^#{1,6}\s+\S/u.test(line))
     .slice(0, 24);
   const excerpt = headTail(lines, 6, 6);
-  const excerptLines = excerpt.lines.map((line) => clipMiddleWithHash(line, 180).text);
-  return [
-    `large document summary: ${lines.length} lines, ${countTextChars(rawText)} chars`,
-    ...(headings.length > 0 ? ["headings:", ...headings.map((line) => `- ${clipMiddleWithHash(line, 180).text}`)] : []),
-    "excerpt:",
-    ...excerptLines,
-  ];
+  const clippedHeadingCompactions: CompactionMetadata[] = [];
+  const clippedHeadings = headings.map((line) => {
+    const clipped = clipMiddleWithHash(line, 180);
+    if (clipped.compaction) {
+      clippedHeadingCompactions.push(clipped.compaction);
+    }
+    return `- ${clipped.text}`;
+  });
+  const clippedExcerptCompactions: CompactionMetadata[] = [];
+  const excerptLines = excerpt.lines.map((line) => {
+    const clipped = clipMiddleWithHash(line, 180);
+    if (clipped.compaction) {
+      clippedExcerptCompactions.push(clipped.compaction);
+    }
+    return clipped.text;
+  });
+
+  return {
+    lines: [
+      `large document summary: ${lines.length} lines, ${countTextChars(rawText)} chars`,
+      ...(clippedHeadings.length > 0 ? ["headings:", ...clippedHeadings] : []),
+      "excerpt:",
+      ...excerptLines,
+    ],
+    compaction: mergeCompactionMetadata(
+      createCompactionMetadata("inspection-large-document-summary"),
+      excerpt.compaction,
+      ...clippedHeadingCompactions,
+      ...clippedExcerptCompactions,
+    ),
+  };
 }
 
 function isLikelyDocumentLine(line: string): boolean {
@@ -122,9 +146,10 @@ export function buildInspectionSummary(input: ToolExecutionInput, rawText: strin
     return null;
   }
 
+  const summary = buildLargeDocumentSummary(lines, rawText);
   return {
-    lines: buildLargeDocumentSummary(lines, rawText),
+    lines: summary.lines,
     matchedReducer: "generic/large-document-summary",
-    compaction: createCompactionMetadata("inspection-large-document-summary", "head-tail-omission", "hashed-middle-clip"),
+    compaction: summary.compaction,
   };
 }

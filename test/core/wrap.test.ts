@@ -123,6 +123,18 @@ describe("runWrappedCommand", () => {
     expect(wrapped.result.inlineText).not.toContain(WRAP_AUTHORITATIVE_FOOTER);
   });
 
+  it("does not keep authoritative compaction when passthrough beats a lossy summary", async () => {
+    const wrapped = await runWrappedCommand([
+      "node",
+      "-e",
+      "process.stdout.write(Array.from({ length: 13 }, (_, index) => `v${index}`).join('\\n') + '\\n');",
+    ]);
+
+    expect(wrapped.result.inlineText).toBe(Array.from({ length: 13 }, (_, index) => `v${index}`).join("\n"));
+    expect(wrapped.result.compaction?.authoritative).toBe(false);
+    expect(wrapped.result.inlineText).not.toContain(WRAP_AUTHORITATIVE_FOOTER);
+  });
+
   it("flags omitted summaries as authoritative compaction", async () => {
     const wrapped = await runWrappedCommand([
       "node",

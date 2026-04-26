@@ -101,8 +101,10 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
   const preRewriteLines = [...lines];
   let rewriteCompaction: CompactionMetadata | undefined;
   if (rule.id === "cloud/gh") {
-    counterLines = rewriteGhLines(counterLines, input);
-    lines = rewriteGhLines(lines, input);
+    counterLines = rewriteGhLines(counterLines, input).lines;
+    const rewritten = rewriteGhLines(lines, input);
+    lines = rewritten.lines;
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
   if (rule.id === "search/rg") {
     const rewritten = rewriteSearchLines(lines);
@@ -246,27 +248,46 @@ function selectInlineText(
   rawText: string,
   compactText: string,
   maxInlineChars: number,
-): string {
+  compactCompaction: CompactionMetadata,
+): { text: string; compaction: CompactionMetadata } {
   const passthroughText = buildPassthroughText(input, rawText);
   const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
   if (shouldKeepSmallOutput(classification, input, rawChars, compactChars, maxInlineChars)) {
-    return buildLiteralPassthroughText(input, rawText);
+    return {
+      text: buildLiteralPassthroughText(input, rawText),
+      compaction: NO_COMPACTION_METADATA,
+    };
   }
   if (classification.family === "git-status") {
-    return compactText;
+    return {
+      text: compactText,
+      compaction: compactCompaction,
+    };
   }
   if (rawChars <= maxInlineChars && compactChars >= rawChars) {
-    return passthroughText;
+    return {
+      text: passthroughText,
+      compaction: NO_COMPACTION_METADATA,
+    };
   }
   const passthroughLimit = classification.family === "help" ? maxInlineChars : TINY_OUTPUT_MAX_CHARS;
   if (countTextChars(passthroughText) > passthroughLimit) {
-    return compactText;
+    return {
+      text: compactText,
+      compaction: compactCompaction,
+    };
   }
   if (countTextChars(passthroughText) <= countTextChars(compactText)) {
-    return passthroughText;
+    return {
+      text: passthroughText,
+      compaction: NO_COMPACTION_METADATA,
+    };
   }
-  return compactText;
+  return {
+    text: compactText,
+    compaction: compactCompaction,
+  };
 }
 
 export async function reduceExecution(input: ToolExecutionInput, opts: ReduceOptions = {}): Promise<CompactResult> {
@@ -486,9 +507,9 @@ export async function reduceExecutionWithRules(
   const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText);
   const compactText = formatInline(classification, reducerInput, summary || "(no output)", facts);
   const maxInlineChars = opts.maxInlineChars ?? 1200;
-  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars);
-  const clamp = classification.family === "help" || selectedText.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
-  const provisionalInlineText = clamp(selectedText, maxInlineChars);
+  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction);
+  const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
+  const provisionalInlineText = clamp(selectedText.text, maxInlineChars);
   const provisionalReducedChars = countTextChars(provisionalInlineText.text);
   const provisionalStats = {
     rawChars: measuredRawChars,
@@ -510,7 +531,7 @@ export async function reduceExecutionWithRules(
         opts.storeDir,
       )
     : undefined;
-  const inlineText = clamp(selectedText, maxInlineChars);
+  const inlineText = clamp(selectedText.text, maxInlineChars);
   const reducedChars = countTextChars(inlineText.text);
   const stats = {
     rawChars: measuredRawChars,
@@ -534,7 +555,7 @@ export async function reduceExecutionWithRules(
     inlineText: inlineText.text,
     ...(summary ? { previewText: summary } : {}),
     ...(Object.keys(facts).length > 0 ? { facts } : {}),
-    compaction: mergeCompactionMetadata(compaction, inlineText.compaction),
+    compaction: mergeCompactionMetadata(selectedText.compaction, inlineText.compaction),
     ...(trace ? { trace } : {}),
     ...(rawRef ? { rawRef } : {}),
     stats,

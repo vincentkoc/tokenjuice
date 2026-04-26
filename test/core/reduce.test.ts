@@ -1144,7 +1144,24 @@ describe("reduceExecution", () => {
     });
 
     expect(result.classification.matchedReducer).toBe("generic/large-document-summary");
-    expect(result.compaction?.authoritative).toBe(true);
+    expect(result.compaction).toEqual({
+      authoritative: true,
+      kinds: ["inspection-large-document-summary", "head-tail-omission"],
+    });
+  });
+
+  it("clears lossy compaction metadata when passthrough text wins", async () => {
+    const rawText = `${Array.from({ length: 13 }, (_, index) => `v${index}`).join("\n")}\n`;
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool inspect",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText.trimEnd());
+    expect(result.compaction?.authoritative).toBe(false);
   });
 
   it("keeps search output raw when the rewritten form would be longer but still fits inline", async () => {
@@ -1261,6 +1278,7 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("comment #123 @reviewer src/index.ts:42");
     expect(result.inlineText).toContain("sha256:");
     expect(result.inlineText).not.toContain("\"body\"");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["hashed-middle-clip"] });
   });
 
   it("clips large git diff hunks while keeping exact file and hunk headers", async () => {

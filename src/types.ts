@@ -140,6 +140,7 @@ export type CompactResult = {
   inlineText: string;
   previewText?: string;
   facts?: Record<string, number>;
+  compaction?: import("./core/compaction-metadata.js").CompactionMetadata;
   trace?: {
     normalizedCommand?: string;
     normalizedArgv?: string[];

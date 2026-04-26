@@ -1,4 +1,5 @@
 import { isFileContentInspectionCommand } from "./command-identity.js";
+import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { clipMiddleWithHash, parseJsonValue } from "./reduce-utils.js";
 import { countTextChars, headTail, normalizeLines, stripAnsi, trimEmptyEdges } from "./text.js";
 
@@ -13,6 +14,7 @@ export type InspectionSummaryReducerId = "generic/package-lock-summary" | "gener
 export type InspectionSummary = {
   lines: string[];
   matchedReducer: InspectionSummaryReducerId;
+  compaction: CompactionMetadata;
 };
 
 function buildPackageLockSummary(value: unknown): string[] {
@@ -49,11 +51,12 @@ function buildLargeDocumentSummary(lines: string[], rawText: string): string[] {
     .filter((line) => /^#{1,6}\s+\S/u.test(line))
     .slice(0, 24);
   const excerpt = headTail(lines, 6, 6);
+  const excerptLines = excerpt.lines.map((line) => clipMiddleWithHash(line, 180).text);
   return [
     `large document summary: ${lines.length} lines, ${countTextChars(rawText)} chars`,
-    ...(headings.length > 0 ? ["headings:", ...headings.map((line) => `- ${clipMiddleWithHash(line, 180)}`)] : []),
+    ...(headings.length > 0 ? ["headings:", ...headings.map((line) => `- ${clipMiddleWithHash(line, 180).text}`)] : []),
     "excerpt:",
-    ...excerpt.map((line) => clipMiddleWithHash(line, 180)),
+    ...excerptLines,
   ];
 }
 
@@ -109,7 +112,7 @@ export function buildInspectionSummary(input: ToolExecutionInput, rawText: strin
   if (PACKAGE_LOCK_RE.test(command)) {
     const lines = buildPackageLockSummary(parseJsonValue(rawText));
     return lines.length > 0
-      ? { lines, matchedReducer: "generic/package-lock-summary" }
+      ? { lines, matchedReducer: "generic/package-lock-summary", compaction: createCompactionMetadata("inspection-package-lock-summary") }
       : null;
   }
 
@@ -122,5 +125,6 @@ export function buildInspectionSummary(input: ToolExecutionInput, rawText: strin
   return {
     lines: buildLargeDocumentSummary(lines, rawText),
     matchedReducer: "generic/large-document-summary",
+    compaction: createCompactionMetadata("inspection-large-document-summary", "head-tail-omission", "hashed-middle-clip"),
   };
 }

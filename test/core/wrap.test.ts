@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { listArtifactMetadata, listArtifacts, runWrappedCommand } from "../../src/index.js";
+import { WRAP_AUTHORITATIVE_FOOTER } from "../../src/core/compaction-metadata.js";
 
 const tempDirs: string[] = [];
 
@@ -108,5 +109,28 @@ describe("runWrappedCommand", () => {
     const metadata = await listArtifactMetadata(storeDir);
     expect(metadata).toHaveLength(1);
     expect(metadata[0]?.metadata.source).toBe("cursor");
+  });
+
+  it("does not flag lossless rewrites as authoritative compaction", async () => {
+    const wrapped = await runWrappedCommand([
+      "node",
+      "-e",
+      "process.stdout.write('Deleted branch fix/cd-prefixed-raw-bypass-main (was 76b6858).\\n');",
+    ]);
+
+    expect(wrapped.result.inlineText).toBe("Deleted branch fix/cd-prefixed-raw-bypass-main (was 76b6858).");
+    expect(wrapped.result.compaction?.authoritative).toBe(false);
+    expect(wrapped.result.inlineText).not.toContain(WRAP_AUTHORITATIVE_FOOTER);
+  });
+
+  it("flags omitted summaries as authoritative compaction", async () => {
+    const wrapped = await runWrappedCommand([
+      "node",
+      "-e",
+      "process.stdout.write(Array.from({ length: 40 }, (_, index) => `line ${index} ${'x'.repeat(80)}`).join('\\n'));",
+    ]);
+
+    expect(wrapped.result.inlineText).toContain("omitted");
+    expect(wrapped.result.compaction?.authoritative).toBe(true);
   });
 });

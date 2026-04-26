@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clampText, countTerminalCells, countTextChars, stripAnsi } from "../../src/core/text.js";
+import { clampText, clampTextWithMetadata, countTerminalCells, countTextChars, headTail, stripAnsi } from "../../src/core/text.js";
 
 describe("text helpers", () => {
   it("strips xterm colors and OSC hyperlinks while preserving emoji and CJK", () => {
@@ -23,6 +23,18 @@ describe("text helpers", () => {
 
     expect(clamped).toBe("\n... truncated ...");
     expect(countTextChars(clamped)).toBeLessThanOrEqual(18);
+  });
+
+  it("records tail truncation metadata when clampTextWithMetadata shortens output", () => {
+    const result = clampTextWithMetadata("abcdefghijklmnopqrstuvwxyz", 10);
+
+    expect(result.text).toContain("... truncated ...");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["tail-truncation"] });
+  });
+
+  it("does not mark headTail as omission when both sides are zero or negative", () => {
+    expect(headTail(["a", "b", "c"], 0, 0)).toEqual({ lines: ["a", "b", "c"] });
+    expect(headTail(["a", "b", "c"], -2, -3)).toEqual({ lines: ["a", "b", "c"] });
   });
 
   it("counts terminal cells for emoji, cjk, and combining characters", () => {

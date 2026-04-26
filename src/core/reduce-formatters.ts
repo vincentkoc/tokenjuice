@@ -1,3 +1,4 @@
+import { createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { compactWhitespace, clipMiddleWithHash, parseJsonObjectLine, parseJsonValue } from "./reduce-utils.js";
 
 import type { ToolExecutionInput } from "../types.js";
@@ -269,7 +270,7 @@ function formatGhCommentJsonRecord(record: Record<string, unknown>): string | nu
     location,
     state ? `[${state}]` : null,
     createdAt,
-    `body=${clipMiddleWithHash(compactWhitespace(body), 180)}`,
+    `body=${clipMiddleWithHash(compactWhitespace(body), 180).text}`,
   ].filter((part): part is string => Boolean(part));
   return parts.join(" ");
 }
@@ -326,19 +327,34 @@ function formatGhJsonValue(value: unknown): string[] {
   return lines;
 }
 
-export function rewriteSearchLines(lines: string[]): string[] {
-  return lines.map((line) => {
+export function rewriteSearchLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+  const compactions: CompactionMetadata[] = [];
+  const rewritten = lines.map((line) => {
     const match = /^(.+?:\d+(?::|-))(.*)$/u.exec(line);
     if (!match) {
-      return clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS);
+      const clipped = clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS);
+      if (clipped.compaction) {
+        compactions.push(clipped.compaction);
+      }
+      return clipped.text;
     }
     const [, prefix, rest] = match;
-    return `${prefix}${clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS)}`;
+    const clipped = clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS);
+    if (clipped.compaction) {
+      compactions.push(clipped.compaction);
+    }
+    return `${prefix}${clipped.text}`;
   });
+
+  return {
+    lines: rewritten,
+    ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+  };
 }
 
-export function rewriteGitDiffLines(lines: string[]): string[] {
+export function rewriteGitDiffLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
   const rewritten: string[] = [];
+  const compactions: CompactionMetadata[] = [];
   let emittedChangedLinesInHunk = 0;
   let omittedAdded = 0;
   let omittedRemoved = 0;
@@ -346,6 +362,7 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
   const flushOmitted = () => {
     if (omittedAdded > 0 || omittedRemoved > 0) {
       rewritten.push(`... hunk clipped: ${omittedAdded} added, ${omittedRemoved} removed lines omitted`);
+      compactions.push(createCompactionMetadata("git-diff-hunk-clip"));
       omittedAdded = 0;
       omittedRemoved = 0;
     }
@@ -373,7 +390,11 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
 
     if (emittedChangedLinesInHunk < GIT_DIFF_CHANGED_LINES_PER_HUNK) {
       emittedChangedLinesInHunk += 1;
-      rewritten.push(clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS));
+      const clipped = clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS);
+      if (clipped.compaction) {
+        compactions.push(clipped.compaction);
+      }
+      rewritten.push(clipped.text);
       continue;
     }
 
@@ -385,7 +406,10 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
   }
 
   flushOmitted();
-  return rewritten;
+  return {
+    lines: rewritten,
+    ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+  };
 }
 
 function formatGhTableLine(line: string): string {

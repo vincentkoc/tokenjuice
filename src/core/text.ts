@@ -1,3 +1,5 @@
+import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+
 const ANSI_CSI_PATTERN = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*[@-~]`, "g");
 const ANSI_OSC_PATTERN = new RegExp(String.raw`\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)`, "g");
 const ANSI_CSI_INCOMPLETE_PATTERN = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*$`, "g");
@@ -137,16 +139,25 @@ export function dedupeAdjacent(lines: string[]): string[] {
   return next;
 }
 
-export function headTail(lines: string[], head: number, tail: number): string[] {
-  if (lines.length <= head + tail) {
-    return lines;
+export function headTail(lines: string[], head: number, tail: number): { lines: string[]; compaction?: CompactionMetadata } {
+  const safeHead = Math.max(0, head);
+  const safeTail = Math.max(0, tail);
+  if (safeHead === 0 && safeTail === 0) {
+    return { lines };
   }
 
-  return [
-    ...lines.slice(0, head),
-    `... ${lines.length - head - tail} lines omitted ...`,
-    ...lines.slice(-tail),
-  ];
+  if (lines.length <= safeHead + safeTail) {
+    return { lines };
+  }
+
+  return {
+    lines: [
+      ...lines.slice(0, safeHead),
+      `... ${lines.length - safeHead - safeTail} lines omitted ...`,
+      ...lines.slice(-safeTail),
+    ],
+    compaction: createCompactionMetadata("head-tail-omission"),
+  };
 }
 
 export function clampText(text: string, maxChars: number): string {
@@ -158,9 +169,24 @@ export function clampText(text: string, maxChars: number): string {
   return `${head}${TRUNCATION_SUFFIX}`;
 }
 
-export function clampTextMiddle(text: string, maxChars: number): string {
+export function clampTextWithMetadata(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
-    return text;
+    return { text };
+  }
+
+  return {
+    text: clampText(text, maxChars),
+    compaction: createCompactionMetadata("tail-truncation"),
+  };
+}
+
+export function clampTextMiddle(text: string, maxChars: number): string {
+  return clampTextMiddleWithMetadata(text, maxChars).text;
+}
+
+export function clampTextMiddleWithMetadata(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
+  if (countTextChars(text) <= maxChars) {
+    return { text };
   }
 
   const markerChars = countTextChars(MIDDLE_TRUNCATION_MARKER);
@@ -171,7 +197,10 @@ export function clampTextMiddle(text: string, maxChars: number): string {
   const head = trimHeadToLineBoundary(segments.slice(0, headChars).join(""));
   const tail = trimTailToLineBoundary(segments.slice(-tailChars).join(""));
 
-  return `${head}${MIDDLE_TRUNCATION_MARKER}${tail}`;
+  return {
+    text: `${head}${MIDDLE_TRUNCATION_MARKER}${tail}`,
+    compaction: createCompactionMetadata("middle-truncation"),
+  };
 }
 
 export function pluralize(count: number, noun: string): string {

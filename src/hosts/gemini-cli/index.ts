@@ -8,7 +8,7 @@ import {
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext } from "../shared/hook-output.js";
+import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
 export type GeminiCliHookCommandOptions = TokenjuiceHookCommandOptions;
@@ -252,12 +252,12 @@ export async function runGeminiCliAfterToolHook(rawText: string): Promise<number
   try {
     payload = JSON.parse(rawText) as GeminiCliAfterToolPayload;
   } catch {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
   if (payload.hook_event_name !== "AfterTool" || payload.tool_name !== "run_shell_command") {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
@@ -265,7 +265,7 @@ export async function runGeminiCliAfterToolHook(rawText: string): Promise<number
   const command = toolInput ? readStringField(toolInput, ["command", "cmd"]) : undefined;
   const visibleText = readGeminiOutputText(payload.tool_response);
   if (!command || !visibleText.trim()) {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
@@ -285,18 +285,18 @@ export async function runGeminiCliAfterToolHook(rawText: string): Promise<number
     });
 
     if (outcome.action === "keep") {
-      process.stdout.write("{}\n");
+      writeEmptyHookJsonLine();
       return 0;
     }
 
-    process.stdout.write(`${JSON.stringify({
+    writeHookJsonLine({
       decision: "deny",
       reason: buildCompactedOutputContext(outcome.result.inlineText),
       suppressOutput: true,
-    })}\n`);
+    });
     return 0;
   } catch {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 }

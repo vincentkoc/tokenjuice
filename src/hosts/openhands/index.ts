@@ -7,7 +7,7 @@ import {
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext } from "../shared/hook-output.js";
+import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
 export type OpenHandsHookCommandOptions = TokenjuiceHookCommandOptions & {
@@ -233,12 +233,12 @@ export async function runOpenHandsPostToolUseHook(rawText: string): Promise<numb
   try {
     payload = JSON.parse(rawText) as OpenHandsPostToolUsePayload;
   } catch {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
   if (payload.event_type !== "PostToolUse" || payload.tool_name !== "terminal") {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
@@ -246,7 +246,7 @@ export async function runOpenHandsPostToolUseHook(rawText: string): Promise<numb
   const command = toolInput ? readStringField(toolInput, ["command", "cmd"]) : undefined;
   const visibleText = readOpenHandsOutputText(payload.tool_response);
   if (!command || !visibleText.trim()) {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 
@@ -264,16 +264,16 @@ export async function runOpenHandsPostToolUseHook(rawText: string): Promise<numb
     });
 
     if (outcome.action === "keep") {
-      process.stdout.write("{}\n");
+      writeEmptyHookJsonLine();
       return 0;
     }
 
-    process.stdout.write(`${JSON.stringify({
+    writeHookJsonLine({
       additionalContext: buildCompactedOutputContext(outcome.result.inlineText),
-    })}\n`);
+    });
     return 0;
   } catch {
-    process.stdout.write("{}\n");
+    writeEmptyHookJsonLine();
     return 0;
   }
 }

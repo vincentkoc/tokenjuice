@@ -475,28 +475,6 @@ export async function reduceExecutionWithRules(
   const maxInlineChars = opts.maxInlineChars ?? 1200;
   const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars);
   const clamp = classification.family === "help" || selectedText.includes("\n") ? clampTextMiddle : clampText;
-  const provisionalInlineText = clamp(selectedText, maxInlineChars);
-  const provisionalReducedChars = countTextChars(provisionalInlineText);
-  const provisionalStats = {
-    rawChars: measuredRawChars,
-    reducedChars: provisionalReducedChars,
-    ratio: measuredRawChars === 0 ? 1 : provisionalReducedChars / measuredRawChars,
-  };
-  const rawRef = opts.store
-    ? await storeArtifact(
-        {
-          input: normalizedInput,
-          rawText,
-          classification,
-          stats: {
-            rawChars: provisionalStats.rawChars,
-            reducedChars: provisionalStats.reducedChars,
-            ratio: provisionalStats.ratio,
-          },
-        },
-        opts.storeDir,
-      )
-    : undefined;
   const inlineText = clamp(selectedText, maxInlineChars);
   const reducedChars = countTextChars(inlineText);
   const stats = {
@@ -504,6 +482,17 @@ export async function reduceExecutionWithRules(
     reducedChars,
     ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
   };
+  const rawRef = opts.store
+    ? await storeArtifact(
+        {
+          input: normalizedInput,
+          rawText,
+          classification,
+          stats,
+        },
+        opts.storeDir,
+      )
+    : undefined;
 
   if (!opts.store && opts.recordStats) {
     await storeArtifactMetadata(

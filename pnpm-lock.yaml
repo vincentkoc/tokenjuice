@@ -1121,10 +1121,6 @@ packages:
     resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.9:
-    resolution: {integrity: sha512-7a70Nsot+EMX9fFU3064K/kdHWZqGVY+BADLyXc8Dfv+mTLLVl6JzJpPaCZ2kQL9gIJvKXSLMHhqdRRjwQeFtw==}
-    engines: {node: ^10 || ^12 || >=14}
-
   precinct@12.3.1:
     resolution: {integrity: sha512-wGyTIvtxh2S2NAHxTJj0YymxWOIcEDotu17yHoQUd2Bz2C07LrS28L1nvXDMxrCHvHmV6KTlaIQy5PzRm7Y8rg==}
     engines: {node: '>=18'}
@@ -2271,12 +2267,6 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.9:
-    dependencies:
-      nanoid: 3.3.11
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
   precinct@12.3.1:
     dependencies:
       '@dependents/detective-less': 5.0.2
@@ -2503,7 +2493,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.9
+      postcss: 8.5.10
       rollup: 4.60.1
       tinyglobby: 0.2.16
     optionalDependencies:

@@ -7,6 +7,7 @@ import { doctorContinueRule } from "../continue/index.js";
 import { doctorCodexHook } from "../codex/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
+import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
@@ -23,6 +24,7 @@ import type { ContinueDoctorReport } from "../continue/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
+import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
@@ -41,6 +43,7 @@ export type HookIntegrationDoctorReport = {
   codebuddy: CodeBuddyDoctorReport;
   continue: ContinueDoctorReport;
   cursor: CursorDoctorReport;
+  droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   junie: JunieDoctorReport;
   openhands: OpenHandsDoctorReport;
@@ -55,7 +58,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions;
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions;
 
 function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealthStatus {
   if (left === "broken" || right === "broken") {
@@ -91,6 +94,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
   const codebuddy = await doctorCodeBuddyHook(undefined, hookCommandOptions);
   const continueRule = await doctorContinueRule();
   const cursor = await doctorCursorHook(undefined, hookCommandOptions);
+  const droid = await doctorDroidHook(undefined, hookCommandOptions);
   const geminiCli = await doctorGeminiCliHook(undefined, hookCommandOptions);
   const junie = await doctorJunieInstructions();
   const openhands = await doctorOpenHandsHook(undefined, hookCommandOptions);
@@ -109,6 +113,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
       codebuddy.status,
       continueRule.status,
       cursor.status,
+      droid.status,
       geminiCli.status,
       junie.status,
       openhands.status,
@@ -126,6 +131,7 @@ export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {
       codebuddy,
       continue: continueRule,
       cursor,
+      droid,
       "gemini-cli": geminiCli,
       junie,
       openhands,

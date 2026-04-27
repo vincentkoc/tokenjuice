@@ -25,6 +25,7 @@ export {
   uninstallCopilotCliHook,
 } from "./hosts/copilot-cli/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
@@ -102,6 +103,12 @@ export type {
   UninstallOpenCodeExtensionResult,
 } from "./hosts/opencode/index.js";
 export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
+export type {
+  DroidDoctorReport,
+  DroidHookCommandOptions,
+  InstallDroidHookResult,
+  UninstallDroidHookResult,
+} from "./hosts/droid/index.js";
 export type {
   GeminiCliDoctorReport,
   GeminiCliHookCommandOptions,

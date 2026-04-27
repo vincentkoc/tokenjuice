@@ -1,3 +1,4 @@
+import { createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { compactWhitespace, clipMiddleWithHash, parseJsonObjectLine, parseJsonValue } from "./reduce-utils.js";
 
 import type { ToolExecutionInput } from "../types.js";
@@ -169,7 +170,7 @@ function extractGhDuration(record: Record<string, unknown>): string | null {
   return null;
 }
 
-function formatGhJsonRecord(record: Record<string, unknown>): string | null {
+function formatGhJsonRecord(record: Record<string, unknown>): { line: string; compaction?: CompactionMetadata } | null {
   const comment = formatGhCommentJsonRecord(record);
   if (comment) {
     return comment;
@@ -222,7 +223,7 @@ function formatGhJsonRecord(record: Record<string, unknown>): string | null {
   if (updatedAt) {
     parts.push(updatedAt);
   }
-  return parts.join(" ");
+  return { line: parts.join(" ") };
 }
 
 function getNestedLogin(value: unknown): string | null {
@@ -235,7 +236,7 @@ function getNestedLogin(value: unknown): string | null {
   return null;
 }
 
-function formatGhCommentJsonRecord(record: Record<string, unknown>): string | null {
+function formatGhCommentJsonRecord(record: Record<string, unknown>): { line: string; compaction?: CompactionMetadata } | null {
   const body = typeof record.body === "string" ? record.body
     : typeof record.bodyText === "string" ? record.bodyText
       : null;
@@ -260,6 +261,7 @@ function formatGhCommentJsonRecord(record: Record<string, unknown>): string | nu
   const createdAt = typeof record.createdAt === "string" ? record.createdAt.slice(0, 10)
     : typeof record.created_at === "string" ? record.created_at.slice(0, 10)
       : null;
+  const clippedBody = clipMiddleWithHash(compactWhitespace(body), 180);
 
   const location = path ? `${path}${line !== null ? `:${line}` : ""}` : null;
   const parts = [
@@ -269,9 +271,12 @@ function formatGhCommentJsonRecord(record: Record<string, unknown>): string | nu
     location,
     state ? `[${state}]` : null,
     createdAt,
-    `body=${clipMiddleWithHash(compactWhitespace(body), 180)}`,
+    `body=${clippedBody.text}`,
   ].filter((part): part is string => Boolean(part));
-  return parts.join(" ");
+  return {
+    line: parts.join(" "),
+    ...(clippedBody.compaction ? { compaction: clippedBody.compaction } : {}),
+  };
 }
 
 function getGhCollection(value: unknown): unknown[] {
@@ -284,26 +289,41 @@ function getGhCollection(value: unknown): unknown[] {
   return [];
 }
 
-function formatGhJsonValue(value: unknown): string[] {
+function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: CompactionMetadata } {
+  const compactions: CompactionMetadata[] = [];
   if (Array.isArray(value)) {
-    return value.flatMap((entry) => {
+    const lines = value.flatMap((entry) => {
       if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
         return [];
       }
       const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
-      return formatted ? [formatted] : [];
+      if (!formatted) {
+        return [];
+      }
+      if (formatted.compaction) {
+        compactions.push(formatted.compaction);
+      }
+      return [formatted.line];
     });
+
+    return {
+      lines,
+      ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+    };
   }
 
   if (typeof value !== "object" || value === null) {
-    return [];
+    return { lines: [] };
   }
 
   const record = value as Record<string, unknown>;
   const lines: string[] = [];
   const header = formatGhJsonRecord(record);
   if (header) {
-    lines.push(header);
+    lines.push(header.line);
+    if (header.compaction) {
+      compactions.push(header.compaction);
+    }
   }
 
   for (const collectionKey of ["jobs", "workflowRuns", "items", "artifacts", "comments", "reviews", "reviewThreads"]) {
@@ -318,27 +338,48 @@ function formatGhJsonValue(value: unknown): string[] {
       }
       const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
       if (formatted) {
-        lines.push(formatted);
+        lines.push(formatted.line);
+        if (formatted.compaction) {
+          compactions.push(formatted.compaction);
+        }
       }
     }
   }
 
-  return lines;
+  return {
+    lines,
+    ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+  };
 }
 
-export function rewriteSearchLines(lines: string[]): string[] {
-  return lines.map((line) => {
+export function rewriteSearchLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+  const compactions: CompactionMetadata[] = [];
+  const rewritten = lines.map((line) => {
     const match = /^(.+?:\d+(?::|-))(.*)$/u.exec(line);
     if (!match) {
-      return clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS);
+      const clipped = clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS);
+      if (clipped.compaction) {
+        compactions.push(clipped.compaction);
+      }
+      return clipped.text;
     }
     const [, prefix, rest] = match;
-    return `${prefix}${clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS)}`;
+    const clipped = clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS);
+    if (clipped.compaction) {
+      compactions.push(clipped.compaction);
+    }
+    return `${prefix}${clipped.text}`;
   });
+
+  return {
+    lines: rewritten,
+    ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+  };
 }
 
-export function rewriteGitDiffLines(lines: string[]): string[] {
+export function rewriteGitDiffLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
   const rewritten: string[] = [];
+  const compactions: CompactionMetadata[] = [];
   let emittedChangedLinesInHunk = 0;
   let omittedAdded = 0;
   let omittedRemoved = 0;
@@ -346,6 +387,7 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
   const flushOmitted = () => {
     if (omittedAdded > 0 || omittedRemoved > 0) {
       rewritten.push(`... hunk clipped: ${omittedAdded} added, ${omittedRemoved} removed lines omitted`);
+      compactions.push(createCompactionMetadata("git-diff-hunk-clip"));
       omittedAdded = 0;
       omittedRemoved = 0;
     }
@@ -373,7 +415,11 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
 
     if (emittedChangedLinesInHunk < GIT_DIFF_CHANGED_LINES_PER_HUNK) {
       emittedChangedLinesInHunk += 1;
-      rewritten.push(clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS));
+      const clipped = clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS);
+      if (clipped.compaction) {
+        compactions.push(clipped.compaction);
+      }
+      rewritten.push(clipped.text);
       continue;
     }
 
@@ -385,7 +431,10 @@ export function rewriteGitDiffLines(lines: string[]): string[] {
   }
 
   flushOmitted();
-  return rewritten;
+  return {
+    lines: rewritten,
+    ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+  };
 }
 
 function formatGhTableLine(line: string): string {
@@ -420,33 +469,45 @@ function formatGhTableLine(line: string): string {
   return compactWhitespace(trimmed);
 }
 
-export function rewriteGhLines(lines: string[], input: ToolExecutionInput): string[] {
+export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { lines: string[]; compaction?: CompactionMetadata } {
   const nonEmpty = lines.filter((line) => line.trim() !== "");
   if (nonEmpty.length === 0) {
-    return [];
+    return { lines: [] };
   }
 
   const parsedWholeJson = parseJsonValue(nonEmpty.join("\n"));
   if (parsedWholeJson !== null) {
     const rewrittenWholeJson = formatGhJsonValue(parsedWholeJson);
-    if (rewrittenWholeJson.length > 0) {
+    if (rewrittenWholeJson.lines.length > 0) {
       return rewrittenWholeJson;
     }
   }
 
   const parsedJsonLines = nonEmpty.map(parseJsonObjectLine);
   if (parsedJsonLines.every((entry) => entry !== null)) {
+    const compactions: CompactionMetadata[] = [];
     const rewritten = parsedJsonLines
       .map((entry) => formatGhJsonRecord(entry!))
-      .filter((line): line is string => typeof line === "string" && line.length > 0);
+      .flatMap((line) => {
+        if (!line || line.line.length === 0) {
+          return [];
+        }
+        if (line.compaction) {
+          compactions.push(line.compaction);
+        }
+        return [line.line];
+      });
     if (rewritten.length > 0) {
-      return rewritten;
+      return {
+        lines: rewritten,
+        ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
+      };
     }
   }
 
   if ((input.argv ?? [])[0] === "gh") {
-    return lines.map(formatGhTableLine);
+    return { lines: lines.map(formatGhTableLine) };
   }
 
-  return lines;
+  return { lines };
 }

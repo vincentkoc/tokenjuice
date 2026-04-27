@@ -1099,6 +1099,69 @@ describe("reduceExecution", () => {
 
     expect(result.inlineText).toBe("ok: 93 rules validated, 93 fixtures verified");
     expect(result.stats.reducedChars).toBeLessThan(result.stats.rawChars);
+    expect(result.compaction?.authoritative).toBe(false);
+  });
+
+  it("marks head-tail summaries as authoritative compaction when lines were omitted", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git log --oneline",
+      argv: ["git", "log", "--oneline"],
+      combinedText: Array.from({ length: 20 }, (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`).join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toContain("commits");
+    expect(result.inlineText).toContain("omitted");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["head-tail-omission"] });
+  });
+
+  it("does not mark rewritten-but-lossless output as authoritative compaction", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "git branch -d fix/cd-prefixed-raw-bypass-main 2>&1",
+      combinedText: "Deleted branch fix/cd-prefixed-raw-bypass-main (was 76b6858).\n",
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe("Deleted branch fix/cd-prefixed-raw-bypass-main (was 76b6858).");
+    expect(result.stats.reducedChars).toBeLessThan(result.stats.rawChars);
+    expect(result.compaction?.authoritative).toBe(false);
+  });
+
+  it("marks structured inspection summaries as authoritative compaction", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "sed -n '1,260p' notes.txt",
+      argv: ["sed", "-n", "1,260p", "notes.txt"],
+      combinedText: [
+        "# Review",
+        "intro",
+        "## Evidence",
+        ...Array.from({ length: 260 }, (_, index) => `paragraph ${index} ${"x".repeat(40)}`),
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/large-document-summary");
+    expect(result.compaction).toEqual({
+      authoritative: true,
+      kinds: ["inspection-large-document-summary", "head-tail-omission"],
+    });
+  });
+
+  it("clears lossy compaction metadata when passthrough text wins", async () => {
+    const rawText = `${Array.from({ length: 13 }, (_, index) => `v${index}`).join("\n")}\n`;
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool inspect",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText.trimEnd());
+    expect(result.compaction?.authoritative).toBe(false);
   });
 
   it("keeps search output raw when the rewritten form would be longer but still fits inline", async () => {
@@ -1215,6 +1278,7 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("comment #123 @reviewer src/index.ts:42");
     expect(result.inlineText).toContain("sha256:");
     expect(result.inlineText).not.toContain("\"body\"");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["hashed-middle-clip"] });
   });
 
   it("clips large git diff hunks while keeping exact file and hunk headers", async () => {

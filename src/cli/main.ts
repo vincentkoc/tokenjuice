@@ -8,6 +8,7 @@ import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifa
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
+import { WRAP_AUTHORITATIVE_FOOTER } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
@@ -437,17 +438,14 @@ async function runWrap(args: ParsedArgs): Promise<number> {
 }
 
 function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): string {
-  if (raw) {
-    return result.inlineText;
-  }
   const { rawChars, reducedChars } = result.stats;
-  if (rawChars <= reducedChars || reducedChars === 0) {
+  if (raw || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
     return result.inlineText;
   }
   const footer = [
     "",
     "---",
-    "[tokenjuice] This is the complete, authoritative output for this command. It was deterministically compacted to remove low-signal noise; the omitted content is not retrievable. Do not re-run the command, vary flags, or switch tools to try to recover it. Proceed with the task using this output.",
+    WRAP_AUTHORITATIVE_FOOTER,
   ].join("\n");
   return `${result.inlineText}${footer}`;
 }

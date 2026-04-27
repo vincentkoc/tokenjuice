@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { countTextChars, sliceTextChars } from "./text.js";
 
 export function compactWhitespace(text: string): string {
@@ -10,14 +11,17 @@ function shortHash(text: string): string {
   return createHash("sha256").update(text).digest("hex").slice(0, 12);
 }
 
-export function clipMiddleWithHash(text: string, maxChars: number): string {
+export function clipMiddleWithHash(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
-    return text;
+    return { text };
   }
   const omitted = countTextChars(text) - maxChars;
   const headChars = Math.max(20, Math.floor(maxChars * 0.55));
   const tailChars = Math.max(20, maxChars - headChars);
-  return `${sliceTextChars(text, 0, headChars)} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${sliceTextChars(text, -tailChars)}`;
+  return {
+    text: `${sliceTextChars(text, 0, headChars)} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${sliceTextChars(text, -tailChars)}`,
+    compaction: createCompactionMetadata("hashed-middle-clip"),
+  };
 }
 
 export function parseJsonObjectLine(line: string): Record<string, unknown> | null {

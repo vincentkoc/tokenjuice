@@ -32,7 +32,7 @@ import type { PiDoctorReport } from "../pi/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
 
-type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
+export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
@@ -59,6 +59,38 @@ export type HookDoctorReport = {
 };
 
 export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions;
+export type HookIntegrationDoctorEntry = [
+  keyof HookIntegrationDoctorReport,
+  HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
+];
+type HookDoctorIntegrationDoctors = {
+  [Name in keyof HookIntegrationDoctorReport]: (
+    options: HookDoctorCommandOptions,
+  ) => Promise<HookIntegrationDoctorReport[Name]>;
+};
+
+const hookDoctorIntegrationDoctors = {
+  aider: () => doctorAiderConvention(),
+  avante: () => doctorAvanteInstructions(),
+  codex: (options) => doctorCodexHook(undefined, options),
+  "claude-code": (options) => doctorClaudeCodeHook(undefined, getHookCommandOptions(options)),
+  cline: (options) => doctorClineHook(undefined, getHookCommandOptions(options)),
+  codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
+  continue: () => doctorContinueRule(),
+  cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
+  droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
+  "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
+  junie: () => doctorJunieInstructions(),
+  openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
+  pi: () => doctorPiExtension(),
+  "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
+  zed: () => doctorZedInstructions(),
+  "copilot-cli": (options) => doctorCopilotCliHook(undefined, getHookCommandOptions(options)),
+} satisfies HookDoctorIntegrationDoctors;
+
+export function getAvailableHookIntegrationNames(): Array<keyof HookIntegrationDoctorReport> {
+  return Object.keys(hookDoctorIntegrationDoctors) as Array<keyof HookIntegrationDoctorReport>;
+}
 
 function mergeStatus(left: HookHealthStatus, right: HookHealthStatus): HookHealthStatus {
   if (left === "broken" || right === "broken") {
@@ -80,65 +112,47 @@ function mergeStatuses(statuses: readonly HookHealthStatus[]): HookHealthStatus 
   return statuses.reduce(mergeStatus, "disabled");
 }
 
-export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {}): Promise<HookDoctorReport> {
-  const aider = await doctorAiderConvention();
-  const avante = await doctorAvanteInstructions();
-  const codex = await doctorCodexHook(undefined, options);
-  const hookCommandOptions = {
+function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCommandOptions {
+  return {
     ...(typeof options.local === "boolean" ? { local: options.local } : {}),
     ...(typeof options.binaryPath === "string" ? { binaryPath: options.binaryPath } : {}),
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
   };
-  const claudeCode = await doctorClaudeCodeHook(undefined, hookCommandOptions);
-  const cline = await doctorClineHook(undefined, hookCommandOptions);
-  const codebuddy = await doctorCodeBuddyHook(undefined, hookCommandOptions);
-  const continueRule = await doctorContinueRule();
-  const cursor = await doctorCursorHook(undefined, hookCommandOptions);
-  const droid = await doctorDroidHook(undefined, hookCommandOptions);
-  const geminiCli = await doctorGeminiCliHook(undefined, hookCommandOptions);
-  const junie = await doctorJunieInstructions();
-  const openhands = await doctorOpenHandsHook(undefined, hookCommandOptions);
-  const pi = await doctorPiExtension();
-  const vscodeCopilot = await doctorVscodeCopilotHook(undefined, hookCommandOptions);
-  const zed = await doctorZedInstructions();
-  const copilotCli = await doctorCopilotCliHook(undefined, hookCommandOptions);
+}
+
+function hasDetectedCommand(report: HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport]): boolean {
+  return "detectedCommand" in report && typeof report.detectedCommand === "string" && report.detectedCommand.length > 0;
+}
+
+export function isInstalledHookIntegration(
+  report: HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
+): boolean {
+  if (hasDetectedCommand(report)) {
+    return true;
+  }
+  // Command-backed hosts can warn about missing config even when tokenjuice is
+  // not installed. Instruction/extension hosts have no expected command, so a
+  // non-disabled status means their tokenjuice artifact exists.
+  return report.status !== "disabled" && !("expectedCommand" in report);
+}
+
+export function getInstalledHookIntegrations(report: HookDoctorReport): HookIntegrationDoctorEntry[] {
+  return (Object.entries(report.integrations) as HookIntegrationDoctorEntry[])
+    .filter(([, integrationReport]) => isInstalledHookIntegration(integrationReport));
+}
+
+export async function doctorInstalledHooks(options: HookDoctorCommandOptions = {}): Promise<HookDoctorReport> {
+  const integrationEntries = await Promise.all(
+    (Object.entries(hookDoctorIntegrationDoctors) as Array<[
+      keyof HookIntegrationDoctorReport,
+      HookDoctorIntegrationDoctors[keyof HookIntegrationDoctorReport],
+    ]>).map(async ([name, doctor]) => [name, await doctor(options)] as const),
+  );
+  const integrations = Object.fromEntries(integrationEntries) as HookIntegrationDoctorReport;
+  const installedIntegrations = getInstalledHookIntegrations({ status: "disabled", integrations });
 
   return {
-    status: mergeStatuses([
-      aider.status,
-      avante.status,
-      codex.status,
-      claudeCode.status,
-      cline.status,
-      codebuddy.status,
-      continueRule.status,
-      cursor.status,
-      droid.status,
-      geminiCli.status,
-      junie.status,
-      openhands.status,
-      pi.status,
-      vscodeCopilot.status,
-      zed.status,
-      copilotCli.status,
-    ]),
-    integrations: {
-      aider,
-      avante,
-      codex,
-      "claude-code": claudeCode,
-      cline,
-      codebuddy,
-      continue: continueRule,
-      cursor,
-      droid,
-      "gemini-cli": geminiCli,
-      junie,
-      openhands,
-      pi,
-      "vscode-copilot": vscodeCopilot,
-      zed,
-      "copilot-cli": copilotCli,
-    },
+    status: mergeStatuses(installedIntegrations.map(([, integrationReport]) => integrationReport.status)),
+    integrations,
   };
 }

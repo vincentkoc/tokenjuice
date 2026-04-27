@@ -47,6 +47,7 @@ import {
 } from "../hosts/vscode-copilot/index.js";
 import { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "../hosts/zed/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
+import { formatHookDoctorReport } from "./doctor-output.js";
 import { formatInstallSuccess } from "./install-output.js";
 
 type Format = "text" | "json";
@@ -1153,57 +1154,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       return report.status === "broken" ? 1 : 0;
     }
 
-    process.stdout.write(`hook health: ${report.status}\n`);
-    for (const [name, integrationReport] of Object.entries(report.integrations)) {
-      const pathLabel = "hooksPath" in integrationReport
-        ? integrationReport.hooksPath
-        : "settingsPath" in integrationReport
-          ? integrationReport.settingsPath
-          : "hookPath" in integrationReport
-            ? integrationReport.hookPath
-            : "rulePath" in integrationReport
-              ? integrationReport.rulePath
-              : "conventionPath" in integrationReport
-                ? integrationReport.conventionPath
-                : "instructionsPath" in integrationReport
-                  ? integrationReport.instructionsPath
-                  : integrationReport.extensionPath;
-      process.stdout.write(`${name}:\n`);
-      process.stdout.write(`- path: ${pathLabel}\n`);
-      process.stdout.write(`- health: ${integrationReport.status}\n`);
-      if ("expectedCommand" in integrationReport) {
-        process.stdout.write(`- expected command: ${integrationReport.expectedCommand}\n`);
-      }
-      if ("detectedCommand" in integrationReport && integrationReport.detectedCommand) {
-        process.stdout.write(`- configured command: ${integrationReport.detectedCommand}\n`);
-      }
-      if (integrationReport.issues.length > 0) {
-        process.stdout.write("- issues:\n");
-        for (const issue of integrationReport.issues) {
-          process.stdout.write(`  - ${issue}\n`);
-        }
-      }
-      if (integrationReport.missingPaths.length > 0) {
-        process.stdout.write("- missing paths:\n");
-        for (const path of integrationReport.missingPaths) {
-          process.stdout.write(`  - ${path}\n`);
-        }
-      }
-      if ("featureFlag" in integrationReport && integrationReport.featureFlag) {
-        const flag = integrationReport.featureFlag;
-        if (flag.enabled) {
-          process.stdout.write(
-            `- feature flag: codex_hooks is enabled (${flag.configPath})\n`,
-          );
-        } else {
-          const where = flag.configExists
-            ? `${flag.configPath} (missing or disabled)`
-            : `no ${flag.configPath}`;
-          process.stdout.write(`- feature flag: codex_hooks not enabled — ${where}\n`);
-        }
-      }
-      process.stdout.write(`- repair: ${integrationReport.fixCommand}\n`);
-    }
+    process.stdout.write(formatHookDoctorReport(report));
     return report.status === "broken" ? 1 : 0;
   }
 

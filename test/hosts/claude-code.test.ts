@@ -5,10 +5,12 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { doctorClaudeCodeHook, doctorInstalledHooks, installClaudeCodeHook, installCodeBuddyHook, installCodexHook, installCursorHook, installPiExtension, runClaudeCodePostToolUseHook } from "../../src/index.js";
+import { getInstalledHookIntegrations } from "../../src/hosts/shared/hook-doctor.js";
 
 const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 const originalHome = process.env.HOME;
+const originalFactoryHome = process.env.FACTORY_HOME;
 
 afterEach(async () => {
   delete process.env.CLAUDE_CONFIG_DIR;
@@ -17,6 +19,7 @@ afterEach(async () => {
   delete process.env.CODEBUDDY_HOME;
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
+  delete process.env.FACTORY_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
   delete process.env.COPILOT_HOME;
   process.env.PATH = originalPath;
@@ -24,6 +27,11 @@ afterEach(async () => {
     delete process.env.HOME;
   } else {
     process.env.HOME = originalHome;
+  }
+  if (originalFactoryHome === undefined) {
+    delete process.env.FACTORY_HOME;
+  } else {
+    process.env.FACTORY_HOME = originalFactoryHome;
   }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -423,6 +431,29 @@ describe("doctorClaudeCodeHook", () => {
 });
 
 describe("doctorInstalledHooks", () => {
+  it("does not treat missing command-backed provider configs as installed hooks", async () => {
+    const home = await createTempDir();
+    const binDir = join(home, "bin");
+
+    process.env.PATH = binDir;
+    process.env.HOME = home;
+    process.env.CODEX_HOME = join(home, "codex");
+    process.env.CLAUDE_HOME = join(home, "claude");
+    process.env.CODEBUDDY_HOME = join(home, "codebuddy");
+    process.env.CURSOR_HOME = join(home, "cursor");
+    process.env.FACTORY_HOME = join(home, "factory");
+    process.env.COPILOT_HOME = join(home, "copilot");
+    process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
+    await mkdir(binDir, { recursive: true });
+    await writeFile(join(binDir, "tokenjuice"), "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const report = await doctorInstalledHooks();
+
+    expect(report.status).toBe("disabled");
+    expect(report.integrations["claude-code"].status).toBe("warn");
+    expect(getInstalledHookIntegrations(report)).toEqual([]);
+  });
+
   it("reports codex and claude-code health together", async () => {
     const home = await createTempDir();
     const binDir = join(home, "bin");
@@ -435,6 +466,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
@@ -466,6 +498,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = home;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
@@ -515,6 +548,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CLAUDE_HOME = claudeHome;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = cursorHome;
+    process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });

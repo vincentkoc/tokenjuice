@@ -4,19 +4,11 @@
 
 lean output compaction for terminal-heavy agent workflows.
 
-## what it does
+## what is tokenjuice?
 
-an agent or harness calls noisy tools like `git status`, `pnpm test`, `pnpm --help`, `docker build`, or `rg`.
+tokenjuice is a deterministic output compactor for terminal-heavy agent workflows. agents and harnesses run noisy commands like `git status`, `pnpm test`, `docker build`, `rg`, or `pnpm --help`; tokenjuice keeps the command semantics untouched, observes the output after execution, and returns a smaller payload built from rule-driven reducers instead of dumping the whole wall of terminal text back into context.
 
-tokenjuice sits in front of that tool call, runs it, trims the fat from the output, and passes back a much cleaner result to the harness.
-
-the important bit is the boundary:
-
-- the original command still runs
-- tokenjuice compacts the observed output after execution
-- `--raw` / `--full` gives you an explicit unaltered escape hatch when you need it
-- raw output can be stored locally when you explicitly ask for it
-- the harness gets a smaller, more useful payload instead of a wall of terminal junk
+the point is leverage: less transcript waste, fewer useless reruns, and cleaner handoff between tools without making the shell magical. raw output stays available only when you explicitly ask for it through `--raw` / `--full` or opt-in artifact storage, rules stay inspectable JSON instead of LLM vibes, and host integrations stay thin wrappers around the same core reducer instead of becoming one-off adapter logic.
 
 ## host integrations
 
@@ -79,21 +71,6 @@ openclaw config set plugins.entries.tokenjuice.enabled true
 
 this requires OpenClaw `2026.4.22` or newer.
 
-## why
-
-tool output wastes absurd amounts of context. your llm needs a diet.
-
-tokenjuice compacts observed output after execution, gives hosts a boring, deterministic summary by default, and only stores raw output when you explicitly ask for it.
-
-## goals
-
-- library first, not framework-locked
-- JSON rules for parseability and inspection
-- explicit `reduce` and `wrap` modes
-- file-backed artifacts that are easy to debug
-- no silent command rewrite
-- speed and reliability over gimmicks
-
 ## commands
 
 ```bash
@@ -104,9 +81,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed]
-tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed] --local
-tokenjuice uninstall [aider|avante|codex|cline|continue|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli|zed]
+tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed]
+tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|openhands|pi|opencode|vscode-copilot|copilot-cli|zed] --local
+tokenjuice uninstall [aider|avante|codex|cline|continue|droid|gemini-cli|junie|openhands|opencode|vscode-copilot|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -121,105 +98,29 @@ tokenjuice stats --timezone utc
 
 ## overview
 
-shared behavior:
+tokenjuice has three surfaces. `reduce` compacts text that already exists, `wrap` runs a command and compacts the observed output, and `reduce-json` gives host adapters a stable machine protocol. host integrations are intentionally thin: they install a hook, extension, rule, or guidance file; call the shared compactor; and return compacted context through the host's native surface. use `tokenjuice doctor hooks` to check installed wiring, `tokenjuice doctor <host>` for one integration, and `tokenjuice install <host> --local` when validating the current repo build before release.
 
-- the original shell command still runs untouched
-- tokenjuice only rewrites the output that goes back through the hook or extension
-- raw command execution logs are still raw
-- `tokenjuice doctor hooks` checks installed host hooks together instead of making you guess which integration drifted
-- `tokenjuice doctor pi` inspects the installed Pi extension directly when you only care about that surface
-- `tokenjuice doctor opencode` inspects the installed OpenCode plugin directly when you only care about that surface
-- `tokenjuice uninstall codex` cleanly removes the Codex hook and `tokenjuice doctor hooks` reports that as `disabled`, not broken
-- `tokenjuice uninstall opencode` cleanly removes the OpenCode plugin and points back to `tokenjuice install opencode` for re-enabling
-- `tokenjuice install [aider|codex|claude-code|cline|codebuddy|continue|cursor|gemini-cli|junie|openhands|opencode] --local` / `tokenjuice doctor hooks --local` are for testing the current repo build before release
-- `pnpm e2e:local` builds the repo and smoke-tests the local Codex app-server CLI and Claude Code CLI hook pass-through paths
-- OpenClaw ships tokenjuice as a bundled plugin, so setup is an OpenClaw config change, not a `tokenjuice install ...` step
-- `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`
-- `tokenjuice install pi --local` forces the installed pi extension to be bundled from the current repo source, so local integration changes can be verified before release
-- after `tokenjuice install vscode-copilot`, run `tokenjuice doctor vscode-copilot --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so Copilot Chat treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required
-- after `tokenjuice install copilot-cli`, run `tokenjuice doctor copilot-cli --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the GitHub Copilot CLI agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required
-- Claude Code preserves unrelated settings keys while updating `hooks.PostToolUse`
-- Codex, Claude Code, Cline, CodeBuddy, Cursor, OpenClaw, OpenCode, and pi keep exact file-content reads raw, but compact safe repository inventory commands such as `find`, `ls`, `rg --files`, `git ls-files`, and `fd`
+the reduction engine is rule-driven. built-in JSON rules live in `src/rules`, user overrides live in `~/.config/tokenjuice/rules`, and project overrides live in `.tokenjuice/rules`; later layers override earlier ones by rule id. rules classify command output, normalize lines, keep or drop patterns, count facts, and retain deterministic head/tail slices. host adapters also apply a narrow safe-inventory policy: exact file-content reads stay raw, standalone repository inventory commands can compact, and unsafe mixed command sequences stay raw.
 
-library-side adapters can also use `runReduceJsonCli(...)` to call the CLI without rebuilding the child-process + JSON plumbing themselves.
-
-repository inventory compaction is deliberately narrow. standalone inventory commands compact only when they are inventory-only, and pipelines only compact when every downstream segment is a structural stdin transform: `sort`, `head`, `tail`, or `uniq`. mixed command sequences, source commands that execute other commands such as `find ... -exec ...` or `fd --exec ...`, and pipelines such as `find ... | xargs wc -l`, `rg --files | rg TODO src`, or `git ls-files | jq -R .` stay raw.
-
-for Aider, `tokenjuice install aider` installs a beta convention file at `CONVENTIONS.tokenjuice.md`. load it with `aider --read CONVENTIONS.tokenjuice.md` or add it to `.aider.conf.yml`.
-
-for Avante.nvim, `tokenjuice install avante` inserts a marker-delimited beta block into `avante.md`. this is guidance-only: Avante still owns command execution, but the instructions tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
-
-for OpenCode, `tokenjuice install opencode` installs a project-agnostic plugin into `~/.config/opencode/plugins/tokenjuice.js`. restart OpenCode after install; the plugin is auto-loaded on session start.
-
-for Cline, `tokenjuice install cline` installs a beta global hook script into `~/Documents/Cline/Hooks/tokenjuice-post-tool-use`. enable it as a `PostToolUse` hook in Cline's Hooks tab after install.
-
-for Continue, `tokenjuice install continue` installs a beta workspace rule into `.continue/rules/tokenjuice.md`. this is guidance-only: Continue still owns command execution, but the rule tells the agent to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
-
-for Junie, `tokenjuice install junie` inserts a marker-delimited beta block into `.junie/AGENTS.md`. this is guidance-only: Junie still owns command execution, but the instructions tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
-
-for Zed, `tokenjuice install zed` inserts a marker-delimited beta block into `.rules`. this is guidance-only: Zed still owns command execution, but the rules tell it to use `tokenjuice wrap` for noisy terminal commands and only use the raw escape hatch when needed.
-
-for OpenHands, `tokenjuice install openhands` installs a project-local beta hook into `.openhands/hooks.json`. tokenjuice listens to `PostToolUse` events for the `terminal` tool and injects compacted context alongside the original output.
-
-for pi, `tokenjuice install pi` installs a project-agnostic extension into `~/.pi/agent/extensions/tokenjuice.js`. after `/reload`, pi compacts noisy `bash` tool results and exposes `/tj status`, `/tj on`, `/tj off`, and `/tj raw-next`.
-
-for OpenClaw, tokenjuice ships as a bundled plugin. enable it with:
-
-```bash
-openclaw config set plugins.entries.tokenjuice.enabled true
-```
-
-this requires OpenClaw `2026.4.22` or newer.
-
-there is no `tokenjuice install openclaw` command.
-
-when a reducer gets it wrong or the engine needs the untouched output, use the explicit bypass:
+when a reducer gets it wrong or the task needs untouched bytes, use the explicit bypass:
 
 ```bash
 tokenjuice wrap --raw -- pnpm --help
 tokenjuice wrap --full -- git status
 ```
 
-if the hook itself goes stale after a package upgrade, repair it with:
+useful maintenance commands:
 
 ```bash
+tokenjuice verify --fixtures
+tokenjuice discover
 tokenjuice doctor hooks
-tokenjuice doctor pi
-tokenjuice doctor opencode
-tokenjuice install [codex|claude-code|codebuddy|cursor|pi|opencode]
-```
-
-for machine callers, set:
-
-```json
-{
-  "options": {
-    "raw": true
-  }
-}
-```
-
-envelope payload:
-
-```json
-{
-  "input": {
-    "toolName": "exec",
-    "command": "pnpm test",
-    "combinedText": "RUN  v3.2.4 /repo\n...",
-    "exitCode": 1
-  },
-  "options": {
-    "classifier": "tests/pnpm-test",
-    "store": true,
-    "maxInlineChars": 1200
-  }
-}
+tokenjuice stats --timezone utc
 ```
 
 ## adapter JSON
 
-`reduce-json` is the machine-facing adapter command. it reads JSON from stdin or a file and always writes JSON to stdout.
+`reduce-json` is the machine-facing adapter command. it reads JSON from stdin or a file and always writes JSON to stdout; see the [spec](docs/spec.md) for envelope options and adapter behavior.
 
 direct payload:
 
@@ -233,21 +134,14 @@ direct payload:
 }
 ```
 
-## rule system
-
-- built-in JSON rules live in `src/rules`
-- user overrides live in `~/.config/tokenjuice/rules`
-- project overrides live in `.tokenjuice/rules`
-- later layers override earlier ones by rule id
-
 ## docs
 
-- spec: `docs/spec.md`
-- rules: `docs/rules.md`
-- cursor integration: `docs/cursor-integration.md`
-- codebuddy integration: `docs/codebuddy-integration.md`
-- integration playbook: `docs/integration-playbook.md`
-- security: `SECURITY.md`
+- [spec](docs/spec.md)
+- [rules](docs/rules.md)
+- [integration playbook](docs/integration-playbook.md)
+- [Cursor integration](docs/cursor-integration.md)
+- [CodeBuddy integration](docs/codebuddy-integration.md)
+- [security](SECURITY.md)
 
 ## status
 

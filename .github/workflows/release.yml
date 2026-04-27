@@ -10,6 +10,11 @@ on:
         description: "Release tag to build/publish (for example: v0.1.0)"
         required: true
         type: string
+      skip_cloudsmith:
+        description: "Skip Cloudsmith package publishing when resuming a release"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   actions: write
@@ -101,9 +106,15 @@ jobs:
       - name: Evaluate Cloudsmith configuration
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          SKIP_CLOUDSMITH: ${{ inputs.skip_cloudsmith }}
         run: |
           set -euo pipefail
           REPO="vincentkoc/tokenjuice"
+          if [ "${SKIP_CLOUDSMITH:-false}" = "true" ]; then
+            echo "CLOUDSMITH_ENABLED=0" >> "$GITHUB_ENV"
+            echo "Cloudsmith publish disabled by workflow input."
+            exit 0
+          fi
           if [ -n "${CLOUDSMITH_API_KEY}" ]; then
             echo "CLOUDSMITH_ENABLED=1" >> "$GITHUB_ENV"
             echo "CLOUDSMITH_REPO_EFFECTIVE=${REPO}" >> "$GITHUB_ENV"
@@ -147,7 +158,23 @@ jobs:
           TARGET="${CLOUDSMITH_REPO}/${DISTRO}/${RELEASE}"
           cloudsmith push rpm "${TARGET}" "release/tokenjuice-${RELEASE_VERSION}-1.noarch.rpm" --no-wait-for-sync
 
+      - name: Detect existing GitHub release
+        id: existing_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "found=1" >> "$GITHUB_OUTPUT"
+            if [ "$(gh release view "${RELEASE_TAG}" --json isDraft --jq '.isDraft')" = "true" ]; then
+              gh release edit "${RELEASE_TAG}" --draft=false --latest
+            fi
+          else
+            echo "found=0" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish release from Release Drafter
+        if: steps.existing_release.outputs.found != '1'
         id: release_drafter
         uses: release-drafter/release-drafter@v7
         with:
@@ -192,5 +219,5 @@ jobs:
           EOF
 
       - name: Publish npm package
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         run: npm publish --provenance --access public

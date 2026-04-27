@@ -20,6 +20,7 @@ const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 const originalShell = process.env.SHELL;
 const originalCodeBuddyShell = process.env.TOKENJUICE_CODEBUDDY_SHELL;
+const originalFactoryHome = process.env.FACTORY_HOME;
 const originalPlatform = process.platform;
 
 afterEach(async () => {
@@ -40,6 +41,11 @@ afterEach(async () => {
   delete process.env.CLAUDE_HOME;
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
+  if (originalFactoryHome === undefined) {
+    delete process.env.FACTORY_HOME;
+  } else {
+    process.env.FACTORY_HOME = originalFactoryHome;
+  }
   delete process.env.PI_CODING_AGENT_DIR;
   Object.defineProperty(process, "platform", { value: originalPlatform });
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
@@ -561,6 +567,7 @@ describe("doctorInstalledHooks includes codebuddy", () => {
     process.env.CLAUDE_HOME = claudeHome;
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
+    process.env.FACTORY_HOME = join(home, "factory");
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });

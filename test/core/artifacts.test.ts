@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -19,37 +19,36 @@ afterEach(async () => {
 });
 
 describe("artifacts", () => {
-  it("uses the test artifact directory as the default base dir when configured", async () => {
-    const testArtifactDir = await createTempDir();
-    const original = process.env[ARTIFACT_DIR_ENV];
-    process.env[ARTIFACT_DIR_ENV] = testArtifactDir;
+  it("writes artifacts to the env-configured directory by default", async () => {
+    const ref = await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "env-dir-test", exitCode: 0 },
+        rawText: "env dir output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/env-dir" },
+        stats: { rawChars: 14, reducedChars: 7, ratio: 0.5 },
+      },
+    );
 
-    try {
-      expect(resolveArtifactBaseDir()).toBe(testArtifactDir);
-    } finally {
-      if (original === undefined) {
-        delete process.env[ARTIFACT_DIR_ENV];
-      } else {
-        process.env[ARTIFACT_DIR_ENV] = original;
-      }
-    }
+    const metadata = await listArtifactMetadata();
+    const found = metadata.find((entry) => entry.id === ref.id);
+
+    expect(found).toBeDefined();
+    expect(found?.metadataPath).not.toContain(process.env.HOME ?? "~");
   });
 
-  it("keeps explicit storeDir ahead of the test artifact directory override", async () => {
-    const explicitDir = await createTempDir();
-    const testArtifactDir = await createTempDir();
-    const original = process.env[ARTIFACT_DIR_ENV];
-    process.env[ARTIFACT_DIR_ENV] = testArtifactDir;
+  it("prefers explicit storeDir over the env-configured directory", async () => {
+    const storeDir = await createTempDir();
+    const ref = await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "explicit-dir-test", exitCode: 0 },
+        rawText: "explicit dir output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/explicit-dir" },
+        stats: { rawChars: 20, reducedChars: 10, ratio: 0.5 },
+      },
+      storeDir,
+    );
 
-    try {
-      expect(resolveArtifactBaseDir(explicitDir)).toBe(explicitDir);
-    } finally {
-      if (original === undefined) {
-        delete process.env[ARTIFACT_DIR_ENV];
-      } else {
-        process.env[ARTIFACT_DIR_ENV] = original;
-      }
-    }
+    expect(ref.metadataPath.startsWith(storeDir)).toBe(true);
   });
 
   it("rejects invalid artifact ids instead of reading arbitrary files", async () => {

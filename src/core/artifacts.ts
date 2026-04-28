@@ -9,7 +9,7 @@ import { resolveArtifactSource } from "./source.js";
 import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
 const ARTIFACT_ID_PATTERN = /^tj_[0-9a-f-]{12}$/iu;
-export const ARTIFACT_DIR_ENV = "TOKENJUICE_ARTIFACT_DIR";
+const ARTIFACT_DIR_ENV = "TOKENJUICE_ARTIFACT_DIR";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -67,7 +67,7 @@ function getDefaultArtifactDir(): string {
   return join(homedir(), ".tokenjuice", "artifacts");
 }
 
-export function resolveArtifactBaseDir(storeDir?: string): string {
+function resolveArtifactBaseDir(storeDir?: string): string {
   return storeDir ?? getDefaultArtifactDir();
 }
 

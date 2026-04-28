@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ARTIFACT_DIR_ENV, doctorCodexHook, installCodexHook, listArtifactMetadata, runCodexPostToolUseHook, uninstallCodexHook } from "../../src/index.js";
+import { doctorCodexHook, installCodexHook, listArtifactMetadata, runCodexPostToolUseHook, uninstallCodexHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version as string;
@@ -902,7 +902,7 @@ describe("runCodexPostToolUseHook", () => {
 
   it("records metadata-only stats for immediate skip paths", async () => {
     const home = await createTempDir();
-    const artifactDir = process.env[ARTIFACT_DIR_ENV];
+    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR;
     process.env.CODEX_HOME = home;
     process.env.HOME = home;
 

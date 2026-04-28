@@ -1470,6 +1470,33 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("2026-04-20T19:00:10.000Z");
   });
 
+  it("keeps middle gh actions error signals from long run logs", async () => {
+    const filler = Array.from(
+      { length: 80 },
+      (_, index) =>
+        `check-test-types\tRun check shard\t2026-04-28T06:34:${String(index % 60).padStart(2, "0")}.000Z\tprogress line ${index}`,
+    );
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 25037757449 --repo openclaw/openclaw --log",
+      argv: ["gh", "run", "view", "25037757449", "--log"],
+      combinedText: [
+        ...filler.slice(0, 40),
+        "check-test-types\tRun check shard\t2026-04-28T06:35:06.000Z\t##[error]extensions/tokenjuice/tool-result-middleware.test.ts(89,19): error TS2345: Argument of type Mock is not assignable",
+        "check-test-types\tRun check shard\t2026-04-28T06:35:07.000Z\tELIFECYCLE Command failed with exit code 2",
+        ...filler.slice(40),
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("error TS2345");
+    expect(result.inlineText).toContain("ELIFECYCLE Command failed with exit code 2");
+    expect(result.inlineText).toContain("non-signal log lines omitted");
+    expect(result.inlineText).not.toContain("progress line 0");
+    expect(result.inlineText).not.toContain("2026-04-28T06:35:06.000Z");
+  });
+
   it("preserves emoji and CJK while stripping ANSI from user-facing output and stats", async () => {
     const visibleText = ["错误🔥", "修复🙂", "完了✅"].join("\n");
     const coloredText = [

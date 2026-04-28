@@ -6,7 +6,8 @@ export type CompactionKind =
   | "git-diff-hunk-clip"
   | "inspection-package-lock-summary"
   | "inspection-large-document-summary"
-  | "github-actions-command-list-omission";
+  | "github-actions-command-list-omission"
+  | "github-actions-log-signal-filter";
 
 export type CompactionMetadata = {
   authoritative: boolean;

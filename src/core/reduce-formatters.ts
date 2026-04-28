@@ -6,6 +6,9 @@ import type { ToolExecutionInput } from "../types.js";
 const LONG_SEARCH_LINE_MAX_CHARS = 420;
 const LONG_CHANGED_LINE_MAX_CHARS = 260;
 const GIT_DIFF_CHANGED_LINES_PER_HUNK = 8;
+const GH_RUN_LOG_SIGNAL_CONTEXT_LINES = 1;
+const GH_RUN_LOG_SIGNAL_PATTERN =
+  /(?:##\[error\]|::error|(?:^|[\s|])(?:FAIL|FAILED|FAILURE)(?:[\s|:]|$)|\bAssertionError\b|\bError:\s+Process completed with exit code\b|\berror\s+TS\d+\b|\bELIFECYCLE\b|\bCommand failed\b|\bfailed with exit code\b|\bfailed in build-artifacts\b|\bERR_[A-Z0-9_]+\b)/iu;
 
 function rewriteGitStatusLine(line: string): string | null {
   const trimmed = line.trim();
@@ -469,6 +472,65 @@ function formatGhTableLine(line: string): string {
   return compactWhitespace(trimmed);
 }
 
+function isGhRunLogCommand(input: ToolExecutionInput): boolean {
+  const argv = input.argv ?? [];
+  return argv[0] === "gh"
+    && argv.includes("run")
+    && argv.includes("view")
+    && argv.some((arg) => arg === "--log" || arg === "--log-failed" || arg.startsWith("--log="));
+}
+
+function formatOmittedGhLogLines(count: number): string {
+  return `... ${count} non-signal log lines omitted ...`;
+}
+
+function filterGhRunLogSignalLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+  const signalIndexes = lines
+    .map((line, index) => GH_RUN_LOG_SIGNAL_PATTERN.test(line) ? index : -1)
+    .filter((index) => index >= 0);
+
+  if (signalIndexes.length === 0) {
+    return { lines };
+  }
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (const index of signalIndexes) {
+    const start = Math.max(0, index - GH_RUN_LOG_SIGNAL_CONTEXT_LINES);
+    const end = Math.min(lines.length - 1, index + GH_RUN_LOG_SIGNAL_CONTEXT_LINES);
+    const previous = ranges.at(-1);
+    if (previous && start <= previous.end + 1) {
+      previous.end = Math.max(previous.end, end);
+      continue;
+    }
+    ranges.push({ start, end });
+  }
+
+  const rewritten: string[] = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    const omittedBefore = range.start - cursor;
+    if (omittedBefore > 0) {
+      rewritten.push(formatOmittedGhLogLines(omittedBefore));
+    }
+    rewritten.push(...lines.slice(range.start, range.end + 1));
+    cursor = range.end + 1;
+  }
+
+  const omittedAfter = lines.length - cursor;
+  if (omittedAfter > 0) {
+    rewritten.push(formatOmittedGhLogLines(omittedAfter));
+  }
+
+  if (rewritten.length >= lines.length) {
+    return { lines };
+  }
+
+  return {
+    lines: rewritten,
+    compaction: createCompactionMetadata("github-actions-log-signal-filter"),
+  };
+}
+
 export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { lines: string[]; compaction?: CompactionMetadata } {
   const nonEmpty = lines.filter((line) => line.trim() !== "");
   if (nonEmpty.length === 0) {
@@ -506,7 +568,11 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
   }
 
   if ((input.argv ?? [])[0] === "gh") {
-    return { lines: lines.map(formatGhTableLine) };
+    const formattedLines = lines.map(formatGhTableLine);
+    if (isGhRunLogCommand(input)) {
+      return filterGhRunLogSignalLines(formattedLines);
+    }
+    return { lines: formattedLines };
   }
 
   return { lines };

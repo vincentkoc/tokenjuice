@@ -1403,6 +1403,54 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("\"jobs\"");
   });
 
+  it("preserves gh pr status check failures from long statusCheckRollup payloads", async () => {
+    const statusCheckRollup = Array.from({ length: 68 }, (_, index) => ({
+      __typename: "CheckRun",
+      name: `check-success-${index}`,
+      workflowName: "CI",
+      status: "COMPLETED",
+      conclusion: "SUCCESS",
+      startedAt: "2026-04-28T08:38:00Z",
+      completedAt: "2026-04-28T08:38:05Z",
+      detailsUrl: `https://github.com/openclaw/openclaw/actions/runs/25042683853/job/${index}`,
+    }));
+    statusCheckRollup[61] = {
+      ...statusCheckRollup[61]!,
+      name: "checks-node-core-support-boundary",
+      conclusion: "FAILURE",
+      detailsUrl: "https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73349995139",
+    };
+    statusCheckRollup[67] = {
+      ...statusCheckRollup[67]!,
+      name: "checks-node-core",
+      conclusion: "FAILURE",
+      detailsUrl: "https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73350109175",
+    };
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh pr view 73340 --repo openclaw/openclaw --json number,title,statusCheckRollup,url",
+      argv: ["gh", "pr", "view", "73340", "--json", "number,title,statusCheckRollup,url"],
+      combinedText: JSON.stringify({
+        number: 73340,
+        title: "Test tokenjuice tool result middleware adapter",
+        url: "https://github.com/openclaw/openclaw/pull/73340",
+        statusCheckRollup,
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("#73340 Test tokenjuice tool result middleware adapter");
+    expect(result.inlineText).toContain("status checks: 66 ok, 2 attention");
+    expect(result.inlineText).toContain("check checks-node-core-support-boundary [FAILURE]");
+    expect(result.inlineText).toContain("check checks-node-core [FAILURE]");
+    expect(result.inlineText).toContain("url=https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73350109175");
+    expect(result.inlineText).not.toContain("check-success-0");
+    expect(result.inlineText).not.toContain("\"statusCheckRollup\"");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["github-status-check-rollup-omission"] });
+  });
+
   it("formats gh table output into compact list lines", async () => {
     const result = await reduceExecution({
       toolName: "exec",

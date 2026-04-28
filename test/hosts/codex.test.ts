@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -936,7 +936,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(newMetadata?.metadata.reducedChars).toBe(newMetadata?.metadata.rawChars);
     expect(newMetadata?.metadata.ratio).toBe(1);
     expect(newMetadata?.path).toBeUndefined();
-    expect(newMetadata?.metadataPath.startsWith(artifactDir!)).toBe(true);
+    expect(resolve(dirname(newMetadata!.metadataPath))).toBe(resolve(artifactDir!));
     expect(existsSync(join(home, ".tokenjuice", "artifacts"))).toBe(false);
   });
 

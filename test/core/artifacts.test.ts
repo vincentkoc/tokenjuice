@@ -1,10 +1,10 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -19,6 +19,37 @@ afterEach(async () => {
 });
 
 describe("artifacts", () => {
+  it("falls back to ~/.tokenjuice/artifacts when no env override is configured", () => {
+    const original = process.env[ARTIFACT_DIR_ENV];
+
+    try {
+      delete process.env[ARTIFACT_DIR_ENV];
+      expect(resolveArtifactBaseDir()).toBe(join(homedir(), ".tokenjuice", "artifacts"));
+    } finally {
+      if (original === undefined) {
+        delete process.env[ARTIFACT_DIR_ENV];
+      } else {
+        process.env[ARTIFACT_DIR_ENV] = original;
+      }
+    }
+  });
+
+  it("trims the env-configured artifact directory before use", async () => {
+    const storeDir = await createTempDir();
+    const original = process.env[ARTIFACT_DIR_ENV];
+
+    try {
+      process.env[ARTIFACT_DIR_ENV] = `  ${storeDir}  `;
+      expect(resolveArtifactBaseDir()).toBe(storeDir);
+    } finally {
+      if (original === undefined) {
+        delete process.env[ARTIFACT_DIR_ENV];
+      } else {
+        process.env[ARTIFACT_DIR_ENV] = original;
+      }
+    }
+  });
+
   it("writes artifacts to the env-configured directory by default", async () => {
     const ref = await storeArtifactMetadata(
       {

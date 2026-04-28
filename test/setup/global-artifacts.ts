@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const ARTIFACT_DIR_ENV = "TOKENJUICE_ARTIFACT_DIR";
+import { ARTIFACT_DIR_ENV } from "../../src/index.js";
 
 export default async function setup(): Promise<() => Promise<void>> {
   const artifactDir = await mkdtemp(join(tmpdir(), "tokenjuice-vitest-artifacts-"));

@@ -9,6 +9,7 @@ import { resolveArtifactSource } from "./source.js";
 import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
 const ARTIFACT_ID_PATTERN = /^tj_[0-9a-f-]{12}$/iu;
+const TEST_ARTIFACT_DIR_ENV = "TOKENJUICE_TEST_ARTIFACT_DIR";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -57,8 +58,21 @@ function extractCaptureTruncatedFlag(input: ToolExecutionInput): boolean | undef
   return typeof value === "boolean" ? value : undefined;
 }
 
+function getDefaultArtifactDir(): string {
+  const testArtifactDir = process.env[TEST_ARTIFACT_DIR_ENV];
+  if (typeof testArtifactDir === "string" && testArtifactDir.trim()) {
+    return testArtifactDir;
+  }
+
+  return join(homedir(), ".tokenjuice", "artifacts");
+}
+
+export function resolveArtifactBaseDir(storeDir?: string): string {
+  return storeDir ?? getDefaultArtifactDir();
+}
+
 function artifactBaseDir(storeDir?: string): string {
-  return storeDir ?? join(homedir(), ".tokenjuice", "artifacts");
+  return resolveArtifactBaseDir(storeDir);
 }
 
 export function isValidArtifactId(id: string): boolean {

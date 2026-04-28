@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -19,6 +19,39 @@ afterEach(async () => {
 });
 
 describe("artifacts", () => {
+  it("uses the test artifact directory as the default base dir when configured", async () => {
+    const testArtifactDir = await createTempDir();
+    const original = process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+    process.env.TOKENJUICE_TEST_ARTIFACT_DIR = testArtifactDir;
+
+    try {
+      expect(resolveArtifactBaseDir()).toBe(testArtifactDir);
+    } finally {
+      if (original === undefined) {
+        delete process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+      } else {
+        process.env.TOKENJUICE_TEST_ARTIFACT_DIR = original;
+      }
+    }
+  });
+
+  it("keeps explicit storeDir ahead of the test artifact directory override", async () => {
+    const explicitDir = await createTempDir();
+    const testArtifactDir = await createTempDir();
+    const original = process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+    process.env.TOKENJUICE_TEST_ARTIFACT_DIR = testArtifactDir;
+
+    try {
+      expect(resolveArtifactBaseDir(explicitDir)).toBe(explicitDir);
+    } finally {
+      if (original === undefined) {
+        delete process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+      } else {
+        process.env.TOKENJUICE_TEST_ARTIFACT_DIR = original;
+      }
+    }
+  });
+
   it("rejects invalid artifact ids instead of reading arbitrary files", async () => {
     const storeDir = await createTempDir();
 

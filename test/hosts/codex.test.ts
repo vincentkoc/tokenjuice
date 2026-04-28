@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -902,35 +902,48 @@ describe("runCodexPostToolUseHook", () => {
 
   it("records metadata-only stats for immediate skip paths", async () => {
     const home = await createTempDir();
+    const testArtifactDir = await createTempDir();
+    const originalTestArtifactDir = process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
     process.env.CODEX_HOME = home;
     process.env.HOME = home;
+    process.env.TOKENJUICE_TEST_ARTIFACT_DIR = testArtifactDir;
 
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Bash",
-      tool_input: {
-        command: "tokenjuice wrap --raw -- printf 'ok\\n'",
-      },
-      tool_response: "ok\n",
-    });
+    try {
+      const payload = JSON.stringify({
+        hook_event_name: "PostToolUse",
+        tool_name: "Bash",
+        tool_input: {
+          command: "tokenjuice wrap --raw -- printf 'ok\\n'",
+        },
+        tool_response: "ok\n",
+      });
 
-    const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-    };
-    const metadata = await listArtifactMetadata();
+      const { code, output } = await captureStdout(() => runCodexPostToolUseHook(payload));
+      const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+        rewrote: boolean;
+        skipped?: string;
+      };
+      const metadata = await listArtifactMetadata();
 
-    expect(code).toBe(0);
-    expect(output).toBe("");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("explicit-raw-bypass");
-    expect(metadata).toHaveLength(1);
-    expect(metadata[0]?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
-    expect(metadata[0]?.metadata.rawChars).toBeGreaterThan(0);
-    expect(metadata[0]?.metadata.reducedChars).toBe(metadata[0]?.metadata.rawChars);
-    expect(metadata[0]?.metadata.ratio).toBe(1);
-    expect(metadata[0]?.path).toBeUndefined();
+      expect(code).toBe(0);
+      expect(output).toBe("");
+      expect(debug.rewrote).toBe(false);
+      expect(debug.skipped).toBe("explicit-raw-bypass");
+      expect(metadata).toHaveLength(1);
+      expect(metadata[0]?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
+      expect(metadata[0]?.metadata.rawChars).toBeGreaterThan(0);
+      expect(metadata[0]?.metadata.reducedChars).toBe(metadata[0]?.metadata.rawChars);
+      expect(metadata[0]?.metadata.ratio).toBe(1);
+      expect(metadata[0]?.path).toBeUndefined();
+      expect(metadata[0]?.metadataPath.startsWith(testArtifactDir)).toBe(true);
+      expect(existsSync(join(home, ".tokenjuice", "artifacts"))).toBe(false);
+    } finally {
+      if (originalTestArtifactDir === undefined) {
+        delete process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+      } else {
+        process.env.TOKENJUICE_TEST_ARTIFACT_DIR = originalTestArtifactDir;
+      }
+    }
   });
 
   it("writes rolling hook history entries alongside the last snapshot", async () => {

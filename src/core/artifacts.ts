@@ -9,7 +9,7 @@ import { resolveArtifactSource } from "./source.js";
 import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
 const ARTIFACT_ID_PATTERN = /^tj_[0-9a-f-]{12}$/iu;
-const TEST_ARTIFACT_DIR_ENV = "TOKENJUICE_TEST_ARTIFACT_DIR";
+export const ARTIFACT_DIR_ENV = "TOKENJUICE_ARTIFACT_DIR";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -59,9 +59,9 @@ function extractCaptureTruncatedFlag(input: ToolExecutionInput): boolean | undef
 }
 
 function getDefaultArtifactDir(): string {
-  const testArtifactDir = process.env[TEST_ARTIFACT_DIR_ENV];
-  if (typeof testArtifactDir === "string" && testArtifactDir.trim()) {
-    return testArtifactDir;
+  const artifactDir = process.env[ARTIFACT_DIR_ENV];
+  if (typeof artifactDir === "string" && artifactDir.trim()) {
+    return artifactDir;
   }
 
   return join(homedir(), ".tokenjuice", "artifacts");
@@ -69,10 +69,6 @@ function getDefaultArtifactDir(): string {
 
 export function resolveArtifactBaseDir(storeDir?: string): string {
   return storeDir ?? getDefaultArtifactDir();
-}
-
-function artifactBaseDir(storeDir?: string): string {
-  return resolveArtifactBaseDir(storeDir);
 }
 
 export function isValidArtifactId(id: string): boolean {
@@ -84,7 +80,7 @@ function buildArtifactPaths(id: string, storeDir?: string): StoredArtifactRef {
     throw new Error(`invalid artifact id: ${id}`);
   }
 
-  const base = artifactBaseDir(storeDir);
+  const base = resolveArtifactBaseDir(storeDir);
   return {
     id,
     storage: "file",
@@ -97,13 +93,13 @@ function buildMetadataOnlyPath(id: string, storeDir?: string): string {
   if (!isValidArtifactId(id)) {
     throw new Error(`invalid artifact id: ${id}`);
   }
-  return join(artifactBaseDir(storeDir), `${id}.meta.json`);
+  return join(resolveArtifactBaseDir(storeDir), `${id}.meta.json`);
 }
 
 export async function storeArtifact(input: StoredArtifactInput, storeDir?: string): Promise<StoredArtifactRef> {
   const id = `tj_${randomUUID().slice(0, 12)}`;
   const ref = buildArtifactPaths(id, storeDir);
-  await mkdir(artifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
+  await mkdir(resolveArtifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
   const captureTruncated = extractCaptureTruncatedFlag(input.input);
 
   const artifact: StoredArtifact = {
@@ -146,7 +142,7 @@ export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir
     ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
   };
 
-  await mkdir(artifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
+  await mkdir(resolveArtifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2), { encoding: "utf8", mode: 0o600 });
 
   return {
@@ -185,7 +181,7 @@ export async function getArtifact(id: string, storeDir?: string): Promise<Stored
 }
 
 export async function listArtifacts(storeDir?: string): Promise<StoredArtifactRef[]> {
-  const base = artifactBaseDir(storeDir);
+  const base = resolveArtifactBaseDir(storeDir);
   try {
     const files = await readdir(base);
     return files
@@ -201,7 +197,7 @@ export async function listArtifacts(storeDir?: string): Promise<StoredArtifactRe
 }
 
 export async function listArtifactMetadata(storeDir?: string): Promise<ArtifactMetadataRef[]> {
-  const base = artifactBaseDir(storeDir);
+  const base = resolveArtifactBaseDir(storeDir);
   try {
     const files = await readdir(base);
     const metadata = await Promise.all(

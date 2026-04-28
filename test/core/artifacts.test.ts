@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -21,16 +21,16 @@ afterEach(async () => {
 describe("artifacts", () => {
   it("uses the test artifact directory as the default base dir when configured", async () => {
     const testArtifactDir = await createTempDir();
-    const original = process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
-    process.env.TOKENJUICE_TEST_ARTIFACT_DIR = testArtifactDir;
+    const original = process.env[ARTIFACT_DIR_ENV];
+    process.env[ARTIFACT_DIR_ENV] = testArtifactDir;
 
     try {
       expect(resolveArtifactBaseDir()).toBe(testArtifactDir);
     } finally {
       if (original === undefined) {
-        delete process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+        delete process.env[ARTIFACT_DIR_ENV];
       } else {
-        process.env.TOKENJUICE_TEST_ARTIFACT_DIR = original;
+        process.env[ARTIFACT_DIR_ENV] = original;
       }
     }
   });
@@ -38,16 +38,16 @@ describe("artifacts", () => {
   it("keeps explicit storeDir ahead of the test artifact directory override", async () => {
     const explicitDir = await createTempDir();
     const testArtifactDir = await createTempDir();
-    const original = process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
-    process.env.TOKENJUICE_TEST_ARTIFACT_DIR = testArtifactDir;
+    const original = process.env[ARTIFACT_DIR_ENV];
+    process.env[ARTIFACT_DIR_ENV] = testArtifactDir;
 
     try {
       expect(resolveArtifactBaseDir(explicitDir)).toBe(explicitDir);
     } finally {
       if (original === undefined) {
-        delete process.env.TOKENJUICE_TEST_ARTIFACT_DIR;
+        delete process.env[ARTIFACT_DIR_ENV];
       } else {
-        process.env.TOKENJUICE_TEST_ARTIFACT_DIR = original;
+        process.env[ARTIFACT_DIR_ENV] = original;
       }
     }
   });

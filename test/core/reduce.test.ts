@@ -1403,6 +1403,102 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("\"jobs\"");
   });
 
+  it("preserves gh pr status check failures from long statusCheckRollup payloads", async () => {
+    const statusCheckRollup = Array.from({ length: 68 }, (_, index) => ({
+      __typename: "CheckRun",
+      name: `check-success-${index}`,
+      workflowName: "CI",
+      status: "COMPLETED",
+      conclusion: "SUCCESS",
+      startedAt: "2026-04-28T08:38:00Z",
+      completedAt: "2026-04-28T08:38:05Z",
+      detailsUrl: `https://github.com/openclaw/openclaw/actions/runs/25042683853/job/${index}`,
+    }));
+    statusCheckRollup[61] = {
+      ...statusCheckRollup[61]!,
+      name: "checks-node-core-support-boundary",
+      conclusion: "FAILURE",
+      detailsUrl: "https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73349995139",
+    };
+    statusCheckRollup[67] = {
+      ...statusCheckRollup[67]!,
+      name: "checks-node-core",
+      conclusion: "FAILURE",
+      detailsUrl: "https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73350109175",
+    };
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh pr view 73340 --repo openclaw/openclaw --json number,title,statusCheckRollup,url",
+      argv: ["gh", "pr", "view", "73340", "--json", "number,title,statusCheckRollup,url"],
+      combinedText: JSON.stringify({
+        number: 73340,
+        title: "Test tokenjuice tool result middleware adapter",
+        url: "https://github.com/openclaw/openclaw/pull/73340",
+        statusCheckRollup,
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("#73340 Test tokenjuice tool result middleware adapter");
+    expect(result.inlineText).toContain("status checks: 66 ok, 2 attention");
+    expect(result.inlineText).toContain("check checks-node-core-support-boundary [FAILURE]");
+    expect(result.inlineText).toContain("check checks-node-core [FAILURE]");
+    expect(result.inlineText).toContain("url=https://github.com/openclaw/openclaw/actions/runs/25042683853/job/73350109175");
+    expect(result.inlineText).not.toContain("check-success-0");
+    expect(result.inlineText).not.toContain("\"statusCheckRollup\"");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["github-status-check-rollup-omission"] });
+  });
+
+  it("keeps pending and action-required status checks from statusCheckRollup payloads", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh pr view 73341 --repo openclaw/openclaw --json number,title,statusCheckRollup,url",
+      argv: ["gh", "pr", "view", "73341", "--json", "number,title,statusCheckRollup,url"],
+      combinedText: JSON.stringify({
+        number: 73341,
+        title: "Keep status checks visible",
+        url: "https://github.com/openclaw/openclaw/pull/73341",
+        statusCheckRollup: [
+          {
+            __typename: "CheckRun",
+            name: "quality",
+            workflowName: "CI",
+            status: "COMPLETED",
+            conclusion: "SUCCESS",
+          },
+          {
+            __typename: "CheckRun",
+            name: "package",
+            workflowName: "CI",
+            status: "IN_PROGRESS",
+            conclusion: "",
+          },
+          {
+            __typename: "StatusContext",
+            context: "release approval",
+            state: "ACTION_REQUIRED",
+            targetUrl: "https://github.com/vincentkoc/tokenjuice/actions/runs/25055506314",
+          },
+          {
+            __typename: "StatusContext",
+            context: "external gate",
+            state: "PENDING",
+          },
+        ],
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toContain("status checks: 1 ok, 3 attention");
+    expect(result.inlineText).toContain("check package [IN_PROGRESS]");
+    expect(result.inlineText).toContain("check release approval [ACTION_REQUIRED]");
+    expect(result.inlineText).toContain("url=https://github.com/vincentkoc/tokenjuice/actions/runs/25055506314");
+    expect(result.inlineText).toContain("check external gate [PENDING]");
+    expect(result.inlineText).not.toContain("check quality");
+  });
+
   it("formats gh table output into compact list lines", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -1495,6 +1591,30 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("non-signal log lines omitted");
     expect(result.inlineText).not.toContain("progress line 0");
     expect(result.inlineText).not.toContain("2026-04-28T06:35:06.000Z");
+  });
+
+  it("filters gh run --log-failed output around explicit error annotations", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 25037757449 --repo openclaw/openclaw --log-failed",
+      argv: ["gh", "run", "view", "25037757449", "--log-failed"],
+      combinedText: [
+        "checks-node-core\tInstall\t2026-04-28T06:34:00.000Z\tRestoring cache",
+        "checks-node-core\tInstall\t2026-04-28T06:34:01.000Z\tDownloading packages",
+        "checks-node-core\tTest\t2026-04-28T06:35:00.000Z\tRunning shard 1",
+        "checks-node-core\tTest\t2026-04-28T06:35:01.000Z\t::error file=src/core/reduce.ts,line=41::expected statusCheckRollup signal",
+        "checks-node-core\tPost Test\t2026-04-28T06:35:02.000Z\tUploading artifacts",
+        "checks-node-core\tPost Test\t2026-04-28T06:35:03.000Z\tCleanup complete",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toContain("checks-node-core | Test | Running shard 1");
+    expect(result.inlineText).toContain("::error file=src/core/reduce.ts,line=41::expected statusCheckRollup signal");
+    expect(result.inlineText).toContain("checks-node-core | Post Test | Uploading artifacts");
+    expect(result.inlineText).toContain("non-signal log lines omitted");
+    expect(result.inlineText).not.toContain("Restoring cache");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["github-actions-log-signal-filter"] });
   });
 
   it("preserves emoji and CJK while stripping ANSI from user-facing output and stats", async () => {

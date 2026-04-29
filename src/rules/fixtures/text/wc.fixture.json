@@ -1,0 +1,16 @@
+{
+  "id": "text-wc-basic",
+  "ruleId": "text/wc",
+  "input": {
+    "toolName": "exec",
+    "argv": ["wc", "-l", "src/index.ts"],
+    "command": "wc -l src/index.ts",
+    "combinedText": "     128 src/index.ts\n      42 src/cli/main.ts\n     170 total\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "text/wc",
+    "family": "text-processing",
+    "contains": ["128 src/index.ts", "170 total"]
+  }
+}

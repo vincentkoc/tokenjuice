@@ -1,0 +1,16 @@
+{
+  "id": "devops-helm-basic",
+  "ruleId": "devops/helm",
+  "input": {
+    "toolName": "exec",
+    "argv": ["helm", "template", "app", "./chart"],
+    "command": "helm template app ./chart",
+    "combinedText": "# Source: app/templates/deployment.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: app\nError: YAML parse error on app/templates/service.yaml: error converting YAML to JSON: yaml: line 8: mapping values are not allowed in this context\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "devops/helm",
+    "family": "devops-cli",
+    "contains": ["kind: Deployment", "YAML parse error"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "build-gradle-basic",
+  "ruleId": "build/gradle",
+  "input": {
+    "toolName": "exec",
+    "argv": ["./gradlew", "build"],
+    "command": "./gradlew build",
+    "combinedText": "> Task :compileJava\n> Task :test FAILED\n\nFAILURE: Build failed with an exception.\n* What went wrong:\nExecution failed for task ':test'.\n> There were failing tests. See the report at: build/reports/tests/test/index.html\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/gradle",
+    "family": "build-jvm",
+    "contains": ["Execution failed for task ':test'", "FAILURE: Build failed"]
+  }
+}

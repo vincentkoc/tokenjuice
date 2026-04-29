@@ -1,0 +1,16 @@
+{
+  "id": "build-msbuild-basic",
+  "ruleId": "build/msbuild",
+  "input": {
+    "toolName": "exec",
+    "argv": ["msbuild", "App.sln"],
+    "command": "msbuild App.sln",
+    "combinedText": "Microsoft (R) Build Engine version 17.10.0\nProgram.cs(8,13): error CS0246: The type or namespace name 'Widget' could not be found [App.csproj]\nBuild FAILED.\n    0 Warning(s)\n    1 Error(s)\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/msbuild",
+    "family": "build-dotnet",
+    "contains": ["error CS0246", "Build FAILED"]
+  }
+}

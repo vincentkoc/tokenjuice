@@ -1,0 +1,16 @@
+{
+  "id": "devops-terragrunt-basic",
+  "ruleId": "devops/terragrunt",
+  "input": {
+    "toolName": "exec",
+    "argv": ["terragrunt", "run-all", "plan"],
+    "command": "terragrunt run-all plan",
+    "combinedText": "INFO Downloading Terraform configurations from git::ssh://git@example.com/infra.git\nINFO Working dir /repo/live/prod/api\nPlan: 2 to add, 1 to change, 0 to destroy.\nERRO error occurred: /repo/live/prod/db: Error: Invalid index\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "devops/terragrunt",
+    "family": "iac-cli",
+    "contains": ["Working dir /repo/live/prod/api", "Invalid index"]
+  }
+}

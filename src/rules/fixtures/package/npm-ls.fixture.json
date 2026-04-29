@@ -1,0 +1,16 @@
+{
+  "id": "package-npm-ls-basic",
+  "ruleId": "package/npm-ls",
+  "input": {
+    "toolName": "exec",
+    "argv": ["npm", "ls"],
+    "command": "npm ls",
+    "combinedText": "my-app@1.0.0 /repo\n├── react@18.3.1\n└── UNMET PEER DEPENDENCY react-dom@^18.0.0\n\nnpm ERR! missing: react-dom@^18.0.0, required by my-app@1.0.0\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "package/npm-ls",
+    "family": "package-manager",
+    "contains": ["UNMET PEER DEPENDENCY", "npm ERR! missing"]
+  }
+}

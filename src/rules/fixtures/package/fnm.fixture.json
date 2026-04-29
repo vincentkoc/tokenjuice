@@ -1,0 +1,16 @@
+{
+  "id": "package-fnm-basic",
+  "ruleId": "package/fnm",
+  "input": {
+    "toolName": "exec",
+    "argv": ["fnm", "install", "22.14.0"],
+    "command": "fnm install 22.14.0",
+    "combinedText": "Downloading Node v22.14.0 (arm64)\nInstalling Node v22.14.0\nUsing Node v22.14.0\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "package/fnm",
+    "family": "runtime-manager",
+    "contains": ["Downloading Node v22.14.0", "Using Node v22.14.0"]
+  }
+}

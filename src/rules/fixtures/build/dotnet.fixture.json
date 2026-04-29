@@ -1,0 +1,16 @@
+{
+  "id": "build-dotnet-basic",
+  "ruleId": "build/dotnet",
+  "input": {
+    "toolName": "exec",
+    "argv": ["dotnet", "build"],
+    "command": "dotnet build",
+    "combinedText": "Determining projects to restore...\nAll projects are up-to-date for restore.\nControllers/HomeController.cs(12,18): error CS0103: The name 'missing' does not exist in the current context [/repo/App.csproj]\nBuild FAILED.\n    0 Warning(s)\n    1 Error(s)\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/dotnet",
+    "family": "build-dotnet",
+    "contains": ["error CS0103", "Build FAILED"]
+  }
+}

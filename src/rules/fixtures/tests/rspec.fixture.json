@@ -1,0 +1,16 @@
+{
+  "id": "tests-rspec-basic",
+  "ruleId": "tests/rspec",
+  "input": {
+    "toolName": "exec",
+    "argv": ["bundle", "exec", "rspec"],
+    "command": "bundle exec rspec",
+    "combinedText": "User creates sessions\n  returns a token (FAILED - 1)\n\nFailures:\n\n  1) User creates sessions returns a token\n     Failure/Error: expect(response.status).to eq(201)\n       expected: 201\n            got: 500\n\nFinished in 0.42 seconds\n12 examples, 1 failure\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "tests/rspec",
+    "family": "test-results",
+    "contains": ["Failures:", "12 examples, 1 failure"]
+  }
+}

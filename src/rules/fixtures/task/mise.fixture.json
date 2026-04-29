@@ -1,0 +1,16 @@
+{
+  "id": "task-mise-run-basic",
+  "ruleId": "task/mise",
+  "input": {
+    "toolName": "exec",
+    "argv": ["mise", "run", "check"],
+    "command": "mise run check",
+    "combinedText": "mise node@22.14.0 Downloading node-v22.14.0-darwin-arm64.tar.gz\nmise node@22.14.0 Extracting node-v22.14.0-darwin-arm64.tar.gz\nmise node@22.14.0 Installing node@22.14.0\nmise run check\n$ pnpm lint && pnpm test\n\n> tokenjuice@0.6.5 lint /repo\n> oxlint .\n\nFound 0 warnings and 0 errors.\n\n> tokenjuice@0.6.5 test /repo\n> vitest run\n\nTest Files  42 passed (42)\nTests       612 passed (612)\n",
+    "exitCode": 0
+  },
+  "expect": {
+    "matchedReducer": "task/mise",
+    "family": "task-runner",
+    "contains": ["Installing node@22.14.0", "Test Files  42 passed"]
+  }
+}

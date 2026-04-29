@@ -1,0 +1,16 @@
+{
+  "id": "build-go-build-basic",
+  "ruleId": "build/go-build",
+  "input": {
+    "toolName": "exec",
+    "argv": ["go", "build", "./cmd/api"],
+    "command": "go build ./cmd/api",
+    "combinedText": "# github.com/example/api/cmd/api\ncmd/api/main.go:19:7: undefined: startSever\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/go-build",
+    "family": "build-go",
+    "contains": ["github.com/example/api", "undefined: startSever"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "devops-pulumi-basic",
+  "ruleId": "devops/pulumi",
+  "input": {
+    "toolName": "exec",
+    "argv": ["pulumi", "up"],
+    "command": "pulumi up",
+    "combinedText": "Previewing update (prod):\n     Type                 Name       Plan\n +   pulumi:pulumi:Stack  api-prod   create\nDiagnostics:\n  aws:s3:Bucket (logs):\n    error: bucket name is already in use\nResources:\n    + 1 to create\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "devops/pulumi",
+    "family": "iac-cli",
+    "contains": ["Diagnostics", "bucket name is already in use"]
+  }
+}

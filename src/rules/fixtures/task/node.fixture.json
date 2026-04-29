@@ -1,0 +1,16 @@
+{
+  "id": "task-node-basic",
+  "ruleId": "task/node",
+  "input": {
+    "toolName": "exec",
+    "argv": ["node", "scripts/check.mjs"],
+    "command": "node scripts/check.mjs",
+    "combinedText": "file:///repo/scripts/check.mjs:7\nthrow new TypeError('missing config')\n      ^\n\nTypeError: missing config\n    at file:///repo/scripts/check.mjs:7:7\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "task/node",
+    "family": "runtime-cli",
+    "contains": ["TypeError: missing config", "check.mjs:7"]
+  }
+}

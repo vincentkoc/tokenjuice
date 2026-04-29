@@ -562,7 +562,7 @@ describe("runCodexPostToolUseHook", () => {
       hook_event_name: "PostToolUse",
       tool_name: "Bash",
       tool_input: {
-        command: "node -e \"console.log('x')\"",
+        command: "custom-tool --emit-lines",
       },
       tool_response: Array.from({ length: 18 }, (_, index) => `line ${index + 1} ${"x".repeat(24)}`).join("\n"),
     });

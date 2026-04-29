@@ -1,0 +1,16 @@
+{
+  "id": "task-python-basic",
+  "ruleId": "task/python",
+  "input": {
+    "toolName": "exec",
+    "argv": ["python3", "scripts/load.py"],
+    "command": "python3 scripts/load.py",
+    "combinedText": "Traceback (most recent call last):\n  File \"/repo/scripts/load.py\", line 3, in <module>\n    import missing_package\nModuleNotFoundError: No module named 'missing_package'\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "task/python",
+    "family": "runtime-cli",
+    "contains": ["Traceback", "ModuleNotFoundError"]
+  }
+}

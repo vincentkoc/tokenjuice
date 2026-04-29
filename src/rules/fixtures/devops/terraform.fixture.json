@@ -1,0 +1,16 @@
+{
+  "id": "devops-terraform-basic",
+  "ruleId": "devops/terraform",
+  "input": {
+    "toolName": "exec",
+    "argv": ["terraform", "plan"],
+    "command": "terraform plan",
+    "combinedText": "Terraform will perform the following actions:\n  # aws_instance.api will be created\n  + resource \"aws_instance\" \"api\" {\n      + ami = \"ami-123\"\n    }\nPlan: 1 to add, 0 to change, 0 to destroy.\nError: Invalid provider configuration\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "devops/terraform",
+    "family": "iac-cli",
+    "contains": ["Plan: 1 to add", "Invalid provider configuration"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "build-maven-basic",
+  "ruleId": "build/maven",
+  "input": {
+    "toolName": "exec",
+    "argv": ["mvn", "test"],
+    "command": "mvn test",
+    "combinedText": "[INFO] Scanning for projects...\n[INFO] --- maven-surefire-plugin:test (default-test) @ api ---\n[ERROR] Tests run: 12, Failures: 1, Errors: 0, Skipped: 0\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test on project api: There are test failures.\n[INFO] BUILD FAILURE\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "build/maven",
+    "family": "build-jvm",
+    "contains": ["[ERROR] Tests run", "BUILD FAILURE"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "package-composer-basic",
+  "ruleId": "package/composer",
+  "input": {
+    "toolName": "exec",
+    "argv": ["composer", "install"],
+    "command": "composer install",
+    "combinedText": "Installing dependencies from lock file\nPackage operations: 3 installs, 0 updates, 0 removals\n  - Installing psr/log (3.0.0)\n  - Installing monolog/monolog (3.8.1)\nGenerating autoload files\nScript @php artisan package:discover returned with error code 1\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "package/composer",
+    "family": "package-manager",
+    "contains": ["Installing psr/log", "returned with error code 1"]
+  }
+}

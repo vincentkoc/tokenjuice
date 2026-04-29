@@ -1,0 +1,16 @@
+{
+  "id": "task-php-basic",
+  "ruleId": "task/php",
+  "input": {
+    "toolName": "exec",
+    "argv": ["php", "artisan", "migrate"],
+    "command": "php artisan migrate",
+    "combinedText": "Migrating: 2026_04_29_000001_create_users\nPHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] Connection refused in /repo/artisan:18\nStack trace:\n#0 {main}\n",
+    "exitCode": 255
+  },
+  "expect": {
+    "matchedReducer": "task/php",
+    "family": "runtime-cli",
+    "contains": ["PHP Fatal error", "Connection refused"]
+  }
+}

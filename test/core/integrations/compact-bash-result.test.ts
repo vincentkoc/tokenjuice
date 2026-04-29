@@ -243,7 +243,7 @@ describe("compactBashResult", () => {
   it("returns a keep decision for weak generic fallback compaction", async () => {
     const outcome = await compactBashResult({
       source: "codex",
-      command: "node -e \"console.log('x')\"",
+      command: "custom-tool --emit-lines",
       visibleText: Array.from({ length: 18 }, (_, index) => `line ${index + 1} ${"x".repeat(24)}`).join("\n"),
       minSavedCharsAny: 8,
       genericFallbackMinSavedChars: 120,

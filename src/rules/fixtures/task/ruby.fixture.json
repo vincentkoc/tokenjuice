@@ -1,0 +1,16 @@
+{
+  "id": "task-ruby-basic",
+  "ruleId": "task/ruby",
+  "input": {
+    "toolName": "exec",
+    "argv": ["ruby", "script.rb"],
+    "command": "ruby script.rb",
+    "combinedText": "script.rb:4:in `fetch': key not found: :token (KeyError)\n\tfrom script.rb:4:in `<main>'\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "task/ruby",
+    "family": "runtime-cli",
+    "contains": ["KeyError", "script.rb:4"]
+  }
+}

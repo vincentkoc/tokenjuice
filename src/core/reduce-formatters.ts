@@ -657,7 +657,7 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
     }
   }
 
-  if ((input.argv ?? [])[0] === "gh") {
+  if (isGithubCliCommand((input.argv ?? [])[0])) {
     const formattedLines = lines.map(formatGhTableLine);
     if (isGhRunLogCommand(input)) {
       return filterGhRunLogSignalLines(formattedLines);
@@ -666,4 +666,8 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
   }
 
   return { lines };
+}
+
+function isGithubCliCommand(command: string | undefined): boolean {
+  return command === "gh" || command === "ghx";
 }

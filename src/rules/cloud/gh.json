@@ -4,7 +4,7 @@
   "description": "Compact GitHub CLI output while preserving issue, PR, and workflow result lines.",
   "match": {
     "toolNames": ["exec"],
-    "argv0": ["gh"]
+    "argv0": ["gh", "ghx"]
   },
   "transforms": {
     "stripAnsi": true,

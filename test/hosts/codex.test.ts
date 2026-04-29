@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -902,8 +902,12 @@ describe("runCodexPostToolUseHook", () => {
 
   it("records metadata-only stats for immediate skip paths", async () => {
     const home = await createTempDir();
+    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR;
     process.env.CODEX_HOME = home;
     process.env.HOME = home;
+
+    expect(artifactDir).toBeTruthy();
+    const metadataBefore = await listArtifactMetadata();
 
     const payload = JSON.stringify({
       hook_event_name: "PostToolUse",
@@ -920,17 +924,20 @@ describe("runCodexPostToolUseHook", () => {
       skipped?: string;
     };
     const metadata = await listArtifactMetadata();
+    const newMetadata = metadata.find((entry) => !metadataBefore.some((before) => before.id === entry.id));
 
     expect(code).toBe(0);
     expect(output).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("explicit-raw-bypass");
-    expect(metadata).toHaveLength(1);
-    expect(metadata[0]?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
-    expect(metadata[0]?.metadata.rawChars).toBeGreaterThan(0);
-    expect(metadata[0]?.metadata.reducedChars).toBe(metadata[0]?.metadata.rawChars);
-    expect(metadata[0]?.metadata.ratio).toBe(1);
-    expect(metadata[0]?.path).toBeUndefined();
+    expect(metadata).toHaveLength(metadataBefore.length + 1);
+    expect(newMetadata?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
+    expect(newMetadata?.metadata.rawChars).toBeGreaterThan(0);
+    expect(newMetadata?.metadata.reducedChars).toBe(newMetadata?.metadata.rawChars);
+    expect(newMetadata?.metadata.ratio).toBe(1);
+    expect(newMetadata?.path).toBeUndefined();
+    expect(resolve(dirname(newMetadata!.metadataPath))).toBe(resolve(artifactDir!));
+    expect(existsSync(join(home, ".tokenjuice", "artifacts"))).toBe(false);
   });
 
   it("writes rolling hook history entries alongside the last snapshot", async () => {

@@ -1,10 +1,10 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getArtifact, listArtifactMetadata, listArtifacts, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -19,6 +19,69 @@ afterEach(async () => {
 });
 
 describe("artifacts", () => {
+  it("falls back to ~/.tokenjuice/artifacts when no env override is configured", () => {
+    const original = process.env[ARTIFACT_DIR_ENV];
+
+    try {
+      delete process.env[ARTIFACT_DIR_ENV];
+      expect(resolveArtifactBaseDir()).toBe(join(homedir(), ".tokenjuice", "artifacts"));
+    } finally {
+      if (original === undefined) {
+        delete process.env[ARTIFACT_DIR_ENV];
+      } else {
+        process.env[ARTIFACT_DIR_ENV] = original;
+      }
+    }
+  });
+
+  it("trims the env-configured artifact directory before use", async () => {
+    const storeDir = await createTempDir();
+    const original = process.env[ARTIFACT_DIR_ENV];
+
+    try {
+      process.env[ARTIFACT_DIR_ENV] = `  ${storeDir}  `;
+      expect(resolveArtifactBaseDir()).toBe(storeDir);
+    } finally {
+      if (original === undefined) {
+        delete process.env[ARTIFACT_DIR_ENV];
+      } else {
+        process.env[ARTIFACT_DIR_ENV] = original;
+      }
+    }
+  });
+
+  it("writes artifacts to the env-configured directory by default", async () => {
+    const ref = await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "env-dir-test", exitCode: 0 },
+        rawText: "env dir output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/env-dir" },
+        stats: { rawChars: 14, reducedChars: 7, ratio: 0.5 },
+      },
+    );
+
+    const metadata = await listArtifactMetadata();
+    const found = metadata.find((entry) => entry.id === ref.id);
+
+    expect(found).toBeDefined();
+    expect(found?.metadataPath).not.toContain(process.env.HOME ?? "~");
+  });
+
+  it("prefers explicit storeDir over the env-configured directory", async () => {
+    const storeDir = await createTempDir();
+    const ref = await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "explicit-dir-test", exitCode: 0 },
+        rawText: "explicit dir output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/explicit-dir" },
+        stats: { rawChars: 20, reducedChars: 10, ratio: 0.5 },
+      },
+      storeDir,
+    );
+
+    expect(ref.metadataPath.startsWith(storeDir)).toBe(true);
+  });
+
   it("rejects invalid artifact ids instead of reading arbitrary files", async () => {
     const storeDir = await createTempDir();
 

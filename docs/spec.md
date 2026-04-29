@@ -248,6 +248,10 @@ artifacts are file-backed in v1:
 - one raw text file
 - one metadata JSON file
 
+default storage is `~/.tokenjuice/artifacts`. set `TOKENJUICE_ARTIFACT_DIR`
+to override that base directory, or pass `storeDir` through the library/cli
+surfaces that already support it.
+
 that is intentionally boring. boring is good here.
 
 ## reliability priorities

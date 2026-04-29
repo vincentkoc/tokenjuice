@@ -135,6 +135,7 @@ describe("rules", () => {
       "system/ps",
       "task/just",
       "task/make",
+      "task/mise",
       "task/uv",
       "tests/bun-test",
       "tests/cargo-test",
@@ -165,7 +166,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(115);
+    expect(fixtures).toHaveLength(116);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

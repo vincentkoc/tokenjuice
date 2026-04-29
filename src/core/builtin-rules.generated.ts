@@ -85,29 +85,30 @@ import rule80 from "../rules/service/journalctl.json" with { type: "json" };
 import rule81 from "../rules/service/launchctl.json" with { type: "json" };
 import rule82 from "../rules/service/lsof.json" with { type: "json" };
 import rule83 from "../rules/service/netstat.json" with { type: "json" };
-import rule84 from "../rules/service/service.json" with { type: "json" };
-import rule85 from "../rules/service/ss.json" with { type: "json" };
-import rule86 from "../rules/service/systemctl-status.json" with { type: "json" };
-import rule87 from "../rules/system/df.json" with { type: "json" };
-import rule88 from "../rules/system/du.json" with { type: "json" };
-import rule89 from "../rules/system/file.json" with { type: "json" };
-import rule90 from "../rules/system/ps.json" with { type: "json" };
-import rule91 from "../rules/task/just.json" with { type: "json" };
-import rule92 from "../rules/task/make.json" with { type: "json" };
-import rule93 from "../rules/tests/bun-test.json" with { type: "json" };
-import rule94 from "../rules/tests/cargo-test.json" with { type: "json" };
-import rule95 from "../rules/tests/go-test.json" with { type: "json" };
-import rule96 from "../rules/tests/jest.json" with { type: "json" };
-import rule97 from "../rules/tests/mocha.json" with { type: "json" };
-import rule98 from "../rules/tests/npm-test.json" with { type: "json" };
-import rule99 from "../rules/tests/playwright.json" with { type: "json" };
-import rule100 from "../rules/tests/pnpm-test.json" with { type: "json" };
-import rule101 from "../rules/tests/pytest.json" with { type: "json" };
-import rule102 from "../rules/tests/swift-test.json" with { type: "json" };
-import rule103 from "../rules/tests/vitest.json" with { type: "json" };
-import rule104 from "../rules/tests/yarn-test.json" with { type: "json" };
-import rule105 from "../rules/transfer/rsync.json" with { type: "json" };
-import rule106 from "../rules/transfer/scp.json" with { type: "json" };
+import rule84 from "../rules/service/pm2.json" with { type: "json" };
+import rule85 from "../rules/service/service.json" with { type: "json" };
+import rule86 from "../rules/service/ss.json" with { type: "json" };
+import rule87 from "../rules/service/systemctl-status.json" with { type: "json" };
+import rule88 from "../rules/system/df.json" with { type: "json" };
+import rule89 from "../rules/system/du.json" with { type: "json" };
+import rule90 from "../rules/system/file.json" with { type: "json" };
+import rule91 from "../rules/system/ps.json" with { type: "json" };
+import rule92 from "../rules/task/just.json" with { type: "json" };
+import rule93 from "../rules/task/make.json" with { type: "json" };
+import rule94 from "../rules/tests/bun-test.json" with { type: "json" };
+import rule95 from "../rules/tests/cargo-test.json" with { type: "json" };
+import rule96 from "../rules/tests/go-test.json" with { type: "json" };
+import rule97 from "../rules/tests/jest.json" with { type: "json" };
+import rule98 from "../rules/tests/mocha.json" with { type: "json" };
+import rule99 from "../rules/tests/npm-test.json" with { type: "json" };
+import rule100 from "../rules/tests/playwright.json" with { type: "json" };
+import rule101 from "../rules/tests/pnpm-test.json" with { type: "json" };
+import rule102 from "../rules/tests/pytest.json" with { type: "json" };
+import rule103 from "../rules/tests/swift-test.json" with { type: "json" };
+import rule104 from "../rules/tests/vitest.json" with { type: "json" };
+import rule105 from "../rules/tests/yarn-test.json" with { type: "json" };
+import rule106 from "../rules/transfer/rsync.json" with { type: "json" };
+import rule107 from "../rules/transfer/scp.json" with { type: "json" };
 
 export const BUNDLED_BUILTIN_RULES: JsonRule[] = [
   rule0 as JsonRule, // rules/archive/tar.json
@@ -194,27 +195,28 @@ export const BUNDLED_BUILTIN_RULES: JsonRule[] = [
   rule81 as JsonRule, // rules/service/launchctl.json
   rule82 as JsonRule, // rules/service/lsof.json
   rule83 as JsonRule, // rules/service/netstat.json
-  rule84 as JsonRule, // rules/service/service.json
-  rule85 as JsonRule, // rules/service/ss.json
-  rule86 as JsonRule, // rules/service/systemctl-status.json
-  rule87 as JsonRule, // rules/system/df.json
-  rule88 as JsonRule, // rules/system/du.json
-  rule89 as JsonRule, // rules/system/file.json
-  rule90 as JsonRule, // rules/system/ps.json
-  rule91 as JsonRule, // rules/task/just.json
-  rule92 as JsonRule, // rules/task/make.json
-  rule93 as JsonRule, // rules/tests/bun-test.json
-  rule94 as JsonRule, // rules/tests/cargo-test.json
-  rule95 as JsonRule, // rules/tests/go-test.json
-  rule96 as JsonRule, // rules/tests/jest.json
-  rule97 as JsonRule, // rules/tests/mocha.json
-  rule98 as JsonRule, // rules/tests/npm-test.json
-  rule99 as JsonRule, // rules/tests/playwright.json
-  rule100 as JsonRule, // rules/tests/pnpm-test.json
-  rule101 as JsonRule, // rules/tests/pytest.json
-  rule102 as JsonRule, // rules/tests/swift-test.json
-  rule103 as JsonRule, // rules/tests/vitest.json
-  rule104 as JsonRule, // rules/tests/yarn-test.json
-  rule105 as JsonRule, // rules/transfer/rsync.json
-  rule106 as JsonRule, // rules/transfer/scp.json
+  rule84 as JsonRule, // rules/service/pm2.json
+  rule85 as JsonRule, // rules/service/service.json
+  rule86 as JsonRule, // rules/service/ss.json
+  rule87 as JsonRule, // rules/service/systemctl-status.json
+  rule88 as JsonRule, // rules/system/df.json
+  rule89 as JsonRule, // rules/system/du.json
+  rule90 as JsonRule, // rules/system/file.json
+  rule91 as JsonRule, // rules/system/ps.json
+  rule92 as JsonRule, // rules/task/just.json
+  rule93 as JsonRule, // rules/task/make.json
+  rule94 as JsonRule, // rules/tests/bun-test.json
+  rule95 as JsonRule, // rules/tests/cargo-test.json
+  rule96 as JsonRule, // rules/tests/go-test.json
+  rule97 as JsonRule, // rules/tests/jest.json
+  rule98 as JsonRule, // rules/tests/mocha.json
+  rule99 as JsonRule, // rules/tests/npm-test.json
+  rule100 as JsonRule, // rules/tests/playwright.json
+  rule101 as JsonRule, // rules/tests/pnpm-test.json
+  rule102 as JsonRule, // rules/tests/pytest.json
+  rule103 as JsonRule, // rules/tests/swift-test.json
+  rule104 as JsonRule, // rules/tests/vitest.json
+  rule105 as JsonRule, // rules/tests/yarn-test.json
+  rule106 as JsonRule, // rules/transfer/rsync.json
+  rule107 as JsonRule, // rules/transfer/scp.json
 ];

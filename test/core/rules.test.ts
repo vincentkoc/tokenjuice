@@ -125,6 +125,7 @@ describe("rules", () => {
       "service/launchctl",
       "service/lsof",
       "service/netstat",
+      "service/pm2",
       "service/service",
       "service/ss",
       "service/systemctl-status",
@@ -163,7 +164,7 @@ describe("rules", () => {
 
   it("loads builtin fixtures successfully", async () => {
     const fixtures = await loadBuiltinFixtures();
-    expect(fixtures).toHaveLength(113);
+    expect(fixtures).toHaveLength(114);
   });
 
   it("keeps builtin fixture inventory aligned with builtin rules", async () => {

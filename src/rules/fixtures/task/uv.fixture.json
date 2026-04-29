@@ -1,0 +1,16 @@
+{
+  "id": "task-uv-run-failure",
+  "ruleId": "task/uv",
+  "input": {
+    "toolName": "exec",
+    "argv": ["uv", "run", "pytest", "tests/test_api.py"],
+    "command": "uv run pytest tests/test_api.py",
+    "combinedText": "Using CPython 3.12.8 interpreter at: /opt/homebrew/bin/python3.12\nCreating virtual environment at: .venv\nResolved 42 packages in 14ms\nInstalled 42 packages in 103ms\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.8, pytest-8.3.4\ncollected 3 items\n\ntests/test_api.py ..F                                                     [100%]\n\n=================================== FAILURES ===================================\n____________________________ test_returns_session _____________________________\nE       AssertionError: expected session id\n\nFAILED tests/test_api.py::test_returns_session - AssertionError: expected session id\n=========================== 1 failed, 2 passed in 0.18s ===========================\n",
+    "exitCode": 1
+  },
+  "expect": {
+    "matchedReducer": "task/uv",
+    "family": "python-task-runner",
+    "contains": ["Resolved 42 packages", "FAILED tests/test_api.py::test_returns_session"]
+  }
+}

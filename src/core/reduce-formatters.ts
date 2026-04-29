@@ -6,6 +6,10 @@ import type { ToolExecutionInput } from "../types.js";
 const LONG_SEARCH_LINE_MAX_CHARS = 420;
 const LONG_CHANGED_LINE_MAX_CHARS = 260;
 const GIT_DIFF_CHANGED_LINES_PER_HUNK = 8;
+const GH_RUN_LOG_SIGNAL_CONTEXT_LINES = 1;
+const GH_RUN_LOG_SIGNAL_PATTERN =
+  /(?:##\[error\]|::error|(?:^|[\s|])(?:FAIL|FAILED|FAILURE)(?:[\s|:]|$)|\bAssertionError\b|\bError:\s+Process completed with exit code\b|\berror\s+TS\d+\b|\bELIFECYCLE\b|\bCommand failed\b|\bfailed with exit code\b|\bfailed in build-artifacts\b|\bERR_[A-Z0-9_]+\b)/iu;
+const MAX_GH_STATUS_CHECK_ATTENTION_LINES = 12;
 
 function rewriteGitStatusLine(line: string): string | null {
   const trimmed = line.trim();
@@ -289,6 +293,87 @@ function getGhCollection(value: unknown): unknown[] {
   return [];
 }
 
+function getGhString(record: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function normalizeGhStatus(value: string | null): string | null {
+  return value ? value.trim().toUpperCase().replace(/-/gu, "_") : null;
+}
+
+function isGhStatusCheckOk(record: Record<string, unknown>): boolean {
+  const conclusion = normalizeGhStatus(getGhString(record, "conclusion"));
+  if (conclusion) {
+    return conclusion === "SUCCESS" || conclusion === "SKIPPED" || conclusion === "NEUTRAL";
+  }
+
+  const state = normalizeGhStatus(getGhString(record, "state"));
+  if (state) {
+    return state === "SUCCESS";
+  }
+
+  return false;
+}
+
+function formatGhStatusCheckLine(record: Record<string, unknown>): string | null {
+  const name = getGhString(record, "name", "context", "workflowName");
+  if (!name) {
+    return null;
+  }
+
+  const conclusion = normalizeGhStatus(getGhString(record, "conclusion", "state"));
+  const status = normalizeGhStatus(getGhString(record, "status"));
+  const workflow = getGhString(record, "workflowName");
+  const duration = extractGhDuration(record);
+  const detailsUrl = getGhString(record, "detailsUrl", "targetUrl");
+  const parts = [
+    "check",
+    compactWhitespace(name),
+    conclusion ? `[${conclusion}]` : status ? `[${status}]` : null,
+    workflow && workflow !== name ? `workflow=${compactWhitespace(workflow)}` : null,
+    duration ? `duration=${duration}` : null,
+    detailsUrl ? `url=${detailsUrl}` : null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.join(" ");
+}
+
+function formatGhStatusCheckRollup(value: unknown): { lines: string[]; compaction?: CompactionMetadata } {
+  const records = getGhCollection(value)
+    .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null && !Array.isArray(entry));
+  if (records.length === 0) {
+    return { lines: [] };
+  }
+
+  const attention = records.filter((record) => !isGhStatusCheckOk(record));
+  const okCount = records.length - attention.length;
+  const lines = [`status checks: ${okCount} ok, ${attention.length} attention`];
+  const listed = attention.slice(0, MAX_GH_STATUS_CHECK_ATTENTION_LINES);
+  for (const record of listed) {
+    const line = formatGhStatusCheckLine(record);
+    if (line) {
+      lines.push(line);
+    }
+  }
+
+  const omittedAttention = attention.length - listed.length;
+  if (omittedAttention > 0) {
+    lines.push(`... ${omittedAttention} attention checks omitted ...`);
+  }
+
+  return {
+    lines,
+    ...(okCount > 0 || omittedAttention > 0
+      ? { compaction: createCompactionMetadata("github-status-check-rollup-omission") }
+      : {}),
+  };
+}
+
 function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: CompactionMetadata } {
   const compactions: CompactionMetadata[] = [];
   if (Array.isArray(value)) {
@@ -323,6 +408,14 @@ function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: Comp
     lines.push(header.line);
     if (header.compaction) {
       compactions.push(header.compaction);
+    }
+  }
+
+  const statusCheckRollup = formatGhStatusCheckRollup(record.statusCheckRollup);
+  if (statusCheckRollup.lines.length > 0) {
+    lines.push(...statusCheckRollup.lines);
+    if (statusCheckRollup.compaction) {
+      compactions.push(statusCheckRollup.compaction);
     }
   }
 
@@ -469,6 +562,65 @@ function formatGhTableLine(line: string): string {
   return compactWhitespace(trimmed);
 }
 
+function isGhRunLogCommand(input: ToolExecutionInput): boolean {
+  const argv = input.argv ?? [];
+  return argv[0] === "gh"
+    && argv.includes("run")
+    && argv.includes("view")
+    && argv.some((arg) => arg === "--log" || arg === "--log-failed" || arg.startsWith("--log="));
+}
+
+function formatOmittedGhLogLines(count: number): string {
+  return `... ${count} non-signal log lines omitted ...`;
+}
+
+function filterGhRunLogSignalLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+  const signalIndexes = lines
+    .map((line, index) => GH_RUN_LOG_SIGNAL_PATTERN.test(line) ? index : -1)
+    .filter((index) => index >= 0);
+
+  if (signalIndexes.length === 0) {
+    return { lines };
+  }
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (const index of signalIndexes) {
+    const start = Math.max(0, index - GH_RUN_LOG_SIGNAL_CONTEXT_LINES);
+    const end = Math.min(lines.length - 1, index + GH_RUN_LOG_SIGNAL_CONTEXT_LINES);
+    const previous = ranges.at(-1);
+    if (previous && start <= previous.end + 1) {
+      previous.end = Math.max(previous.end, end);
+      continue;
+    }
+    ranges.push({ start, end });
+  }
+
+  const rewritten: string[] = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    const omittedBefore = range.start - cursor;
+    if (omittedBefore > 0) {
+      rewritten.push(formatOmittedGhLogLines(omittedBefore));
+    }
+    rewritten.push(...lines.slice(range.start, range.end + 1));
+    cursor = range.end + 1;
+  }
+
+  const omittedAfter = lines.length - cursor;
+  if (omittedAfter > 0) {
+    rewritten.push(formatOmittedGhLogLines(omittedAfter));
+  }
+
+  if (rewritten.length >= lines.length) {
+    return { lines };
+  }
+
+  return {
+    lines: rewritten,
+    compaction: createCompactionMetadata("github-actions-log-signal-filter"),
+  };
+}
+
 export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { lines: string[]; compaction?: CompactionMetadata } {
   const nonEmpty = lines.filter((line) => line.trim() !== "");
   if (nonEmpty.length === 0) {
@@ -506,7 +658,11 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
   }
 
   if ((input.argv ?? [])[0] === "gh") {
-    return { lines: lines.map(formatGhTableLine) };
+    const formattedLines = lines.map(formatGhTableLine);
+    if (isGhRunLogCommand(input)) {
+      return filterGhRunLogSignalLines(formattedLines);
+    }
+    return { lines: formattedLines };
   }
 
   return { lines };

@@ -564,7 +564,7 @@ function formatGhTableLine(line: string): string {
 
 function isGhRunLogCommand(input: ToolExecutionInput): boolean {
   const argv = input.argv ?? [];
-  return argv[0] === "gh"
+  return isGithubCliCommand(argv[0])
     && argv.includes("run")
     && argv.includes("view")
     && argv.some((arg) => arg === "--log" || arg === "--log-failed" || arg.startsWith("--log="));

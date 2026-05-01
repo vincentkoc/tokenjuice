@@ -1628,6 +1628,33 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("2026-04-28T06:35:06.000Z");
   });
 
+  it("filters ghx run logs like gh run logs", async () => {
+    const filler = Array.from(
+      { length: 80 },
+      (_, index) =>
+        `checks-node-core\tRun test shard\t2026-04-28T06:34:${String(index % 60).padStart(2, "0")}.000Z\tprogress line ${index}`,
+    );
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "ghx run view 25037757449 --repo openclaw/openclaw --log",
+      argv: ["ghx", "run", "view", "25037757449", "--log"],
+      combinedText: [
+        ...filler.slice(0, 40),
+        "checks-node-core\tRun test shard\t2026-04-28T06:35:06.000Z\t##[error]test/core/reduce.test.ts(41,7): expected ghx log filtering",
+        "checks-node-core\tRun test shard\t2026-04-28T06:35:07.000Z\tELIFECYCLE Command failed with exit code 2",
+        ...filler.slice(40),
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("expected ghx log filtering");
+    expect(result.inlineText).toContain("ELIFECYCLE Command failed with exit code 2");
+    expect(result.inlineText).toContain("non-signal log lines omitted");
+    expect(result.inlineText).not.toContain("progress line 0");
+    expect(result.compaction).toEqual({ authoritative: true, kinds: ["github-actions-log-signal-filter"] });
+  });
+
   it("filters gh run --log-failed output around explicit error annotations", async () => {
     const result = await reduceExecution({
       toolName: "exec",

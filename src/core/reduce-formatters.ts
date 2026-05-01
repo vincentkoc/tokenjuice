@@ -198,8 +198,8 @@ function formatGhJsonRecord(record: Record<string, unknown>): { line: string; co
     : typeof record.headRefName === "string" ? record.headRefName
       : null;
   const status = typeof record.state === "string" ? record.state
-    : typeof record.status === "string" ? record.status
-      : typeof record.conclusion === "string" ? record.conclusion
+    : typeof record.conclusion === "string" ? record.conclusion
+      : typeof record.status === "string" ? record.status
       : null;
   const updatedAt = typeof record.updatedAt === "string" ? record.updatedAt.slice(0, 10) : null;
   const duration = extractGhDuration(record);

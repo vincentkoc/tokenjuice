@@ -1421,6 +1421,40 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("\"jobs\"");
   });
 
+  it("prefers gh run conclusions over completed statuses", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 24524437739 --repo openclaw/openclaw --json status,conclusion,jobs,displayTitle",
+      argv: ["gh", "run", "view", "24524437739", "--json", "status,conclusion,jobs,displayTitle"],
+      combinedText: JSON.stringify({
+        displayTitle: "checks: tokenjuice reducer failure",
+        status: "completed",
+        conclusion: "failure",
+        jobs: [
+          {
+            databaseId: 71690896188,
+            name: "checks-node-core-security",
+            status: "completed",
+            conclusion: "success",
+          },
+          {
+            databaseId: 71690896311,
+            name: "checks-node-core-runtime",
+            status: "completed",
+            conclusion: "failure",
+          },
+        ],
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("checks: tokenjuice reducer failure [failure]");
+    expect(result.inlineText).toContain("#71690896188 checks-node-core-security [success]");
+    expect(result.inlineText).toContain("#71690896311 checks-node-core-runtime [failure]");
+    expect(result.inlineText).not.toContain("checks-node-core-runtime [completed]");
+  });
+
   it("preserves gh pr status check failures from long statusCheckRollup payloads", async () => {
     const statusCheckRollup = Array.from({ length: 68 }, (_, index) => ({
       __typename: "CheckRun",

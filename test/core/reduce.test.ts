@@ -1455,6 +1455,23 @@ describe("reduceExecution", () => {
     expect(result.inlineText).not.toContain("checks-node-core-runtime [completed]");
   });
 
+  it("falls back to gh run statuses when conclusions are empty", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh run view 24524437739 --repo openclaw/openclaw --json status,conclusion,displayTitle",
+      argv: ["gh", "run", "view", "24524437739", "--json", "status,conclusion,displayTitle"],
+      combinedText: JSON.stringify({
+        displayTitle: "checks still running",
+        status: "in_progress",
+        conclusion: "",
+      }),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("checks still running [in_progress]");
+  });
+
   it("preserves gh pr status check failures from long statusCheckRollup payloads", async () => {
     const statusCheckRollup = Array.from({ length: 68 }, (_, index) => ({
       __typename: "CheckRun",

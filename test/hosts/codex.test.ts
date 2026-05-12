@@ -64,19 +64,18 @@ async function captureStdio(run: () => Promise<number>): Promise<{ code: number;
   }
 }
 
-function parseCodexReplacementOutput(stdout: string): {
+const parseCodexReplacementOutput = (stdout: string): {
   hookSpecificOutput?: {
     hookEventName?: string;
     additionalContext?: string;
   };
-} {
-  return JSON.parse(stdout) as {
+} =>
+  JSON.parse(stdout) as {
     hookSpecificOutput?: {
       hookEventName?: string;
       additionalContext?: string;
     };
   };
-}
 
 describe("installCodexHook", () => {
   it("installs a single tokenjuice PostToolUse hook and preserves unrelated hooks", async () => {
@@ -580,6 +579,61 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("generic-weak-compaction");
     expect(debug.matchedReducer).toBe("generic/fallback");
+  });
+
+  it("returns minified JSON feedback for whole JSON hook output", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+    const toolResponse = JSON.stringify(
+      {
+        runtimeVersion: "2026.5.7",
+        heartbeat: {
+          defaultAgentId: "main",
+          agents: Array.from({ length: 24 }, (_, index) => ({
+            agentId: index === 0 ? "main" : `worker-${index}`,
+            enabled: index % 2 === 0,
+            warnings: [],
+            errors: [],
+            lastActiveAgeMs: index === 0 ? null : index * 1000,
+          })),
+          totalSessions: 622,
+          bootstrapPendingCount: 2,
+        },
+        secretDiagnostics: [],
+      },
+      null,
+      2,
+    );
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "custom-tool --json",
+      },
+      tool_response: toolResponse,
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      matchedReducer?: string;
+    };
+    const response = parseCodexReplacementOutput(stdout);
+    const additionalContext = response.hookSpecificOutput?.additionalContext ?? "";
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
+    expect(additionalContext).toContain("\"runtimeVersion\":\"2026.5.7\"");
+    expect(additionalContext).toContain("\"totalSessions\":622");
+    expect(additionalContext).not.toMatch(/^\d+ errors?, \d+ warnings?/u);
+    expect(additionalContext).not.toContain("lines omitted");
+    expect(additionalContext).toContain("tokenjuice wrap --raw -- <command>");
+    expect(debug.rewrote).toBe(true);
+    expect(debug.skipped).toBeUndefined();
+    expect(debug.matchedReducer).toBe("generic/json");
   });
 
   it("skips rewriting low-savings compaction even for non-generic reducers", async () => {

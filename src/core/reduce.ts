@@ -6,10 +6,11 @@ import { clampTextMiddleWithMetadata, clampTextWithMetadata, countTextChars, ded
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
 import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
+import { compactWholeJsonText } from "./reduce-utils.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
 import { buildInspectionSummary } from "./reduce-inspection-summary.js";
 
-import type { CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } from "../types.js";
+import type { ClassificationResult, CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } from "../types.js";
 
 const TINY_OUTPUT_MAX_CHARS = 240;
 const SMALL_OUTPUT_PASSTHROUGH_MIN_SAVED_CHARS = 120;
@@ -154,28 +155,20 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
 
 function buildPassthroughText(input: ToolExecutionInput, rawText: string): string {
   const normalized = trimEmptyEdges(normalizeLines(stripAnsi(rawText))).join("\n").trim();
-  if (!normalized) {
-    return "(no output)";
-  }
-
-  if (input.exitCode && input.exitCode !== 0) {
-    return `exit ${input.exitCode}\n${normalized}`;
-  }
-
-  return normalized;
+  return !normalized
+    ? "(no output)"
+    : input.exitCode && input.exitCode !== 0
+      ? `exit ${input.exitCode}\n${normalized}`
+      : normalized;
 }
 
 function buildLiteralPassthroughText(input: ToolExecutionInput, rawText: string): string {
   const normalized = stripAnsi(rawText).trimEnd();
-  if (!normalized) {
-    return buildPassthroughText(input, rawText);
-  }
-
-  if (input.exitCode && input.exitCode !== 0) {
-    return `exit ${input.exitCode}\n${normalized}`;
-  }
-
-  return normalized;
+  return !normalized
+    ? buildPassthroughText(input, rawText)
+    : input.exitCode && input.exitCode !== 0
+      ? `exit ${input.exitCode}\n${normalized}`
+      : normalized;
 }
 
 function shouldKeepSmallOutput(
@@ -210,6 +203,40 @@ function isTerseDiscoveryCommand(classification: { family: string }, input: Tool
     return argv.includes("--porcelain");
   }
   return false;
+}
+
+async function storeReducedOutputIfRequested(
+  input: ToolExecutionInput,
+  rawText: string,
+  classification: ClassificationResult,
+  stats: CompactResult["stats"],
+  opts: ReduceOptions,
+) {
+  const rawRef = opts.store
+    ? await storeArtifact(
+        {
+          input,
+          rawText,
+          classification,
+          stats,
+        },
+        opts.storeDir,
+      )
+    : undefined;
+
+  if (!opts.store && opts.recordStats) {
+    await storeArtifactMetadata(
+      {
+        input,
+        rawText,
+        classification,
+        stats,
+      },
+      opts.storeDir,
+    );
+  }
+
+  return rawRef;
 }
 
 function formatInline(
@@ -303,6 +330,12 @@ export async function reduceExecutionWithRules(
   const normalizedInput = normalizeExecutionInput(input);
   const rawText = buildRawText(normalizedInput);
   const measuredRawChars = countTextChars(stripAnsi(rawText));
+  const maxInlineChars = opts.maxInlineChars ?? 1200;
+  const buildStats = (reducedChars: number): CompactResult["stats"] => ({
+    rawChars: measuredRawChars,
+    reducedChars,
+    ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
+  });
   const resolvedMatch = opts.classifier
     ? undefined
     : resolveRuleMatch(input, rules);
@@ -325,47 +358,15 @@ export async function reduceExecutionWithRules(
     : undefined;
 
   if (opts.raw) {
-    const rawRef = opts.store
-      ? await storeArtifact(
-          {
-            input: normalizedInput,
-            rawText,
-            classification,
-            stats: {
-              rawChars: measuredRawChars,
-              reducedChars: measuredRawChars,
-              ratio: 1,
-            },
-          },
-          opts.storeDir,
-        )
-      : undefined;
-    if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
-        {
-          input: normalizedInput,
-          rawText,
-          classification,
-          stats: {
-            rawChars: measuredRawChars,
-            reducedChars: measuredRawChars,
-            ratio: 1,
-          },
-        },
-        opts.storeDir,
-      );
-    }
+    const stats = buildStats(measuredRawChars);
+    const rawRef = await storeReducedOutputIfRequested(normalizedInput, rawText, classification, stats, opts);
 
     return {
       inlineText: rawText,
       compaction: NO_COMPACTION_METADATA,
       ...(trace ? { trace } : {}),
       ...(rawRef ? { rawRef } : {}),
-      stats: {
-        rawChars: measuredRawChars,
-        reducedChars: measuredRawChars,
-        ratio: 1,
-      },
+      stats,
       classification,
     };
   }
@@ -373,41 +374,15 @@ export async function reduceExecutionWithRules(
   const inspectionSummary = buildInspectionSummary(normalizedInput, rawText);
   if (inspectionSummary) {
     const summaryText = inspectionSummary.lines.join("\n").trim();
-    const selectedText = clampTextMiddleWithMetadata(summaryText, opts.maxInlineChars ?? 1200);
+    const selectedText = clampTextMiddleWithMetadata(summaryText, maxInlineChars);
     const reducedChars = countTextChars(selectedText.text);
     const summaryClassification = {
       family: "structured-summary",
       confidence: 0.9,
       matchedReducer: inspectionSummary.matchedReducer,
     };
-    const stats = {
-      rawChars: measuredRawChars,
-      reducedChars,
-      ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
-    };
-    const rawRef = opts.store
-      ? await storeArtifact(
-          {
-            input: normalizedInput,
-            rawText,
-            classification: summaryClassification,
-            stats,
-          },
-          opts.storeDir,
-        )
-      : undefined;
-
-    if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
-        {
-          input: normalizedInput,
-          rawText,
-          classification: summaryClassification,
-          stats,
-        },
-        opts.storeDir,
-      );
-    }
+    const stats = buildStats(reducedChars);
+    const rawRef = await storeReducedOutputIfRequested(normalizedInput, rawText, summaryClassification, stats, opts);
 
     return {
       inlineText: selectedText.text,
@@ -421,17 +396,14 @@ export async function reduceExecutionWithRules(
   }
 
   if (classification.matchedReducer === "generic/fallback" && isFileContentInspectionCommand(normalizedInput)) {
+    const stats = buildStats(measuredRawChars);
     if (!opts.store && opts.recordStats) {
       await storeArtifactMetadata(
         {
           input: normalizedInput,
           rawText,
           classification,
-          stats: {
-            rawChars: measuredRawChars,
-            reducedChars: measuredRawChars,
-            ratio: 1,
-          },
+          stats,
         },
         opts.storeDir,
       );
@@ -441,11 +413,7 @@ export async function reduceExecutionWithRules(
       inlineText: rawText,
       compaction: NO_COMPACTION_METADATA,
       ...(trace ? { trace } : {}),
-      stats: {
-        rawChars: measuredRawChars,
-        reducedChars: measuredRawChars,
-        ratio: 1,
-      },
+      stats,
       classification,
     };
   }
@@ -461,37 +429,10 @@ export async function reduceExecutionWithRules(
     ? buildGithubActionsFailureSummary(reducerInput, rawText)
     : null;
   if (githubActionsFailureSummary) {
-    const maxInlineChars = opts.maxInlineChars ?? 1200;
     const inlineText = clampTextMiddleWithMetadata(githubActionsFailureSummary.text, maxInlineChars);
     const reducedChars = countTextChars(inlineText.text);
-    const stats = {
-      rawChars: measuredRawChars,
-      reducedChars,
-      ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
-    };
-    const rawRef = opts.store
-      ? await storeArtifact(
-          {
-            input: normalizedInput,
-            rawText,
-            classification,
-            stats,
-          },
-          opts.storeDir,
-        )
-      : undefined;
-
-    if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
-        {
-          input: normalizedInput,
-          rawText,
-          classification,
-          stats,
-        },
-        opts.storeDir,
-      );
-    }
+    const stats = buildStats(reducedChars);
+    const rawRef = await storeReducedOutputIfRequested(normalizedInput, rawText, classification, stats, opts);
 
     return {
       inlineText: inlineText.text,
@@ -504,18 +445,37 @@ export async function reduceExecutionWithRules(
     };
   }
 
+  if (classification.matchedReducer === "generic/fallback") {
+    const jsonOutput = compactWholeJsonText(rawText, maxInlineChars);
+    if (jsonOutput) {
+      const reducedChars = countTextChars(jsonOutput.text);
+      const jsonClassification = {
+        family: "structured-json",
+        confidence: 0.9,
+        matchedReducer: "generic/json",
+        ...(classification.matchedVia ? { matchedVia: classification.matchedVia } : {}),
+        ...(classification.matchedCommand ? { matchedCommand: classification.matchedCommand } : {}),
+      };
+      const stats = buildStats(reducedChars);
+      const rawRef = await storeReducedOutputIfRequested(normalizedInput, rawText, jsonClassification, stats, opts);
+
+      return {
+        inlineText: jsonOutput.text,
+        ...(jsonOutput.compaction ? { compaction: jsonOutput.compaction } : {}),
+        ...(trace ? { trace: { ...trace, matchedReducer: jsonClassification.matchedReducer, family: jsonClassification.family } } : {}),
+        ...(rawRef ? { rawRef } : {}),
+        stats,
+        classification: jsonClassification,
+      };
+    }
+  }
+
   const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText);
   const compactText = formatInline(classification, reducerInput, summary || "(no output)", facts);
-  const maxInlineChars = opts.maxInlineChars ?? 1200;
   const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction);
   const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
-  const provisionalInlineText = clamp(selectedText.text, maxInlineChars);
-  const provisionalReducedChars = countTextChars(provisionalInlineText.text);
-  const provisionalStats = {
-    rawChars: measuredRawChars,
-    reducedChars: provisionalReducedChars,
-    ratio: measuredRawChars === 0 ? 1 : provisionalReducedChars / measuredRawChars,
-  };
+  const inlineText = clamp(selectedText.text, maxInlineChars);
+  const stats = buildStats(countTextChars(inlineText.text));
   const rawRef = opts.store
     ? await storeArtifact(
         {
@@ -523,21 +483,14 @@ export async function reduceExecutionWithRules(
           rawText,
           classification,
           stats: {
-            rawChars: provisionalStats.rawChars,
-            reducedChars: provisionalStats.reducedChars,
-            ratio: provisionalStats.ratio,
+            rawChars: stats.rawChars,
+            reducedChars: stats.reducedChars,
+            ratio: stats.ratio,
           },
         },
         opts.storeDir,
       )
     : undefined;
-  const inlineText = clamp(selectedText.text, maxInlineChars);
-  const reducedChars = countTextChars(inlineText.text);
-  const stats = {
-    rawChars: measuredRawChars,
-    reducedChars,
-    ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
-  };
 
   if (!opts.store && opts.recordStats) {
     await storeArtifactMetadata(

@@ -398,7 +398,6 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
   const response = {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      permissionDecision: "allow",
       modifiedInput: {
         ...toolInput,
         command: wrappedCommand,

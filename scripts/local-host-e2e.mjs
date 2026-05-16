@@ -33,6 +33,14 @@ function postToolUsePayload(command, toolResponse) {
   })}\n`;
 }
 
+function preToolUsePayload(command, toolInput = {}) {
+  return `${JSON.stringify({
+    hook_event_name: "PreToolUse",
+    tool_name: "Bash",
+    tool_input: { ...toolInput, command },
+  })}\n`;
+}
+
 function run(command, args, options = {}) {
   const {
     cwd = repoRoot,
@@ -126,14 +134,17 @@ async function runCodexE2E() {
   const hook = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
     env: { CODEX_HOME: codexHome },
     input: payload,
-    ok: [2],
   });
 
-  assert(hook.stdout === "", `expected Codex hook stdout to stay empty, got ${hook.stdout}`);
-  assert(hook.stderr.includes("40 matches"), "expected Codex hook stderr to contain compacted match count");
-  assert(hook.stderr.includes("src/rules/example-1.json"), "expected Codex hook stderr to include compacted paths");
-  assert(hook.stderr.includes("tokenjuice wrap --raw -- <command>"), "expected Codex hook stderr to include raw rerun hint");
-  assert(!hook.stderr.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
+  assert(hook.stderr === "", `expected Codex hook stderr to stay empty, got ${hook.stderr}`);
+  const output = JSON.parse(hook.stdout);
+  const additionalContext = output.hookSpecificOutput?.additionalContext;
+  assert(output.hookSpecificOutput?.hookEventName === "PostToolUse", "expected Codex PostToolUse output");
+  assert(typeof additionalContext === "string", "expected Codex additionalContext");
+  assert(additionalContext.includes("40 matches"), "expected Codex hook output to contain compacted match count");
+  assert(additionalContext.includes("src/rules/example-1.json"), "expected Codex hook output to include compacted paths");
+  assert(additionalContext.includes("tokenjuice wrap --raw -- <command>"), "expected Codex hook output to include raw rerun hint");
+  assert(!hook.stdout.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
 
   return {
     version: version.stdout.trim(),
@@ -144,7 +155,9 @@ async function runCodexE2E() {
 
 async function runClaudeE2E() {
   const claudeHome = join(tempRoot, "claude-home");
+  const shellPath = join(tempRoot, "claude-host-shell");
   await mkdir(claudeHome, { recursive: true });
+  await writeFile(shellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
 
   const version = await run("claude", ["--version"]);
   await run("claude", ["-p", "--help"]);
@@ -158,24 +171,66 @@ async function runClaudeE2E() {
   const report = JSON.parse(doctor.stdout);
   assert(report.status === "ok", `expected Claude Code doctor status ok, got ${doctor.stdout}`);
 
-  const payload = postToolUsePayload("rg --files src/rules", compactableOutput("src/rules", 30));
-  const hook = await run(process.execPath, [distCliPath, "claude-code-post-tool-use"], {
+  const payload = preToolUsePayload("rg --files src/rules", {
+    shell: shellPath,
+    description: "List rule fixtures",
+    timeout: 120000,
+  });
+  const hook = await run(process.execPath, [distCliPath, "claude-code-pre-tool-use", "--wrap-launcher", distCliPath], {
     env: { CLAUDE_CONFIG_DIR: claudeHome, CLAUDE_HOME: claudeHome },
     input: payload,
   });
 
   assert(hook.stderr === "", `expected Claude Code hook stderr to stay empty, got ${hook.stderr}`);
   const output = JSON.parse(hook.stdout);
-  assert(output.suppressOutput === true, "expected Claude Code hook output to suppress raw tool output");
-  assert(output.decision === undefined, "Claude Code hook output must not include decision:block");
-  assert(output.reason === undefined, "Claude Code hook output must not include block reason");
-  const additionalContext = output.hookSpecificOutput?.additionalContext;
-  assert(typeof additionalContext === "string", "expected Claude Code additionalContext");
-  assert(additionalContext.includes("30 paths"), "expected Claude Code additionalContext to contain compacted path count");
-  assert(additionalContext.includes("tokenjuice wrap --raw -- <command>"), "expected Claude Code additionalContext to include raw rerun hint");
+  const hookOutput = output.hookSpecificOutput;
+  assert(hookOutput?.hookEventName === "PreToolUse", "expected Claude Code PreToolUse output");
+  assert(hookOutput.permissionDecision === undefined, "Claude Code rewrite must not grant permission");
+  assert(hookOutput.updatedInput?.description === "List rule fixtures", "expected Claude Code to preserve tool input fields");
+  assert(hookOutput.updatedInput?.timeout === 120000, "expected Claude Code to preserve numeric tool input fields");
+  assert(hookOutput.updatedInput?.command?.includes("wrap --source claude-code --"), "expected Claude Code command to route through tokenjuice wrap");
+  assert(hookOutput.updatedInput?.command?.includes(shellPath), "expected Claude Code command to use host shell path");
+  assert(hookOutput.updatedInput?.command?.includes("rg --files src/rules"), "expected Claude Code command to preserve original command");
 
   return {
     version: version.stdout.trim(),
+    doctor: report.status,
+    exitCode: hook.code,
+  };
+}
+
+async function runCodeBuddyE2E() {
+  const codebuddyHome = join(tempRoot, "codebuddy-home");
+  const shellPath = join(tempRoot, "codebuddy-host-shell");
+  await mkdir(codebuddyHome, { recursive: true });
+  await writeFile(shellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+  const env = { CODEBUDDY_CONFIG_DIR: codebuddyHome, CODEBUDDY_HOME: codebuddyHome };
+  await run(process.execPath, [distCliPath, "install", "codebuddy", "--local"], { env });
+  const doctor = await run(process.execPath, [distCliPath, "doctor", "codebuddy", "--local", "--format", "json"], { env });
+  const report = JSON.parse(doctor.stdout);
+  assert(report.status === "ok", `expected CodeBuddy doctor status ok, got ${doctor.stdout}`);
+
+  const payload = preToolUsePayload("git status --short", {
+    shell: shellPath,
+    description: "Check working tree",
+  });
+  const hook = await run(process.execPath, [distCliPath, "codebuddy-pre-tool-use", "--wrap-launcher", distCliPath], {
+    env,
+    input: payload,
+  });
+
+  assert(hook.stderr === "", `expected CodeBuddy hook stderr to stay empty, got ${hook.stderr}`);
+  const output = JSON.parse(hook.stdout);
+  const hookOutput = output.hookSpecificOutput;
+  assert(hookOutput?.hookEventName === "PreToolUse", "expected CodeBuddy PreToolUse output");
+  assert(hookOutput.permissionDecision === undefined, "CodeBuddy rewrite must not grant permission");
+  assert(hookOutput.modifiedInput?.description === "Check working tree", "expected CodeBuddy to preserve tool input fields");
+  assert(hookOutput.modifiedInput?.command?.includes("wrap --source codebuddy --"), "expected CodeBuddy command to route through tokenjuice wrap");
+  assert(hookOutput.modifiedInput?.command?.includes(shellPath), "expected CodeBuddy command to use host shell path");
+  assert(hookOutput.modifiedInput?.command?.includes("git status --short"), "expected CodeBuddy command to preserve original command");
+
+  return {
     doctor: report.status,
     exitCode: hook.code,
   };
@@ -186,6 +241,7 @@ try {
   const results = {
     codex: await runCodexE2E(),
     claudeCode: await runClaudeE2E(),
+    codebuddy: await runCodeBuddyE2E(),
   };
   process.stdout.write(`${JSON.stringify({ ok: true, results }, null, 2)}\n`);
 } finally {

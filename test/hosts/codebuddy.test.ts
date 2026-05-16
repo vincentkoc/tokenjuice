@@ -606,14 +606,14 @@ describe("runCodeBuddyPreToolUseHook", () => {
     const response = JSON.parse(output) as {
       hookSpecificOutput: {
         hookEventName: string;
-        permissionDecision: string;
+        permissionDecision?: string;
         modifiedInput: { command: string; description?: string };
       };
     };
 
     expect(code).toBe(0);
     expect(response.hookSpecificOutput.hookEventName).toBe("PreToolUse");
-    expect(response.hookSpecificOutput.permissionDecision).toBe("allow");
+    expect(response.hookSpecificOutput).not.toHaveProperty("permissionDecision");
 
     // Behavioral contract (not byte-for-byte quoting):
     //   (1) wrapped exactly once through tokenjuice wrap,

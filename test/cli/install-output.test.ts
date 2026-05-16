@@ -7,7 +7,7 @@ describe("formatInstallSuccess", () => {
     expect(
       formatInstallSuccess("claude-code", "hook", [
         { label: "Hook", value: "/tmp/settings.json" },
-        { label: "Command", value: "tokenjuice claude-code-post-tool-use" },
+        { label: "Command", value: "tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice" },
         { label: "Verify", value: "tokenjuice doctor hooks" },
       ]),
     ).toBe(
@@ -15,7 +15,7 @@ describe("formatInstallSuccess", () => {
         "success: claude-code hook installed successfully",
         "",
         "  Hook   : /tmp/settings.json",
-        "  Command: tokenjuice claude-code-post-tool-use",
+        "  Command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
         "  Verify : tokenjuice doctor hooks",
         "",
       ].join("\n"),

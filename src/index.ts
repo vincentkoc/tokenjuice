@@ -4,7 +4,7 @@ export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
-export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "./hosts/claude-code/index.js";
+export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";

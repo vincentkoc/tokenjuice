@@ -15,7 +15,7 @@ import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "../hosts/aider/index.js";
 import { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "../hosts/avante/index.js";
-import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook } from "../hosts/claude-code/index.js";
+import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
 import { doctorContinueRule, installContinueRule, uninstallContinueRule } from "../hosts/continue/index.js";
@@ -1853,6 +1853,8 @@ async function main(): Promise<number> {
       return await runStats(args);
     case "codex-post-tool-use":
       return await runCodexPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "claude-code-pre-tool-use":
+      return await runClaudeCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "claude-code-post-tool-use":
       return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes));
     case "cline-post-tool-use":

@@ -2,7 +2,7 @@
 
 ## why codebuddy uses pre-tool-use wrapping
 
-codebuddy exposes the same hook surface as claude code (`hooks.PreToolUse` / `hooks.PostToolUse` in `~/.codebuddy/settings.json`), so the first prototype of this host was a direct port of `claude-code` — a PostToolUse hook that returned `decision: "block"` with compacted text as the tool's `reason`, letting the agent see the compacted output in place of the raw one.
+codebuddy exposes the same matcher-group hook surface as claude code (`hooks.PreToolUse` / `hooks.PostToolUse` in `~/.codebuddy/settings.json`), so the first prototype of this host mirrored tokenjuice's old Claude Code PostToolUse path: compact after execution and inject the reduced text back through hook output.
 
 that shape works today, but codebuddy's own hook docs flag a problem:
 

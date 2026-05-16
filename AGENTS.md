@@ -36,7 +36,7 @@ Keep generated files out of manual edits. If you change built-in rule data, rely
 
 ## Host integrations
 
-Every post-tool host adapter (codex, claude-code, pi, opencode, openclaw) routes through the shared primitive `compactBashResult` in [src/core/integrations/compact-bash-result.ts](src/core/integrations/compact-bash-result.ts). New host behavior belongs in `src/core/`, not in an adapter. Cursor is the only pre-tool rewriter and funnels its command through `tokenjuice wrap`. When adding or changing a host, see [docs/integration-playbook.md](docs/integration-playbook.md) for the install/doctor/uninstall checklist and update the hardcoded host list in [src/cli/main.ts](src/cli/main.ts) accordingly.
+Every post-tool host adapter (codex, pi, opencode, openclaw) routes through the shared primitive `compactBashResult` in [src/core/integrations/compact-bash-result.ts](src/core/integrations/compact-bash-result.ts). New host behavior belongs in `src/core/`, not in an adapter. Pre-tool rewriters (claude-code, codebuddy, cursor, vscode-copilot) funnel commands through `tokenjuice wrap` and shared helpers in [src/hosts/shared/pre-tool-wrap.ts](src/hosts/shared/pre-tool-wrap.ts). When adding or changing a host, see [docs/integration-playbook.md](docs/integration-playbook.md) for the install/doctor/uninstall checklist and update the hardcoded host list in [src/cli/main.ts](src/cli/main.ts) accordingly.
 
 ## Testing Guidelines
 

@@ -59,6 +59,15 @@ function getJsonRule(rule: RuleLike): JsonRule {
   return "rule" in rule ? rule.rule : rule;
 }
 
+function usesCommandTextMatcher(ruleLike: RuleLike): boolean {
+  const rule = getJsonRule(ruleLike);
+  return Boolean(rule.match.commandIncludes || rule.match.commandIncludesAny);
+}
+
+function isBuiltinRule(ruleLike: RuleLike): boolean {
+  return "source" in ruleLike && ruleLike.source === "builtin";
+}
+
 function getCandidatePriority(candidate: CommandMatchCandidate): number {
   switch (candidate.source) {
     case "effective":
@@ -150,6 +159,7 @@ export function findBestRuleMatch<T extends RuleLike>(
   rules: T[],
 ): RuleMatchSelection<T> | undefined {
   const candidates = deriveCommandMatchCandidates(input);
+  const highestCandidatePriority = Math.max(...candidates.map(getCandidatePriority));
   const specificMatches: Array<RuleMatchSelection<T>> = [];
   let fallbackSelection: RuleMatchSelection<T> | undefined;
 
@@ -163,6 +173,10 @@ export function findBestRuleMatch<T extends RuleLike>(
 
       if (getJsonRule(rule).id === "generic/fallback") {
         fallbackSelection ??= { rule, candidate };
+        continue;
+      }
+
+      if (isBuiltinRule(rule) && usesCommandTextMatcher(rule) && getCandidatePriority(candidate) < highestCandidatePriority) {
         continue;
       }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { matchesRule } from "../../src/core/classify.js";
-import type { JsonRule, ToolExecutionInput } from "../../src/types.js";
+import { matchesRule, resolveRuleMatch } from "../../src/core/classify.js";
+import type { CompiledRule, JsonRule, ToolExecutionInput } from "../../src/types.js";
 
 function buildRule(commandIncludes: string[]): JsonRule {
   return {
@@ -21,6 +21,20 @@ function buildAnyRule(commandIncludesAny: string[]): JsonRule {
     match: {
       toolNames: ["exec"],
       commandIncludesAny,
+    },
+  };
+}
+
+function compileForTest(rule: JsonRule, source: CompiledRule["source"] = "project"): CompiledRule {
+  return {
+    rule,
+    source,
+    path: `test:${rule.id}`,
+    compiled: {
+      skipPatterns: [],
+      keepPatterns: [],
+      counters: [],
+      outputMatches: [],
     },
   };
 }
@@ -54,5 +68,20 @@ describe("matchesRule commandIncludes", () => {
     };
 
     expect(matchesRule(rule, input)).toBe(false);
+  });
+});
+
+describe("resolveRuleMatch candidate selection", () => {
+  it("keeps project commandIncludes rules that target wrapper command text", () => {
+    const wrapperRule = compileForTest(buildRule(["bash -lc"]));
+    const match = resolveRuleMatch({
+      toolName: "exec",
+      command: "bash -lc 'echo hi'",
+      combinedText: "hi\n",
+      exitCode: 0,
+    }, [wrapperRule]);
+
+    expect(match?.rule.rule.id).toBe("test/rule");
+    expect(match?.candidate.source).toBe("original");
   });
 });

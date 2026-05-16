@@ -83,6 +83,59 @@ function splitTopLevelOrChain(command: string): string[] {
   return segments;
 }
 
+function isFullyParenthesized(command: string): boolean {
+  if (!command.startsWith("(") || !command.endsWith(")")) {
+    return false;
+  }
+
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+  let depth = 0;
+
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index]!;
+
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaping = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+    if (char === "(") {
+      depth += 1;
+      continue;
+    }
+    if (char === ")") {
+      depth -= 1;
+      if (depth === 0 && index < command.length - 1) {
+        return false;
+      }
+    }
+  }
+
+  return depth === 0 && !quote && !escaping;
+}
+
+function stripSetupShellDecorators(command: string): string {
+  let trimmed = command.trim();
+  while (isFullyParenthesized(trimmed)) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
 function getArgv0Name(argv: string[]): string | null {
   const first = argv[0];
   if (!first) {
@@ -278,7 +331,7 @@ function isSimpleSetupWrapperSegment(argv: string[]): boolean {
     return true;
   }
 
-  if (argv0 === "command" && (argv[1] === "-v" || argv[1] === "-V")) {
+  if (isQuietCommandProbe(argv)) {
     return true;
   }
   if (argv0 === "tt" && (argv[1] === "title" || argv[1] === "sync")) {
@@ -291,19 +344,70 @@ function isSimpleSetupWrapperSegment(argv: string[]): boolean {
   return SETUP_WRAPPER_COMMANDS.has(argv0);
 }
 
+function isQuietCommandProbe(argv: string[]): boolean {
+  const argv0 = getArgv0Name(argv);
+  return argv0 === "command"
+    && (argv[1] === "-v" || argv[1] === "-V")
+    && argv.slice(2).some(redirectsStdout);
+}
+
+function redirectsStdout(arg: string): boolean {
+  return arg === ">"
+    || arg === ">>"
+    || arg === "1>"
+    || arg === "1>>"
+    || arg === "&>"
+    || arg === "&>>"
+    || /^(?:>|>>|1>|1>>|&>|&>>)\S/u.test(arg);
+}
+
+function isFailFastSetupGuard(argv: string[]): boolean {
+  const argv0 = getArgv0Name(argv);
+  return argv0 === "exit" || argv0 === "return";
+}
+
 export function isSetupWrapperSegment(argv: string[], command?: string): boolean {
-  const orSegments = command ? splitTopLevelOrChain(command) : [];
+  const normalizedCommand = command ? stripSetupShellDecorators(command) : "";
+  const orSegments = normalizedCommand ? splitTopLevelOrChain(normalizedCommand) : [];
   if (orSegments.length > 1) {
-    return orSegments.every((segment) => isSimpleSetupWrapperSegment(tokenizeCommand(segment)));
+    return orSegments.every((segment) => {
+      const segmentArgv = tokenizeCommand(stripSetupShellDecorators(segment));
+      return isSimpleSetupWrapperSegment(segmentArgv) || isFailFastSetupGuard(segmentArgv);
+    });
   }
 
-  return isSimpleSetupWrapperSegment(argv);
+  return isSimpleSetupWrapperSegment(normalizedCommand ? tokenizeCommand(normalizedCommand) : argv);
 }
 
 function isSetupWrapperCommand(command: string): boolean {
   const segments = splitTopLevelCommandChain(command);
   return segments.length > 0
     && segments.every((segment) => isSetupWrapperSegment(tokenizeCommand(segment), segment));
+}
+
+function isSingleSetupConditionSegment(argv: string[], command: string): boolean {
+  const argv0 = getArgv0Name(argv);
+  return argv0 === "[" || argv0 === "[[" || argv0 === "test" || isSetupWrapperSegment(argv, command);
+}
+
+function isSetupConditionSegment(argv: string[], command: string): boolean {
+  const normalizedCommand = command ? stripSetupShellDecorators(command) : "";
+  const orSegments = normalizedCommand ? splitTopLevelOrChain(normalizedCommand) : [];
+  if (orSegments.length > 1) {
+    return orSegments.every((segment) => {
+      const segmentCommand = stripSetupShellDecorators(segment);
+      const segmentArgv = tokenizeCommand(segmentCommand);
+      return isSingleSetupConditionSegment(segmentArgv, segmentCommand) || isFailFastSetupGuard(segmentArgv);
+    });
+  }
+
+  return isSingleSetupConditionSegment(normalizedCommand ? tokenizeCommand(normalizedCommand) : argv, normalizedCommand || command);
+}
+
+function isSetupConditionCommand(command: string): boolean {
+  const segments = splitTopLevelCommandChain(command);
+  return segments.length > 0
+    && segments.every((segment) => isSetupConditionSegment(tokenizeCommand(segment), segment));
 }
 
 function stripLeadingSetupIfBlock(command: string): string | null {
@@ -316,7 +420,7 @@ function stripLeadingSetupIfBlock(command: string): string | null {
   if (!condition || !thenCommand || !tail) {
     return null;
   }
-  if (!isSetupWrapperCommand(condition) || !isSetupWrapperCommand(thenCommand)) {
+  if (!isSetupConditionCommand(condition) || !isSetupWrapperCommand(thenCommand)) {
     return null;
   }
   if (elseCommand && !isSetupWrapperCommand(elseCommand)) {

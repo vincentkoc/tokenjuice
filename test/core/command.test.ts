@@ -71,12 +71,66 @@ describe("resolveEffectiveCommand", () => {
     });
   });
 
+  it("keeps visible command probes as the effective command", () => {
+    expect(resolveEffectiveCommand({ command: "command -v git; git diff --stat" })).toEqual({
+      command: "command -v git",
+      argv: ["command", "-v", "git"],
+      source: "effective",
+    });
+    expect(resolveEffectiveCommand({ command: "command -v rg || true; rg --files" })).toEqual({
+      command: "command -v rg || true",
+      argv: ["command", "-v", "rg", "||", "true"],
+      source: "effective",
+    });
+    expect(resolveEffectiveCommand({ command: "command -v git 2>/dev/null; git diff --stat" })).toEqual({
+      command: "command -v git 2>/dev/null",
+      argv: ["command", "-v", "git", "2>/dev/null"],
+      source: "effective",
+    });
+  });
+
+  it("skips fail-fast setup guards before matching the real command", () => {
+    expect(resolveEffectiveCommand({ command: "cd repo || exit 1; pnpm test" })).toEqual({
+      command: "pnpm test",
+      argv: ["pnpm", "test"],
+      source: "effective",
+    });
+  });
+
   it("skips guarded terminal setup preludes before matching the real command", () => {
     expect(resolveEffectiveCommand({
       command: "if command -v tt >/dev/null 2>&1; then tt title 'code review'; else tmux select-pane -T 'code review' 2>/dev/null || true; fi; git diff --stat",
     })).toEqual({
       command: "git diff --stat",
       argv: ["git", "diff", "--stat"],
+      source: "effective",
+    });
+  });
+
+  it("skips tmux-guarded terminal setup preludes before matching the real command", () => {
+    expect(resolveEffectiveCommand({
+      command: "if [ -n \"$TMUX\" ]; then tt title 'code review'; fi; git diff --stat",
+    })).toEqual({
+      command: "git diff --stat",
+      argv: ["git", "diff", "--stat"],
+      source: "effective",
+    });
+  });
+
+  it("skips bash-style tmux guards before matching the real command", () => {
+    expect(resolveEffectiveCommand({
+      command: "if [[ -n \"$TMUX\" ]]; then tt title 'code review'; fi; git diff --stat",
+    })).toEqual({
+      command: "git diff --stat",
+      argv: ["git", "diff", "--stat"],
+      source: "effective",
+    });
+  });
+
+  it("does not strip setup commands from partial parenthesized groups", () => {
+    expect(resolveEffectiveCommand({ command: "(cd repo && pnpm test); git status" })).toEqual({
+      command: "(cd repo",
+      argv: ["(cd", "repo"],
       source: "effective",
     });
   });
@@ -107,6 +161,15 @@ describe("resolveEffectiveCommand", () => {
     })).toEqual({
       command: "command -v rg >/dev/null || cargo install ripgrep",
       argv: ["command", "-v", "rg", ">/dev/null", "||", "cargo", "install", "ripgrep"],
+      source: "effective",
+    });
+  });
+
+  it("keeps test guards with substantive fallbacks as the effective command", () => {
+    expect(resolveEffectiveCommand({
+      command: "if [ -x \"$(command -v tt)\" ] || cargo install tt; then tt title 'tests'; fi; pnpm test",
+    })).toMatchObject({
+      command: "if [ -x \"$(command -v tt)\" ] || cargo install tt",
       source: "effective",
     });
   });

@@ -1419,6 +1419,81 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("2 files changed");
   });
 
+  it("preserves visible command probe output", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "command -v git; git diff --stat",
+      combinedText: "/usr/bin/git\n src/index.ts | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("/usr/bin/git");
+  });
+
+  it("preserves stderr-only command probe output", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "command -v git 2>/dev/null; git diff --stat",
+      combinedText: "/usr/bin/git\n src/index.ts | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)",
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("/usr/bin/git");
+  });
+
+  it("matches commands after fail-fast setup guards", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cd repo || exit 1; pnpm test",
+      combinedText: [
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("Test Files  1 failed");
+  });
+
+  it("matches commands after tmux-guarded terminal setup preludes", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "if [ -n \"$TMUX\" ]; then tt title 'tests'; fi; pnpm test",
+      combinedText: [
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("Test Files  1 failed");
+  });
+
+  it("matches commands after bash-style tmux guards", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "if [[ -n \"$TMUX\" ]]; then tt title 'tests'; fi; pnpm test",
+      combinedText: [
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("Test Files  1 failed");
+  });
+
   it("matches git diff after guarded terminal setup preludes", async () => {
     const result = await reduceExecution({
       toolName: "exec",
@@ -1434,6 +1509,24 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("git/diff-stat");
     expect(result.classification.matchedVia).toBe("effective");
     expect(result.inlineText).toContain("2 files changed");
+  });
+
+  it("preserves test guard output from substantive fallbacks", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "if [ -x \"$(command -v tt)\" ] || cargo install tt; then tt title 'tests'; fi; pnpm test",
+      combinedText: [
+        "Compiling tt v1.0.0",
+        "Installing /tmp/bin/tt",
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("Compiling tt v1.0.0");
   });
 
   it("matches commands after earlier setup and guarded terminal setup preludes", async () => {

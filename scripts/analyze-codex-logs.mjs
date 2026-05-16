@@ -14,10 +14,24 @@ const SECRET_ASSIGNMENT_PATTERN = /\b([A-Z][A-Z0-9_]*(?:TOKEN|KEY|SECRET|PASSWOR
 const SECRET_VALUE_PATTERN = /\bsk-[A-Za-z0-9._-]+\b/g;
 const TOOL_FAILURE_PATTERN = /^(?:[a-z_]+) failed:/u;
 
+function usage() {
+  return [
+    "Usage: node scripts/analyze-codex-logs.mjs [options]",
+    "",
+    "Options:",
+    "  --codex-home <path>  Codex home directory to inspect (default: ~/.codex)",
+    "  --format <text|json> Output format (default: text)",
+    "  --sessions <count>   Number of recent session files to analyze (default: 20)",
+    "  --top <count>        Number of rows per section (default: 15)",
+    "  -h, --help           Show this help",
+  ].join("\n");
+}
+
 function parseArgs(argv) {
   const options = {
     codexHome: join(homedir(), ".codex"),
     format: "text",
+    help: false,
     sessionLimit: DEFAULT_SESSION_LIMIT,
     top: DEFAULT_TOP,
   };
@@ -27,6 +41,10 @@ function parseArgs(argv) {
     const next = argv[index + 1];
 
     switch (current) {
+      case "--help":
+      case "-h":
+        options.help = true;
+        break;
       case "--codex-home":
         if (!next) {
           throw new Error("--codex-home requires a value");
@@ -524,6 +542,11 @@ function emitText(report) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (options.help) {
+    process.stdout.write(`${usage()}\n`);
+    return;
+  }
+
   const report = {
     generatedAt: new Date().toISOString(),
     codexHome: options.codexHome,

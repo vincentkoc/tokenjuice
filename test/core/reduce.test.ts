@@ -1419,6 +1419,23 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("2 files changed");
   });
 
+  it("matches git diff after guarded terminal setup preludes", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "if command -v tt >/dev/null 2>&1; then tt title 'code review'; else tmux select-pane -T 'code review' 2>/dev/null || true; fi; git diff --stat",
+      combinedText: [
+        " src/index.ts | 4 ++--",
+        " test/core/reduce.test.ts | 2 +-",
+        " 2 files changed, 3 insertions(+), 3 deletions(-)",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("git/diff-stat");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("2 files changed");
+  });
+
   it("summarizes package-lock JSON file inspection instead of replaying the whole lockfile", async () => {
     const result = await reduceExecution({
       toolName: "exec",

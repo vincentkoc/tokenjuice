@@ -71,6 +71,26 @@ describe("resolveEffectiveCommand", () => {
     });
   });
 
+  it("skips guarded terminal setup preludes before matching the real command", () => {
+    expect(resolveEffectiveCommand({
+      command: "if command -v tt >/dev/null 2>&1; then tt title 'code review'; else tmux select-pane -T 'code review' 2>/dev/null || true; fi; git diff --stat",
+    })).toEqual({
+      command: "git diff --stat",
+      argv: ["git", "diff", "--stat"],
+      source: "effective",
+    });
+  });
+
+  it("keeps command probes with substantive fallbacks as the effective command", () => {
+    expect(resolveEffectiveCommand({
+      command: "command -v rg >/dev/null || cargo install ripgrep; rg --files",
+    })).toEqual({
+      command: "command -v rg >/dev/null || cargo install ripgrep",
+      argv: ["command", "-v", "rg", ">/dev/null", "||", "cargo", "install", "ripgrep"],
+      source: "effective",
+    });
+  });
+
   it("strips env assignments before matching", () => {
     expect(resolveEffectiveCommand({ command: "FOO='a b' swift build" })).toEqual({
       command: "swift build",

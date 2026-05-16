@@ -19,6 +19,70 @@ const SHELL_COMMAND_LAUNCHERS = new Set(["bash", "sh", "zsh", "fish"]);
 const ENV_FLAGS_WITH_VALUES = new Set(["-u", "--unset", "-C", "--chdir", "-S", "--split-string"]);
 const ENV_FLAGS = new Set(["-i", "--ignore-environment", "-0", "--null", "--debug"]);
 
+function splitTopLevelOrChain(command: string): string[] {
+  const trimmed = command.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const segments: string[] = [];
+  let current = "";
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const char = trimmed[index]!;
+
+    if (escaping) {
+      current += char;
+      escaping = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      current += char;
+      escaping = true;
+      continue;
+    }
+
+    if (quote) {
+      current += char;
+      if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      current += char;
+      quote = char;
+      continue;
+    }
+
+    if (char === "|" && trimmed[index + 1] === "|") {
+      const segment = current.trim();
+      if (segment) {
+        segments.push(segment);
+      }
+      current = "";
+      index += 1;
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (quote || escaping) {
+    return [trimmed];
+  }
+
+  const segment = current.trim();
+  if (segment) {
+    segments.push(segment);
+  }
+  return segments;
+}
+
 function getArgv0Name(argv: string[]): string | null {
   const first = argv[0];
   if (!first) {
@@ -204,7 +268,7 @@ export function stripLeadingEnvAssignments(argv: string[]): string[] {
   return argv.slice(index);
 }
 
-export function isSetupWrapperSegment(argv: string[]): boolean {
+function isSimpleSetupWrapperSegment(argv: string[]): boolean {
   if (argv.length === 0) {
     return true;
   }
@@ -227,13 +291,48 @@ export function isSetupWrapperSegment(argv: string[]): boolean {
   return SETUP_WRAPPER_COMMANDS.has(argv0);
 }
 
+export function isSetupWrapperSegment(argv: string[], command?: string): boolean {
+  const orSegments = command ? splitTopLevelOrChain(command) : [];
+  if (orSegments.length > 1) {
+    return orSegments.every((segment) => isSimpleSetupWrapperSegment(tokenizeCommand(segment)));
+  }
+
+  return isSimpleSetupWrapperSegment(argv);
+}
+
+function isSetupWrapperCommand(command: string): boolean {
+  const segments = splitTopLevelCommandChain(command);
+  return segments.length > 0
+    && segments.every((segment) => isSetupWrapperSegment(tokenizeCommand(segment), segment));
+}
+
+function stripLeadingSetupIfBlock(command: string): string | null {
+  const match = /^if\s+(.+?);\s*then\s+(.+?)(?:;\s*else\s+(.+?))?;\s*fi\s*(?:;|&&|\n)\s*(.+)$/su.exec(command.trim());
+  if (!match) {
+    return null;
+  }
+
+  const [, condition, thenCommand, elseCommand, tail] = match;
+  if (!condition || !thenCommand || !tail) {
+    return null;
+  }
+  if (!isSetupWrapperCommand(condition) || !isSetupWrapperCommand(thenCommand)) {
+    return null;
+  }
+  if (elseCommand && !isSetupWrapperCommand(elseCommand)) {
+    return null;
+  }
+
+  return tail.trim() || null;
+}
+
 export function buildEffectiveCandidate(
   argv: string[],
   transformed: boolean,
   command?: string,
 ): CommandMatchCandidate | null {
   const strippedArgv = stripLeadingEnvAssignments(argv);
-  if (strippedArgv.length === 0 || isSetupWrapperSegment(strippedArgv)) {
+  if (strippedArgv.length === 0 || isSetupWrapperSegment(strippedArgv, command)) {
     return null;
   }
 
@@ -258,6 +357,11 @@ export function resolveEffectiveCommand(input: Pick<ToolExecutionInput, "argv" |
 
   if (!command) {
     return buildEffectiveCandidate(argv, false);
+  }
+
+  const setupIfTail = stripLeadingSetupIfBlock(command);
+  if (setupIfTail) {
+    return resolveEffectiveCommand({ command: setupIfTail }) ?? buildEffectiveCandidate(tokenizeCommand(setupIfTail), true, setupIfTail);
   }
 
   const segments = splitTopLevelCommandChain(command);

@@ -201,7 +201,7 @@ function createTokenjuiceCopilotCliHook(command: string): Record<string, unknown
     type: "command",
     matcher: TOKENJUICE_COPILOT_CLI_MATCHER,
     command,
-    timeout: TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS,
+    timeoutSec: TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS,
   };
 }
 
@@ -231,7 +231,7 @@ function collectTokenjuiceHookTimeoutWarnings(config: CopilotCliHooksConfig, fix
     return [];
   }
 
-  if (hook.timeout !== TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS) {
+  if (hook.timeoutSec !== TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS) {
     return [
       `configured copilot-cli tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS}s safety cap`,
     ];

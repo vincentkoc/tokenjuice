@@ -359,6 +359,52 @@ describe("doctorCodexHook", () => {
     );
   });
 
+  it("uses the install fix command for the timeout warning when Homebrew also needs an upgrade", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "opt", "homebrew", "bin");
+    const cellarBinDir = join(home, "opt", "homebrew", "Cellar", "tokenjuice", "0.0.1", "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const resolvedLauncherPath = join(cellarBinDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(cellarBinDir, { recursive: true });
+    await writeFile(resolvedLauncherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await symlink(resolvedLauncherPath, launcherPath);
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [{
+                type: "command",
+                command: `${launcherPath} codex-post-tool-use`,
+                statusMessage: "compacting bash output with tokenjuice",
+              }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+    expect(report.status).toBe("warn");
+    expect(report.fixCommand).toBe("brew upgrade tokenjuice");
+    expect(report.issues).toContain(
+      `configured Codex hook launcher resolves to Homebrew tokenjuice 0.0.1, but this tokenjuice is ${PACKAGE_VERSION}`,
+    );
+    expect(report.issues).toContain(
+      "configured Codex tokenjuice hook timeout is missing or stale; run tokenjuice install codex to add the 10s safety cap",
+    );
+  });
+
   it("proves a hanging Codex hook needs a configured timeout to terminate", async () => {
     const withoutTimeout = await runCommandWithOptionalTimeout(HANGING_HOOK_COMMAND);
     const withTimeout = await runCommandWithOptionalTimeout(HANGING_HOOK_COMMAND, 0.05);

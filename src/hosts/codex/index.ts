@@ -735,7 +735,8 @@ export async function doctorCodexHook(
   options: CodexHookCommandOptions = {},
 ): Promise<CodexDoctorReport> {
   const expectedCommand = await buildCodexHookCommand(options);
-  let fixCommand = getCodexFixCommand(options.local);
+  const installFixCommand = getCodexFixCommand(options.local);
+  let fixCommand = installFixCommand;
   const { config, exists } = await readHooksConfig(hooksPath);
   const detectedCommand = findTokenjuiceCodexHookCommand(config);
   const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
@@ -801,7 +802,7 @@ export async function doctorCodexHook(
       "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
     );
   }
-  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));
+  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, installFixCommand));
   issues.push(...collectLowTimeoutWarnings(config));
 
   return {

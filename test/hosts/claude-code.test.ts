@@ -65,7 +65,7 @@ describe("installClaudeCodeHook", () => {
 
     const result = await installClaudeCodeHook(settingsPath);
     const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string }> }>>;
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string; timeout?: number }> }>>;
     };
 
     expect(result.settingsPath).toBe(settingsPath);
@@ -74,6 +74,7 @@ describe("installClaudeCodeHook", () => {
     expect(parsed.hooks.PostToolUse[0]?.matcher).toBe("Bash");
     expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.command).toContain("claude-code-post-tool-use");
     expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.statusMessage).toBe("compacting bash output with tokenjuice");
+    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.timeout).toBe(10);
   });
 
   it("preserves unrelated top-level settings keys across install", async () => {
@@ -300,7 +301,7 @@ describe("installClaudeCodeHook", () => {
     await installClaudeCodeHook(settingsPath);
 
     const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string }> }>>;
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string; timeout?: number }> }>>;
     };
 
     const tokenjuiceHooks = parsed.hooks.PostToolUse.filter((group) =>
@@ -310,6 +311,7 @@ describe("installClaudeCodeHook", () => {
     expect(parsed.hooks.PostToolUse).toHaveLength(2);
     expect(tokenjuiceHooks).toHaveLength(1);
     expect(tokenjuiceHooks[0]?.hooks[0]?.command).toContain("claude-code-post-tool-use");
+    expect(tokenjuiceHooks[0]?.hooks[0]?.timeout).toBe(10);
   });
 
   it("preserves other PostToolUse matchers", async () => {
@@ -427,6 +429,42 @@ describe("doctorClaudeCodeHook", () => {
     expect(report.issues).toContain("configured Claude Code hook is pinned to a versioned Homebrew Cellar path");
     expect(report.missingPaths).toContain("/opt/homebrew/Cellar/tokenjuice/0.2.0/libexec/dist/cli/main.js");
     expect(report.fixCommand).toBe("tokenjuice install claude-code");
+  });
+
+  it("warns when the tokenjuice Claude Code hook is missing the timeout safety cap", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{
+                type: "command",
+                command: `${launcherPath} claude-code-post-tool-use`,
+                statusMessage: "compacting bash output with tokenjuice",
+              }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorClaudeCodeHook(settingsPath);
+
+    expect(report.status).toBe("warn");
+    expect(report.issues).toContain(
+      "configured Claude Code tokenjuice hook timeout is missing or stale; run tokenjuice install claude-code to add the 10s safety cap",
+    );
   });
 });
 

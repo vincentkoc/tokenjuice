@@ -82,7 +82,7 @@ describe("installCopilotCliHook", () => {
     const result = await installCopilotCliHook(hooksPath);
     const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
       version?: number;
-      hooks: { postToolUse: Array<{ command: string; matcher?: string; type?: string }> };
+      hooks: { postToolUse: Array<{ command: string; matcher?: string; type?: string; timeout?: number }> };
     };
 
     expect(result.hooksPath).toBe(hooksPath);
@@ -91,6 +91,7 @@ describe("installCopilotCliHook", () => {
     expect(parsed.hooks.postToolUse[0]?.matcher).toBe("shell");
     expect(parsed.hooks.postToolUse[0]?.type).toBe("command");
     expect(parsed.hooks.postToolUse[0]?.command).toContain("copilot-cli-post-tool-use");
+    expect(parsed.hooks.postToolUse[0]?.timeout).toBe(10);
   });
 
   it("resolves the install directory from COPILOT_HOME when set", async () => {
@@ -375,6 +376,41 @@ describe("doctorCopilotCliHook", () => {
 
     expect(report.status).toBe("broken");
     expect(report.missingPaths.length).toBeGreaterThan(0);
+  });
+
+  it("warns when the tokenjuice Copilot CLI hook is missing the timeout safety cap", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, ".copilot", "hooks", "tokenjuice-cli.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await mkdir(join(home, ".copilot", "hooks"), { recursive: true });
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        version: 1,
+        hooks: {
+          postToolUse: [
+            {
+              type: "command",
+              matcher: "shell",
+              command: `${launcherPath} copilot-cli-post-tool-use`,
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCopilotCliHook(hooksPath);
+
+    expect(report.status).toBe("warn");
+    expect(report.issues).toContain(
+      "configured copilot-cli tokenjuice hook timeout is missing or stale; run tokenjuice install copilot-cli to add the 10s safety cap",
+    );
   });
 
   it("reports disabled when disableAllHooks is true", async () => {

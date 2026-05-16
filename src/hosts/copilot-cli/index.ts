@@ -69,6 +69,7 @@ const TOKENJUICE_COPILOT_CLI_FIX_COMMAND = "tokenjuice install copilot-cli";
 const TOKENJUICE_COPILOT_CLI_FILENAME = "tokenjuice-cli.json";
 const TOKENJUICE_COPILOT_CLI_MATCHER = "shell";
 const TOKENJUICE_COPILOT_CLI_SUBCOMMAND = "copilot-cli-post-tool-use";
+const TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS = 10;
 const TOKENJUICE_COPILOT_CLI_INSTRUCTIONS_ADVISORY =
   "paste the snippet from `tokenjuice doctor copilot-cli --print-instructions` into `.github/copilot-instructions.md` or `AGENTS.md` so the agent respects compacted output and knows when to prefix a command with `tokenjuice wrap --raw --`.";
 
@@ -200,22 +201,43 @@ function createTokenjuiceCopilotCliHook(command: string): Record<string, unknown
     type: "command",
     matcher: TOKENJUICE_COPILOT_CLI_MATCHER,
     command,
+    timeout: TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS,
   };
 }
 
 function findTokenjuiceCopilotCliHookCommand(config: CopilotCliHooksConfig): string | undefined {
+  const hook = findTokenjuiceCopilotCliHook(config);
+  return typeof hook?.command === "string" && hook.command ? hook.command : undefined;
+}
+
+function findTokenjuiceCopilotCliHook(config: CopilotCliHooksConfig): Record<string, unknown> | undefined {
   const postToolUse = config.hooks.postToolUse;
   if (!Array.isArray(postToolUse)) {
     return undefined;
   }
 
   for (const hook of postToolUse) {
-    if (isTokenjuiceCopilotCliHook(hook) && isRecord(hook) && typeof hook.command === "string") {
-      return hook.command;
+    if (isTokenjuiceCopilotCliHook(hook) && isRecord(hook)) {
+      return hook;
     }
   }
 
   return undefined;
+}
+
+function collectTokenjuiceHookTimeoutWarnings(config: CopilotCliHooksConfig, fixCommand: string): string[] {
+  const hook = findTokenjuiceCopilotCliHook(config);
+  if (!hook) {
+    return [];
+  }
+
+  if (hook.timeout !== TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS) {
+    return [
+      `configured copilot-cli tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS}s safety cap`,
+    ];
+  }
+
+  return [];
 }
 
 export async function installCopilotCliHook(
@@ -352,6 +374,7 @@ export async function doctorCopilotCliHook(
   }
 
   const issues: string[] = [];
+  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));
   if (detectedCommand !== expectedCommand) {
     if (detectedCommand.includes("/Cellar/")) {
       issues.push("configured copilot-cli hook is pinned to a versioned Homebrew Cellar path");

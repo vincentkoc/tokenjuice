@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { spawn } from "node:child_process";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -11,6 +12,7 @@ const tempDirs: string[] = [];
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version as string;
 const originalHome = process.env.HOME;
 const originalPath = process.env.PATH;
+const HANGING_HOOK_COMMAND = `${process.execPath} -e "setInterval(() => {}, 1000)"`;
 
 afterEach(async () => {
   delete process.env.CODEX_HOME;
@@ -78,6 +80,37 @@ function parseCodexReplacementOutput(stdout: string): {
   };
 }
 
+function runCommandWithOptionalTimeout(command: string, timeoutSeconds?: number): Promise<"completed" | "still-running" | "timed-out"> {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(command, {
+      shell: true,
+      stdio: "ignore",
+    });
+    let settled = false;
+
+    const settle = (result: "completed" | "still-running" | "timed-out"): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (!child.killed) {
+        child.kill("SIGTERM");
+      }
+      resolvePromise(result);
+    };
+
+    child.once("error", reject);
+    child.once("exit", () => settle("completed"));
+
+    if (typeof timeoutSeconds === "number") {
+      setTimeout(() => settle("timed-out"), timeoutSeconds * 1000);
+      return;
+    }
+
+    setTimeout(() => settle("still-running"), 200);
+  });
+}
+
 describe("installCodexHook", () => {
   it("installs a single tokenjuice PostToolUse hook and preserves unrelated hooks", async () => {
     const home = await createTempDir();
@@ -109,7 +142,7 @@ describe("installCodexHook", () => {
 
     const result = await installCodexHook(hooksPath);
     const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
-      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string }> }>>;
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string; statusMessage?: string; timeout?: number }> }>>;
     };
 
     expect(result.hooksPath).toBe(hooksPath);
@@ -120,6 +153,7 @@ describe("installCodexHook", () => {
     expect(parsed.hooks.PostToolUse[1]?.matcher).toBe("^Bash$");
     expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toContain("codex-post-tool-use");
     expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.statusMessage).toBe("compacting bash output with tokenjuice");
+    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.timeout).toBe(10);
   });
 
   it("prefers a stable tokenjuice launcher from PATH when installing the hook", async () => {
@@ -285,6 +319,52 @@ describe("doctorCodexHook", () => {
     expect(report.issues).toContain(
       "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
     );
+  });
+
+  it("warns when the tokenjuice Codex hook is missing the timeout safety cap", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [{
+                type: "command",
+                command: `${launcherPath} codex-post-tool-use`,
+                statusMessage: "compacting bash output with tokenjuice",
+              }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+    expect(report.status).toBe("warn");
+    expect(report.issues).toContain(
+      "configured Codex tokenjuice hook timeout is missing or stale; run tokenjuice install codex to add the 10s safety cap",
+    );
+  });
+
+  it("proves a hanging Codex hook needs a configured timeout to terminate", async () => {
+    const withoutTimeout = await runCommandWithOptionalTimeout(HANGING_HOOK_COMMAND);
+    const withTimeout = await runCommandWithOptionalTimeout(HANGING_HOOK_COMMAND, 0.05);
+
+    expect(withoutTimeout).toBe("still-running");
+    expect(withTimeout).toBe("timed-out");
   });
 
   it("reports disabled when the tokenjuice Codex hook is not installed", async () => {

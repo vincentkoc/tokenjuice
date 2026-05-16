@@ -57,6 +57,7 @@ export type ClaudeCodeHookCommandOptions = {
 
 const TOKENJUICE_CLAUDE_CODE_STATUS = "compacting bash output with tokenjuice";
 const TOKENJUICE_CLAUDE_CODE_FIX_COMMAND = "tokenjuice install claude-code";
+const TOKENJUICE_CLAUDE_CODE_HOOK_TIMEOUT_SECONDS = 10;
 
 function getClaudeCodeHome(): string {
   // Claude Code resolves its config directory from CLAUDE_CONFIG_DIR, so honor
@@ -167,40 +168,57 @@ function createTokenjuiceClaudeCodeHook(command: string): ClaudeCodeHookMatcherG
         type: "command",
         command,
         statusMessage: TOKENJUICE_CLAUDE_CODE_STATUS,
+        timeout: TOKENJUICE_CLAUDE_CODE_HOOK_TIMEOUT_SECONDS,
       },
     ],
   };
 }
 
-function isTokenjuiceClaudeCodeHook(group: ClaudeCodeHookMatcherGroup): boolean {
-  return group.hooks.some((hook) =>
-    isRecord(hook) && (
-      hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
-      || (typeof hook.command === "string" && hook.command.includes("claude-code-post-tool-use"))
-    ),
+function isTokenjuiceClaudeCodeHookEntry(hook: unknown): hook is ClaudeCodeHook {
+  return isRecord(hook) && (
+    hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
+    || (typeof hook.command === "string" && hook.command.includes("claude-code-post-tool-use"))
   );
 }
 
+function isTokenjuiceClaudeCodeHook(group: ClaudeCodeHookMatcherGroup): boolean {
+  return group.hooks.some((hook) => isTokenjuiceClaudeCodeHookEntry(hook));
+}
+
 function findTokenjuiceClaudeCodeHookCommand(config: ClaudeCodeSettings): string | undefined {
+  const hook = findTokenjuiceClaudeCodeHook(config);
+  return typeof hook?.command === "string" && hook.command ? hook.command : undefined;
+}
+
+function findTokenjuiceClaudeCodeHook(config: ClaudeCodeSettings): ClaudeCodeHook | undefined {
   const postToolUse = Array.isArray(config.hooks.PostToolUse) ? config.hooks.PostToolUse : [];
   for (const group of postToolUse) {
     if (!(isRecord(group) && Array.isArray(group.hooks) && isTokenjuiceClaudeCodeHook(group as ClaudeCodeHookMatcherGroup))) {
       continue;
     }
 
-    const command = group.hooks.find((hook) =>
-      isRecord(hook)
-      && (
-        hook.statusMessage === TOKENJUICE_CLAUDE_CODE_STATUS
-        || (typeof hook.command === "string" && hook.command.includes("claude-code-post-tool-use"))
-      ),
-    )?.command;
-    if (typeof command === "string" && command) {
-      return command;
+    const hook = group.hooks.find((candidate) => isTokenjuiceClaudeCodeHookEntry(candidate));
+    if (hook) {
+      return hook;
     }
   }
 
   return undefined;
+}
+
+function collectTokenjuiceHookTimeoutWarnings(config: ClaudeCodeSettings, fixCommand: string): string[] {
+  const hook = findTokenjuiceClaudeCodeHook(config);
+  if (!hook) {
+    return [];
+  }
+
+  if (hook.timeout !== TOKENJUICE_CLAUDE_CODE_HOOK_TIMEOUT_SECONDS) {
+    return [
+      `configured Claude Code tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_CLAUDE_CODE_HOOK_TIMEOUT_SECONDS}s safety cap`,
+    ];
+  }
+
+  return [];
 }
 
 function sanitizeHooksSubtree(raw: unknown): Record<string, unknown> {
@@ -329,6 +347,7 @@ export async function doctorClaudeCodeHook(
   }
 
   const issues: string[] = [];
+  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));
   if (detectedCommand !== expectedCommand) {
     if (detectedCommand.includes("/Cellar/")) {
       issues.push("configured Claude Code hook is pinned to a versioned Homebrew Cellar path");

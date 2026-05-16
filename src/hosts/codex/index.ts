@@ -51,6 +51,7 @@ const CODEX_HOOK_HISTORY_LIMIT = 200;
 const CODEX_HOOK_HISTORY_LOCK_STALE_MS = 30_000;
 const CODEX_HOOK_HISTORY_LOCK_RETRY_MS = 25;
 const CODEX_HOOK_HISTORY_LOCK_RETRIES = 8;
+const TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS = 10;
 const LOW_NON_TOKENJUICE_TIMEOUT_SECONDS = 2;
 const RECOMMENDED_NON_TOKENJUICE_TIMEOUT_SECONDS = 6;
 
@@ -373,6 +374,7 @@ function createTokenjuiceCodexHook(command: string): CodexHookMatcherGroup {
         type: "command",
         command,
         statusMessage: TOKENJUICE_CODEX_STATUS,
+        timeout: TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS,
       },
     ],
   };
@@ -387,18 +389,22 @@ function isTokenjuiceCodexHook(group: CodexHookMatcherGroup): boolean {
 }
 
 function findTokenjuiceCodexHookCommand(config: CodexHooksConfig): string | undefined {
+  return findTokenjuiceCodexHook(config)?.command;
+}
+
+function findTokenjuiceCodexHook(config: CodexHooksConfig): CodexHookCommand | undefined {
   for (const group of config.hooks.PostToolUse ?? []) {
     if (!isTokenjuiceCodexHook(group)) {
       continue;
     }
 
-    const command = group.hooks.find((hook) =>
-      hook.statusMessage === TOKENJUICE_CODEX_STATUS
-      || hook.command.includes("codex-post-tool-use")
-      || hook.command.includes("post_tool_use_tokenjuice.py"),
-    )?.command;
-    if (command) {
-      return command;
+    const hook = group.hooks.find((candidate) =>
+      candidate.statusMessage === TOKENJUICE_CODEX_STATUS
+      || candidate.command.includes("codex-post-tool-use")
+      || candidate.command.includes("post_tool_use_tokenjuice.py"),
+    );
+    if (hook) {
+      return hook;
     }
   }
 
@@ -478,6 +484,21 @@ function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
   }
 
   return issues;
+}
+
+function collectTokenjuiceHookTimeoutWarnings(config: CodexHooksConfig, fixCommand: string): string[] {
+  const hook = findTokenjuiceCodexHook(config);
+  if (!hook) {
+    return [];
+  }
+
+  if (hook.timeout !== TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS) {
+    return [
+      `configured Codex tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS}s safety cap`,
+    ];
+  }
+
+  return [];
 }
 
 function sanitizeHooksConfig(raw: unknown): CodexHooksConfig {
@@ -780,6 +801,7 @@ export async function doctorCodexHook(
       "Codex feature flag `codex_hooks` is not enabled — the configured hook will not fire",
     );
   }
+  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));
   issues.push(...collectLowTimeoutWarnings(config));
 
   return {

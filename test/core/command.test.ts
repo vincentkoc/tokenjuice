@@ -61,6 +61,16 @@ describe("resolveEffectiveCommand", () => {
     });
   });
 
+  it("skips terminal setup preludes before matching the real command", () => {
+    expect(resolveEffectiveCommand({
+      command: "command -v tt >/dev/null 2>&1 && tt title 'code review' || tmux select-pane -T 'code review' 2>/dev/null || true; git diff --stat",
+    })).toEqual({
+      command: "git diff --stat",
+      argv: ["git", "diff", "--stat"],
+      source: "effective",
+    });
+  });
+
   it("strips env assignments before matching", () => {
     expect(resolveEffectiveCommand({ command: "FOO='a b' swift build" })).toEqual({
       command: "swift build",

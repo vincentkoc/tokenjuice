@@ -14,7 +14,7 @@ export type CommandMatchCandidate = {
   command?: string;
 };
 
-const SETUP_WRAPPER_COMMANDS = new Set(["cd", "pwd", "set", "source", ".", "export", "unset", "trap"]);
+const SETUP_WRAPPER_COMMANDS = new Set(["cd", "pwd", "set", "source", ".", "export", "unset", "trap", "true"]);
 const SHELL_COMMAND_LAUNCHERS = new Set(["bash", "sh", "zsh", "fish"]);
 const ENV_FLAGS_WITH_VALUES = new Set(["-u", "--unset", "-C", "--chdir", "-S", "--split-string"]);
 const ENV_FLAGS = new Set(["-i", "--ignore-environment", "-0", "--null", "--debug"]);
@@ -211,6 +211,16 @@ export function isSetupWrapperSegment(argv: string[]): boolean {
 
   const argv0 = getArgv0Name(argv);
   if (!argv0) {
+    return true;
+  }
+
+  if (argv0 === "command" && (argv[1] === "-v" || argv[1] === "-V")) {
+    return true;
+  }
+  if (argv0 === "tt" && (argv[1] === "title" || argv[1] === "sync")) {
+    return true;
+  }
+  if (argv0 === "tmux" && argv[1] === "select-pane" && argv.includes("-T")) {
     return true;
   }
 

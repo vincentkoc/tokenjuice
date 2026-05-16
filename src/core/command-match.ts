@@ -307,7 +307,7 @@ function isSetupWrapperCommand(command: string): boolean {
 }
 
 function stripLeadingSetupIfBlock(command: string): string | null {
-  const match = /^if\s+(.+?);\s*then\s+(.+?)(?:;\s*else\s+(.+?))?;\s*fi\s*(?:;|&&|\n)\s*(.+)$/su.exec(command.trim());
+  const match = /^if\s+([\s\S]+?)(?:;|\n)\s*then\s+([\s\S]+?)(?:(?:;|\n)\s*else\s+([\s\S]+?))?(?:;|\n)\s*fi\s*(?:;|&&|\n)\s*(.+)$/u.exec(command.trim());
   if (!match) {
     return null;
   }
@@ -324,6 +324,32 @@ function stripLeadingSetupIfBlock(command: string): string | null {
   }
 
   return tail.trim() || null;
+}
+
+function stripLeadingSetupSegment(command: string): string | null {
+  const trimmed = command.trim();
+  const segments = splitTopLevelCommandChain(trimmed);
+  const first = segments[0]?.trim();
+  if (!first || segments.length < 2 || !isSetupWrapperSegment(tokenizeCommand(first), first)) {
+    return null;
+  }
+  if (!trimmed.startsWith(first)) {
+    return null;
+  }
+
+  let index = first.length;
+  while (/\s/u.test(trimmed[index] ?? "")) {
+    index += 1;
+  }
+  if (trimmed[index] === "&" && trimmed[index + 1] === "&") {
+    index += 2;
+  } else if (trimmed[index] === ";" || trimmed[index] === "\n") {
+    index += 1;
+  } else {
+    return null;
+  }
+
+  return trimmed.slice(index).trim() || null;
 }
 
 export function buildEffectiveCandidate(
@@ -359,12 +385,21 @@ export function resolveEffectiveCommand(input: Pick<ToolExecutionInput, "argv" |
     return buildEffectiveCandidate(argv, false);
   }
 
-  const setupIfTail = stripLeadingSetupIfBlock(command);
-  if (setupIfTail) {
-    return resolveEffectiveCommand({ command: setupIfTail }) ?? buildEffectiveCandidate(tokenizeCommand(setupIfTail), true, setupIfTail);
+  let effectiveCommand = command;
+  for (let iteration = 0; iteration < 16; iteration += 1) {
+    const setupIfTail = stripLeadingSetupIfBlock(effectiveCommand);
+    const setupSegmentTail = setupIfTail ?? stripLeadingSetupSegment(effectiveCommand);
+    if (!setupSegmentTail) {
+      break;
+    }
+    effectiveCommand = setupSegmentTail;
+  }
+  if (effectiveCommand !== command) {
+    return resolveEffectiveCommand({ command: effectiveCommand })
+      ?? buildEffectiveCandidate(tokenizeCommand(effectiveCommand), true, effectiveCommand);
   }
 
-  const segments = splitTopLevelCommandChain(command);
+  const segments = splitTopLevelCommandChain(effectiveCommand);
   const transformedByChain = segments.length > 1;
 
   for (const segment of segments) {

@@ -81,6 +81,26 @@ describe("resolveEffectiveCommand", () => {
     });
   });
 
+  it("skips setup segments before guarded terminal setup preludes", () => {
+    expect(resolveEffectiveCommand({
+      command: "cd repo && if command -v tt >/dev/null 2>&1; then tt title 'tests'; else tmux select-pane -T 'tests' 2>/dev/null || true; fi; pnpm test",
+    })).toEqual({
+      command: "pnpm test",
+      argv: ["pnpm", "test"],
+      source: "effective",
+    });
+  });
+
+  it("skips newline-form guarded terminal setup preludes", () => {
+    expect(resolveEffectiveCommand({
+      command: "if command -v tt >/dev/null 2>&1\nthen tt title 'tests'\nelse tmux select-pane -T 'tests' 2>/dev/null || true\nfi\npnpm test",
+    })).toEqual({
+      command: "pnpm test",
+      argv: ["pnpm", "test"],
+      source: "effective",
+    });
+  });
+
   it("keeps command probes with substantive fallbacks as the effective command", () => {
     expect(resolveEffectiveCommand({
       command: "command -v rg >/dev/null || cargo install ripgrep; rg --files",

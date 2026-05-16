@@ -1436,6 +1436,40 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("2 files changed");
   });
 
+  it("matches commands after earlier setup and guarded terminal setup preludes", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cd repo && if command -v tt >/dev/null 2>&1; then tt title 'tests'; else tmux select-pane -T 'tests' 2>/dev/null || true; fi; pnpm test",
+      combinedText: [
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("Test Files  1 failed");
+  });
+
+  it("matches commands after newline-form guarded terminal setup preludes", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "if command -v tt >/dev/null 2>&1\nthen tt title 'tests'\nelse tmux select-pane -T 'tests' 2>/dev/null || true\nfi\npnpm test",
+      combinedText: [
+        "FAIL test/example.test.ts > example",
+        "AssertionError: expected 1 to be 2",
+        "Test Files  1 failed (1)",
+      ].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.classification.matchedVia).toBe("effective");
+    expect(result.inlineText).toContain("Test Files  1 failed");
+  });
+
   it("summarizes package-lock JSON file inspection instead of replaying the whole lockfile", async () => {
     const result = await reduceExecution({
       toolName: "exec",

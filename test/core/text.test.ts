@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clampText, clampTextWithMetadata, countTerminalCells, countTextChars, headTail, stripAnsi } from "../../src/core/text.js";
+import { clampText, clampTextMiddleWithMetadata, clampTextWithMetadata, countTerminalCells, countTextChars, headTail, stripAnsi } from "../../src/core/text.js";
 
 describe("text helpers", () => {
   it("strips xterm colors and OSC hyperlinks while preserving emoji and CJK", () => {
@@ -78,5 +78,41 @@ describe("text helpers", () => {
 
     expect(clamped).toContain("\n... truncated ...");
     expect(clamped).not.toContain("li\n... truncated ...");
+  });
+
+  it("returns all lines when headTail receives noOmit", () => {
+    const lines = Array.from({ length: 12 }, (_, index) => `line ${index}`);
+
+    expect(headTail(lines, 3, 3, true)).toEqual({
+      lines,
+      compaction: {
+        authoritative: false,
+        kinds: ["no-omit-head-tail-passthrough"],
+      },
+    });
+  });
+
+  it("returns the full text from clampTextWithMetadata when noOmit is enabled", () => {
+    const text = "abcdefghijklmnopqrstuvwxyz";
+
+    expect(clampTextWithMetadata(text, 10, true)).toEqual({
+      text,
+      compaction: {
+        authoritative: false,
+        kinds: ["no-omit-char-clip-passthrough"],
+      },
+    });
+  });
+
+  it("returns the full text from clampTextMiddleWithMetadata when noOmit is enabled", () => {
+    const text = "abcdefghijklmnopqrstuvwxyz";
+
+    expect(clampTextMiddleWithMetadata(text, 10, true)).toEqual({
+      text,
+      compaction: {
+        authoritative: false,
+        kinds: ["no-omit-char-clip-passthrough"],
+      },
+    });
   });
 });

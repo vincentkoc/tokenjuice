@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { createCompactionMetadata, createPassthroughCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { countTextChars, sliceTextChars } from "./text.js";
 
 export function compactWhitespace(text: string): string {
@@ -11,9 +11,16 @@ function shortHash(text: string): string {
   return createHash("sha256").update(text).digest("hex").slice(0, 12);
 }
 
-function clipMiddleWithHashStrict(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
+function clipMiddleWithHashStrict(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
     return { text };
+  }
+
+  if (noOmit) {
+    return {
+      text,
+      compaction: createPassthroughCompactionMetadata("no-omit-char-clip-passthrough"),
+    };
   }
 
   const omitted = countTextChars(text) - maxChars;
@@ -70,9 +77,15 @@ function minifyJsonLexically(rawText: string): string {
   return output;
 }
 
-export function clipMiddleWithHash(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
+export function clipMiddleWithHash(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
     return { text };
+  }
+  if (noOmit) {
+    return {
+      text,
+      compaction: createPassthroughCompactionMetadata("no-omit-char-clip-passthrough"),
+    };
   }
   const omitted = countTextChars(text) - maxChars;
   const headChars = Math.max(20, Math.floor(maxChars * 0.55));
@@ -83,10 +96,10 @@ export function clipMiddleWithHash(text: string, maxChars: number): { text: stri
   };
 }
 
-export function compactWholeJsonText(rawText: string, maxChars: number): { text: string; compaction?: CompactionMetadata } | null {
+export function compactWholeJsonText(rawText: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } | null {
   return parseJsonValue(rawText) === null
     ? null
-    : clipMiddleWithHashStrict(minifyJsonLexically(rawText), maxChars);
+    : clipMiddleWithHashStrict(minifyJsonLexically(rawText), maxChars, noOmit);
 }
 
 export function parseJsonObjectLine(line: string): Record<string, unknown> | null {

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import { readFile, stat } from "node:fs/promises";
+import { resolve } from "node:path";
 import { stdin as inputStdin } from "node:process";
+import { fileURLToPath } from "node:url";
 import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
@@ -64,6 +66,7 @@ type ParsedArgs = {
   store: boolean;
   tee: boolean;
   raw: boolean;
+  noOmit: boolean;
   storeDir: string | undefined;
   maxInlineChars: number | undefined;
   maxCaptureBytes: number | undefined;
@@ -91,9 +94,9 @@ function printUsage(): void {
       "usage:",
       "  tokenjuice --help",
       "  tokenjuice --version",
-      "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full]",
+      "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit]",
       "  tokenjuice reduce-json [file]",
-      "  tokenjuice wrap [--raw|--full] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice wrap [--raw|--full] [--no-omit] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install aider",
       "  tokenjuice install avante",
@@ -136,7 +139,7 @@ function printUsage(): void {
   process.stderr.write("\n");
 }
 
-function parseArgs(argv: string[]): ParsedArgs {
+export function parseArgs(argv: string[]): ParsedArgs {
   const command = argv[0];
   const positionals: string[] = [];
   const passthrough: string[] = [];
@@ -150,6 +153,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let store = false;
   let tee = false;
   let raw = false;
+  let noOmit = false;
   let storeDir: string | undefined;
   let maxInlineChars: number | undefined;
   let maxCaptureBytes: number | undefined;
@@ -227,6 +231,10 @@ function parseArgs(argv: string[]): ParsedArgs {
       case "--raw":
       case "--full":
         raw = true;
+        index += 1;
+        break;
+      case "--no-omit":
+        noOmit = true;
         index += 1;
         break;
       case "--tee":
@@ -311,6 +319,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     store,
     tee,
     raw,
+    noOmit,
     storeDir,
     maxInlineChars,
     maxCaptureBytes,
@@ -379,6 +388,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
     {
       ...(args.classifier ? { classifier: args.classifier } : {}),
       ...(args.raw ? { raw: true } : {}),
+      ...(args.noOmit ? { noOmit: true } : {}),
       ...(args.trace ? { trace: true } : {}),
       recordStats: true,
       ...(args.store ? { store: true } : {}),
@@ -411,6 +421,7 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
     ...request.options,
     ...(args.classifier ? { classifier: args.classifier } : {}),
     ...(args.raw ? { raw: true } : {}),
+    ...(args.noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
@@ -425,6 +436,7 @@ async function runWrap(args: ParsedArgs): Promise<number> {
   const wrapped = await runWrappedCommand(args.passthrough, {
     tee: args.tee,
     ...(args.raw ? { raw: true } : {}),
+    ...(args.noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
@@ -433,14 +445,14 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(typeof args.maxCaptureBytes === "number" ? { maxCaptureBytes: args.maxCaptureBytes } : {}),
     ...(args.source ? { source: args.source } : {}),
   });
-  const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
+  const inlineText = decorateWrapInlineText(wrapped.result, args.raw, args.noOmit);
   emit(args.format, wrapped, inlineText, args.raw);
   return wrapped.exitCode;
 }
 
-function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): string {
+export function decorateWrapInlineText(result: WrapResult["result"], raw: boolean, noOmit = false): string {
   const { rawChars, reducedChars } = result.stats;
-  if (raw || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
+  if (raw || noOmit || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
     return result.inlineText;
   }
   const footer = [
@@ -1815,8 +1827,8 @@ async function runStats(args: ParsedArgs): Promise<number> {
   return 0;
 }
 
-async function main(): Promise<number> {
-  const args = parseArgs(process.argv.slice(2));
+async function main(argv = process.argv.slice(2)): Promise<number> {
+  const args = parseArgs(argv);
   switch (args.command) {
     case undefined:
     case "help":
@@ -1879,11 +1891,34 @@ async function main(): Promise<number> {
   }
 }
 
-main()
-  .then((code) => {
-    process.exitCode = code;
-  })
-  .catch((error: unknown) => {
+export async function isDirectModuleEntrypoint(moduleUrl: string | URL, argv = process.argv): Promise<boolean> {
+  const entrypoint = argv[1];
+  if (!entrypoint) {
+    return false;
+  }
+
+  const [moduleStat, entrypointStat] = await Promise.allSettled([
+    stat(fileURLToPath(moduleUrl)),
+    stat(resolve(entrypoint)),
+  ]);
+  if (moduleStat.status !== "fulfilled" || entrypointStat.status !== "fulfilled") {
+    return false;
+  }
+
+  return moduleStat.value.dev === entrypointStat.value.dev && moduleStat.value.ino === entrypointStat.value.ino;
+}
+
+async function runCliIfEntrypoint(): Promise<void> {
+  if (!(await isDirectModuleEntrypoint(import.meta.url))) {
+    return;
+  }
+
+  try {
+    process.exitCode = await main();
+  } catch (error: unknown) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
-  });
+  }
+}
+
+void runCliIfEntrypoint();

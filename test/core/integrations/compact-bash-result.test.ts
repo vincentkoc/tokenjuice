@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { compactBashResult } from "../../../src/core/integrations/compact-bash-result.js";
 
 type CompactBashResultOutcome = Awaited<ReturnType<typeof compactBashResult>>;
+const originalNoOmissionEnv = process.env.TOKENJUICE_NO_OMISSION;
 
 function expectRewrite(outcome: CompactBashResultOutcome): Extract<CompactBashResultOutcome, { action: "rewrite" }> {
   expect(outcome.action).toBe("rewrite");
@@ -21,6 +22,14 @@ function expectKeep(outcome: CompactBashResultOutcome): Extract<CompactBashResul
 }
 
 describe("compactBashResult", () => {
+  afterEach(() => {
+    if (originalNoOmissionEnv === undefined) {
+      delete process.env.TOKENJUICE_NO_OMISSION;
+      return;
+    }
+    process.env.TOKENJUICE_NO_OMISSION = originalNoOmissionEnv;
+  });
+
   it("uses trusted full text when provided", async () => {
     const outcome = await compactBashResult({
       source: "pi",
@@ -295,6 +304,60 @@ describe("compactBashResult", () => {
 
     const kept = expectKeep(outcome);
     expect(kept.reason).toBe("generic-compound-command");
+  });
+
+  it("enables noOmit from the environment even when input.noOmit is false", async () => {
+    process.env.TOKENJUICE_NO_OMISSION = "1";
+
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "git status",
+      visibleText: [
+        "On branch main",
+        "Changes not staged for commit:",
+        ...Array.from({ length: 30 }, (_, index) => `  modified:   src/file-${index}.ts`),
+        "",
+        "no changes added to commit",
+      ].join("\n"),
+      maxInlineChars: 20_000,
+      noOmit: false,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    const rewritten = expectRewrite(outcome);
+    expect(rewritten.result.inlineText).toContain("M: src/file-29.ts");
+    expect(rewritten.result.inlineText).not.toContain("omitted");
+    expect(rewritten.result.compaction?.authoritative).toBe(false);
+  });
+
+  it("enables noOmit from the input flag when the environment is unset", async () => {
+    delete process.env.TOKENJUICE_NO_OMISSION;
+
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "git status",
+      visibleText: [
+        "On branch main",
+        "Changes not staged for commit:",
+        ...Array.from({ length: 30 }, (_, index) => `  modified:   src/file-${index}.ts`),
+        "",
+        "no changes added to commit",
+      ].join("\n"),
+      maxInlineChars: 20_000,
+      noOmit: true,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    const rewritten = expectRewrite(outcome);
+    expect(rewritten.result.inlineText).toContain("M: src/file-29.ts");
+    expect(rewritten.result.inlineText).not.toContain("omitted");
+    expect(rewritten.result.compaction?.authoritative).toBe(false);
   });
 
 });

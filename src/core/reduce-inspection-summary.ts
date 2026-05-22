@@ -17,7 +17,7 @@ export type InspectionSummary = {
   compaction: CompactionMetadata;
 };
 
-function buildPackageLockSummary(value: unknown): string[] {
+function buildPackageLockSummary(value: unknown, noOmit = false): string[] {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return [];
   }
@@ -38,22 +38,22 @@ function buildPackageLockSummary(value: unknown): string[] {
     `dependencies: ${dependencies.length}`,
   ].filter((line): line is string => line !== null);
 
-  const packageSamples = packages.filter(Boolean).slice(0, 12);
+  const packageSamples = noOmit ? packages.filter(Boolean) : packages.filter(Boolean).slice(0, 12);
   if (packageSamples.length > 0) {
     lines.push(`sample packages: ${packageSamples.join(", ")}`);
   }
   return lines;
 }
 
-function buildLargeDocumentSummary(lines: string[], rawText: string): { lines: string[]; compaction: CompactionMetadata } {
+function buildLargeDocumentSummary(lines: string[], rawText: string, noOmit = false): { lines: string[]; compaction: CompactionMetadata } {
   const headings = lines
     .map((line) => line.trim())
     .filter((line) => /^#{1,6}\s+\S/u.test(line))
     .slice(0, 24);
-  const excerpt = headTail(lines, 6, 6);
+  const excerpt = headTail(lines, 6, 6, noOmit);
   const clippedHeadingCompactions: CompactionMetadata[] = [];
   const clippedHeadings = headings.map((line) => {
-    const clipped = clipMiddleWithHash(line, 180);
+    const clipped = clipMiddleWithHash(line, 180, noOmit);
     if (clipped.compaction) {
       clippedHeadingCompactions.push(clipped.compaction);
     }
@@ -61,7 +61,7 @@ function buildLargeDocumentSummary(lines: string[], rawText: string): { lines: s
   });
   const clippedExcerptCompactions: CompactionMetadata[] = [];
   const excerptLines = excerpt.lines.map((line) => {
-    const clipped = clipMiddleWithHash(line, 180);
+    const clipped = clipMiddleWithHash(line, 180, noOmit);
     if (clipped.compaction) {
       clippedExcerptCompactions.push(clipped.compaction);
     }
@@ -131,10 +131,10 @@ function isLargeDocumentOutput(lines: string[], rawChars: number): boolean {
     && codeLines / nonEmptyLines.length < 0.25;
 }
 
-export function buildInspectionSummary(input: ToolExecutionInput, rawText: string): InspectionSummary | null {
+export function buildInspectionSummary(input: ToolExecutionInput, rawText: string, noOmit = false): InspectionSummary | null {
   const command = input.command ?? "";
   if (PACKAGE_LOCK_RE.test(command)) {
-    const lines = buildPackageLockSummary(parseJsonValue(rawText));
+    const lines = buildPackageLockSummary(parseJsonValue(rawText), noOmit);
     return lines.length > 0
       ? { lines, matchedReducer: "generic/package-lock-summary", compaction: createCompactionMetadata("inspection-package-lock-summary") }
       : null;
@@ -146,7 +146,7 @@ export function buildInspectionSummary(input: ToolExecutionInput, rawText: strin
     return null;
   }
 
-  const summary = buildLargeDocumentSummary(lines, rawText);
+  const summary = buildLargeDocumentSummary(lines, rawText, noOmit);
   return {
     lines: summary.lines,
     matchedReducer: "generic/large-document-summary",

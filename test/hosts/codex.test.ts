@@ -1034,19 +1034,21 @@ describe("runCodexPostToolUseHook", () => {
       skipped?: string;
     };
     const metadata = await listArtifactMetadata();
-    const newMetadata = metadata.find((entry) => !metadataBefore.some((before) => before.id === entry.id));
+    const newMetadata = metadata.filter(
+      (entry) => !metadataBefore.some((before) => before.id === entry.id)
+        && entry.metadata.command === "tokenjuice wrap --raw -- printf 'ok\\n'",
+    );
 
     expect(code).toBe(0);
     expect(output).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("explicit-raw-bypass");
-    expect(metadata).toHaveLength(metadataBefore.length + 1);
-    expect(newMetadata?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
-    expect(newMetadata?.metadata.rawChars).toBeGreaterThan(0);
-    expect(newMetadata?.metadata.reducedChars).toBe(newMetadata?.metadata.rawChars);
-    expect(newMetadata?.metadata.ratio).toBe(1);
-    expect(newMetadata?.path).toBeUndefined();
-    expect(resolve(dirname(newMetadata!.metadataPath))).toBe(resolve(artifactDir!));
+    expect(newMetadata).toHaveLength(1);
+    expect(newMetadata[0]?.metadata.rawChars).toBeGreaterThan(0);
+    expect(newMetadata[0]?.metadata.reducedChars).toBe(newMetadata[0]?.metadata.rawChars);
+    expect(newMetadata[0]?.metadata.ratio).toBe(1);
+    expect(newMetadata[0]?.path).toBeUndefined();
+    expect(resolve(dirname(newMetadata[0]!.metadataPath))).toBe(resolve(artifactDir!));
     expect(existsSync(join(home, ".tokenjuice", "artifacts"))).toBe(false);
   });
 

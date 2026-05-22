@@ -176,6 +176,7 @@ export type StoredArtifact = {
 export type ReduceOptions = {
   classifier?: string;
   maxInlineChars?: number;
+  noOmit?: boolean;
   trace?: boolean;
   raw?: boolean;
   recordStats?: boolean;
@@ -217,6 +218,7 @@ export type RuleFixture = {
 export type WrapOptions = {
   cwd?: string;
   source?: string;
+  noOmit?: boolean;
   recordStats?: boolean;
   store?: boolean;
   storeDir?: string;

@@ -50,7 +50,12 @@ function prettyPrintJsonIfPossible(text: string): string {
   return text;
 }
 
-function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawText: string): { summary: string; facts: Record<string, number>; compaction: CompactionMetadata } {
+function applyRule(
+  compiledRule: CompiledRule,
+  input: ToolExecutionInput,
+  rawText: string,
+  noOmit = false,
+): { summary: string; facts: Record<string, number>; compaction: CompactionMetadata } {
   const rule = compiledRule.rule;
   if (rule.transforms?.prettyPrintJson) {
     rawText = prettyPrintJsonIfPossible(rawText);
@@ -102,18 +107,18 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
   const preRewriteLines = [...lines];
   let rewriteCompaction: CompactionMetadata | undefined;
   if (rule.id === "cloud/gh") {
-    counterLines = rewriteGhLines(counterLines, input).lines;
-    const rewritten = rewriteGhLines(lines, input);
+    counterLines = rewriteGhLines(counterLines, input, noOmit).lines;
+    const rewritten = rewriteGhLines(lines, input, noOmit);
     lines = rewritten.lines;
     rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
   if (rule.id === "search/rg") {
-    const rewritten = rewriteSearchLines(lines);
+    const rewritten = rewriteSearchLines(lines, noOmit);
     lines = rewritten.lines;
     rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
   if (rule.id === "git/diff") {
-    const rewritten = rewriteGitDiffLines(lines);
+    const rewritten = rewriteGitDiffLines(lines, noOmit);
     lines = rewritten.lines;
     rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
@@ -145,7 +150,7 @@ function applyRule(compiledRule: CompiledRule, input: ToolExecutionInput, rawTex
         tail: rule.summarize?.tail ?? 6,
       };
 
-  const compacted = headTail(lines, summarize.head, summarize.tail);
+  const compacted = headTail(lines, summarize.head, summarize.tail, noOmit);
   return {
     summary: compacted.lines.join("\n").trim(),
     facts,
@@ -218,6 +223,7 @@ function formatInline(
   input: ToolExecutionInput,
   summary: string,
   facts: Record<string, number>,
+  noOmit = false,
 ): string {
   const factParts = Object.entries(facts)
     .filter(([, count]) => count > 0)
@@ -232,7 +238,7 @@ function formatInline(
     || (
       classification.family !== "git-status"
       && classification.family !== "help"
-      && summary.includes("omitted")
+      && (noOmit || summary.includes("omitted"))
     )
     || (classification.family === "test-results" && (input.exitCode ?? 0) !== 0);
 
@@ -250,10 +256,17 @@ function selectInlineText(
   compactText: string,
   maxInlineChars: number,
   compactCompaction: CompactionMetadata,
+  noOmit = false,
 ): { text: string; compaction: CompactionMetadata } {
   const passthroughText = buildPassthroughText(input, rawText);
   const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
+  if (noOmit) {
+    return {
+      text: compactText,
+      compaction: compactCompaction,
+    };
+  }
   if (shouldKeepSmallOutput(classification, input, rawChars, compactChars, maxInlineChars)) {
     return {
       text: buildLiteralPassthroughText(input, rawText),
@@ -377,10 +390,10 @@ export async function reduceExecutionWithRules(
     };
   }
 
-  const inspectionSummary = buildInspectionSummary(normalizedInput, rawText);
+  const inspectionSummary = buildInspectionSummary(normalizedInput, rawText, opts.noOmit);
   if (inspectionSummary) {
     const summaryText = inspectionSummary.lines.join("\n").trim();
-    const selectedText = clampTextMiddleWithMetadata(summaryText, maxInlineChars);
+    const selectedText = clampTextMiddleWithMetadata(summaryText, maxInlineChars, opts.noOmit);
     const reducedChars = countTextChars(selectedText.text);
     const summaryClassification = {
       family: "structured-summary",
@@ -465,10 +478,10 @@ export async function reduceExecutionWithRules(
   }
 
   const githubActionsFailureSummary = classification.matchedReducer === "generic/fallback"
-    ? buildGithubActionsFailureSummary(reducerInput, rawText)
+    ? buildGithubActionsFailureSummary(reducerInput, rawText, opts.noOmit)
     : null;
   if (githubActionsFailureSummary) {
-    const inlineText = clampTextMiddleWithMetadata(githubActionsFailureSummary.text, maxInlineChars);
+    const inlineText = clampTextMiddleWithMetadata(githubActionsFailureSummary.text, maxInlineChars, opts.noOmit);
     const reducedChars = countTextChars(inlineText.text);
     const stats = {
       rawChars: measuredRawChars,
@@ -513,7 +526,7 @@ export async function reduceExecutionWithRules(
   if (classification.matchedReducer === "generic/fallback") {
     const exitPrefix = reducerInput.exitCode && reducerInput.exitCode !== 0 ? `exit ${reducerInput.exitCode}\n` : "";
     const jsonBudget = Math.max(0, maxInlineChars - countTextChars(exitPrefix));
-    const jsonOutput = compactWholeJsonText(rawText, jsonBudget);
+    const jsonOutput = compactWholeJsonText(rawText, jsonBudget, opts.noOmit);
     if (jsonOutput) {
       const inlineText = `${exitPrefix}${jsonOutput.text}`;
       const reducedChars = countTextChars(inlineText);
@@ -560,16 +573,16 @@ export async function reduceExecutionWithRules(
     }
   }
 
-  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText);
-  const compactText = formatInline(classification, reducerInput, summary || "(no output)", facts);
-  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction);
+  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit);
+  const compactText = formatInline(classification, reducerInput, summary || "(no output)", facts, opts.noOmit);
+  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction, opts.noOmit);
   const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
-  const provisionalInlineText = clamp(selectedText.text, maxInlineChars);
-  const provisionalReducedChars = countTextChars(provisionalInlineText.text);
-  const provisionalStats = {
+  const inlineText = clamp(selectedText.text, maxInlineChars, opts.noOmit);
+  const reducedChars = countTextChars(inlineText.text);
+  const stats = {
     rawChars: measuredRawChars,
-    reducedChars: provisionalReducedChars,
-    ratio: measuredRawChars === 0 ? 1 : provisionalReducedChars / measuredRawChars,
+    reducedChars,
+    ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
   };
   const rawRef = opts.store
     ? await storeArtifact(
@@ -577,22 +590,11 @@ export async function reduceExecutionWithRules(
           input: normalizedInput,
           rawText,
           classification,
-          stats: {
-            rawChars: provisionalStats.rawChars,
-            reducedChars: provisionalStats.reducedChars,
-            ratio: provisionalStats.ratio,
-          },
+          stats,
         },
         opts.storeDir,
       )
     : undefined;
-  const inlineText = clamp(selectedText.text, maxInlineChars);
-  const reducedChars = countTextChars(inlineText.text);
-  const stats = {
-    rawChars: measuredRawChars,
-    reducedChars,
-    ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
-  };
 
   if (!opts.store && opts.recordStats) {
     await storeArtifactMetadata(

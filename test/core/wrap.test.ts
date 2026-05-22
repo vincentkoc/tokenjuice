@@ -145,4 +145,28 @@ describe("runWrappedCommand", () => {
     expect(wrapped.result.inlineText).toContain("omitted");
     expect(wrapped.result.compaction?.authoritative).toBe(true);
   });
+
+  it("propagates noOmit through wrap without adding lossy omission markers", async () => {
+    const commandLines = Array.from({ length: 30 }, (_, index) => `echo step-${index}`);
+    const outputLines = [
+      "Run bash ./ci.sh",
+      ...commandLines.map((command) => `  ${command}`),
+      "Error: Process completed with exit code 1.",
+    ];
+    const wrapped = await runWrappedCommand([
+      "bash",
+      "-lc",
+      `printf '%s\\n' ${outputLines.map((line) => JSON.stringify(line)).join(" ")}; exit 1`,
+    ], {
+      noOmit: true,
+      maxInlineChars: 20_000,
+    });
+
+    expect(wrapped.exitCode).toBe(1);
+    expect(wrapped.result.inlineText).toContain("- echo step-0");
+    expect(wrapped.result.inlineText).toContain("- echo step-29");
+    expect(wrapped.result.inlineText).not.toContain("commands omitted");
+    expect(wrapped.result.compaction?.authoritative).toBe(false);
+    expect(wrapped.result.inlineText).not.toContain(WRAP_AUTHORITATIVE_FOOTER);
+  });
 });

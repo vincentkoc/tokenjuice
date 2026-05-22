@@ -1,4 +1,4 @@
-import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { createCompactionMetadata, createPassthroughCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 
 const ANSI_CSI_PATTERN = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*[@-~]`, "g");
 const ANSI_OSC_PATTERN = new RegExp(String.raw`\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)`, "g");
@@ -139,7 +139,7 @@ export function dedupeAdjacent(lines: string[]): string[] {
   return next;
 }
 
-export function headTail(lines: string[], head: number, tail: number): { lines: string[]; compaction?: CompactionMetadata } {
+export function headTail(lines: string[], head: number, tail: number, noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const safeHead = Math.max(0, head);
   const safeTail = Math.max(0, tail);
   if (safeHead === 0 && safeTail === 0) {
@@ -148,6 +148,13 @@ export function headTail(lines: string[], head: number, tail: number): { lines: 
 
   if (lines.length <= safeHead + safeTail) {
     return { lines };
+  }
+
+  if (noOmit) {
+    return {
+      lines,
+      compaction: createPassthroughCompactionMetadata("no-omit-head-tail-passthrough"),
+    };
   }
 
   return {
@@ -169,9 +176,16 @@ export function clampText(text: string, maxChars: number): string {
   return `${head}${TRUNCATION_SUFFIX}`;
 }
 
-export function clampTextWithMetadata(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
+export function clampTextWithMetadata(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
     return { text };
+  }
+
+  if (noOmit) {
+    return {
+      text,
+      compaction: createPassthroughCompactionMetadata("no-omit-char-clip-passthrough"),
+    };
   }
 
   return {
@@ -184,9 +198,16 @@ export function clampTextMiddle(text: string, maxChars: number): string {
   return clampTextMiddleWithMetadata(text, maxChars).text;
 }
 
-export function clampTextMiddleWithMetadata(text: string, maxChars: number): { text: string; compaction?: CompactionMetadata } {
+export function clampTextMiddleWithMetadata(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
     return { text };
+  }
+
+  if (noOmit) {
+    return {
+      text,
+      compaction: createPassthroughCompactionMetadata("no-omit-char-clip-passthrough"),
+    };
   }
 
   const markerChars = countTextChars(MIDDLE_TRUNCATION_MARKER);

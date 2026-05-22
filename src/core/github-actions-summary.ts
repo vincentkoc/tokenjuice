@@ -1,6 +1,6 @@
 import type { ToolExecutionInput } from "../types.js";
 
-import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { createCompactionMetadata, createPassthroughCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { normalizeLines, stripAnsi, trimEmptyEdges } from "./text.js";
 
 const GITHUB_ACTIONS_EXIT_PATTERN = /^Error: Process completed with exit code (\d+)\.?$/u;
@@ -71,9 +71,16 @@ function extractRunCommands(lines: string[]): string[] {
   return dedupeAdjacent(commands).filter((line) => !isShellSetupLine(line));
 }
 
-function formatCommandList(commands: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+function formatCommandList(commands: string[], noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   if (commands.length <= MAX_LISTED_COMMANDS) {
     return { lines: commands.map((command) => `- ${command}`) };
+  }
+
+  if (noOmit) {
+    return {
+      lines: commands.map((command) => `- ${command}`),
+      compaction: createPassthroughCompactionMetadata("no-omit-head-tail-passthrough"),
+    };
   }
 
   const headCount = Math.floor(MAX_LISTED_COMMANDS * 0.65);
@@ -89,7 +96,11 @@ function formatCommandList(commands: string[]): { lines: string[]; compaction?: 
   };
 }
 
-export function buildGithubActionsFailureSummary(input: ToolExecutionInput, rawText: string): { text: string; compaction?: CompactionMetadata } | null {
+export function buildGithubActionsFailureSummary(
+  input: ToolExecutionInput,
+  rawText: string,
+  noOmit = false,
+): { text: string; compaction?: CompactionMetadata } | null {
   const lines = trimEmptyEdges(normalizeLines(stripAnsi(rawText))).map((line) => line.trimEnd());
   const exitLine = [...lines].reverse().find((line) => GITHUB_ACTIONS_EXIT_PATTERN.test(stripGithubActionsScriptPrefix(line)));
   const exitCode = exitLine?.match(GITHUB_ACTIONS_EXIT_PATTERN)?.[1] ?? (input.exitCode && input.exitCode !== 0 ? String(input.exitCode) : null);
@@ -102,7 +113,7 @@ export function buildGithubActionsFailureSummary(input: ToolExecutionInput, rawT
     return null;
   }
 
-  const commandList = formatCommandList(commands);
+  const commandList = formatCommandList(commands, noOmit);
   const summary = [`GitHub Actions shell step failed (exit ${exitCode}).`];
   if (commands.length === 1) {
     summary.push(`Failing command: ${commands[0]}`);

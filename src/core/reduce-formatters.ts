@@ -1,4 +1,4 @@
-import { createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { createCompactionMetadata, createPassthroughCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { compactWhitespace, clipMiddleWithHash, parseJsonObjectLine, parseJsonValue } from "./reduce-utils.js";
 
 import type { ToolExecutionInput } from "../types.js";
@@ -174,8 +174,8 @@ function extractGhDuration(record: Record<string, unknown>): string | null {
   return null;
 }
 
-function formatGhJsonRecord(record: Record<string, unknown>): { line: string; compaction?: CompactionMetadata } | null {
-  const comment = formatGhCommentJsonRecord(record);
+function formatGhJsonRecord(record: Record<string, unknown>, noOmit = false): { line: string; compaction?: CompactionMetadata } | null {
+  const comment = formatGhCommentJsonRecord(record, noOmit);
   if (comment) {
     return comment;
   }
@@ -239,7 +239,7 @@ function getNestedLogin(value: unknown): string | null {
   return null;
 }
 
-function formatGhCommentJsonRecord(record: Record<string, unknown>): { line: string; compaction?: CompactionMetadata } | null {
+function formatGhCommentJsonRecord(record: Record<string, unknown>, noOmit = false): { line: string; compaction?: CompactionMetadata } | null {
   const body = typeof record.body === "string" ? record.body
     : typeof record.bodyText === "string" ? record.bodyText
       : null;
@@ -264,7 +264,7 @@ function formatGhCommentJsonRecord(record: Record<string, unknown>): { line: str
   const createdAt = typeof record.createdAt === "string" ? record.createdAt.slice(0, 10)
     : typeof record.created_at === "string" ? record.created_at.slice(0, 10)
       : null;
-  const clippedBody = clipMiddleWithHash(compactWhitespace(body), 180);
+  const clippedBody = clipMiddleWithHash(compactWhitespace(body), 180, noOmit);
 
   const location = path ? `${path}${line !== null ? `:${line}` : ""}` : null;
   const parts = [
@@ -342,7 +342,7 @@ function formatGhStatusCheckLine(record: Record<string, unknown>): string | null
   return parts.join(" ");
 }
 
-function formatGhStatusCheckRollup(value: unknown): { lines: string[]; compaction?: CompactionMetadata } {
+function formatGhStatusCheckRollup(value: unknown, noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const records = getGhCollection(value)
     .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null && !Array.isArray(entry));
   if (records.length === 0) {
@@ -352,7 +352,8 @@ function formatGhStatusCheckRollup(value: unknown): { lines: string[]; compactio
   const attention = records.filter((record) => !isGhStatusCheckOk(record));
   const okCount = records.length - attention.length;
   const lines = [`status checks: ${okCount} ok, ${attention.length} attention`];
-  const listed = attention.slice(0, MAX_GH_STATUS_CHECK_ATTENTION_LINES);
+  const listed = noOmit ? records : attention.slice(0, MAX_GH_STATUS_CHECK_ATTENTION_LINES);
+  const omittedAttention = Math.max(0, attention.length - MAX_GH_STATUS_CHECK_ATTENTION_LINES);
   for (const record of listed) {
     const line = formatGhStatusCheckLine(record);
     if (line) {
@@ -360,27 +361,28 @@ function formatGhStatusCheckRollup(value: unknown): { lines: string[]; compactio
     }
   }
 
-  const omittedAttention = attention.length - listed.length;
-  if (omittedAttention > 0) {
+  if (!noOmit && omittedAttention > 0) {
     lines.push(`... ${omittedAttention} attention checks omitted ...`);
   }
 
+  const compaction = noOmit
+    ? (okCount > 0 || omittedAttention > 0 ? createPassthroughCompactionMetadata("no-omit-domain-passthrough") : undefined)
+    : (okCount > 0 || omittedAttention > 0 ? createCompactionMetadata("github-status-check-rollup-omission") : undefined);
+
   return {
     lines,
-    ...(okCount > 0 || omittedAttention > 0
-      ? { compaction: createCompactionMetadata("github-status-check-rollup-omission") }
-      : {}),
+    ...(compaction && compaction.kinds.length > 0 ? { compaction } : {}),
   };
 }
 
-function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: CompactionMetadata } {
+function formatGhJsonValue(value: unknown, noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const compactions: CompactionMetadata[] = [];
   if (Array.isArray(value)) {
     const lines = value.flatMap((entry) => {
       if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
         return [];
       }
-      const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
+      const formatted = formatGhJsonRecord(entry as Record<string, unknown>, noOmit);
       if (!formatted) {
         return [];
       }
@@ -402,7 +404,7 @@ function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: Comp
 
   const record = value as Record<string, unknown>;
   const lines: string[] = [];
-  const header = formatGhJsonRecord(record);
+  const header = formatGhJsonRecord(record, noOmit);
   if (header) {
     lines.push(header.line);
     if (header.compaction) {
@@ -410,7 +412,7 @@ function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: Comp
     }
   }
 
-  const statusCheckRollup = formatGhStatusCheckRollup(record.statusCheckRollup);
+  const statusCheckRollup = formatGhStatusCheckRollup(record.statusCheckRollup, noOmit);
   if (statusCheckRollup.lines.length > 0) {
     lines.push(...statusCheckRollup.lines);
     if (statusCheckRollup.compaction) {
@@ -428,7 +430,7 @@ function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: Comp
       if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
         continue;
       }
-      const formatted = formatGhJsonRecord(entry as Record<string, unknown>);
+      const formatted = formatGhJsonRecord(entry as Record<string, unknown>, noOmit);
       if (formatted) {
         lines.push(formatted.line);
         if (formatted.compaction) {
@@ -444,19 +446,19 @@ function formatGhJsonValue(value: unknown): { lines: string[]; compaction?: Comp
   };
 }
 
-export function rewriteSearchLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+export function rewriteSearchLines(lines: string[], noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const compactions: CompactionMetadata[] = [];
   const rewritten = lines.map((line) => {
     const match = /^(.+?:\d+(?::|-))(.*)$/u.exec(line);
     if (!match) {
-      const clipped = clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS);
+      const clipped = clipMiddleWithHash(line, LONG_SEARCH_LINE_MAX_CHARS, noOmit);
       if (clipped.compaction) {
         compactions.push(clipped.compaction);
       }
       return clipped.text;
     }
     const [, prefix, rest] = match;
-    const clipped = clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS);
+    const clipped = clipMiddleWithHash(rest ?? "", LONG_SEARCH_LINE_MAX_CHARS, noOmit);
     if (clipped.compaction) {
       compactions.push(clipped.compaction);
     }
@@ -469,12 +471,13 @@ export function rewriteSearchLines(lines: string[]): { lines: string[]; compacti
   };
 }
 
-export function rewriteGitDiffLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+export function rewriteGitDiffLines(lines: string[], noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const rewritten: string[] = [];
   const compactions: CompactionMetadata[] = [];
   let emittedChangedLinesInHunk = 0;
   let omittedAdded = 0;
   let omittedRemoved = 0;
+  let bypassedHunkClip = false;
 
   const flushOmitted = () => {
     if (omittedAdded > 0 || omittedRemoved > 0) {
@@ -505,9 +508,12 @@ export function rewriteGitDiffLines(lines: string[]): { lines: string[]; compact
       continue;
     }
 
-    if (emittedChangedLinesInHunk < GIT_DIFF_CHANGED_LINES_PER_HUNK) {
+    if (noOmit || emittedChangedLinesInHunk < GIT_DIFF_CHANGED_LINES_PER_HUNK) {
+      if (noOmit && emittedChangedLinesInHunk >= GIT_DIFF_CHANGED_LINES_PER_HUNK) {
+        bypassedHunkClip = true;
+      }
       emittedChangedLinesInHunk += 1;
-      const clipped = clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS);
+      const clipped = clipMiddleWithHash(line, LONG_CHANGED_LINE_MAX_CHARS, noOmit);
       if (clipped.compaction) {
         compactions.push(clipped.compaction);
       }
@@ -523,6 +529,9 @@ export function rewriteGitDiffLines(lines: string[]): { lines: string[]; compact
   }
 
   flushOmitted();
+  if (bypassedHunkClip) {
+    compactions.push(createPassthroughCompactionMetadata("no-omit-domain-passthrough"));
+  }
   return {
     lines: rewritten,
     ...(compactions.length > 0 ? { compaction: mergeCompactionMetadata(...compactions) } : {}),
@@ -573,7 +582,7 @@ function formatOmittedGhLogLines(count: number): string {
   return `... ${count} non-signal log lines omitted ...`;
 }
 
-function filterGhRunLogSignalLines(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+function filterGhRunLogSignalLines(lines: string[], noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const signalIndexes = lines
     .map((line, index) => GH_RUN_LOG_SIGNAL_PATTERN.test(line) ? index : -1)
     .filter((index) => index >= 0);
@@ -614,13 +623,20 @@ function filterGhRunLogSignalLines(lines: string[]): { lines: string[]; compacti
     return { lines };
   }
 
+  if (noOmit) {
+    return {
+      lines,
+      compaction: createPassthroughCompactionMetadata("no-omit-domain-passthrough"),
+    };
+  }
+
   return {
     lines: rewritten,
     compaction: createCompactionMetadata("github-actions-log-signal-filter"),
   };
 }
 
-export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { lines: string[]; compaction?: CompactionMetadata } {
+export function rewriteGhLines(lines: string[], input: ToolExecutionInput, noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {
   const nonEmpty = lines.filter((line) => line.trim() !== "");
   if (nonEmpty.length === 0) {
     return { lines: [] };
@@ -628,7 +644,7 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
 
   const parsedWholeJson = parseJsonValue(nonEmpty.join("\n"));
   if (parsedWholeJson !== null) {
-    const rewrittenWholeJson = formatGhJsonValue(parsedWholeJson);
+    const rewrittenWholeJson = formatGhJsonValue(parsedWholeJson, noOmit);
     if (rewrittenWholeJson.lines.length > 0) {
       return rewrittenWholeJson;
     }
@@ -638,7 +654,7 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
   if (parsedJsonLines.every((entry) => entry !== null)) {
     const compactions: CompactionMetadata[] = [];
     const rewritten = parsedJsonLines
-      .map((entry) => formatGhJsonRecord(entry!))
+      .map((entry) => formatGhJsonRecord(entry!, noOmit))
       .flatMap((line) => {
         if (!line || line.line.length === 0) {
           return [];
@@ -659,7 +675,7 @@ export function rewriteGhLines(lines: string[], input: ToolExecutionInput): { li
   if (isGithubCliCommand((input.argv ?? [])[0])) {
     const formattedLines = lines.map(formatGhTableLine);
     if (isGhRunLogCommand(input)) {
-      return filterGhRunLogSignalLines(formattedLines);
+      return filterGhRunLogSignalLines(formattedLines, noOmit);
     }
     return { lines: formattedLines };
   }

@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { WRAP_AUTHORITATIVE_FOOTER } from "../../src/core/compaction-metadata.js";
-import { decorateWrapInlineText, isDirectModuleEntrypoint, parseArgs } from "../../src/cli/main.js";
+import { decorateWrapInlineText, isDirectModuleEntrypoint, parseArgs, resolveNoOmit } from "../../src/cli/main.js";
 import type { CompactResult } from "../../src/types.js";
 
 const tempDirs: string[] = [];
@@ -29,7 +29,7 @@ describe("parseArgs", () => {
 });
 
 describe("decorateWrapInlineText", () => {
-  it("suppresses the authoritative footer when noOmit is enabled", () => {
+  it("keeps the authoritative footer for lossy summaries", () => {
     const result: CompactResult = {
       inlineText: "summary",
       compaction: {
@@ -48,8 +48,39 @@ describe("decorateWrapInlineText", () => {
       },
     };
 
-    expect(decorateWrapInlineText(result, false, false)).toContain(WRAP_AUTHORITATIVE_FOOTER);
-    expect(decorateWrapInlineText(result, false, true)).toBe("summary");
+    expect(decorateWrapInlineText(result, false)).toContain(WRAP_AUTHORITATIVE_FOOTER);
+  });
+
+  it("suppresses the authoritative footer for lossless rewrites", () => {
+    const result: CompactResult = {
+      inlineText: "summary",
+      compaction: {
+        authoritative: false,
+        kinds: ["no-omit-domain-passthrough"],
+      },
+      stats: {
+        rawChars: 4_000,
+        reducedChars: 40,
+        ratio: 0.01,
+      },
+      classification: {
+        family: "generic",
+        confidence: 0.9,
+        matchedReducer: "generic/fallback",
+      },
+    };
+
+    expect(decorateWrapInlineText(result, false)).toBe("summary");
+  });
+});
+
+describe("resolveNoOmit", () => {
+  it("enables noOmit from TOKENJUICE_NO_OMISSION", () => {
+    expect(resolveNoOmit(false, { TOKENJUICE_NO_OMISSION: "1" })).toBe(true);
+  });
+
+  it("keeps noOmit enabled when the CLI flag is set", () => {
+    expect(resolveNoOmit(true, {})).toBe(true);
   });
 });
 

@@ -9,6 +9,7 @@ import packageJson from "../../package.json" with { type: "json" };
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
+import { readNoOmissionFromEnv } from "../core/env.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { WRAP_AUTHORITATIVE_FOOTER } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
@@ -629,6 +630,7 @@ function emit(format: Format, value: unknown, text: string, exactText = false): 
 async function runReduce(args: ParsedArgs): Promise<number> {
   const file = args.positionals[0];
   const rawText = await readTextInput(file, args.maxInputBytes);
+  const noOmit = resolveNoOmit(args.noOmit);
   const result = await reduceExecution(
     {
       toolName: "exec",
@@ -640,7 +642,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
     {
       ...(args.classifier ? { classifier: args.classifier } : {}),
       ...(args.raw ? { raw: true } : {}),
-      ...(args.noOmit ? { noOmit: true } : {}),
+      ...(noOmit ? { noOmit: true } : {}),
       ...(args.trace ? { trace: true } : {}),
       recordStats: true,
       ...(args.store ? { store: true } : {}),
@@ -655,6 +657,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
 async function runReduceJson(args: ParsedArgs): Promise<number> {
   const file = args.positionals[0];
   const rawText = await readTextInput(file, args.maxInputBytes);
+  const noOmit = resolveNoOmit(args.noOmit);
   if (!rawText.trim()) {
     throw new Error("reduce-json requires JSON input from stdin or a file");
   }
@@ -673,7 +676,7 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
     ...request.options,
     ...(args.classifier ? { classifier: args.classifier } : {}),
     ...(args.raw ? { raw: true } : {}),
-    ...(args.noOmit ? { noOmit: true } : {}),
+    ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
@@ -685,10 +688,11 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
 }
 
 async function runWrap(args: ParsedArgs): Promise<number> {
+  const noOmit = resolveNoOmit(args.noOmit);
   const wrapped = await runWrappedCommand(args.passthrough, {
     tee: args.tee,
     ...(args.raw ? { raw: true } : {}),
-    ...(args.noOmit ? { noOmit: true } : {}),
+    ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
     recordStats: true,
     ...(args.store ? { store: true } : {}),
@@ -697,14 +701,18 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(typeof args.maxCaptureBytes === "number" ? { maxCaptureBytes: args.maxCaptureBytes } : {}),
     ...(args.source ? { source: args.source } : {}),
   });
-  const inlineText = decorateWrapInlineText(wrapped.result, args.raw, args.noOmit);
+  const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
   emit(args.format, wrapped, inlineText, args.raw);
   return wrapped.exitCode;
 }
 
-export function decorateWrapInlineText(result: WrapResult["result"], raw: boolean, noOmit = false): string {
+export function resolveNoOmit(noOmitFlag: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+  return noOmitFlag || readNoOmissionFromEnv(env);
+}
+
+export function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): string {
   const { rawChars, reducedChars } = result.stats;
-  if (raw || noOmit || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
+  if (raw || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
     return result.inlineText;
   }
   const footer = [

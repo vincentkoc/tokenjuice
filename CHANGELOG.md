@@ -26,6 +26,7 @@
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta dot-agents global-rule integration.
 - Add a beta Docker Agent prompt-file integration.
+- Add a beta ECA workspace-skill integration.
 - Add a beta Firebase Studio AI-rules integration.
 - Add a beta ForgeCode AGENTS.md instruction integration.
 - Add a beta GitLab Duo custom-rules integration.

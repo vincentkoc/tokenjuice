@@ -57,6 +57,7 @@ import { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDev
 import { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "../hosts/dot-agents/index.js";
 import { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "../hosts/docker-agent/index.js";
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
+import { doctorEcaSkill, installEcaSkill, uninstallEcaSkill } from "../hosts/eca/index.js";
 import { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallForgeCodeInstructions } from "../hosts/forgecode/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
@@ -203,6 +204,7 @@ function printUsage(): void {
       "  tokenjuice install dot-agents",
       "  tokenjuice install docker-agent",
       "  tokenjuice install droid [--local]",
+      "  tokenjuice install eca",
       "  tokenjuice install firebase-studio",
       "  tokenjuice install forgecode",
       "  tokenjuice install gemini-cli [--local]",
@@ -282,6 +284,7 @@ function printUsage(): void {
       "  tokenjuice uninstall dot-agents",
       "  tokenjuice uninstall docker-agent",
       "  tokenjuice uninstall droid",
+      "  tokenjuice uninstall eca",
       "  tokenjuice uninstall firebase-studio",
       "  tokenjuice uninstall forgecode",
       "  tokenjuice uninstall gemini-cli",
@@ -331,7 +334,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aether|aictl|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|coder-agents|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|mcp-agent|mini-swe-agent|swe-agent|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aether|aictl|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|coder-agents|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|mcp-agent|mini-swe-agent|swe-agent|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1383,6 +1386,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "eca") {
+    const result = await installEcaSkill();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Skill", value: result.skillPath },
+      { label: "Beta", value: "project skill guidance; ECA still owns shell execution" },
+      { label: "Verify", value: "tokenjuice doctor eca" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("eca", "skill", details));
+    return 0;
+  }
+
   if (target === "firebase-studio") {
     const result = await installFirebaseStudioRule();
     if (args.format === "json") {
@@ -2343,7 +2366,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, coder-agents, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, coder-agents, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -3347,6 +3370,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "eca") {
+    const result = await uninstallEcaSkill();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed ECA skill: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`skill path: ${result.skillPath}\n`);
+    process.stdout.write("enable: tokenjuice install eca\n");
+    return 0;
+  }
+
   if (target === "droid") {
     const result = await uninstallDroidHook();
     if (args.format === "json") {
@@ -3386,7 +3422,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, coder-agents, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, coder-agents, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, eca, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -4557,6 +4593,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     if (report.detectedCommand) {
       process.stdout.write(`configured command: ${report.detectedCommand}\n`);
     }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "eca") {
+    const report = await doctorEcaSkill();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`skill path: ${report.skillPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {

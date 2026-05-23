@@ -35,6 +35,7 @@ import { doctorDevinHook } from "../devin/index.js";
 import { doctorDotAgentsRule } from "../dot-agents/index.js";
 import { doctorDockerAgentPrompt } from "../docker-agent/index.js";
 import { doctorDroidHook } from "../droid/index.js";
+import { doctorEcaSkill } from "../eca/index.js";
 import { doctorFirebaseStudioRule } from "../firebase-studio/index.js";
 import { doctorForgeCodeInstructions } from "../forgecode/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
@@ -117,6 +118,7 @@ import type { DevinDoctorReport, DevinHookCommandOptions } from "../devin/index.
 import type { DotAgentsDoctorReport, DotAgentsRuleOptions } from "../dot-agents/index.js";
 import type { DockerAgentDoctorReport, DockerAgentPromptOptions } from "../docker-agent/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
+import type { EcaDoctorReport, EcaSkillOptions } from "../eca/index.js";
 import type { FirebaseStudioDoctorReport, FirebaseStudioRuleOptions } from "../firebase-studio/index.js";
 import type { ForgeCodeDoctorReport, ForgeCodeInstructionsOptions } from "../forgecode/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
@@ -201,6 +203,7 @@ export type HookIntegrationDoctorReport = {
   "dot-agents": DotAgentsDoctorReport;
   "docker-agent": DockerAgentDoctorReport;
   droid: DroidDoctorReport;
+  eca: EcaDoctorReport;
   "firebase-studio": FirebaseStudioDoctorReport;
   forgecode: ForgeCodeDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
@@ -253,7 +256,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -301,6 +304,7 @@ const hookDoctorIntegrationDoctors = {
   "dot-agents": (options) => doctorDotAgentsRule(undefined, getHookCommandOptions(options)),
   "docker-agent": (options) => doctorDockerAgentPrompt(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
+  eca: (options) => doctorEcaSkill(undefined, getHookCommandOptions(options)),
   "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
   forgecode: (options) => doctorForgeCodeInstructions(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),

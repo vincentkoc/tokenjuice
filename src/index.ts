@@ -58,6 +58,7 @@ export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDev
 export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "./hosts/dot-agents/index.js";
 export { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "./hosts/docker-agent/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
+export { doctorEcaSkill, installEcaSkill, uninstallEcaSkill } from "./hosts/eca/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallForgeCodeInstructions } from "./hosts/forgecode/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
@@ -329,6 +330,12 @@ export type {
   InstallDroidHookResult,
   UninstallDroidHookResult,
 } from "./hosts/droid/index.js";
+export type {
+  EcaDoctorReport,
+  EcaSkillOptions,
+  InstallEcaSkillResult,
+  UninstallEcaSkillResult,
+} from "./hosts/eca/index.js";
 export type {
   FirebaseStudioDoctorReport,
   FirebaseStudioRuleOptions,

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">AgentInit</title>
+  <desc id="desc">Simple AgentInit integration mark</desc>
+  <rect width="96" height="96" rx="18" fill="#f8fafc"/>
+  <path d="M22 30h52v42H22z" fill="#ffffff" stroke="#111827" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M34 44h28M34 56h20" stroke="#0f766e" stroke-width="5" stroke-linecap="round"/>
+  <path d="M22 26l26-14 26 14" fill="none" stroke="#7c3aed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="28" cy="75" r="6" fill="#f59e0b"/>
+  <circle cx="68" cy="75" r="6" fill="#f59e0b"/>
+</svg>

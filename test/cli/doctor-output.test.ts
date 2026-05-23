@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
+      "available integrations: adal, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,7 +71,7 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
+      "available integrations: adal, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -128,6 +128,15 @@ describe("formatHookDoctorReport", () => {
           missingPaths: [],
           fixCommand: "tokenjuice install agentlink",
         },
+        agentinit: {
+          instructionsPath: "/tmp/project/AGENTS.md",
+          syncCommand: "agentinit sync",
+          status: "ok",
+          issues: [],
+          advisories: [],
+          missingPaths: [],
+          fixCommand: "tokenjuice install agentinit",
+        },
         "agents-cli": {
           instructionsPath: "/tmp/agents/memory/AGENTS.md",
           syncCommand: "agents sync",
@@ -159,6 +168,7 @@ describe("formatHookDoctorReport", () => {
     } as unknown as HookDoctorReport;
 
     expect(formatHookDoctorReport(report)).toContain("- sync: agentlink sync");
+    expect(formatHookDoctorReport(report)).toContain("- sync: agentinit sync");
     expect(formatHookDoctorReport(report)).toContain("- sync: agents sync");
     expect(formatHookDoctorReport(report)).toContain("- sync: anywhere-agents");
     expect(formatHookDoctorReport(report)).toContain("- sync: dot-agents sync");

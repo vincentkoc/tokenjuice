@@ -22,6 +22,7 @@
 - Add a beta Bito custom-guidelines integration.
 - Add a beta IBM Bob Shell context-file integration.
 - Add a beta Builder Projects rule integration.
+- Add a beta Charlie AGENTS.md instruction integration.
 - Add a beta CodeAnt review-instructions integration.
 - Add a beta Codebuff instruction integration.
 - Add a beta Codegen instruction integration.

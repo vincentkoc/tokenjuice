@@ -25,6 +25,7 @@ export { doctorBitoGuidelines, installBitoGuidelines, uninstallBitoGuidelines } 
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
 export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "./hosts/bob/index.js";
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
+export { doctorCharlieInstructions, installCharlieInstructions, uninstallCharlieInstructions } from "./hosts/charlie/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "./hosts/codeant/index.js";
@@ -286,6 +287,12 @@ export type {
   InstallBuilderRuleResult,
   UninstallBuilderRuleResult,
 } from "./hosts/builder/index.js";
+export type {
+  CharlieDoctorReport,
+  CharlieInstructionsOptions,
+  InstallCharlieInstructionsResult,
+  UninstallCharlieInstructionsResult,
+} from "./hosts/charlie/index.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
 export type {
   InstallPiGoSkillResult,

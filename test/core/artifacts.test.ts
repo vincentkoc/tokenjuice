@@ -192,10 +192,14 @@ describe("artifacts", () => {
     expect(normalizeArtifactSource("amazon-q")).toBe("amazon-q");
     expect(normalizeArtifactSource("Amazon Q")).toBe("amazon-q");
     expect(normalizeArtifactSource("aws-q-cli")).toBe("amazon-q");
+    expect(normalizeArtifactSource("copilot-agent-post-tool-use")).toBe("copilot-agent");
+    expect(normalizeArtifactSource("copilot-cli-post-tool-use")).toBe("copilot-cli");
+    expect(normalizeArtifactSource("droid-post-tool-use")).toBe("droid");
     expect(normalizeArtifactSource("grok-build")).toBe("grok-build");
     expect(normalizeArtifactSource("Grok Build")).toBe("grok-build");
     expect(normalizeArtifactSource("xai-grok-build")).toBe("grok-build");
     expect(normalizeArtifactSource("grok-cli-post-tool-use")).toBe("grok-cli");
     expect(normalizeArtifactSource("qoder")).toBe("qoder");
+    expect(normalizeArtifactSource("vscode-copilot-pre-tool-use")).toBe("vscode-copilot");
   });
 });

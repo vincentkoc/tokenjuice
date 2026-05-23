@@ -6,6 +6,10 @@
 
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
 
+### Fixes
+
+- Normalize stored artifact sources for Copilot, Droid, and VS Code Copilot hook adapters.
+
 ## 0.7.1 - 2026-05-17
 
 ### Fixes

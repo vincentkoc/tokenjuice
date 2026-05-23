@@ -31,8 +31,20 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("codex")) {
     return "codex";
   }
+  if (source.startsWith("copilot-agent") || source.startsWith("github-copilot-agent")) {
+    return "copilot-agent";
+  }
+  if (source.startsWith("copilot-cli") || source.startsWith("github-copilot-cli")) {
+    return "copilot-cli";
+  }
+  if (source.startsWith("crush")) {
+    return "crush";
+  }
   if (source.startsWith("cursor")) {
     return "cursor";
+  }
+  if (source.startsWith("droid") || source.startsWith("factory-droid")) {
+    return "droid";
   }
   if (source.startsWith("gemini")) {
     return "gemini-cli";
@@ -81,6 +93,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   }
   if (source.startsWith("ruler")) {
     return "ruler";
+  }
+  if (source.startsWith("vscode-copilot") || source.startsWith("vs-code-copilot")) {
+    return "vscode-copilot";
   }
   if (source === "direct" || source === "tokenjuice" || source === "wrap") {
     return DEFAULT_CLI_ARTIFACT_SOURCE;

@@ -60,6 +60,7 @@ const TOKENJUICE_VSCODE_COPILOT_FILENAME = "tokenjuice-vscode.json";
 const TOKENJUICE_VSCODE_COPILOT_LEGACY_FILENAME = "tokenjuice.json";
 const TOKENJUICE_VSCODE_COPILOT_MATCHER = "run_in_terminal";
 const TOKENJUICE_VSCODE_COPILOT_SUBCOMMAND = "vscode-copilot-pre-tool-use";
+const TOKENJUICE_VSCODE_COPILOT_SOURCE = "vscode-copilot";
 const TOKENJUICE_VSCODE_COPILOT_ADVISORY =
   "enable `chat.useHooks` in VS Code settings and trust the workspace; both are required for the hook to fire.";
 const TOKENJUICE_VSCODE_COPILOT_INSTRUCTIONS_ADVISORY =
@@ -503,7 +504,7 @@ export async function runVscodeCopilotPreToolUseHook(
     ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
     : shellQuote(wrapLauncher);
   const wrappedCommand =
-    `${launcherCommand} wrap -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
+    `${launcherCommand} wrap --source ${TOKENJUICE_VSCODE_COPILOT_SOURCE} -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
 
   const updatedInput: Record<string, unknown> = {
     ...toolInput,

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Aether">
+  <rect width="192" height="192" rx="36" fill="#111827"/>
+  <path d="M46 132 82 52h28l36 80h-24l-7-18H77l-7 18H46Zm39-38h22L96 66 85 94Z" fill="#f8fafc"/>
+  <path d="M58 145h76" stroke="#38bdf8" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="146" cy="48" r="14" fill="#a7f3d0"/>
+</svg>

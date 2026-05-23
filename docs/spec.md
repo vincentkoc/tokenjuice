@@ -174,6 +174,7 @@ tokenjuice install codex
 tokenjuice install claude-code
 tokenjuice install codebuddy
 tokenjuice install adal
+tokenjuice install aether
 tokenjuice install codebuff
 tokenjuice install codegen
 tokenjuice install deepagents
@@ -231,6 +232,7 @@ tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice doctor opencode
 tokenjuice doctor adal
+tokenjuice doctor aether
 tokenjuice doctor agent-layer
 tokenjuice doctor agentinit
 tokenjuice doctor agentlink
@@ -298,6 +300,7 @@ supported host hooks:
 | Client | Install | Hook file | Notes |
 | --- | --- | --- | --- |
 | AdaL CLI | `tokenjuice install adal` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells AdaL CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because AdaL `AGENTS.md` project context does not intercept command output; see `docs/adal-integration.md` |
+| Aether | `tokenjuice install aether` | `.aether/tokenjuice.md` / `.aether/settings.json` | ✴️ Beta. Installs a tokenjuice prompt source and adds `.aether/tokenjuice.md` to every configured Aether agent's `prompts` array; guidance-only, because Aether prompt sources shape agent behavior rather than intercepting command output; requires `.aether/settings.json` first; verify with `aether show-prompt -a <agent>`; see `docs/aether-integration.md` |
 | Aider | `tokenjuice install aider` | `CONVENTIONS.tokenjuice.md` | ✴️ Beta. Installs a convention file that tells Aider to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Aider conventions do not intercept command output; load with `aider --read CONVENTIONS.tokenjuice.md`; see `docs/aider-integration.md` |
 | Agent Layer | `tokenjuice install agent-layer` | `.agent-layer/instructions/tokenjuice.md` | ✴️ Beta. Installs source instructions that tell Agent Layer-generated client files to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Agent Layer syncs instructions rather than intercepting command output; requires `al init` first; run `al sync` after install or uninstall; see `docs/agent-layer-integration.md` |
 | AgentInit | `tokenjuice install agentinit` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited block into AgentInit's canonical `AGENTS.md` source that tells synced downstream agent files to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because AgentInit syncs instructions rather than intercepting command output; run `agentinit sync` after install or uninstall; see `docs/agentinit-integration.md` |

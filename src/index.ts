@@ -3,6 +3,7 @@ export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
+export { doctorAetherPrompt, installAetherPrompt, uninstallAetherPrompt } from "./hosts/aether/index.js";
 export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallAgentLayerInstructions } from "./hosts/agent-layer/index.js";
 export { doctorAgentInitInstructions, installAgentInitInstructions, uninstallAgentInitInstructions } from "./hosts/agentinit/index.js";
 export { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "./hosts/agentlink/index.js";
@@ -139,6 +140,12 @@ export type {
   InstallAdalInstructionsResult,
   UninstallAdalInstructionsResult,
 } from "./hosts/adal/index.js";
+export type {
+  AetherDoctorReport,
+  AetherPromptOptions,
+  InstallAetherPromptResult,
+  UninstallAetherPromptResult,
+} from "./hosts/aether/index.js";
 export type {
   AgentLayerDoctorReport,
   AgentLayerInstructionsOptions,

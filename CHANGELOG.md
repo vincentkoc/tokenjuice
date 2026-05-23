@@ -13,6 +13,7 @@
 - Add a beta Firebase Studio AI-rules integration.
 - Add a beta GitLab Duo custom-rules integration.
 - Add a beta gptme instruction integration.
+- Add a beta Jean2 instruction integration.
 - Add a beta JetBrains AI Assistant project-rule integration.
 - Add a beta Jules instruction integration.
 - Add a beta Kimi Code CLI PostToolUse hook integration.

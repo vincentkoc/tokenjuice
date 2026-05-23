@@ -49,6 +49,7 @@ export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./host
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
 export { doctorGptmeInstructions, installGptmeInstructions, uninstallGptmeInstructions } from "./hosts/gptme/index.js";
+export { doctorJean2Instructions, installJean2Instructions, uninstallJean2Instructions } from "./hosts/jean2/index.js";
 export { doctorJetBrainsAiRule, installJetBrainsAiRule, uninstallJetBrainsAiRule } from "./hosts/jetbrains-ai/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "./hosts/jules/index.js";
@@ -244,6 +245,12 @@ export type {
   InstallGptmeInstructionsResult,
   UninstallGptmeInstructionsResult,
 } from "./hosts/gptme/index.js";
+export type {
+  InstallJean2InstructionsResult,
+  Jean2DoctorReport,
+  Jean2InstructionsOptions,
+  UninstallJean2InstructionsResult,
+} from "./hosts/jean2/index.js";
 export type {
   InstallJetBrainsAiRuleResult,
   JetBrainsAiDoctorReport,

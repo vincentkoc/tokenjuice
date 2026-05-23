@@ -23,6 +23,7 @@ import { doctorBobInstructions } from "../bob/index.js";
 import { doctorBuilderRule } from "../builder/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
 import { doctorClineHook } from "../cline/index.js";
+import { doctorCodeAntInstructions } from "../codeant/index.js";
 import { doctorCodebuffInstructions } from "../codebuff/index.js";
 import { doctorCodegenInstructions } from "../codegen/index.js";
 import { doctorCoderAgentsSkill } from "../coder-agents/index.js";
@@ -116,6 +117,7 @@ import type { BobDoctorReport, BobInstructionsOptions } from "../bob/index.js";
 import type { BuilderDoctorReport, BuilderRuleOptions } from "../builder/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { ClineDoctorReport } from "../cline/index.js";
+import type { CodeAntDoctorReport, CodeAntInstructionsOptions } from "../codeant/index.js";
 import type { CodebuffDoctorReport, CodebuffInstructionsOptions } from "../codebuff/index.js";
 import type { CodegenDoctorReport, CodegenInstructionsOptions } from "../codegen/index.js";
 import type { CoderAgentsDoctorReport, CoderAgentsSkillOptions } from "../coder-agents/index.js";
@@ -214,6 +216,7 @@ export type HookIntegrationDoctorReport = {
   "copilot-agent": CopilotAgentDoctorReport;
   "claude-code": ClaudeCodeDoctorReport;
   cline: ClineDoctorReport;
+  codeant: CodeAntDoctorReport;
   codebuff: CodebuffDoctorReport;
   codegen: CodegenDoctorReport;
   "coder-agents": CoderAgentsDoctorReport;
@@ -286,7 +289,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BobInstructionsOptions & BuilderRuleOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -324,6 +327,7 @@ const hookDoctorIntegrationDoctors = {
   codex: (options) => doctorCodexHook(undefined, options),
   "claude-code": (options) => doctorClaudeCodeHook(undefined, getHookCommandOptions(options)),
   cline: (options) => doctorClineHook(undefined, getHookCommandOptions(options)),
+  codeant: (options) => doctorCodeAntInstructions(undefined, getHookCommandOptions(options)),
   codebuff: (options) => doctorCodebuffInstructions(undefined, getHookCommandOptions(options)),
   codegen: (options) => doctorCodegenInstructions(undefined, getHookCommandOptions(options)),
   "coder-agents": (options) => doctorCoderAgentsSkill(undefined, getHookCommandOptions(options)),

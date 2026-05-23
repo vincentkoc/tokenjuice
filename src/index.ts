@@ -27,6 +27,7 @@ export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
+export { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "./hosts/codeant/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
@@ -298,6 +299,12 @@ export type {
   InstallClineHookResult,
   UninstallClineHookResult,
 } from "./hosts/cline/index.js";
+export type {
+  CodeAntDoctorReport,
+  CodeAntInstructionsOptions,
+  InstallCodeAntInstructionsResult,
+  UninstallCodeAntInstructionsResult,
+} from "./hosts/codeant/index.js";
 export type {
   CodebuffDoctorReport,
   CodebuffInstructionsOptions,

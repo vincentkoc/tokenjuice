@@ -83,7 +83,54 @@ describe("windsurf rules", () => {
     const doctor = await doctorWindsurfRule(rulePath);
 
     expect(doctor.status).toBe("broken");
-    expect(doctor.issues).toContain("configured Windsurf rule file is missing always-on activation");
+    expect(doctor.issues).toContain("configured Windsurf rule file is missing always-on frontmatter activation");
+  });
+
+  it("reports broken rules with trigger text outside frontmatter", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".windsurf", "rules", "tokenjuice.md");
+    await installWindsurfRule(rulePath);
+    await writeFile(
+      rulePath,
+      [
+        "# tokenjuice terminal output compaction",
+        "",
+        "trigger: always_on",
+        "",
+        "- tokenjuice wrap -- <command>",
+        "- tokenjuice wrap --raw -- <command>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const doctor = await doctorWindsurfRule(rulePath);
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.issues).toContain("configured Windsurf rule file is missing always-on frontmatter activation");
+  });
+
+  it("accepts CRLF always-on frontmatter", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".windsurf", "rules", "tokenjuice.md");
+    await installWindsurfRule(rulePath);
+    await writeFile(
+      rulePath,
+      [
+        "---",
+        "trigger: always_on",
+        "---",
+        "",
+        "# tokenjuice terminal output compaction",
+        "",
+        "- tokenjuice wrap -- <command>",
+        "- tokenjuice wrap --raw -- <command>",
+      ].join("\r\n"),
+      "utf8",
+    );
+
+    const doctor = await doctorWindsurfRule(rulePath);
+
+    expect(doctor.status).toBe("ok");
   });
 
   it("uses WINDSURF_PROJECT_DIR for the default rule file", async () => {
@@ -97,6 +144,18 @@ describe("windsurf rules", () => {
     expect(installed.rulePath).toBe(expectedRulePath);
     expect(doctor.rulePath).toBe(expectedRulePath);
     expect(doctor.status).toBe("ok");
+  });
+
+  it("uses projectDir when uninstalling the default rule file", async () => {
+    const home = await createTempDir();
+    const expectedRulePath = join(home, ".windsurf", "rules", "tokenjuice.md");
+
+    await installWindsurfRule(undefined, { projectDir: home });
+    const removed = await uninstallWindsurfRule(undefined, { projectDir: home });
+
+    expect(removed.rulePath).toBe(expectedRulePath);
+    expect(removed.removed).toBe(true);
+    await expect(access(expectedRulePath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("removes the default rule file when uninstalling", async () => {

@@ -57,6 +57,19 @@ const TOKENJUICE_WINDSURF_RULE = [
   "",
 ].join("\n");
 
+function hasAlwaysOnFrontmatter(text: string): boolean {
+  const frontmatterStart = text.match(/^---\r?\n/u);
+  if (!frontmatterStart) {
+    return false;
+  }
+  const endIndex = text.search(/\r?\n---(?:\r?\n|$)/u);
+  if (endIndex === -1) {
+    return false;
+  }
+  const frontmatter = text.slice(frontmatterStart[0].length, endIndex);
+  return frontmatter.split(/\r?\n/u).some((line) => line.trim() === "trigger: always_on");
+}
+
 export async function installWindsurfRule(
   rulePath?: string,
   options: WindsurfRuleOptions = {},
@@ -69,8 +82,12 @@ export async function installWindsurfRule(
   };
 }
 
-export async function uninstallWindsurfRule(rulePath = getDefaultRulePath()): Promise<UninstallWindsurfRuleResult> {
-  const result = await removeInstructionFile(rulePath);
+export async function uninstallWindsurfRule(
+  rulePath?: string,
+  options: WindsurfRuleOptions = {},
+): Promise<UninstallWindsurfRuleResult> {
+  const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
+  const result = await removeInstructionFile(resolvedRulePath);
   return { rulePath: result.filePath, removed: result.removed };
 }
 
@@ -99,10 +116,6 @@ export async function doctorWindsurfRule(
         missingIssue: "configured Windsurf rule file does not look like the tokenjuice rule",
       },
       {
-        requiredText: "trigger: always_on",
-        missingIssue: "configured Windsurf rule file is missing always-on activation",
-      },
-      {
         requiredText: TOKENJUICE_WRAP_COMMAND,
         missingIssue: "configured Windsurf rule file is missing tokenjuice wrap guidance",
       },
@@ -118,6 +131,9 @@ export async function doctorWindsurfRule(
       },
     ],
   });
+  if (!hasAlwaysOnFrontmatter(existing.text)) {
+    issues.push("configured Windsurf rule file is missing always-on frontmatter activation");
+  }
 
   return {
     rulePath: resolvedRulePath,

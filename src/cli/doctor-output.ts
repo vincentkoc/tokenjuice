@@ -91,6 +91,9 @@ export function formatHookDoctorReport(report: HookDoctorReport): string {
       );
     }
     lines.push(`- repair: ${integrationReport.fixCommand}`);
+    if ("syncCommand" in integrationReport && typeof integrationReport.syncCommand === "string") {
+      lines.push(`- sync: ${integrationReport.syncCommand}`);
+    }
   }
 
   appendInstallHint(lines);

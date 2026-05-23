@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="agents-cli">
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M24 31h48v9H24v-9Zm0 17h48v9H24v-9Zm0 17h32v9H24v-9Z" fill="#f9fafb"/>
+  <path d="M66 62 78 74 66 86" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 18h60v8H18v-8Z" fill="#38bdf8"/>
+</svg>

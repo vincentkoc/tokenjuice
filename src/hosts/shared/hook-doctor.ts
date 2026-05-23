@@ -45,6 +45,7 @@ import { doctorJulesInstructions } from "../jules/index.js";
 import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
+import { doctorMcpAgentDefinition } from "../mcp-agent/index.js";
 import { doctorMiniSweAgentConfig } from "../mini-swe-agent/index.js";
 import { doctorSweAgentConfig } from "../swe-agent/index.js";
 import { doctorMistralVibeInstructions } from "../mistral-vibe/index.js";
@@ -117,6 +118,7 @@ import type { JulesDoctorReport, JulesInstructionsOptions } from "../jules/index
 import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
+import type { McpAgentDefinitionOptions, McpAgentDoctorReport } from "../mcp-agent/index.js";
 import type { MiniSweAgentConfigOptions, MiniSweAgentDoctorReport } from "../mini-swe-agent/index.js";
 import type { SweAgentConfigOptions, SweAgentDoctorReport } from "../swe-agent/index.js";
 import type { MistralVibeDoctorReport, MistralVibeInstructionsOptions } from "../mistral-vibe/index.js";
@@ -191,6 +193,7 @@ export type HookIntegrationDoctorReport = {
   kimi: KimiDoctorReport;
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
+  "mcp-agent": McpAgentDoctorReport;
   "mini-swe-agent": MiniSweAgentDoctorReport;
   "swe-agent": SweAgentDoctorReport;
   "mistral-vibe": MistralVibeDoctorReport;
@@ -223,7 +226,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -281,6 +284,7 @@ const hookDoctorIntegrationDoctors = {
   kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),
+  "mcp-agent": (options) => doctorMcpAgentDefinition(undefined, getHookCommandOptions(options)),
   "mini-swe-agent": (options) => doctorMiniSweAgentConfig(undefined, getHookCommandOptions(options)),
   "swe-agent": (options) => doctorSweAgentConfig(undefined, getHookCommandOptions(options)),
   "mistral-vibe": (options) => doctorMistralVibeInstructions(undefined, getHookCommandOptions(options)),

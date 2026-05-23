@@ -27,6 +27,7 @@ function getIntegrationPath(report: IntegrationDoctorReport): string {
     getStringField(report, "conventionPath") ??
     getStringField(report, "instructionsPath") ??
     getStringField(report, "toolPath") ??
+    getStringField(report, "agentPath") ??
     getStringField(report, "extensionPath") ??
     "(unknown)"
   );

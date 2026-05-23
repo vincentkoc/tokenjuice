@@ -68,6 +68,7 @@ export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstru
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
+export { doctorMcpAgentDefinition, installMcpAgentDefinition, uninstallMcpAgentDefinition } from "./hosts/mcp-agent/index.js";
 export { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAgentConfig } from "./hosts/mini-swe-agent/index.js";
 export { doctorSweAgentConfig, installSweAgentConfig, uninstallSweAgentConfig } from "./hosts/swe-agent/index.js";
 export { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "./hosts/mistral-vibe/index.js";
@@ -373,6 +374,12 @@ export type {
   KiloRuleOptions,
   UninstallKiloRuleResult,
 } from "./hosts/kilo/index.js";
+export type {
+  InstallMcpAgentDefinitionResult,
+  McpAgentDefinitionOptions,
+  McpAgentDoctorReport,
+  UninstallMcpAgentDefinitionResult,
+} from "./hosts/mcp-agent/index.js";
 export type {
   InstallMiniSweAgentConfigResult,
   MiniSweAgentConfigOptions,

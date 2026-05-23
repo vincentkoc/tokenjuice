@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Ona</title>
+  <desc id="desc">Ona client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <circle cx="48" cy="48" r="27" fill="#F8FAFC"/>
+  <circle cx="48" cy="48" r="15" fill="#14B8A6"/>
+  <path d="M48 18c13 0 24 8 28 20H62c-3-5-8-8-14-8-10 0-18 8-18 18s8 18 18 18c6 0 11-3 14-8h14c-4 12-15 20-28 20-17 0-30-13-30-30s13-30 30-30Z" fill="#6366F1"/>
+</svg>

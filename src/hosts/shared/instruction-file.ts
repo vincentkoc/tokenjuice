@@ -89,6 +89,27 @@ export async function removeInstructionFile(filePath: string): Promise<RemoveIns
   return { filePath, removed: existing.exists };
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
+function matchesForbiddenText(text: string, forbiddenText: string): boolean {
+  if (text.includes(forbiddenText)) {
+    return true;
+  }
+
+  const commandPlaceholder = "<command>";
+  const placeholderIndex = forbiddenText.indexOf(commandPlaceholder);
+  if (placeholderIndex === -1) {
+    return false;
+  }
+
+  const prefix = forbiddenText.slice(0, placeholderIndex).trimEnd();
+  const suffix = forbiddenText.slice(placeholderIndex + commandPlaceholder.length).trimStart();
+  const commandPattern = new RegExp(`${escapeRegExp(prefix)}\\s+\\S+${escapeRegExp(suffix)}`, "u");
+  return commandPattern.test(text);
+}
+
 export function collectGuidanceIssues(text: string, options: GuidanceIssueOptions): string[] {
   const issues: string[] = [];
   for (const check of options.required) {
@@ -97,7 +118,7 @@ export function collectGuidanceIssues(text: string, options: GuidanceIssueOption
     }
   }
   for (const check of options.forbidden ?? []) {
-    if (text.includes(check.forbiddenText)) {
+    if (matchesForbiddenText(text, check.forbiddenText)) {
       issues.push(check.presentIssue);
     }
   }

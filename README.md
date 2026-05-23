@@ -61,6 +61,7 @@ beta integrations:
 | <img width="48px" src="docs/client-kilo.svg" alt="Kilo Code" /> | [Kilo Code](https://kilocode.ai/) | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-mistral-vibe.svg" alt="Mistral Vibe" /> | [Mistral Vibe](https://docs.mistral.ai/mistral-vibe/agents-skills) | `tokenjuice install mistral-vibe` | `AGENTS.md` |
 | <img width="48px" src="docs/client-mux.svg" alt="Mux" /> | [Mux](https://mux.coder.com/hooks/tools) | `tokenjuice install mux` | `.mux/tool_post` |
+| <img width="48px" src="docs/client-ona.svg" alt="Ona" /> | [Ona Agent](https://ona.com/docs/ona/agents/overview) | `tokenjuice install ona` | `AGENTS.md` |
 | <img width="48px" src="docs/client-openhands.svg" alt="OpenHands" /> | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` |
 | <img width="48px" src="docs/client-open-interpreter.svg" alt="Open Interpreter" /> | [Open Interpreter](https://www.openinterpreter.com/docs/terminal/agents_md) | `tokenjuice install open-interpreter` | `AGENTS.md` |
 | <img width="48px" src="docs/client-openwebui.svg" alt="Open WebUI" /> | [Open WebUI](https://openwebui.com/) | `tokenjuice install openwebui` | `.openwebui/tools/tokenjuice_compact.py` |
@@ -96,8 +97,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
-tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|cline|codebuff|codegen|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
+tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|cline|codebuff|codegen|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -119,9 +120,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder] --local
-tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|cline|codebuff|codegen|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder] --local
+tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|cline|codebuff|codegen|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -200,6 +201,7 @@ direct payload:
 - [Kilo Code integration](docs/kilo-integration.md)
 - [Mistral Vibe integration](docs/mistral-vibe-integration.md)
 - [Mux integration](docs/mux-integration.md)
+- [Ona integration](docs/ona-integration.md)
 - [Open Interpreter integration](docs/open-interpreter-integration.md)
 - [Open WebUI integration](docs/openwebui-integration.md)
 - [Plandex integration](docs/plandex-integration.md)

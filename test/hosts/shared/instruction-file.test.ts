@@ -74,4 +74,15 @@ describe("collectGuidanceIssues", () => {
     expect(result.backupPath).toBe(`${filePath}.bak.1`);
     await expect(readFile(`${filePath}.bak.1`, "utf8")).resolves.toBe("custom guidance\n");
   });
+
+  it("matches forbidden command placeholders against concrete commands", () => {
+    const issues = collectGuidanceIssues("use `tokenjuice wrap --full -- npm test` when output is truncated", {
+      required: [],
+      forbidden: [
+        { forbiddenText: "tokenjuice wrap --full -- <command>", presentIssue: "has full" },
+      ],
+    });
+
+    expect(issues).toEqual(["has full"]);
+  });
 });

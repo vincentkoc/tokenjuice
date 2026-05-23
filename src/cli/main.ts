@@ -56,6 +56,7 @@ import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "../hosts/mistral-vibe/index.js";
 import { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "../hosts/mux/index.js";
+import { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "../hosts/ona/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -175,6 +176,7 @@ function printUsage(): void {
       "  tokenjuice install kilo",
       "  tokenjuice install mistral-vibe",
       "  tokenjuice install mux [--local]",
+      "  tokenjuice install ona",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
@@ -227,6 +229,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall mistral-vibe",
       "  tokenjuice uninstall mux",
+      "  tokenjuice uninstall ona",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
@@ -250,7 +253,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1273,6 +1276,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "ona") {
+    const result = await installOnaInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-file guidance; Ona still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor ona" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("ona", "instructions", details));
+    return 0;
+  }
+
   if (target === "warp") {
     const result = await installWarpInstructions();
     if (args.format === "json") {
@@ -1701,7 +1724,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2110,6 +2133,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "ona") {
+    const result = await uninstallOnaInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed ona instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install ona\n");
+    return 0;
+  }
+
   if (target === "warp") {
     const result = await uninstallWarpInstructions();
     if (args.format === "json") {
@@ -2383,7 +2419,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3857,6 +3893,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "ona") {
+    const report = await doctorOnaInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
       }
     }
     if (report.advisories.length > 0) {

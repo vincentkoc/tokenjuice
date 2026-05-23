@@ -57,6 +57,7 @@ export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
 export { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "./hosts/mistral-vibe/index.js";
 export { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "./hosts/mux/index.js";
+export { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "./hosts/ona/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
@@ -326,6 +327,12 @@ export type {
   QwenCodeHookCommandOptions,
   UninstallQwenCodeHookResult,
 } from "./hosts/qwen-code/index.js";
+export type {
+  InstallOnaInstructionsResult,
+  OnaDoctorReport,
+  OnaInstructionsOptions,
+  UninstallOnaInstructionsResult,
+} from "./hosts/ona/index.js";
 export type {
   InstallReplitInstructionsResult,
   ReplitDoctorReport,

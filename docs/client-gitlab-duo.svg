@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GitLab Duo">
+  <rect width="64" height="64" rx="12" fill="#171321"/>
+  <path d="M32 50 13 36l4-22 9 17h12l9-17 4 22-19 14Z" fill="#fc6d26"/>
+  <path d="M26 31 17 14l15 36 15-36-9 17H26Z" fill="#fca326"/>
+  <path d="M13 36h38L32 50 13 36Z" fill="#e24329"/>
+</svg>

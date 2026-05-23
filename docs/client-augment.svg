@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Augment</title>
+  <desc id="desc">Augment client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M48 18 76 76H62l-5-12H38l-5 12H20z" fill="#F8FAFC"/>
+  <path d="M43 52h10l-5-13z" fill="#111827"/>
+  <path d="M23 76h50v8H23z" fill="#75F0B3"/>
+</svg>

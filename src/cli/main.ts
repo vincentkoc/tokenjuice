@@ -81,6 +81,7 @@ import {
 import { doctorWarpInstructions, installWarpInstructions, uninstallWarpInstructions } from "../hosts/warp/index.js";
 import { doctorWindsurfRule, installWindsurfRule, uninstallWindsurfRule } from "../hosts/windsurf/index.js";
 import { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "../hosts/zed/index.js";
+import { doctorZencoderRule, installZencoderRule, uninstallZencoderRule } from "../hosts/zencoder/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { formatHookDoctorReport } from "./doctor-output.js";
 import { formatInstallSuccess } from "./install-output.js";
@@ -187,6 +188,7 @@ function printUsage(): void {
       "  tokenjuice install copilot-cli [--local]",
       "  tokenjuice install windsurf",
       "  tokenjuice install zed",
+      "  tokenjuice install zencoder",
       "  tokenjuice uninstall aider",
       "  tokenjuice uninstall amazon-q",
       "  tokenjuice uninstall amp",
@@ -234,11 +236,12 @@ function printUsage(): void {
       "  tokenjuice uninstall copilot-cli",
       "  tokenjuice uninstall windsurf",
       "  tokenjuice uninstall zed",
+      "  tokenjuice uninstall zencoder",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1608,7 +1611,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  if (target === "zencoder") {
+    const result = await installZencoderRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "rule-based guidance; Zencoder still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor zencoder" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("zencoder", "rule", details));
+    return 0;
+  }
+
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2238,7 +2261,20 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  if (target === "zencoder") {
+    const result = await uninstallZencoderRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed zencoder rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install zencoder\n");
+    return 0;
+  }
+
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3424,6 +3460,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`rules path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "zencoder") {
+    const report = await doctorZencoderRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

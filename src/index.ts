@@ -74,6 +74,7 @@ export {
 export { doctorWarpInstructions, installWarpInstructions, uninstallWarpInstructions } from "./hosts/warp/index.js";
 export { doctorWindsurfRule, installWindsurfRule, uninstallWindsurfRule } from "./hosts/windsurf/index.js";
 export { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "./hosts/zed/index.js";
+export { doctorZencoderRule, installZencoderRule, uninstallZencoderRule } from "./hosts/zencoder/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
 export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
 export {
@@ -364,6 +365,12 @@ export type {
   ZedDoctorReport,
   ZedInstructionsOptions,
 } from "./hosts/zed/index.js";
+export type {
+  InstallZencoderRuleResult,
+  UninstallZencoderRuleResult,
+  ZencoderDoctorReport,
+  ZencoderRuleOptions,
+} from "./hosts/zencoder/index.js";
 export type {
   CopilotAgentDoctorReport,
   CopilotAgentHookCommandOptions,

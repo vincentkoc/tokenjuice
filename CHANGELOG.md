@@ -20,6 +20,7 @@
 - Add a beta Tabnine CLI project-context integration.
 - Add a beta Trae project-rule integration.
 - Add a beta Warp project-rules integration.
+- Add a beta Zencoder Zen Rules integration.
 
 ### Fixes
 

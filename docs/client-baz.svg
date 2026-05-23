@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Baz">
+  <rect width="192" height="192" rx="36" fill="#0f172a"/>
+  <path d="M48 50h54c21 0 34 11 34 28 0 10-5 18-14 23 13 5 21 14 21 29 0 20-16 32-39 32H48V50z" fill="#f8fafc"/>
+  <path d="M73 75v20h25c8 0 13-4 13-10s-5-10-13-10H73zm0 42v20h29c9 0 15-4 15-10s-6-10-15-10H73z" fill="#0f172a"/>
+  <path d="M138 39 158 19l15 15-20 20z" fill="#22c55e"/>
+  <path d="M145 146 166 167l-15 15-21-21z" fill="#38bdf8"/>
+  <circle cx="45" cy="46" r="12" fill="#f97316"/>
+</svg>

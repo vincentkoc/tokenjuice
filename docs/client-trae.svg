@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Trae">
+  <rect width="96" height="96" rx="20" fill="#111827"/>
+  <path d="M24 24h48v12H54v36H42V36H24z" fill="#f9fafb"/>
+  <path d="M60 45h12v27H60z" fill="#38bdf8"/>
+  <path d="M24 60h12v12H24z" fill="#38bdf8"/>
+</svg>

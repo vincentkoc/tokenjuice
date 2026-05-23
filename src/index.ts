@@ -51,6 +51,7 @@ export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } fro
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
+export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
 export {
   doctorVscodeCopilotHook,
   getVscodeCopilotInstructionsSnippet,
@@ -254,6 +255,12 @@ export type {
   RulerRuleOptions,
   UninstallRulerRuleResult,
 } from "./hosts/ruler/index.js";
+export type {
+  InstallTraeRuleResult,
+  TraeDoctorReport,
+  TraeRuleOptions,
+  UninstallTraeRuleResult,
+} from "./hosts/trae/index.js";
 export type {
   InstallVscodeCopilotHookResult,
   UninstallVscodeCopilotHookResult,

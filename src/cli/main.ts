@@ -35,6 +35,7 @@ import {
 } from "../hosts/copilot-cli/index.js";
 import { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "../hosts/crush/index.js";
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
+import { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "../hosts/devin/index.js";
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
 import { doctorGooseHints, installGooseHints, uninstallGooseHints } from "../hosts/goose/index.js";
@@ -138,6 +139,7 @@ function printUsage(): void {
       "  tokenjuice install copilot-agent [--local]",
       "  tokenjuice install crush",
       "  tokenjuice install cursor [--local]",
+      "  tokenjuice install devin [--local]",
       "  tokenjuice install droid [--local]",
       "  tokenjuice install gemini-cli [--local]",
       "  tokenjuice install goose",
@@ -174,6 +176,7 @@ function printUsage(): void {
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall copilot-agent",
       "  tokenjuice uninstall crush",
+      "  tokenjuice uninstall devin",
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall goose",
@@ -202,7 +205,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|trae|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|gemini-cli|goose|grok-build|grok-cli|junie|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|trae|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -815,6 +818,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "devin") {
+    const result = await installDevinHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.hooksPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "project-local PreToolUse hook rewrites exec commands before Devin runs them" },
+      { label: "Verify", value: `tokenjuice doctor devin${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("devin", "hook", details));
+    return 0;
+  }
+
   if (target === "gemini-cli") {
     const result = await installGeminiCliHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1331,7 +1355,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1779,6 +1803,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "devin") {
+    const result = await uninstallDevinHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed devin entries: ${result.removed}\n`);
+    process.stdout.write(`hooks path: ${result.hooksPath}${result.deletedFile ? " (file deleted)" : ""}\n`);
+    process.stdout.write("enable: tokenjuice install devin\n");
+    return 0;
+  }
+
   if (target === "droid") {
     const result = await uninstallDroidHook();
     if (args.format === "json") {
@@ -1805,7 +1842,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, devin, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2384,6 +2421,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
         process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "devin") {
+    const report = await doctorDevinHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hooks path: ${report.hooksPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
       }
     }
     if (report.missingPaths.length > 0) {
@@ -3332,6 +3405,8 @@ async function main(): Promise<number> {
       return await runCodeBuddyPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "cursor-pre-tool-use":
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "devin-pre-tool-use":
+      return await runDevinPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "grok-cli-post-tool-use":

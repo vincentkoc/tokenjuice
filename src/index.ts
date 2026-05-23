@@ -36,6 +36,7 @@ export {
 } from "./hosts/copilot-cli/index.js";
 export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./hosts/crush/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
@@ -304,4 +305,10 @@ export type {
   InstallCrushSkillResult,
   UninstallCrushSkillResult,
 } from "./hosts/crush/index.js";
+export type {
+  DevinDoctorReport,
+  DevinHookCommandOptions,
+  InstallDevinHookResult,
+  UninstallDevinHookResult,
+} from "./hosts/devin/index.js";
 export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } from "./core/analysis.js";

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Devin</title>
+  <desc id="desc">Stylized Devin terminal hook icon</desc>
+  <rect width="64" height="64" rx="12" fill="#e0f2fe"/>
+  <path d="M14 18h36v28H14z" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
+  <path d="M21 27l7 5-7 5" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M33 38h12" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M44 14l6 6-6 6" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

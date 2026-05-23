@@ -178,6 +178,7 @@ tokenjuice install antigravity
 tokenjuice install augment
 tokenjuice install crush
 tokenjuice install cursor
+tokenjuice install devin
 tokenjuice install grok-build
 tokenjuice install grok-cli
 tokenjuice install goose
@@ -199,6 +200,7 @@ tokenjuice doctor amazon-q
 tokenjuice doctor antigravity
 tokenjuice doctor augment
 tokenjuice doctor crush
+tokenjuice doctor devin
 tokenjuice doctor grok-build
 tokenjuice doctor grok-cli
 tokenjuice doctor goose
@@ -215,6 +217,7 @@ tokenjuice install codex --local
 tokenjuice install claude-code --local
 tokenjuice install codebuddy --local
 tokenjuice install cursor --local
+tokenjuice install devin --local
 tokenjuice install grok-cli --local
 tokenjuice install pi --local
 tokenjuice install opencode --local
@@ -239,6 +242,7 @@ supported host hooks:
 | Continue | `tokenjuice install continue` | `.continue/rules/tokenjuice.md` | ✴️ Beta. Installs a workspace rule that tells Continue agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Continue rules do not intercept tool output; see `docs/continue-integration.md` |
 | Crush | `tokenjuice install crush` | `.crush/skills/tokenjuice/SKILL.md` | ✴️ Beta. Installs a project Agent Skill that tells Crush to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Crush hook composition and stateful shell behavior make command rewriting unsafe; see `docs/crush-integration.md` |
 | Cursor (Linux/macOS/WSL) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | Uses `preToolUse` shell input rewriting to route commands through `tokenjuice wrap`; `tokenjuice install cursor --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/cursor-integration.md` |
+| Devin for Terminal | `tokenjuice install devin` | `.devin/hooks.v1.json` | ✴️ Beta. Uses project-local Claude-compatible `PreToolUse` exec input rewriting to route commands through `tokenjuice wrap`; preserves unrelated Devin hooks; `tokenjuice install devin --local` is available for repo-local verification; see `docs/devin-integration.md` |
 | Droid (Factory CLI) | `tokenjuice install droid` | `~/.factory/settings.json` | Uses a `PostToolUse` hook for the `Execute` tool to compact shell output before Droid sees it; preserves unrelated settings keys; `tokenjuice install droid --local` is available for repo-local verification |
 | Gemini CLI | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` | ✴️ Beta. Uses an `AfterTool` hook for `run_shell_command` to compact shell output before Gemini CLI sees it; `tokenjuice install gemini-cli --local` is available for repo-local verification; see `docs/gemini-cli-integration.md` |
 | Goose | `tokenjuice install goose` | `.goosehints` | ✴️ Beta. Inserts a marker-delimited hints block that tells Goose to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Goose hints do not intercept tool output; restart the Goose session after install; see `docs/goose-integration.md` |
@@ -266,7 +270,7 @@ supported host hooks:
 | Windsurf | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` | ✴️ Beta. Installs an always-on workspace rule that tells Cascade to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Cascade Hooks do not replace terminal command output; see `docs/windsurf-integration.md` |
 | Zed | `tokenjuice install zed` | `.rules` | ✴️ Beta. Inserts a marker-delimited rule block that tells Zed Agent to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Zed rules do not intercept tool output; see `docs/zed-integration.md` |
 
-`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor droid`, `tokenjuice doctor pi`, `tokenjuice doctor opencode`, `tokenjuice doctor openhands`, `tokenjuice doctor open-interpreter`, `tokenjuice doctor openwebui`, `tokenjuice doctor mistral-vibe`, `tokenjuice doctor plandex`, `tokenjuice doctor qoder`, `tokenjuice doctor trae`, `tokenjuice doctor grok-build`, `tokenjuice doctor grok-cli`, `tokenjuice doctor kimi`, `tokenjuice doctor qwen-code`, `tokenjuice doctor continue`, `tokenjuice doctor aider`, `tokenjuice doctor amazon-q`, `tokenjuice doctor amp`, `tokenjuice doctor antigravity`, `tokenjuice doctor augment`, `tokenjuice doctor avante`, `tokenjuice doctor junie`, `tokenjuice doctor kiro`, `tokenjuice doctor kilo`, `tokenjuice doctor roo`, `tokenjuice doctor ruler`, `tokenjuice doctor goose`, `tokenjuice doctor windsurf`, `tokenjuice doctor zed`, `tokenjuice doctor cline`, `tokenjuice doctor crush`, `tokenjuice doctor vscode-copilot`, and `tokenjuice doctor copilot-cli` are the direct per-host checks. the `--local` variant expects Codex, Claude Code, Cline, CodeBuddy, Crush, Cursor, Droid, Gemini CLI, Grok CLI, Kimi, OpenHands, Qwen Code, VS Code Copilot, and Copilot CLI hooks to point at the current repo build instead of the installed launcher on `PATH`.
+`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor droid`, `tokenjuice doctor pi`, `tokenjuice doctor opencode`, `tokenjuice doctor openhands`, `tokenjuice doctor open-interpreter`, `tokenjuice doctor openwebui`, `tokenjuice doctor mistral-vibe`, `tokenjuice doctor plandex`, `tokenjuice doctor qoder`, `tokenjuice doctor trae`, `tokenjuice doctor grok-build`, `tokenjuice doctor grok-cli`, `tokenjuice doctor kimi`, `tokenjuice doctor qwen-code`, `tokenjuice doctor continue`, `tokenjuice doctor aider`, `tokenjuice doctor amazon-q`, `tokenjuice doctor amp`, `tokenjuice doctor antigravity`, `tokenjuice doctor augment`, `tokenjuice doctor avante`, `tokenjuice doctor junie`, `tokenjuice doctor kiro`, `tokenjuice doctor kilo`, `tokenjuice doctor roo`, `tokenjuice doctor ruler`, `tokenjuice doctor goose`, `tokenjuice doctor windsurf`, `tokenjuice doctor zed`, `tokenjuice doctor cline`, `tokenjuice doctor crush`, `tokenjuice doctor devin`, `tokenjuice doctor vscode-copilot`, and `tokenjuice doctor copilot-cli` are the direct per-host checks. the `--local` variant expects Codex, Claude Code, Cline, CodeBuddy, Crush, Cursor, Devin, Droid, Gemini CLI, Grok CLI, Kimi, OpenHands, Qwen Code, VS Code Copilot, and Copilot CLI hooks to point at the current repo build instead of the installed launcher on `PATH`.
 
 `tokenjuice uninstall codex` removes the tokenjuice Codex PostToolUse hook from `~/.codex/hooks.json`. once removed, `tokenjuice doctor codex` and `tokenjuice doctor hooks` report that state as `disabled` instead of treating it like a broken install. `tokenjuice uninstall opencode` removes the OpenCode plugin from `~/.config/opencode/plugins/tokenjuice.js`.
 

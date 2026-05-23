@@ -13,6 +13,7 @@ import { doctorCopilotAgentHook } from "../copilot-agent/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCrushSkill } from "../crush/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
+import { doctorDevinHook } from "../devin/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGooseHints } from "../goose/index.js";
@@ -52,6 +53,7 @@ import type { CopilotAgentDoctorReport, CopilotAgentHookCommandOptions } from ".
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CrushDoctorReport, CrushSkillOptions } from "../crush/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
+import type { DevinDoctorReport, DevinHookCommandOptions } from "../devin/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
@@ -93,6 +95,7 @@ export type HookIntegrationDoctorReport = {
   continue: ContinueDoctorReport;
   crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
+  devin: DevinDoctorReport;
   droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   goose: GooseDoctorReport;
@@ -124,7 +127,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions & TraeRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions & TraeRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -150,6 +153,7 @@ const hookDoctorIntegrationDoctors = {
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
   crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
+  devin: (options) => doctorDevinHook(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),

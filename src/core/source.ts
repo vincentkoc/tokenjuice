@@ -58,6 +58,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("pi")) {
     return "pi";
   }
+  if (source.startsWith("plandex")) {
+    return "plandex";
+  }
   if (source.startsWith("qwen")) {
     return "qwen-code";
   }

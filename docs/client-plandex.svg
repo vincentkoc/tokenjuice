@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Plandex</title>
+  <desc id="desc">Plandex client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#0E1726"/>
+  <path d="M25 24h30c11 0 18 7 18 17s-7 17-18 17H43v14H25z" fill="#F8FAFC"/>
+  <path d="M43 40h11c3 0 5 2 5 5s-2 5-5 5H43z" fill="#0E1726"/>
+  <path d="M24 72h49v8H24z" fill="#45C7FF"/>
+</svg>

@@ -43,6 +43,7 @@ export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
+export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export {
   doctorVscodeCopilotHook,
@@ -187,6 +188,12 @@ export type {
   OpenWebUIToolOptions,
   UninstallOpenWebUIToolResult,
 } from "./hosts/openwebui/index.js";
+export type {
+  InstallPlandexConventionResult,
+  PlandexConventionOptions,
+  PlandexDoctorReport,
+  UninstallPlandexConventionResult,
+} from "./hosts/plandex/index.js";
 export type {
   InstallQwenCodeHookResult,
   QwenCodeDoctorReport,

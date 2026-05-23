@@ -21,6 +21,7 @@ import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorOpenInterpreterInstructions } from "../open-interpreter/index.js";
 import { doctorOpenWebUITool } from "../openwebui/index.js";
 import { doctorPiExtension } from "../pi/index.js";
+import { doctorPlandexConvention } from "../plandex/index.js";
 import { doctorQwenCodeHook } from "../qwen-code/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
 import { doctorRulerRule } from "../ruler/index.js";
@@ -51,6 +52,7 @@ import type { OpenInterpreterDoctorReport, OpenInterpreterInstructionsOptions } 
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { OpenWebUIDoctorReport, OpenWebUIToolOptions } from "../openwebui/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
+import type { PlandexConventionOptions, PlandexDoctorReport } from "../plandex/index.js";
 import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-code/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
 import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
@@ -83,6 +85,7 @@ export type HookIntegrationDoctorReport = {
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
   pi: PiDoctorReport;
+  plandex: PlandexDoctorReport;
   "qwen-code": QwenCodeDoctorReport;
   roo: RooDoctorReport;
   ruler: RulerDoctorReport;
@@ -97,7 +100,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -131,6 +134,7 @@ const hookDoctorIntegrationDoctors = {
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),
+  plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   roo: () => doctorRooInstructions(),
   ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),

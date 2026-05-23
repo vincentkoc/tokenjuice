@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, stat } from "node:fs/promises";
+import { relative } from "node:path";
 import { stdin as inputStdin } from "node:process";
 import packageJson from "../../package.json" with { type: "json" };
 
@@ -47,6 +48,7 @@ import { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, 
 import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "../hosts/openhands/index.js";
 import { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "../hosts/openwebui/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
+import { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "../hosts/plandex/index.js";
 import { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "../hosts/roo/index.js";
 import { doctorRulerRule, installRulerRule, uninstallRulerRule } from "../hosts/ruler/index.js";
@@ -62,8 +64,14 @@ import { doctorZedInstructions, installZedInstructions, uninstallZedInstructions
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { formatHookDoctorReport } from "./doctor-output.js";
 import { formatInstallSuccess } from "./install-output.js";
+import { shellQuote } from "../hosts/shared/hook-command.js";
 
 type Format = "text" | "json";
+
+function formatPlandexLoadCommand(conventionPath: string): string {
+  const loadPath = relative(process.cwd(), conventionPath) || "PLANDEX.tokenjuice.md";
+  return `plandex load ${shellQuote(loadPath)}`;
+}
 
 type ParsedArgs = {
   command: string | undefined;
@@ -130,6 +138,7 @@ function printUsage(): void {
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
       "  tokenjuice install pi [--local]",
+      "  tokenjuice install plandex",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install qwen-code [--local]",
       "  tokenjuice install roo",
@@ -157,6 +166,7 @@ function printUsage(): void {
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
       "  tokenjuice uninstall opencode",
+      "  tokenjuice uninstall plandex",
       "  tokenjuice uninstall qwen-code",
       "  tokenjuice uninstall roo",
       "  tokenjuice uninstall ruler",
@@ -168,7 +178,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -908,6 +918,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "plandex") {
+    const result = await installPlandexConvention();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Convention", value: result.conventionPath },
+      { label: "Beta", value: "context-based guidance; Plandex still owns command execution" },
+      { label: "Load", value: formatPlandexLoadCommand(result.conventionPath) },
+      { label: "Verify", value: "tokenjuice doctor plandex" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("plandex", "convention", details));
+    return 0;
+  }
+
   if (target === "qwen-code") {
     const result = await installQwenCodeHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1114,7 +1145,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1367,6 +1398,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "plandex") {
+    const result = await uninstallPlandexConvention();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed plandex convention: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`convention path: ${result.conventionPath}\n`);
+    process.stdout.write("enable: tokenjuice install plandex\n");
+    return 0;
+  }
+
   if (target === "qwen-code") {
     const result = await uninstallQwenCodeHook();
     if (args.format === "json") {
@@ -1471,7 +1515,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1816,6 +1860,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
         process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "plandex") {
+    const report = await doctorPlandexConvention();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`convention path: ${report.conventionPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
       }
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);

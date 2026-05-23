@@ -47,6 +47,7 @@ beta integrations:
 | <img width="48px" src="docs/client-openhands.svg" alt="OpenHands" /> | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` |
 | <img width="48px" src="docs/client-open-interpreter.svg" alt="Open Interpreter" /> | [Open Interpreter](https://www.openinterpreter.com/docs/terminal/agents_md) | `tokenjuice install open-interpreter` | `AGENTS.md` |
 | <img width="48px" src="docs/client-openwebui.svg" alt="Open WebUI" /> | [Open WebUI](https://openwebui.com/) | `tokenjuice install openwebui` | `.openwebui/tools/tokenjuice_compact.py` |
+| <img width="48px" src="docs/client-plandex.svg" alt="Plandex" /> | [Plandex](https://docs.plandex.ai/) | `tokenjuice install plandex` | `PLANDEX.tokenjuice.md` |
 | <img width="48px" src="docs/client-qwen-code.svg" alt="Qwen Code" /> | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | `tokenjuice install qwen-code` | `.qwen/settings.json` |
 | <img width="48px" src="docs/client-roo.svg" alt="Roo Code" /> | [Roo Code](https://roocode.com/) | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-ruler.svg" alt="Ruler" /> | [Ruler](https://github.com/intellectronica/ruler) | `tokenjuice install ruler` | `.ruler/tokenjuice.md` |
@@ -71,8 +72,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -94,9 +95,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed] --local
-tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed] --local
+tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -163,6 +164,7 @@ direct payload:
 - [Kilo Code integration](docs/kilo-integration.md)
 - [Open Interpreter integration](docs/open-interpreter-integration.md)
 - [Open WebUI integration](docs/openwebui-integration.md)
+- [Plandex integration](docs/plandex-integration.md)
 - [Qwen Code integration](docs/qwen-code-integration.md)
 - [Roo Code integration](docs/roo-integration.md)
 - [Ruler integration](docs/ruler-integration.md)

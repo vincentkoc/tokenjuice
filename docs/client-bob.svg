@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">IBM Bob</title>
+  <desc id="desc">IBM Bob client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#0F172A"/>
+  <path d="M27 21h24c12 0 20 7 20 18 0 6-3 11-8 14 7 3 11 9 11 17 0 13-9 21-23 21H27V21Zm14 12v15h9c5 0 8-3 8-8s-3-7-8-7h-9Zm0 26v20h11c6 0 9-4 9-10s-4-10-10-10H41Z" fill="#F8FAFC"/>
+  <path d="M18 10h60v7H18zM18 79h60v7H18z" fill="#0F62FE"/>
+</svg>

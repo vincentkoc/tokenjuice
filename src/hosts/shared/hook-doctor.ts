@@ -4,6 +4,7 @@ import { doctorAmpInstructions } from "../amp/index.js";
 import { doctorAntigravityRule } from "../antigravity/index.js";
 import { doctorAugmentRule } from "../augment/index.js";
 import { doctorAvanteInstructions } from "../avante/index.js";
+import { doctorBobInstructions } from "../bob/index.js";
 import { doctorBuilderRule } from "../builder/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
 import { doctorClineHook } from "../cline/index.js";
@@ -52,6 +53,7 @@ import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
 import type { AntigravityDoctorReport, AntigravityRuleOptions } from "../antigravity/index.js";
 import type { AugmentDoctorReport, AugmentRuleOptions } from "../augment/index.js";
 import type { AvanteDoctorReport } from "../avante/index.js";
+import type { BobDoctorReport, BobInstructionsOptions } from "../bob/index.js";
 import type { BuilderDoctorReport, BuilderRuleOptions } from "../builder/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { ClineDoctorReport } from "../cline/index.js";
@@ -103,6 +105,7 @@ export type HookIntegrationDoctorReport = {
   antigravity: AntigravityDoctorReport;
   augment: AugmentDoctorReport;
   avante: AvanteDoctorReport;
+  bob: BobDoctorReport;
   builder: BuilderDoctorReport;
   codex: CodexDoctorReport;
   "copilot-agent": CopilotAgentDoctorReport;
@@ -151,7 +154,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BuilderRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -169,6 +172,7 @@ const hookDoctorIntegrationDoctors = {
   antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),
   augment: (options) => doctorAugmentRule(undefined, getHookCommandOptions(options)),
   avante: () => doctorAvanteInstructions(),
+  bob: (options) => doctorBobInstructions(undefined, getHookCommandOptions(options)),
   builder: (options) => doctorBuilderRule(undefined, getHookCommandOptions(options)),
   codex: (options) => doctorCodexHook(undefined, options),
   "claude-code": (options) => doctorClaudeCodeHook(undefined, getHookCommandOptions(options)),

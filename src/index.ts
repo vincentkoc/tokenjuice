@@ -8,6 +8,7 @@ export { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule
 export { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "./hosts/augment/index.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
+export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "./hosts/bob/index.js";
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
@@ -143,6 +144,12 @@ export type {
   InstallAvanteInstructionsResult,
   UninstallAvanteInstructionsResult,
 } from "./hosts/avante/index.js";
+export type {
+  BobDoctorReport,
+  BobInstructionsOptions,
+  InstallBobInstructionsResult,
+  UninstallBobInstructionsResult,
+} from "./hosts/bob/index.js";
 export type {
   BuilderDoctorReport,
   BuilderRuleOptions,

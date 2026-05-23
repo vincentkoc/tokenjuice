@@ -176,6 +176,7 @@ tokenjuice install codebuddy
 tokenjuice install amazon-q
 tokenjuice install antigravity
 tokenjuice install augment
+tokenjuice install bob
 tokenjuice install builder
 tokenjuice install crush
 tokenjuice install cursor
@@ -207,6 +208,7 @@ tokenjuice doctor opencode
 tokenjuice doctor amazon-q
 tokenjuice doctor antigravity
 tokenjuice doctor augment
+tokenjuice doctor bob
 tokenjuice doctor builder
 tokenjuice doctor crush
 tokenjuice doctor devin
@@ -251,6 +253,7 @@ supported host hooks:
 | Antigravity | `tokenjuice install antigravity` | `.agents/rules/tokenjuice.md` | ✴️ Beta. Installs an always-on workspace rule that tells Google Antigravity to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Antigravity rules do not intercept tool output; see `docs/antigravity-integration.md` |
 | Augment | `tokenjuice install augment` | `.augment/rules/tokenjuice.md` | ✴️ Beta. Installs an `always_apply` workspace rule that tells Augment and Auggie to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Augment rules do not intercept tool output; see `docs/augment-integration.md` |
 | Avante.nvim | `tokenjuice install avante` | `avante.md` | ✴️ Beta. Inserts a marker-delimited instruction block that tells Avante to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Avante instructions do not intercept tool output; see `docs/avante-integration.md` |
+| IBM Bob Shell | `tokenjuice install bob` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited context block into the current git/project root that tells IBM Bob Shell to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Bob context files do not intercept tool output; see `docs/bob-integration.md` |
 | Builder | `tokenjuice install builder` | `.builder/rules/tokenjuice.mdc` | ✴️ Beta. Installs an always-applied Builder Projects rule file that tells Builder and Fusion to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Builder configuration files do not intercept tool output; see `docs/builder-integration.md` |
 | Claude Code | `tokenjuice install claude-code` | `~/.claude/settings.json` | Uses `PreToolUse` Bash input rewriting to route commands through `tokenjuice wrap` without bypassing Claude Code's own approval prompt; preserves unrelated hooks and migrates older Tokenjuice `PostToolUse` entries; `tokenjuice install claude-code --local` is available for repo-local verification |
 | Cline | `tokenjuice install cline` | `~/Documents/Cline/Hooks/tokenjuice-post-tool-use` | ✴️ Beta. Installs a global `PostToolUse` hook script for `execute_command`; enable it in Cline's Hooks tab after install; compacted context is injected through `contextModification`; `tokenjuice install cline --local` is available for repo-local verification; see `docs/cline-integration.md` |

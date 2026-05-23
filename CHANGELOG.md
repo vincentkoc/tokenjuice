@@ -27,6 +27,7 @@
 - Add a beta JetBrains AI Assistant project-rule integration.
 - Add a beta Jules instruction integration.
 - Add a beta Kimi Code CLI PostToolUse hook integration.
+- Add a beta mini-SWE-agent config-fragment integration.
 - Add a beta Mistral Vibe instruction integration.
 - Add a beta Mux tool_post hook integration.
 - Add a beta Ona Agent instruction integration.

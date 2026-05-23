@@ -66,6 +66,7 @@ export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstru
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
+export { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAgentConfig } from "./hosts/mini-swe-agent/index.js";
 export { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "./hosts/mistral-vibe/index.js";
 export { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "./hosts/mux/index.js";
 export { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "./hosts/ona/index.js";
@@ -357,6 +358,12 @@ export type {
   KiloRuleOptions,
   UninstallKiloRuleResult,
 } from "./hosts/kilo/index.js";
+export type {
+  InstallMiniSweAgentConfigResult,
+  MiniSweAgentConfigOptions,
+  MiniSweAgentDoctorReport,
+  UninstallMiniSweAgentConfigResult,
+} from "./hosts/mini-swe-agent/index.js";
 export type {
   InstallMistralVibeInstructionsResult,
   MistralVibeDoctorReport,

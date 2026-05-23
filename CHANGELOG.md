@@ -43,6 +43,7 @@
 - Add a beta NovaKit context-file integration.
 - Add a beta Knowns guidance-file integration.
 - Add a beta Ona Agent instruction integration.
+- Add a beta pi-go workspace-skill integration.
 - Add a beta Replit Agent instruction integration.
 - Add a beta Rovo Dev CLI project-memory integration.
 - Add a beta Tabnine CLI project-context integration.

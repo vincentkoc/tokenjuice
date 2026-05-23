@@ -85,6 +85,7 @@ export { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
+export { doctorPiGoSkill, installPiGoSkill, uninstallPiGoSkill } from "./hosts/pi-go/index.js";
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
 export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
@@ -261,6 +262,12 @@ export type {
   UninstallBuilderRuleResult,
 } from "./hosts/builder/index.js";
 export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
+export type {
+  InstallPiGoSkillResult,
+  PiGoDoctorReport,
+  PiGoSkillOptions,
+  UninstallPiGoSkillResult,
+} from "./hosts/pi-go/index.js";
 export type {
   ClineDoctorReport,
   ClineHookCommandOptions,

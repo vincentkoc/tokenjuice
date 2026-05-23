@@ -150,6 +150,7 @@ summarize reducer health and savings:
 tokenjuice doctor
 tokenjuice doctor hooks
 tokenjuice doctor pi
+tokenjuice doctor pi-go
 cat build.log | tokenjuice doctor --source-command "pnpm eslint src" --exit-code 1
 ```
 
@@ -224,6 +225,7 @@ tokenjuice install openwebui
 tokenjuice install plandex
 tokenjuice install qoder
 tokenjuice install pi
+tokenjuice install pi-go
 tokenjuice install opencode
 tokenjuice install qwen-code
 tokenjuice install replit
@@ -376,6 +378,7 @@ supported host hooks:
 | OpenHands | `tokenjuice install openhands` | `.openhands/hooks.json` | ✴️ Beta. Uses a project-local `PostToolUse` hook for `terminal` output; compacted context is injected alongside the original output; `tokenjuice install openhands --local` is available for repo-local verification; see `docs/openhands-integration.md` |
 | Open Interpreter | `tokenjuice install open-interpreter` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Open Interpreter to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Open Interpreter `AGENTS.md` instructions do not intercept tool output; global Open Interpreter instructions remain user-managed; see `docs/open-interpreter-integration.md` |
 | Open WebUI | `tokenjuice install openwebui` | `.openwebui/tools/tokenjuice_compact.py` | ✴️ Beta. Exports a reviewable Workspace Tool source file for manual administrator import; the tool compacts provided terminal output through `tokenjuice reduce-json` and does not execute user commands; see `docs/openwebui-integration.md` |
+| pi-go | `tokenjuice install pi-go` | `.pi/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a pi-go workspace skill with `name: tokenjuice` and `tools: bash` frontmatter that tells pi-go to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because pi-go skills do not intercept tool output; see `docs/pi-go-integration.md` |
 | Plandex | `tokenjuice install plandex` | `PLANDEX.tokenjuice.md` | ✴️ Beta. Installs a loadable context convention that tells Plandex to use `tokenjuice wrap` for noisy terminal commands, `tokenjuice wrap --raw -- <command>` only when raw bytes are needed, and `tokenjuice wrap -- <command> \| plandex load` when loading noisy output into context; guidance-only, because Plandex context files do not intercept command output; load with `plandex load PLANDEX.tokenjuice.md`; see `docs/plandex-integration.md` |
 | Qoder CLI | `tokenjuice install qoder` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Qoder CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Qoder `AGENTS.md` memory does not intercept command output; see `docs/qoder-integration.md` |
 | pi | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | `tokenjuice install pi --local` forces the extension bundle to be rebuilt from the current repo source and adds `/tj` controls inside pi |

@@ -38,6 +38,7 @@ export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./host
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
+export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
@@ -163,6 +164,12 @@ export type {
   InstallDroidHookResult,
   UninstallDroidHookResult,
 } from "./hosts/droid/index.js";
+export type {
+  FirebaseStudioDoctorReport,
+  FirebaseStudioRuleOptions,
+  InstallFirebaseStudioRuleResult,
+  UninstallFirebaseStudioRuleResult,
+} from "./hosts/firebase-studio/index.js";
 export type {
   GeminiCliDoctorReport,
   GeminiCliHookCommandOptions,

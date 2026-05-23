@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, ruler, trae, vscode-copilot, warp, windsurf, zed, copilot-cli",
+      "available integrations: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, ruler, trae, vscode-copilot, warp, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,7 +71,7 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, ruler, trae, vscode-copilot, warp, windsurf, zed, copilot-cli",
+      "available integrations: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, ruler, trae, vscode-copilot, warp, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));

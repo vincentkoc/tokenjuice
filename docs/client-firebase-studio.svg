@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Firebase Studio">
+  <rect width="64" height="64" rx="14" fill="#202124"/>
+  <path fill="#ffca28" d="M16 49 23 8l10 20 7-9 8 30H16Z"/>
+  <path fill="#ffa000" d="M16 49 33 28l15 21H16Z"/>
+  <path fill="#f57c00" d="M23 8 16 49l17-21-10-20Z"/>
+  <path fill="#fff3e0" d="M40 19 33 28l15 21-8-30Z"/>
+</svg>

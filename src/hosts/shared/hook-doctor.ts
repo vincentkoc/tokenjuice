@@ -15,6 +15,7 @@ import { doctorCrushSkill } from "../crush/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDevinHook } from "../devin/index.js";
 import { doctorDroidHook } from "../droid/index.js";
+import { doctorFirebaseStudioRule } from "../firebase-studio/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGooseHints } from "../goose/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
@@ -57,6 +58,7 @@ import type { CrushDoctorReport, CrushSkillOptions } from "../crush/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DevinDoctorReport, DevinHookCommandOptions } from "../devin/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
+import type { FirebaseStudioDoctorReport, FirebaseStudioRuleOptions } from "../firebase-studio/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
@@ -101,6 +103,7 @@ export type HookIntegrationDoctorReport = {
   cursor: CursorDoctorReport;
   devin: DevinDoctorReport;
   droid: DroidDoctorReport;
+  "firebase-studio": FirebaseStudioDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   goose: GooseDoctorReport;
   "grok-build": GrokBuildDoctorReport;
@@ -133,7 +136,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -161,6 +164,7 @@ const hookDoctorIntegrationDoctors = {
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   devin: (options) => doctorDevinHook(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
+  "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),

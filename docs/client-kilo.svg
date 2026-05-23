@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kilo Code">
+  <rect width="96" height="96" rx="18" fill="#0f172a"/>
+  <path d="M24 66V30h9v14l14-14h12L43 46l18 20H49L33 48v18h-9Z" fill="#f8fafc"/>
+  <path d="M66 31h8v35h-8V31Z" fill="#38bdf8"/>
+  <circle cx="70" cy="22" r="5" fill="#22c55e"/>
+</svg>

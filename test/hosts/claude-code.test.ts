@@ -11,6 +11,7 @@ import {
   installCodeBuddyHook,
   installCodexHook,
   installCursorHook,
+  installGrokCliHook,
   installPiExtension,
   installQwenCodeHook,
   runClaudeCodePostToolUseHook,
@@ -659,6 +660,7 @@ describe("doctorInstalledHooks", () => {
     process.env.CURSOR_HOME = cursorHome;
     process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
+    process.env.HOME = home;
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });
     await mkdir(join(home, "dist", "cli"), { recursive: true });
@@ -689,6 +691,11 @@ describe("doctorInstalledHooks", () => {
       binaryPath: localBinaryPath,
       nodePath: localNodePath,
     });
+    await installGrokCliHook(undefined, {
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+    });
     await installQwenCodeHook(undefined, {
       projectDir: home,
       local: true,
@@ -710,12 +717,14 @@ describe("doctorInstalledHooks", () => {
     expect(report.integrations["claude-code"].status).toBe("ok");
     expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.cursor.status).toBe("ok");
+    expect(report.integrations["grok-cli"].status).toBe("ok");
     expect(report.integrations["qwen-code"].status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
     expect(report.integrations.codex.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations["claude-code"].expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.codebuddy.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.cursor.expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations["grok-cli"].expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations["qwen-code"].expectedCommand).toContain(expectedHookPrefix);
   });
 });

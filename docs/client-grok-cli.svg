@@ -1,0 +1,5 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Grok CLI">
+  <rect width="96" height="96" rx="18" fill="#0f172a"/>
+  <path d="M27 49c0-15 11-25 26-25 8 0 15 3 20 8l-7 7c-3-3-8-5-13-5-9 0-16 6-16 15 0 8 6 14 15 14 7 0 12-3 14-9H51v-9h26v5c0 14-10 23-25 23-14 0-25-10-25-24Z" fill="#f8fafc"/>
+  <path d="M20 24h17v8H20v-8Zm0 40h17v8H20v-8Zm46-40h10v48H66V24Z" fill="#22c55e"/>
+</svg>

@@ -9,6 +9,7 @@ import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
+import { doctorGrokCliHook } from "../grok-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
@@ -31,6 +32,7 @@ import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
+import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
@@ -55,6 +57,7 @@ export type HookIntegrationDoctorReport = {
   cursor: CursorDoctorReport;
   droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
+  "grok-cli": GrokCliDoctorReport;
   junie: JunieDoctorReport;
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
@@ -73,7 +76,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions & QwenCodeHookCommandOptions;
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -95,6 +98,7 @@ const hookDoctorIntegrationDoctors = {
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
+  "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),

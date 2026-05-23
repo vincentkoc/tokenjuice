@@ -174,17 +174,20 @@ tokenjuice install codex
 tokenjuice install claude-code
 tokenjuice install codebuddy
 tokenjuice install cursor
+tokenjuice install grok-cli
 tokenjuice install pi
 tokenjuice install opencode
 tokenjuice install qwen-code
 tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice doctor opencode
+tokenjuice doctor grok-cli
 tokenjuice doctor qwen-code
 tokenjuice install codex --local
 tokenjuice install claude-code --local
 tokenjuice install codebuddy --local
 tokenjuice install cursor --local
+tokenjuice install grok-cli --local
 tokenjuice install pi --local
 tokenjuice install opencode --local
 tokenjuice install qwen-code --local
@@ -205,6 +208,7 @@ supported host hooks:
 | Cursor (Linux/macOS/WSL) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | Uses `preToolUse` shell input rewriting to route commands through `tokenjuice wrap`; `tokenjuice install cursor --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/cursor-integration.md` |
 | Droid (Factory CLI) | `tokenjuice install droid` | `~/.factory/settings.json` | Uses a `PostToolUse` hook for the `Execute` tool to compact shell output before Droid sees it; preserves unrelated settings keys; `tokenjuice install droid --local` is available for repo-local verification |
 | Gemini CLI | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` | ✴️ Beta. Uses an `AfterTool` hook for `run_shell_command` to compact shell output before Gemini CLI sees it; `tokenjuice install gemini-cli --local` is available for repo-local verification; see `docs/gemini-cli-integration.md` |
+| Grok CLI | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` | ✴️ Beta. Uses a user-level `PostToolUse` hook for the `bash` tool; compacted context is injected alongside the original output; `tokenjuice install grok-cli --local` is available for repo-local verification; see `docs/grok-cli-integration.md` |
 | GitHub Copilot CLI | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | Uses `postToolUse` shell output rewriting on the `bash` tool (matcher `"shell"`) to compact command output before it returns to the agent. Honors `COPILOT_HOME`; the shared `~/.copilot/hooks/` dir is used with a per-host filename to coexist with the VS Code Copilot Chat install. After install, run `tokenjuice doctor copilot-cli --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required. |
 | Junie | `tokenjuice install junie` | `.junie/AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block that tells Junie to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Junie instructions do not intercept tool output; see `docs/junie-integration.md` |
 | Kiro | `tokenjuice install kiro` | `.kiro/steering/tokenjuice.md` | ✴️ Beta. Installs an always-included steering file that tells Kiro to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Kiro hooks do not replace terminal command output; see `docs/kiro-integration.md` |
@@ -218,7 +222,7 @@ supported host hooks:
 | Windsurf | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` | ✴️ Beta. Installs an always-on workspace rule that tells Cascade to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Cascade Hooks do not replace terminal command output; see `docs/windsurf-integration.md` |
 | Zed | `tokenjuice install zed` | `.rules` | ✴️ Beta. Inserts a marker-delimited rule block that tells Zed Agent to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Zed rules do not intercept tool output; see `docs/zed-integration.md` |
 
-`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor droid`, `tokenjuice doctor pi`, `tokenjuice doctor opencode`, `tokenjuice doctor openhands`, `tokenjuice doctor qwen-code`, `tokenjuice doctor continue`, `tokenjuice doctor aider`, `tokenjuice doctor avante`, `tokenjuice doctor junie`, `tokenjuice doctor kiro`, `tokenjuice doctor kilo`, `tokenjuice doctor roo`, `tokenjuice doctor windsurf`, `tokenjuice doctor zed`, `tokenjuice doctor cline`, `tokenjuice doctor vscode-copilot`, and `tokenjuice doctor copilot-cli` are the direct per-host checks. the `--local` variant expects Codex, Claude Code, Cline, CodeBuddy, Cursor, Droid, Gemini CLI, OpenHands, Qwen Code, VS Code Copilot, and Copilot CLI hooks to point at the current repo build instead of the installed launcher on `PATH`.
+`tokenjuice doctor hooks` inspects installed host hooks together, including the Pi extension, spots stale Cellar-pinned Homebrew commands, and points back to the right install command for repair. `tokenjuice doctor droid`, `tokenjuice doctor pi`, `tokenjuice doctor opencode`, `tokenjuice doctor openhands`, `tokenjuice doctor grok-cli`, `tokenjuice doctor qwen-code`, `tokenjuice doctor continue`, `tokenjuice doctor aider`, `tokenjuice doctor avante`, `tokenjuice doctor junie`, `tokenjuice doctor kiro`, `tokenjuice doctor kilo`, `tokenjuice doctor roo`, `tokenjuice doctor windsurf`, `tokenjuice doctor zed`, `tokenjuice doctor cline`, `tokenjuice doctor vscode-copilot`, and `tokenjuice doctor copilot-cli` are the direct per-host checks. the `--local` variant expects Codex, Claude Code, Cline, CodeBuddy, Cursor, Droid, Gemini CLI, Grok CLI, OpenHands, Qwen Code, VS Code Copilot, and Copilot CLI hooks to point at the current repo build instead of the installed launcher on `PATH`.
 
 `tokenjuice uninstall codex` removes the tokenjuice Codex PostToolUse hook from `~/.codex/hooks.json`. once removed, `tokenjuice doctor codex` and `tokenjuice doctor hooks` report that state as `disabled` instead of treating it like a broken install. `tokenjuice uninstall opencode` removes the OpenCode plugin from `~/.config/opencode/plugins/tokenjuice.js`.
 

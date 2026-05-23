@@ -34,6 +34,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("gemini")) {
     return "gemini-cli";
   }
+  if (source.startsWith("grok")) {
+    return "grok-cli";
+  }
   if (source.startsWith("openclaw")) {
     return "openclaw";
   }

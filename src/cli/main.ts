@@ -30,6 +30,7 @@ import {
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
+import { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
 import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
@@ -110,6 +111,7 @@ function printUsage(): void {
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install droid [--local]",
       "  tokenjuice install gemini-cli [--local]",
+      "  tokenjuice install grok-cli [--local]",
       "  tokenjuice install junie",
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
@@ -129,6 +131,7 @@ function printUsage(): void {
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall gemini-cli",
+      "  tokenjuice uninstall grok-cli",
       "  tokenjuice uninstall junie",
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
@@ -144,7 +147,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -652,6 +655,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "grok-cli") {
+    const result = await installGrokCliHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.settingsPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "user-level PostToolUse hook; compacted context is injected alongside original output" },
+      { label: "Verify", value: `tokenjuice doctor grok-cli${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("grok-cli", "hook", details));
+    return 0;
+  }
+
   if (target === "junie") {
     const result = await installJunieInstructions();
     if (args.format === "json") {
@@ -922,7 +946,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1005,6 +1029,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
     process.stdout.write(`settings path: ${result.settingsPath}\n`);
     process.stdout.write("enable: tokenjuice install gemini-cli\n");
+    return 0;
+  }
+
+  if (target === "grok-cli") {
+    const result = await uninstallGrokCliHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed grok-cli entries: ${result.removed}\n`);
+    process.stdout.write(`settings path: ${result.settingsPath}\n`);
+    process.stdout.write("enable: tokenjuice install grok-cli\n");
     return 0;
   }
 
@@ -1166,7 +1203,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1559,6 +1596,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
   if (args.positionals[0] === "gemini-cli") {
     const report = await doctorGeminiCliHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`settings path: ${report.settingsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "grok-cli") {
+    const report = await doctorGrokCliHook(undefined, { local: args.local });
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -2193,6 +2266,8 @@ async function main(): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
+    case "grok-cli-post-tool-use":
+      return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
     case "qwen-code-post-tool-use":

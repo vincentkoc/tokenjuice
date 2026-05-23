@@ -9,6 +9,7 @@ import { doctorBuilderRule } from "../builder/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
 import { doctorClineHook } from "../cline/index.js";
 import { doctorCodebuffInstructions } from "../codebuff/index.js";
+import { doctorCodegenInstructions } from "../codegen/index.js";
 import { doctorCodeBuddyHook } from "../codebuddy/index.js";
 import { doctorContinueRule } from "../continue/index.js";
 import { doctorCodexHook } from "../codex/index.js";
@@ -63,6 +64,7 @@ import type { BuilderDoctorReport, BuilderRuleOptions } from "../builder/index.j
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { ClineDoctorReport } from "../cline/index.js";
 import type { CodebuffDoctorReport, CodebuffInstructionsOptions } from "../codebuff/index.js";
+import type { CodegenDoctorReport, CodegenInstructionsOptions } from "../codegen/index.js";
 import type { CodeBuddyDoctorReport, CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
 import type { ContinueDoctorReport } from "../continue/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
@@ -122,6 +124,7 @@ export type HookIntegrationDoctorReport = {
   "claude-code": ClaudeCodeDoctorReport;
   cline: ClineDoctorReport;
   codebuff: CodebuffDoctorReport;
+  codegen: CodegenDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
   continue: ContinueDoctorReport;
   crush: CrushDoctorReport;
@@ -169,7 +172,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -193,6 +196,7 @@ const hookDoctorIntegrationDoctors = {
   "claude-code": (options) => doctorClaudeCodeHook(undefined, getHookCommandOptions(options)),
   cline: (options) => doctorClineHook(undefined, getHookCommandOptions(options)),
   codebuff: (options) => doctorCodebuffInstructions(undefined, getHookCommandOptions(options)),
+  codegen: (options) => doctorCodegenInstructions(undefined, getHookCommandOptions(options)),
   codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),

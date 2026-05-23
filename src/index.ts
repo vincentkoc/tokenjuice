@@ -13,6 +13,7 @@ export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./h
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
+export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
@@ -174,6 +175,12 @@ export type {
   InstallCodebuffInstructionsResult,
   UninstallCodebuffInstructionsResult,
 } from "./hosts/codebuff/index.js";
+export type {
+  CodegenDoctorReport,
+  CodegenInstructionsOptions,
+  InstallCodegenInstructionsResult,
+  UninstallCodegenInstructionsResult,
+} from "./hosts/codegen/index.js";
 export type {
   ContinueDoctorReport,
   ContinueRuleOptions,

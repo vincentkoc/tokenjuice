@@ -8,6 +8,7 @@
 - Add a beta IBM Bob Shell context-file integration.
 - Add a beta Builder Projects rule integration.
 - Add a beta Codebuff instruction integration.
+- Add a beta Codegen instruction integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta Firebase Studio AI-rules integration.
 - Add a beta GitLab Duo custom-rules integration.

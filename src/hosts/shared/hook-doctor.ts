@@ -1,5 +1,6 @@
 import { doctorAiderConvention } from "../aider/index.js";
 import { doctorAmpInstructions } from "../amp/index.js";
+import { doctorAntigravityRule } from "../antigravity/index.js";
 import { doctorAugmentRule } from "../augment/index.js";
 import { doctorAvanteInstructions } from "../avante/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
@@ -32,6 +33,7 @@ import { doctorZedInstructions } from "../zed/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
 import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
+import type { AntigravityDoctorReport, AntigravityRuleOptions } from "../antigravity/index.js";
 import type { AugmentDoctorReport, AugmentRuleOptions } from "../augment/index.js";
 import type { AvanteDoctorReport } from "../avante/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
@@ -67,6 +69,7 @@ export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
   amp: AmpDoctorReport;
+  antigravity: AntigravityDoctorReport;
   augment: AugmentDoctorReport;
   avante: AvanteDoctorReport;
   codex: CodexDoctorReport;
@@ -103,7 +106,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmpInstructionsOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -117,6 +120,7 @@ type HookDoctorIntegrationDoctors = {
 const hookDoctorIntegrationDoctors = {
   aider: () => doctorAiderConvention(),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
+  antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),
   augment: (options) => doctorAugmentRule(undefined, getHookCommandOptions(options)),
   avante: () => doctorAvanteInstructions(),
   codex: (options) => doctorCodexHook(undefined, options),

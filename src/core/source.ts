@@ -40,6 +40,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("goose")) {
     return "goose";
   }
+  if (source.startsWith("antigravity") || source === "google-antigravity") {
+    return "antigravity";
+  }
   if (source.startsWith("augment") || source.startsWith("auggie")) {
     return "augment";
   }

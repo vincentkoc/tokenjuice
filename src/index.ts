@@ -3,6 +3,7 @@ export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "./hosts/amp/index.js";
+export { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule } from "./hosts/antigravity/index.js";
 export { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "./hosts/augment/index.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
@@ -97,6 +98,12 @@ export type {
   InstallAmpInstructionsResult,
   UninstallAmpInstructionsResult,
 } from "./hosts/amp/index.js";
+export type {
+  AntigravityDoctorReport,
+  AntigravityRuleOptions,
+  InstallAntigravityRuleResult,
+  UninstallAntigravityRuleResult,
+} from "./hosts/antigravity/index.js";
 export type {
   AugmentDoctorReport,
   AugmentRuleOptions,

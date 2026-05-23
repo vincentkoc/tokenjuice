@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: aider, amp, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, zed, copilot-cli",
+      "available integrations: aider, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,7 +71,7 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: aider, amp, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, zed, copilot-cli",
+      "available integrations: aider, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));

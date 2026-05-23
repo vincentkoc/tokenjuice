@@ -1,4 +1,5 @@
 import { doctorAiderConvention } from "../aider/index.js";
+import { doctorAgentloomRule } from "../agentloom/index.js";
 import { doctorAgentsGeRule } from "../agentsge/index.js";
 import { doctorAmazonQRule } from "../amazon-q/index.js";
 import { doctorAmpInstructions } from "../amp/index.js";
@@ -58,6 +59,7 @@ import { doctorZedInstructions } from "../zed/index.js";
 import { doctorZencoderRule } from "../zencoder/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
+import type { AgentloomDoctorReport, AgentloomRuleOptions } from "../agentloom/index.js";
 import type { AgentsGeDoctorReport, AgentsGeRuleOptions } from "../agentsge/index.js";
 import type { AmazonQDoctorReport, AmazonQRuleOptions } from "../amazon-q/index.js";
 import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
@@ -120,6 +122,7 @@ export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
+  agentloom: AgentloomDoctorReport;
   agentsge: AgentsGeDoctorReport;
   "amazon-q": AmazonQDoctorReport;
   amp: AmpDoctorReport;
@@ -184,7 +187,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AgentsGeRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AgentloomRuleOptions & AgentsGeRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -197,6 +200,7 @@ type HookDoctorIntegrationDoctors = {
 
 const hookDoctorIntegrationDoctors = {
   aider: () => doctorAiderConvention(),
+  agentloom: (options) => doctorAgentloomRule(undefined, getHookCommandOptions(options)),
   agentsge: (options) => doctorAgentsGeRule(undefined, getHookCommandOptions(options)),
   "amazon-q": (options) => doctorAmazonQRule(undefined, getHookCommandOptions(options)),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),

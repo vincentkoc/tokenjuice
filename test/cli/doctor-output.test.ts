@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: aider, agentsge, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
+      "available integrations: aider, agentloom, agentsge, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,7 +71,7 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: aider, agentsge, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
+      "available integrations: aider, agentloom, agentsge, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, plandex, qoder, qwen-code, replit, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));

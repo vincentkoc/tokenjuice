@@ -21,6 +21,7 @@ import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGooseHints } from "../goose/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
+import { doctorGptmeInstructions } from "../gptme/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorJulesInstructions } from "../jules/index.js";
 import { doctorKimiHook } from "../kimi/index.js";
@@ -67,6 +68,7 @@ import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
+import type { GptmeDoctorReport, GptmeInstructionsOptions } from "../gptme/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { JulesDoctorReport, JulesInstructionsOptions } from "../jules/index.js";
 import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js";
@@ -115,6 +117,7 @@ export type HookIntegrationDoctorReport = {
   goose: GooseDoctorReport;
   "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
+  gptme: GptmeDoctorReport;
   junie: JunieDoctorReport;
   jules: JulesDoctorReport;
   kimi: KimiDoctorReport;
@@ -145,7 +148,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BuilderRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BuilderRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -179,6 +182,7 @@ const hookDoctorIntegrationDoctors = {
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
+  gptme: (options) => doctorGptmeInstructions(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
   jules: (options) => doctorJulesInstructions(undefined, getHookCommandOptions(options)),
   kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),

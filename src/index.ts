@@ -44,6 +44,7 @@ export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, u
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
+export { doctorGptmeInstructions, installGptmeInstructions, uninstallGptmeInstructions } from "./hosts/gptme/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "./hosts/jules/index.js";
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
@@ -203,6 +204,12 @@ export type {
   InstallGrokCliHookResult,
   UninstallGrokCliHookResult,
 } from "./hosts/grok-cli/index.js";
+export type {
+  GptmeDoctorReport,
+  GptmeInstructionsOptions,
+  InstallGptmeInstructionsResult,
+  UninstallGptmeInstructionsResult,
+} from "./hosts/gptme/index.js";
 export type {
   InstallJunieInstructionsResult,
   JunieDoctorReport,

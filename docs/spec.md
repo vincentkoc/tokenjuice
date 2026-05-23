@@ -183,6 +183,7 @@ tokenjuice install devin
 tokenjuice install firebase-studio
 tokenjuice install grok-build
 tokenjuice install grok-cli
+tokenjuice install gptme
 tokenjuice install goose
 tokenjuice install jules
 tokenjuice install kimi
@@ -211,6 +212,7 @@ tokenjuice doctor devin
 tokenjuice doctor firebase-studio
 tokenjuice doctor grok-build
 tokenjuice doctor grok-cli
+tokenjuice doctor gptme
 tokenjuice doctor goose
 tokenjuice doctor jules
 tokenjuice doctor kimi
@@ -262,6 +264,7 @@ supported host hooks:
 | Goose | `tokenjuice install goose` | `.goosehints` | ✴️ Beta. Inserts a marker-delimited hints block that tells Goose to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Goose hints do not intercept tool output; restart the Goose session after install; see `docs/goose-integration.md` |
 | Grok Build | `tokenjuice install grok-build` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Grok Build to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Grok Build instructions do not intercept command output; see `docs/grok-build-integration.md` |
 | Grok CLI | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` | ✴️ Beta. Uses a user-level `PostToolUse` hook for the `bash` tool; compacted context is injected alongside the original output; `tokenjuice install grok-cli --local` is available for repo-local verification; see `docs/grok-cli-integration.md` |
+| gptme | `tokenjuice install gptme` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells gptme to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because gptme agent instruction files do not intercept tool output; see `docs/gptme-integration.md` |
 | GitHub Copilot coding agent | `tokenjuice install copilot-agent` | `.github/hooks/tokenjuice-agent.json` | Uses a repo-local `postToolUse` hook for shell output so Copilot coding agent receives compacted terminal output; `tokenjuice install copilot-agent --local` is available for repo-local verification; see `docs/copilot-agent-integration.md` |
 | GitHub Copilot CLI | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | Uses `postToolUse` shell output rewriting on the `bash` tool (matcher `"shell"`) to compact command output before it returns to the agent. Honors `COPILOT_HOME`; the shared `~/.copilot/hooks/` dir is used with a per-host filename to coexist with the VS Code Copilot Chat install. After install, run `tokenjuice doctor copilot-cli --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required. |
 | Junie | `tokenjuice install junie` | `.junie/AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block that tells Junie to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Junie instructions do not intercept tool output; see `docs/junie-integration.md` |

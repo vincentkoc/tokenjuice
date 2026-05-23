@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">gptme</title>
+  <desc id="desc">gptme client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M22 48c0-15 11-25 27-25 8 0 15 2 20 7l-8 9c-3-3-7-4-12-4-8 0-13 5-13 13 0 9 6 14 14 14 3 0 6-1 8-2v-6H48V43h23v24c-6 5-14 8-23 8-16 0-26-11-26-27Z" fill="#F8FAFC"/>
+  <path d="M21 80h54v7H21z" fill="#22C55E"/>
+</svg>

@@ -8,6 +8,7 @@
 - Add a beta Builder Projects rule integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta Firebase Studio AI-rules integration.
+- Add a beta gptme instruction integration.
 - Add a beta Jules instruction integration.
 - Add a beta Kimi Code CLI PostToolUse hook integration.
 - Add a beta Mistral Vibe instruction integration.

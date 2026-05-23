@@ -5,6 +5,7 @@ import { doctorClineHook } from "../cline/index.js";
 import { doctorCodeBuddyHook } from "../codebuddy/index.js";
 import { doctorContinueRule } from "../continue/index.js";
 import { doctorCodexHook } from "../codex/index.js";
+import { doctorCopilotAgentHook } from "../copilot-agent/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDroidHook } from "../droid/index.js";
@@ -28,6 +29,7 @@ import type { ClineDoctorReport } from "../cline/index.js";
 import type { CodeBuddyDoctorReport, CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
 import type { ContinueDoctorReport } from "../continue/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
+import type { CopilotAgentDoctorReport, CopilotAgentHookCommandOptions } from "../copilot-agent/index.js";
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
@@ -50,6 +52,7 @@ export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
   avante: AvanteDoctorReport;
   codex: CodexDoctorReport;
+  "copilot-agent": CopilotAgentDoctorReport;
   "claude-code": ClaudeCodeDoctorReport;
   cline: ClineDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
@@ -76,7 +79,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -95,6 +98,7 @@ const hookDoctorIntegrationDoctors = {
   cline: (options) => doctorClineHook(undefined, getHookCommandOptions(options)),
   codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
+  "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
@@ -141,6 +145,7 @@ function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCom
     ...(typeof options.local === "boolean" ? { local: options.local } : {}),
     ...(typeof options.binaryPath === "string" ? { binaryPath: options.binaryPath } : {}),
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
+    ...(typeof options.projectDir === "string" ? { projectDir: options.projectDir } : {}),
   };
 }
 

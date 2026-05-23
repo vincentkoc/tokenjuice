@@ -132,17 +132,20 @@ function hasTokenjuiceCommand(
   config: CopilotHooksConfig,
   isTokenjuiceCommand: (command: string) => boolean,
 ): boolean {
+  const commandFields = ["command", "bash", "powershell"] as const;
   for (const bucket of Object.values(config.hooks)) {
     if (!Array.isArray(bucket)) {
       continue;
     }
     for (const entry of bucket) {
-      if (
-        isRecord(entry)
-        && typeof entry.command === "string"
-        && isTokenjuiceCommand(entry.command)
-      ) {
-        return true;
+      if (!isRecord(entry)) {
+        continue;
+      }
+      for (const field of commandFields) {
+        const command = entry[field];
+        if (typeof command === "string" && isTokenjuiceCommand(command)) {
+          return true;
+        }
       }
     }
   }

@@ -18,6 +18,12 @@ export {
 } from "./hosts/codex/index.js";
 export type { CodexFeatureFlagStatus } from "./hosts/codex/index.js";
 export {
+  doctorCopilotAgentHook,
+  installCopilotAgentHook,
+  runCopilotAgentPostToolUseHook,
+  uninstallCopilotAgentHook,
+} from "./hosts/copilot-agent/index.js";
+export {
   doctorCopilotCliHook,
   getCopilotCliInstructionsSnippet,
   installCopilotCliHook,
@@ -181,6 +187,12 @@ export type {
   ZedDoctorReport,
   ZedInstructionsOptions,
 } from "./hosts/zed/index.js";
+export type {
+  CopilotAgentDoctorReport,
+  CopilotAgentHookCommandOptions,
+  InstallCopilotAgentHookResult,
+  UninstallCopilotAgentHookResult,
+} from "./hosts/copilot-agent/index.js";
 export type {
   CopilotCliDoctorReport,
   CopilotCliHookCommandOptions,

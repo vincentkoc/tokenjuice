@@ -48,6 +48,7 @@ export {
   installOpenCodeExtension,
   uninstallOpenCodeExtension,
 } from "./hosts/opencode/index.js";
+export { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "./hosts/qwen-code/index.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
@@ -143,6 +144,12 @@ export type {
   OpenHandsHookCommandOptions,
   UninstallOpenHandsHookResult,
 } from "./hosts/openhands/index.js";
+export type {
+  InstallQwenCodeHookResult,
+  QwenCodeDoctorReport,
+  QwenCodeHookCommandOptions,
+  UninstallQwenCodeHookResult,
+} from "./hosts/qwen-code/index.js";
 export type {
   InstallRooInstructionsResult,
   RooDoctorReport,

@@ -40,6 +40,7 @@ import {
 } from "../hosts/opencode/index.js";
 import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "../hosts/openhands/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
+import { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "../hosts/roo/index.js";
 import {
   doctorVscodeCopilotHook,
@@ -115,6 +116,7 @@ function printUsage(): void {
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
+      "  tokenjuice install qwen-code [--local]",
       "  tokenjuice install roo",
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
@@ -132,6 +134,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
+      "  tokenjuice uninstall qwen-code",
       "  tokenjuice uninstall roo",
       "  tokenjuice uninstall vscode-copilot",
       "  tokenjuice uninstall copilot-cli",
@@ -141,7 +144,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kiro|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -734,6 +737,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "qwen-code") {
+    const result = await installQwenCodeHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.settingsPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "project-local PostToolUse hook; compacted context is injected alongside original output" },
+      { label: "Verify", value: `tokenjuice doctor qwen-code${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("qwen-code", "hook", details));
+    return 0;
+  }
+
   if (target === "pi") {
     const result = await installPiExtension(undefined, { local: args.local });
     if (args.format === "json") {
@@ -898,7 +922,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kiro, kilo, openhands, pi, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1051,6 +1075,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "qwen-code") {
+    const result = await uninstallQwenCodeHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
+    process.stdout.write(`settings path: ${result.settingsPath}\n`);
+    process.stdout.write("enable: tokenjuice install qwen-code\n");
+    return 0;
+  }
+
   if (target === "roo") {
     const result = await uninstallRooInstructions();
     if (args.format === "json") {
@@ -1129,7 +1166,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kiro, kilo, openhands, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1448,6 +1485,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
         process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "qwen-code") {
+    const report = await doctorQwenCodeHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`settings path: ${report.settingsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
       }
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);
@@ -2122,6 +2195,8 @@ async function main(): Promise<number> {
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "qwen-code-post-tool-use":
+      return await runQwenCodePostToolUseHook(await readStdin(args.maxInputBytes));
     case "vscode-copilot-pre-tool-use":
       return await runVscodeCopilotPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "copilot-cli-post-tool-use":

@@ -46,6 +46,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("pi")) {
     return "pi";
   }
+  if (source.startsWith("qwen")) {
+    return "qwen-code";
+  }
   if (source === "direct" || source === "tokenjuice" || source === "wrap") {
     return DEFAULT_CLI_ARTIFACT_SOURCE;
   }

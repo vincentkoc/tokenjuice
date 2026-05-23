@@ -14,6 +14,7 @@ import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
+import { doctorQwenCodeHook } from "../qwen-code/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 import { doctorWindsurfRule } from "../windsurf/index.js";
@@ -35,6 +36,7 @@ import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
+import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-code/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 import type { WindsurfDoctorReport } from "../windsurf/index.js";
@@ -58,6 +60,7 @@ export type HookIntegrationDoctorReport = {
   kilo: KiloDoctorReport;
   openhands: OpenHandsDoctorReport;
   pi: PiDoctorReport;
+  "qwen-code": QwenCodeDoctorReport;
   roo: RooDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   windsurf: WindsurfDoctorReport;
@@ -70,7 +73,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions;
+export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & DroidHookCommandOptions & QwenCodeHookCommandOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -97,6 +100,7 @@ const hookDoctorIntegrationDoctors = {
   kilo: () => doctorKiloRule(),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),
+  "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   roo: () => doctorRooInstructions(),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
   windsurf: () => doctorWindsurfRule(),

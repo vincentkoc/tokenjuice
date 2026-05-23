@@ -12,6 +12,7 @@ import {
   installCodexHook,
   installCursorHook,
   installPiExtension,
+  installQwenCodeHook,
   runClaudeCodePostToolUseHook,
   runClaudeCodePreToolUseHook,
 } from "../../src/index.js";
@@ -688,12 +689,19 @@ describe("doctorInstalledHooks", () => {
       binaryPath: localBinaryPath,
       nodePath: localNodePath,
     });
+    await installQwenCodeHook(undefined, {
+      projectDir: home,
+      local: true,
+      binaryPath: localBinaryPath,
+      nodePath: localNodePath,
+    });
     await installPiExtension(undefined, { local: true });
 
     const report = await doctorInstalledHooks({
       local: true,
       binaryPath: localBinaryPath,
       nodePath: localNodePath,
+      projectDir: home,
       featureFlagConfigPath: join(codexHome, "config.toml"),
     });
 
@@ -702,11 +710,13 @@ describe("doctorInstalledHooks", () => {
     expect(report.integrations["claude-code"].status).toBe("ok");
     expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.cursor.status).toBe("ok");
+    expect(report.integrations["qwen-code"].status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
     expect(report.integrations.codex.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations["claude-code"].expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.codebuddy.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.cursor.expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations["qwen-code"].expectedCommand).toContain(expectedHookPrefix);
   });
 });
 

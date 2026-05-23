@@ -7,6 +7,7 @@
 - Add a beta Agent Layer source-instruction integration.
 - Add a beta AdaL CLI instruction integration.
 - Add a beta Aether prompt-source integration.
+- Add a beta aictl project-prompt integration.
 - Add a beta AgentInit source-instruction integration.
 - Add a beta Agentlink source-instruction integration.
 - Add a beta anywhere-agents source-instruction integration.

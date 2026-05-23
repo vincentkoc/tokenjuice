@@ -61,6 +61,7 @@ export {
   runVscodeCopilotPreToolUseHook,
   uninstallVscodeCopilotHook,
 } from "./hosts/vscode-copilot/index.js";
+export { doctorWarpInstructions, installWarpInstructions, uninstallWarpInstructions } from "./hosts/warp/index.js";
 export { doctorWindsurfRule, installWindsurfRule, uninstallWindsurfRule } from "./hosts/windsurf/index.js";
 export { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "./hosts/zed/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
@@ -275,6 +276,12 @@ export type {
   VscodeCopilotDoctorReport,
   VscodeCopilotHookCommandOptions,
 } from "./hosts/vscode-copilot/index.js";
+export type {
+  InstallWarpInstructionsResult,
+  UninstallWarpInstructionsResult,
+  WarpDoctorReport,
+  WarpInstructionsOptions,
+} from "./hosts/warp/index.js";
 export type {
   InstallWindsurfRuleResult,
   UninstallWindsurfRuleResult,

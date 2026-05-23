@@ -35,6 +35,7 @@ import { doctorRooInstructions } from "../roo/index.js";
 import { doctorRulerRule } from "../ruler/index.js";
 import { doctorTraeRule } from "../trae/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
+import { doctorWarpInstructions } from "../warp/index.js";
 import { doctorWindsurfRule } from "../windsurf/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 
@@ -75,6 +76,7 @@ import type { RooDoctorReport } from "../roo/index.js";
 import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
 import type { TraeDoctorReport, TraeRuleOptions } from "../trae/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
+import type { WarpDoctorReport, WarpInstructionsOptions } from "../warp/index.js";
 import type { WindsurfDoctorReport } from "../windsurf/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
 
@@ -117,6 +119,7 @@ export type HookIntegrationDoctorReport = {
   ruler: RulerDoctorReport;
   trae: TraeDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
+  warp: WarpDoctorReport;
   windsurf: WindsurfDoctorReport;
   zed: ZedDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
@@ -127,7 +130,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions & TraeRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -175,6 +178,7 @@ const hookDoctorIntegrationDoctors = {
   ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),
   trae: (options) => doctorTraeRule(undefined, getHookCommandOptions(options)),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
+  warp: (options) => doctorWarpInstructions(undefined, getHookCommandOptions(options)),
   windsurf: () => doctorWindsurfRule(),
   zed: () => doctorZedInstructions(),
   "copilot-cli": (options) => doctorCopilotCliHook(undefined, getHookCommandOptions(options)),

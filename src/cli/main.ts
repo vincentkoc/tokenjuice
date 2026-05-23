@@ -29,6 +29,7 @@ import {
   runCopilotCliPostToolUseHook,
   uninstallCopilotCliHook,
 } from "../hosts/copilot-cli/index.js";
+import { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "../hosts/crush/index.js";
 import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
@@ -112,6 +113,7 @@ function printUsage(): void {
       "  tokenjuice install codebuddy [--local]",
       "  tokenjuice install continue",
       "  tokenjuice install copilot-agent [--local]",
+      "  tokenjuice install crush",
       "  tokenjuice install cursor [--local]",
       "  tokenjuice install droid [--local]",
       "  tokenjuice install gemini-cli [--local]",
@@ -135,6 +137,7 @@ function printUsage(): void {
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall copilot-agent",
+      "  tokenjuice uninstall crush",
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall grok-cli",
@@ -153,7 +156,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|cursor|droid|gemini-cli|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -665,6 +668,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "crush") {
+    const result = await installCrushSkill();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Skill", value: result.skillPath },
+      { label: "Beta", value: "project-local Agent Skill; Crush still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor crush" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("crush", "skill", details));
+    return 0;
+  }
+
   if (target === "cursor") {
     const result = await installCursorHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -997,7 +1020,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1102,6 +1125,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
       process.stdout.write("deleted empty hook file: yes\n");
     }
     process.stdout.write("enable: tokenjuice install copilot-agent\n");
+    return 0;
+  }
+
+  if (target === "crush") {
+    const result = await uninstallCrushSkill();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed crush skill: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`skill path: ${result.skillPath}\n`);
+    process.stdout.write("enable: tokenjuice install crush\n");
     return 0;
   }
 
@@ -1289,7 +1325,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1654,6 +1690,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     if (report.detectedCommand) {
       process.stdout.write(`configured command: ${report.detectedCommand}\n`);
     }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "crush") {
+    const report = await doctorCrushSkill();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`skill path: ${report.skillPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {

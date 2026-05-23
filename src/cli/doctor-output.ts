@@ -3,29 +3,30 @@ import type { HookDoctorReport } from "../hosts/shared/hook-doctor.js";
 
 type IntegrationDoctorReport = HookDoctorReport["integrations"][keyof HookDoctorReport["integrations"]];
 
+function getStringField(report: IntegrationDoctorReport, key: string): string | undefined {
+  if (key in report) {
+    const value = (report as Record<string, unknown>)[key];
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+  return undefined;
+}
+
 function getIntegrationPath(report: IntegrationDoctorReport): string {
-  if ("hooksPath" in report) {
-    return report.hooksPath;
-  }
-  if ("settingsPath" in report) {
-    return report.settingsPath;
-  }
-  if ("hookPath" in report) {
-    return report.hookPath;
-  }
-  if ("rulePath" in report) {
-    return report.rulePath;
-  }
-  if ("steeringPath" in report) {
-    return report.steeringPath;
-  }
-  if ("conventionPath" in report) {
-    return report.conventionPath;
-  }
-  if ("instructionsPath" in report) {
-    return report.instructionsPath;
-  }
-  return report.extensionPath;
+  return (
+    getStringField(report, "hooksPath") ??
+    getStringField(report, "settingsPath") ??
+    getStringField(report, "hookPath") ??
+    getStringField(report, "rulePath") ??
+    getStringField(report, "skillPath") ??
+    getStringField(report, "configPath") ??
+    getStringField(report, "steeringPath") ??
+    getStringField(report, "conventionPath") ??
+    getStringField(report, "instructionsPath") ??
+    getStringField(report, "extensionPath") ??
+    "(unknown)"
+  );
 }
 
 function appendInstallHint(lines: string[]): void {

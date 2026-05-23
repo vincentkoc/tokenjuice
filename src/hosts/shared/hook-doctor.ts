@@ -8,6 +8,7 @@ import { doctorContinueRule } from "../continue/index.js";
 import { doctorCodexHook } from "../codex/index.js";
 import { doctorCopilotAgentHook } from "../copilot-agent/index.js";
 import { doctorCopilotCliHook } from "../copilot-cli/index.js";
+import { doctorCrushSkill } from "../crush/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
@@ -33,6 +34,7 @@ import type { ContinueDoctorReport } from "../continue/index.js";
 import type { CodexDoctorReport, CodexHookCommandOptions } from "../codex/index.js";
 import type { CopilotAgentDoctorReport, CopilotAgentHookCommandOptions } from "../copilot-agent/index.js";
 import type { CopilotCliDoctorReport } from "../copilot-cli/index.js";
+import type { CrushDoctorReport, CrushSkillOptions } from "../crush/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
@@ -60,6 +62,7 @@ export type HookIntegrationDoctorReport = {
   cline: ClineDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
   continue: ContinueDoctorReport;
+  crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
   droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
@@ -82,7 +85,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -103,6 +106,7 @@ const hookDoctorIntegrationDoctors = {
   codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
+  crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),

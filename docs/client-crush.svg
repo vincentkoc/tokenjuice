@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Crush">
+  <rect width="64" height="64" rx="12" fill="#ff5c8a"/>
+  <path d="M32 50s-2.7-2.2-5.9-5.1C15.6 35.5 10 30.3 10 22.6 10 16.4 14.9 12 20.8 12c3.4 0 6.7 1.6 8.8 4.1L32 19l2.4-2.9c2.1-2.5 5.4-4.1 8.8-4.1C49.1 12 54 16.4 54 22.6c0 7.7-5.6 12.9-16.1 22.3C34.7 47.8 32 50 32 50z" fill="#fff4f7"/>
+  <path d="M22 25h20M22 32h20M22 39h13" stroke="#3b1230" stroke-width="4" stroke-linecap="round"/>
+</svg>

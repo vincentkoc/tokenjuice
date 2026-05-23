@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, qwen-code, roo, vscode-copilot, windsurf, zed, copilot-cli",
+      "available integrations: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, qwen-code, roo, vscode-copilot, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,9 +71,47 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, qwen-code, roo, vscode-copilot, windsurf, zed, copilot-cli",
+      "available integrations: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, qwen-code, roo, vscode-copilot, windsurf, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
+  });
+
+  it("prefers rule paths over config paths for integrations that expose both", () => {
+    const report = {
+      status: "ok",
+      integrations: {
+        kilo: {
+          rulePath: "/tmp/project/.kilo/rules/tokenjuice.md",
+          configPath: "/tmp/project/kilo.jsonc",
+          status: "ok",
+          issues: [],
+          advisories: [],
+          missingPaths: [],
+          fixCommand: "tokenjuice install kilo",
+        },
+      },
+    } as unknown as HookDoctorReport;
+
+    expect(formatHookDoctorReport(report)).toContain("- path: /tmp/project/.kilo/rules/tokenjuice.md");
+    expect(formatHookDoctorReport(report)).not.toContain("- path: /tmp/project/kilo.jsonc");
+  });
+
+  it("prints skill paths for skill-backed integrations", () => {
+    const report = {
+      status: "ok",
+      integrations: {
+        crush: {
+          skillPath: "/tmp/project/.crush/skills/tokenjuice/SKILL.md",
+          status: "ok",
+          issues: [],
+          advisories: [],
+          missingPaths: [],
+          fixCommand: "tokenjuice install crush",
+        },
+      },
+    } as unknown as HookDoctorReport;
+
+    expect(formatHookDoctorReport(report)).toContain("- path: /tmp/project/.crush/skills/tokenjuice/SKILL.md");
   });
 });

@@ -31,6 +31,7 @@ export {
   runCopilotCliPostToolUseHook,
   uninstallCopilotCliHook,
 } from "./hosts/copilot-cli/index.js";
+export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./hosts/crush/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
@@ -206,4 +207,10 @@ export type {
   InstallCopilotCliHookResult,
   UninstallCopilotCliHookResult,
 } from "./hosts/copilot-cli/index.js";
+export type {
+  CrushDoctorReport,
+  CrushSkillOptions,
+  InstallCrushSkillResult,
+  UninstallCrushSkillResult,
+} from "./hosts/crush/index.js";
 export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } from "./core/analysis.js";

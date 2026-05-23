@@ -214,6 +214,7 @@ tokenjuice install mini-swe-agent
 tokenjuice install swe-agent
 tokenjuice install mistral-vibe
 tokenjuice install mux
+tokenjuice install novakit
 tokenjuice install ona
 tokenjuice install open-interpreter
 tokenjuice install openwebui
@@ -273,6 +274,7 @@ tokenjuice doctor mini-swe-agent
 tokenjuice doctor swe-agent
 tokenjuice doctor mistral-vibe
 tokenjuice doctor mux
+tokenjuice doctor novakit
 tokenjuice doctor ona
 tokenjuice doctor open-interpreter
 tokenjuice doctor openwebui
@@ -359,6 +361,7 @@ supported host hooks:
 | SWE-agent | `tokenjuice install swe-agent` | `.swe-agent/tokenjuice.yaml` | ✴️ Beta. Installs a SWE-agent config fragment that keeps command execution unchanged while adding tokenjuice retry guidance to clipped observations; load with `sweagent run --config config/default.yaml --config .swe-agent/tokenjuice.yaml`; see `docs/swe-agent-integration.md` |
 | Mistral Vibe | `tokenjuice install mistral-vibe` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Mistral Vibe to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Mistral Vibe root `AGENTS.md` instructions do not intercept tool output; see `docs/mistral-vibe-integration.md` |
 | Mux | `tokenjuice install mux` | `.mux/tool_post` | ✴️ Beta. Installs a project-local `tool_post` hook that emits compacted context for noisy `bash` output through Mux hook output; the original tool result is still shown by Mux; see `docs/mux-integration.md` |
+| NovaKit CLI | `tokenjuice install novakit` | `NOVAKIT.md` | ✴️ Beta. Inserts a marker-delimited project context block that tells NovaKit to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because NovaKit context files do not intercept command output; see `docs/novakit-integration.md` |
 | Ona Agent | `tokenjuice install ona` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Ona Agent to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Ona `AGENTS.md` instructions do not intercept command output; see `docs/ona-integration.md` |
 | OpenCode | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` | Installs a project-agnostic plugin that is auto-loaded on OpenCode session start; `tokenjuice install opencode --local` bundles the plugin from the current repo source |
 | OpenHands | `tokenjuice install openhands` | `.openhands/hooks.json` | ✴️ Beta. Uses a project-local `PostToolUse` hook for `terminal` output; compacted context is injected alongside the original output; `tokenjuice install openhands --local` is available for repo-local verification; see `docs/openhands-integration.md` |

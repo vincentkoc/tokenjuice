@@ -6,6 +6,7 @@ export type MarkerDelimitedBlockConfig = {
   beginMarker: string;
   endMarker: string;
   block: string;
+  preserveSurroundingText?: boolean;
 };
 
 export type MarkerDelimitedBlockState = {
@@ -37,11 +38,15 @@ function buildBlockPattern(config: MarkerDelimitedBlockConfig): RegExp {
   return new RegExp(`\\n?${escapeRegExp(config.beginMarker)}[\\s\\S]*?${escapeRegExp(config.endMarker)}\\n?`, "gu");
 }
 
+function buildExactBlockPattern(config: MarkerDelimitedBlockConfig): RegExp {
+  return new RegExp(`${escapeRegExp(config.beginMarker)}[\\s\\S]*?${escapeRegExp(config.endMarker)}`, "gu");
+}
+
 export function inspectMarkerDelimitedBlock(text: string, config: MarkerDelimitedBlockConfig): MarkerDelimitedBlockState {
   return {
     hasBegin: text.includes(config.beginMarker),
     hasEnd: text.includes(config.endMarker),
-    completeBlockCount: [...text.matchAll(buildBlockPattern(config))].length,
+    completeBlockCount: [...text.matchAll(config.preserveSurroundingText ? buildExactBlockPattern(config) : buildBlockPattern(config))].length,
   };
 }
 
@@ -62,6 +67,18 @@ export function collectMarkerDelimitedBlockIssues(
 }
 
 export function removeMarkerDelimitedBlock(text: string, config: MarkerDelimitedBlockConfig): { text: string; removed: boolean } {
+  if (config.preserveSurroundingText) {
+    const firstMatch = buildExactBlockPattern(config).exec(text);
+    if (!firstMatch) {
+      return { text, removed: false };
+    }
+    let nextText = text.replace(buildExactBlockPattern(config), "");
+    if (firstMatch.index === 0 && nextText.startsWith("\n")) {
+      nextText = nextText.slice(1);
+    }
+    return { text: nextText, removed: true };
+  }
+
   const pattern = buildBlockPattern(config);
   if (!pattern.test(text)) {
     return { text, removed: false };
@@ -73,6 +90,11 @@ export function removeMarkerDelimitedBlock(text: string, config: MarkerDelimited
 }
 
 export function upsertMarkerDelimitedBlock(text: string, config: MarkerDelimitedBlockConfig): string {
+  if (config.preserveSurroundingText) {
+    const withoutBlock = removeMarkerDelimitedBlock(text, config).text;
+    return `${config.block}\n${withoutBlock}`;
+  }
+
   const withoutBlock = removeMarkerDelimitedBlock(text, config).text.trim();
   if (!withoutBlock) {
     return `${config.block}\n`;
@@ -102,6 +124,14 @@ export async function uninstallMarkerDelimitedBlock(filePath: string, config: Ma
   const removed = removeMarkerDelimitedBlock(existing.text, config);
   if (!removed.removed) {
     return { filePath, removed: false };
+  }
+  if (config.preserveSurroundingText) {
+    if (removed.text) {
+      await writeFile(filePath, removed.text, "utf8");
+    } else {
+      await rm(filePath, { force: true });
+    }
+    return { filePath, removed: true };
   }
   if (removed.text.trim()) {
     await writeFile(filePath, `${removed.text.trim()}\n`, "utf8");

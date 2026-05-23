@@ -77,6 +77,7 @@ export { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAg
 export { doctorSweAgentConfig, installSweAgentConfig, uninstallSweAgentConfig } from "./hosts/swe-agent/index.js";
 export { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "./hosts/mistral-vibe/index.js";
 export { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "./hosts/mux/index.js";
+export { doctorNovaKitInstructions, installNovaKitInstructions, uninstallNovaKitInstructions } from "./hosts/novakit/index.js";
 export { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "./hosts/ona/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
@@ -432,6 +433,12 @@ export type {
   MuxHookCommandOptions,
   UninstallMuxHookResult,
 } from "./hosts/mux/index.js";
+export type {
+  InstallNovaKitInstructionsResult,
+  NovaKitDoctorReport,
+  NovaKitInstructionsOptions,
+  UninstallNovaKitInstructionsResult,
+} from "./hosts/novakit/index.js";
 export type {
   InstallOpenHandsHookResult,
   OpenHandsDoctorReport,

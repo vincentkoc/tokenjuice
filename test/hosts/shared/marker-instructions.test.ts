@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,6 +8,8 @@ import {
   collectMarkerDelimitedBlockIssues,
   installMarkerDelimitedBlock,
   inspectMarkerDelimitedBlock,
+  removeMarkerDelimitedBlock,
+  uninstallMarkerDelimitedBlock,
 } from "../../../src/hosts/shared/marker-instructions.js";
 
 const config = {
@@ -53,5 +55,28 @@ describe("marker instruction helpers", () => {
     expect(result.backupPath).toBeUndefined();
     await expect(readFile(filePath, "utf8")).resolves.toBe(`${config.block}\n`);
     await expect(readFile(`${filePath}.bak`, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("can preserve surrounding text exactly for shared context files", async () => {
+    const dir = await createTempDir();
+    const filePath = join(dir, "CONTEXT.md");
+    const preservingConfig = { ...config, preserveSurroundingText: true };
+    const userText = "\n    indented first line\n\ntrailing spaces  \n";
+    await writeFile(filePath, userText, "utf8");
+
+    await installMarkerDelimitedBlock(filePath, preservingConfig);
+    await uninstallMarkerDelimitedBlock(filePath, preservingConfig);
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe(userText);
+  });
+
+  it("removes duplicate owned blocks in preserve mode", async () => {
+    const preservingConfig = { ...config, preserveSurroundingText: true };
+    const text = `${config.block}\nfirst section\n${config.block}\nsecond section\n`;
+
+    expect(removeMarkerDelimitedBlock(text, preservingConfig)).toEqual({
+      text: "first section\n\nsecond section\n",
+      removed: true,
+    });
   });
 });

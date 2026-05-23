@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="NovaKit">
+  <rect width="192" height="192" rx="36" fill="#111827"/>
+  <path d="M42 146V46h24l60 62V46h24v100h-22L66 82v64z" fill="#f8fafc"/>
+  <path d="m96 38 11 23 25 4-18 18 4 25-22-12-22 12 4-25-18-18 25-4z" fill="#38bdf8"/>
+  <circle cx="146" cy="136" r="14" fill="#34d399"/>
+</svg>

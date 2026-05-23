@@ -168,6 +168,15 @@ export async function installOpenWebUITool(
 }
 
 export async function uninstallOpenWebUITool(toolPath = getDefaultToolPath()): Promise<UninstallOpenWebUIToolResult> {
+  const existing = await readInstructionFile(toolPath);
+  if (!existing.exists) {
+    return { toolPath, removed: false };
+  }
+  if (existing.text !== TOKENJUICE_OPENWEBUI_TOOL) {
+    throw new Error(
+      `refusing to remove ${toolPath}; it does not match the current tokenjuice Open WebUI tool source. Review and remove it manually, or reinstall tokenjuice openwebui first.`,
+    );
+  }
   const result = await removeInstructionFile(toolPath);
   return { toolPath: result.filePath, removed: result.removed };
 }
@@ -184,6 +193,18 @@ export async function doctorOpenWebUITool(
       ...buildInstructionDoctorReportFields({
         status: "disabled",
         issues: ["tokenjuice Open WebUI tool source is not installed"],
+        advisory: TOKENJUICE_OPENWEBUI_ADVISORY,
+        fixCommand: TOKENJUICE_OPENWEBUI_FIX_COMMAND,
+      }),
+    };
+  }
+
+  if (existing.text !== TOKENJUICE_OPENWEBUI_TOOL) {
+    return {
+      toolPath: resolvedToolPath,
+      ...buildInstructionDoctorReportFields({
+        status: "broken",
+        issues: ["configured Open WebUI tool source does not match the current tokenjuice generated source"],
         advisory: TOKENJUICE_OPENWEBUI_ADVISORY,
         fixCommand: TOKENJUICE_OPENWEBUI_FIX_COMMAND,
       }),

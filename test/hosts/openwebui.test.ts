@@ -89,7 +89,7 @@ describe("openwebui tool", () => {
     expect(disabled.status).toBe("disabled");
   });
 
-  it("reports broken tool sources when required tokenjuice wiring is stale or unsafe", async () => {
+  it("reports edited tool sources as broken", async () => {
     const home = await createTempDir();
     const toolPath = join(home, ".openwebui", "tools", "tokenjuice_compact.py");
     await mkdir(join(home, ".openwebui", "tools"), { recursive: true });
@@ -107,20 +107,20 @@ describe("openwebui tool", () => {
     const doctor = await doctorOpenWebUITool(toolPath);
 
     expect(doctor.status).toBe("broken");
-    expect(doctor.issues).toContain("configured Open WebUI tool source is missing tokenjuice reduce-json wiring");
-    expect(doctor.issues).toContain("configured Open WebUI tool source enables shell=True");
+    expect(doctor.issues).toContain("configured Open WebUI tool source does not match the current tokenjuice generated source");
   });
 
-  it("removes an existing tool source without requiring tokenjuice content", async () => {
+  it("refuses to remove non-tokenjuice tool source", async () => {
     const home = await createTempDir();
     const toolPath = join(home, ".openwebui", "tools", "tokenjuice_compact.py");
     await mkdir(join(home, ".openwebui", "tools"), { recursive: true });
     await writeFile(toolPath, "custom local tool\n", "utf8");
 
-    const removed = await uninstallOpenWebUITool(toolPath);
+    await expect(uninstallOpenWebUITool(toolPath)).rejects.toThrow(
+      "does not match the current tokenjuice Open WebUI tool source",
+    );
 
-    expect(removed.removed).toBe(true);
-    await expect(access(toolPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(toolPath, "utf8")).resolves.toBe("custom local tool\n");
   });
 
   it("uses OPENWEBUI_PROJECT_DIR for the default tool source", async () => {

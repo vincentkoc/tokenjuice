@@ -31,6 +31,10 @@ administrators.
   use `shell=True`.
 - Admin valves configure the `tokenjuice` executable path, timeout, maximum
   input size, and maximum returned text size.
+- `tokenjuice doctor openwebui` treats edited tool source as broken, and
+  `tokenjuice uninstall openwebui` refuses to delete edited or replaced source
+  files. Reinstall first if you want tokenjuice to replace a local edit with a
+  backup.
 
 ## Current beta caveat
 

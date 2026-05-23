@@ -95,7 +95,7 @@ import { doctorStagewiseSkill, installStagewiseSkill, uninstallStagewiseSkill } 
 import { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "../hosts/mistral-vibe/index.js";
 import { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "../hosts/mux/index.js";
 import { doctorNovaKitInstructions, installNovaKitInstructions, uninstallNovaKitInstructions } from "../hosts/novakit/index.js";
-import { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "../hosts/ona/index.js";
+import { doctorOnaSkill, installOnaSkill, uninstallOnaSkill } from "../hosts/ona/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -2241,22 +2241,22 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "ona") {
-    const result = await installOnaInstructions();
+    const result = await installOnaSkill();
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
     }
 
     const details = [
-      { label: "Instructions", value: result.instructionsPath },
-      { label: "Beta", value: "instruction-file guidance; Ona still owns command execution" },
+      { label: "Skill", value: result.skillPath },
+      { label: "Beta", value: "workspace skill guidance; Ona still owns command execution" },
       { label: "Verify", value: "tokenjuice doctor ona" },
       { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
     ];
     if (result.backupPath) {
       details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write(formatInstallSuccess("ona", "instructions", details));
+    process.stdout.write(formatInstallSuccess("ona", "skill", details));
     return 0;
   }
 
@@ -3639,14 +3639,14 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "ona") {
-    const result = await uninstallOnaInstructions();
+    const result = await uninstallOnaSkill();
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`removed ona instructions: ${result.removed ? "yes" : "no"}\n`);
-    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write(`removed ona skill: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`skill path: ${result.skillPath}\n`);
     process.stdout.write("enable: tokenjuice install ona\n");
     return 0;
   }
@@ -6708,14 +6708,14 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   }
 
   if (args.positionals[0] === "ona") {
-    const report = await doctorOnaInstructions();
+    const report = await doctorOnaSkill();
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
       return report.status === "broken" ? 1 : 0;
     }
 
-    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`skill path: ${report.skillPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

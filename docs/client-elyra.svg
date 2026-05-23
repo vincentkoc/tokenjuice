@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Elyra">
+  <rect width="96" height="96" rx="18" fill="#101828"/>
+  <path d="M24 22h48v11H37v7h29v11H37v12h36v11H24z" fill="#f8fafc"/>
+  <path d="M57 24l15 15-15 15-7-7 8-8-8-8z" fill="#38bdf8"/>
+</svg>

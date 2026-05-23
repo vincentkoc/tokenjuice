@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">dot-agents</title>
+  <desc id="desc">Simple dot-agents integration mark</desc>
+  <rect width="96" height="96" rx="18" fill="#f8fafc"/>
+  <circle cx="28" cy="31" r="8" fill="#14b8a6"/>
+  <circle cx="68" cy="31" r="8" fill="#2563eb"/>
+  <circle cx="48" cy="66" r="8" fill="#f59e0b"/>
+  <path d="M35 35 44 58M61 35 52 58M36 31h24" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M48 22v10M48 66v8" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/>
+</svg>

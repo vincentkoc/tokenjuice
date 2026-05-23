@@ -27,6 +27,7 @@ import { doctorCrushSkill } from "../crush/index.js";
 import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDeepAgentsInstructions } from "../deepagents/index.js";
 import { doctorDevinHook } from "../devin/index.js";
+import { doctorDotAgentsRule } from "../dot-agents/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorFirebaseStudioRule } from "../firebase-studio/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
@@ -94,6 +95,7 @@ import type { CrushDoctorReport, CrushSkillOptions } from "../crush/index.js";
 import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DeepAgentsDoctorReport, DeepAgentsInstructionsOptions } from "../deepagents/index.js";
 import type { DevinDoctorReport, DevinHookCommandOptions } from "../devin/index.js";
+import type { DotAgentsDoctorReport, DotAgentsRuleOptions } from "../dot-agents/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { FirebaseStudioDoctorReport, FirebaseStudioRuleOptions } from "../firebase-studio/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
@@ -163,6 +165,7 @@ export type HookIntegrationDoctorReport = {
   cursor: CursorDoctorReport;
   deepagents: DeepAgentsDoctorReport;
   devin: DevinDoctorReport;
+  "dot-agents": DotAgentsDoctorReport;
   droid: DroidDoctorReport;
   "firebase-studio": FirebaseStudioDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
@@ -208,7 +211,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DotAgentsRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -248,6 +251,7 @@ const hookDoctorIntegrationDoctors = {
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   deepagents: (options) => doctorDeepAgentsInstructions(undefined, getHookCommandOptions(options)),
   devin: (options) => doctorDevinHook(undefined, getHookCommandOptions(options)),
+  "dot-agents": (options) => doctorDotAgentsRule(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),

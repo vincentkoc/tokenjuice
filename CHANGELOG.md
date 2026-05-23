@@ -19,6 +19,7 @@
 - Add a beta Codegen instruction integration.
 - Add a beta Deep Agents Code instruction integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
+- Add a beta dot-agents global-rule integration.
 - Add a beta Firebase Studio AI-rules integration.
 - Add a beta GitLab Duo custom-rules integration.
 - Add a beta gptme instruction integration.

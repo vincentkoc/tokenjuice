@@ -192,6 +192,7 @@ tokenjuice install builder
 tokenjuice install crush
 tokenjuice install cursor
 tokenjuice install devin
+tokenjuice install dot-agents
 tokenjuice install firebase-studio
 tokenjuice install gitlab-duo
 tokenjuice install grok-build
@@ -241,6 +242,7 @@ tokenjuice doctor codegen
 tokenjuice doctor deepagents
 tokenjuice doctor crush
 tokenjuice doctor devin
+tokenjuice doctor dot-agents
 tokenjuice doctor firebase-studio
 tokenjuice doctor gitlab-duo
 tokenjuice doctor grok-build
@@ -310,6 +312,7 @@ supported host hooks:
 | Cursor (Linux/macOS/WSL) | `tokenjuice install cursor` | `~/.cursor/hooks.json` | Uses `preToolUse` shell input rewriting to route commands through `tokenjuice wrap`; `tokenjuice install cursor --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/cursor-integration.md` |
 | Deep Agents Code | `tokenjuice install deepagents` | `.deepagents/AGENTS.md` | ✴️ Beta. Inserts a marker-delimited project instruction block into Deep Agents Code's preferred project instruction file that tells Deep Agents Code to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Deep Agents Code instructions do not intercept command output; see `docs/deepagents-integration.md` |
 | Devin for Terminal | `tokenjuice install devin` | `.devin/hooks.v1.json` | ✴️ Beta. Uses project-local Claude-compatible `PreToolUse` exec input rewriting to route commands through `tokenjuice wrap`; preserves unrelated Devin hooks; `tokenjuice install devin --local` is available for repo-local verification; see `docs/devin-integration.md` |
+| dot-agents | `tokenjuice install dot-agents` | `~/.agents/rules/global/rules.mdc` | ✴️ Beta. Inserts a marker-delimited block into the global dot-agents rules file that tells managed downstream coding-agent configs to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because dot-agents syncs config rather than intercepting command output; run `dot-agents sync` after install or uninstall; see `docs/dot-agents-integration.md` |
 | Droid (Factory CLI) | `tokenjuice install droid` | `~/.factory/settings.json` | Uses a `PostToolUse` hook for the `Execute` tool to compact shell output before Droid sees it; preserves unrelated settings keys; `tokenjuice install droid --local` is available for repo-local verification |
 | Firebase Studio | `tokenjuice install firebase-studio` | `.idx/airules.md` | ✴️ Beta. Inserts a marker-delimited AI rules block that tells Gemini in Firebase chat to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Firebase Studio rules do not intercept command output; see `docs/firebase-studio-integration.md` |
 | Gemini CLI | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` | ✴️ Beta. Uses an `AfterTool` hook for `run_shell_command` to compact shell output before Gemini CLI sees it; `tokenjuice install gemini-cli --local` is available for repo-local verification; see `docs/gemini-cli-integration.md` |

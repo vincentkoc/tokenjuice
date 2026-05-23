@@ -5,6 +5,7 @@
 ### Features
 
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
+- Add a beta agents.ge source-rule integration.
 - Add a beta IBM Bob Shell context-file integration.
 - Add a beta Builder Projects rule integration.
 - Add a beta Codebuff instruction integration.

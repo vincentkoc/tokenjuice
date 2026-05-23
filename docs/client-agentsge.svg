@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">agents.ge</title>
+  <desc id="desc">agents.ge client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#0f172a"/>
+  <path d="M24 26h48v44H24z" fill="#f8fafc"/>
+  <path d="M24 26h48v10H24z" fill="#38bdf8"/>
+  <path d="M35 49h26M35 60h18" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M28 78c7-7 13-7 20 0s13 7 20 0" fill="none" stroke="#34d399" stroke-width="6" stroke-linecap="round"/>
+</svg>

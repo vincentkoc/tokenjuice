@@ -2,6 +2,7 @@ export { ARTIFACT_DIR_ENV, getArtifact, isValidArtifactId, listArtifactMetadata,
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
+export { doctorAgentsGeRule, installAgentsGeRule, uninstallAgentsGeRule } from "./hosts/agentsge/index.js";
 export { doctorAmazonQRule, installAmazonQRule, uninstallAmazonQRule } from "./hosts/amazon-q/index.js";
 export { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "./hosts/amp/index.js";
 export { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule } from "./hosts/antigravity/index.js";
@@ -117,6 +118,12 @@ export type {
   WrapOptions,
   WrapResult,
 } from "./types.js";
+export type {
+  AgentsGeDoctorReport,
+  AgentsGeRuleOptions,
+  InstallAgentsGeRuleResult,
+  UninstallAgentsGeRuleResult,
+} from "./hosts/agentsge/index.js";
 export type {
   AmazonQDoctorReport,
   AmazonQRuleOptions,

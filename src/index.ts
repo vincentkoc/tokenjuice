@@ -4,6 +4,7 @@ export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
 export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallAgentLayerInstructions } from "./hosts/agent-layer/index.js";
+export { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "./hosts/agentlink/index.js";
 export { doctorAgentloomRule, installAgentloomRule, uninstallAgentloomRule } from "./hosts/agentloom/index.js";
 export { doctorAgentsCliMemory, installAgentsCliMemory, uninstallAgentsCliMemory } from "./hosts/agents-cli/index.js";
 export { doctorAgentsGeRule, installAgentsGeRule, uninstallAgentsGeRule } from "./hosts/agentsge/index.js";
@@ -136,6 +137,12 @@ export type {
   InstallAgentLayerInstructionsResult,
   UninstallAgentLayerInstructionsResult,
 } from "./hosts/agent-layer/index.js";
+export type {
+  AgentlinkDoctorReport,
+  AgentlinkInstructionsOptions,
+  InstallAgentlinkInstructionsResult,
+  UninstallAgentlinkInstructionsResult,
+} from "./hosts/agentlink/index.js";
 export type {
   AgentloomDoctorReport,
   AgentloomRuleOptions,

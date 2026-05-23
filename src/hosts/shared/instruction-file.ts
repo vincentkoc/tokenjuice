@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
@@ -72,9 +73,14 @@ export async function writeInstructionFile(filePath: string, text: string): Prom
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
   }
 
-  const tempPath = `${filePath}.tmp`;
-  await writeFile(tempPath, text, "utf8");
-  await rename(tempPath, filePath);
+  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
+  try {
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true });
+    throw error;
+  }
   return {
     filePath,
     ...(backupPath ? { backupPath } : {}),

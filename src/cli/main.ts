@@ -47,6 +47,7 @@ import {
   runVscodeCopilotPreToolUseHook,
   uninstallVscodeCopilotHook,
 } from "../hosts/vscode-copilot/index.js";
+import { doctorWindsurfRule, installWindsurfRule, uninstallWindsurfRule } from "../hosts/windsurf/index.js";
 import { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "../hosts/zed/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { formatHookDoctorReport } from "./doctor-output.js";
@@ -115,6 +116,7 @@ function printUsage(): void {
       "  tokenjuice install roo",
       "  tokenjuice install vscode-copilot [--local]",
       "  tokenjuice install copilot-cli [--local]",
+      "  tokenjuice install windsurf",
       "  tokenjuice install zed",
       "  tokenjuice uninstall aider",
       "  tokenjuice uninstall avante",
@@ -130,12 +132,13 @@ function printUsage(): void {
       "  tokenjuice uninstall roo",
       "  tokenjuice uninstall vscode-copilot",
       "  tokenjuice uninstall copilot-cli",
+      "  tokenjuice uninstall windsurf",
       "  tokenjuice uninstall zed",
       "  tokenjuice ls",
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -791,6 +794,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "windsurf") {
+    const result = await installWindsurfRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "rule-based guidance; Windsurf still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor windsurf" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("windsurf", "rule", details));
+    return 0;
+  }
+
   if (target === "copilot-cli") {
     const result = await installCopilotCliHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -852,7 +875,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, opencode, roo, vscode-copilot, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1018,6 +1041,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "windsurf") {
+    const result = await uninstallWindsurfRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed windsurf rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install windsurf\n");
+    return 0;
+  }
+
   if (target === "copilot-cli") {
     const result = await uninstallCopilotCliHook();
     if (args.format === "json") {
@@ -1057,7 +1093,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kilo, openhands, opencode, roo, vscode-copilot, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kilo, openhands, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1612,6 +1648,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
     process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`config path: ${report.configPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "windsurf") {
+    const report = await doctorWindsurfRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

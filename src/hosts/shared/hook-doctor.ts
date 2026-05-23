@@ -15,6 +15,7 @@ import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
+import { doctorWindsurfRule } from "../windsurf/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
@@ -34,6 +35,7 @@ import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
+import type { WindsurfDoctorReport } from "../windsurf/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
 
 export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
@@ -55,6 +57,7 @@ export type HookIntegrationDoctorReport = {
   pi: PiDoctorReport;
   roo: RooDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
+  windsurf: WindsurfDoctorReport;
   zed: ZedDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
 };
@@ -92,6 +95,7 @@ const hookDoctorIntegrationDoctors = {
   pi: () => doctorPiExtension(),
   roo: () => doctorRooInstructions(),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
+  windsurf: () => doctorWindsurfRule(),
   zed: () => doctorZedInstructions(),
   "copilot-cli": (options) => doctorCopilotCliHook(undefined, getHookCommandOptions(options)),
 } satisfies HookDoctorIntegrationDoctors;

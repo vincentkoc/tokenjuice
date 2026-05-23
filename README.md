@@ -40,6 +40,7 @@ beta integrations:
 | <img width="48px" src="docs/client-kilo.svg" alt="Kilo Code" /> | [Kilo Code](https://kilocode.ai/) | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-openhands.svg" alt="OpenHands" /> | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` |
 | <img width="48px" src="docs/client-roo.svg" alt="Roo Code" /> | [Roo Code](https://roocode.com/) | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` |
+| <img width="48px" src="docs/client-windsurf.svg" alt="Windsurf" /> | [Windsurf](https://windsurf.com/) | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-zed.svg" alt="Zed" /> | [Zed](https://zed.dev/docs/ai/rules.html) | `tokenjuice install zed` | `.rules` |
 
 ## install
@@ -60,8 +61,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|copilot-cli|zed]
-tokenjuice uninstall [aider|avante|codex|cline|continue|droid|gemini-cli|junie|kilo|openhands|opencode|roo|vscode-copilot|copilot-cli|zed]
+tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice uninstall [aider|avante|codex|cline|continue|droid|gemini-cli|junie|kilo|openhands|opencode|roo|vscode-copilot|windsurf|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -83,9 +84,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|copilot-cli|zed]
-tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|copilot-cli|zed] --local
-tokenjuice uninstall [aider|avante|codex|cline|continue|droid|gemini-cli|junie|kilo|openhands|opencode|roo|vscode-copilot|copilot-cli|zed]
+tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|copilot-cli|zed] --local
+tokenjuice uninstall [aider|avante|codex|cline|continue|droid|gemini-cli|junie|kilo|openhands|opencode|roo|vscode-copilot|windsurf|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -145,6 +146,7 @@ direct payload:
 - [CodeBuddy integration](docs/codebuddy-integration.md)
 - [Kilo Code integration](docs/kilo-integration.md)
 - [Roo Code integration](docs/roo-integration.md)
+- [Windsurf integration](docs/windsurf-integration.md)
 - [security](SECURITY.md)
 
 ## status

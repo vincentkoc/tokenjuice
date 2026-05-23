@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Windsurf">
+  <rect width="96" height="96" rx="18" fill="#082f49"/>
+  <path d="M19 58c9-13 23-17 39-13 8 2 14 1 19-4-5 13-17 20-34 17-9-2-17 0-24 8v-8Z" fill="#7dd3fc"/>
+  <path d="M23 39c8-10 20-13 34-9 7 2 12 1 16-3-4 10-14 15-29 13-8-1-14 1-21 7v-8Z" fill="#f8fafc"/>
+  <path d="M28 72c7-8 17-11 29-8 6 1 11 0 15-3-4 9-13 13-26 11-7-1-13 0-18 5v-5Z" fill="#22c55e"/>
+</svg>

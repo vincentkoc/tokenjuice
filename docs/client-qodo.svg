@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Qodo">
+  <rect width="192" height="192" rx="36" fill="#101828"/>
+  <circle cx="78" cy="80" r="34" fill="#f8fafc"/>
+  <path d="M78 58c13 0 22 9 22 22s-9 22-22 22-22-9-22-22 9-22 22-22zm0 16c-4 0-6 2-6 6s2 6 6 6 6-2 6-6-2-6-6-6z" fill="#101828"/>
+  <path d="M96 101l25 25" stroke="#f8fafc" stroke-width="16" stroke-linecap="round"/>
+  <path d="M119 58h18c10 0 18 8 18 18v34c0 10-8 18-18 18h-18v-18h16c2 0 4-2 4-4V80c0-2-2-4-4-4h-16V58z" fill="#38bdf8"/>
+  <circle cx="50" cy="139" r="11" fill="#22c55e"/>
+  <circle cx="142" cy="51" r="11" fill="#f97316"/>
+</svg>

@@ -94,6 +94,7 @@ export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, 
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
 export { doctorPiGoSkill, installPiGoSkill, uninstallPiGoSkill } from "./hosts/pi-go/index.js";
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
+export { doctorQodoReviewConfig, installQodoReviewConfig, uninstallQodoReviewConfig } from "./hosts/qodo/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
 export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
@@ -536,6 +537,12 @@ export type {
   PlandexDoctorReport,
   UninstallPlandexConventionResult,
 } from "./hosts/plandex/index.js";
+export type {
+  InstallQodoReviewConfigResult,
+  QodoDoctorReport,
+  QodoReviewConfigOptions,
+  UninstallQodoReviewConfigResult,
+} from "./hosts/qodo/index.js";
 export type {
   InstallQoderInstructionsResult,
   QoderDoctorReport,

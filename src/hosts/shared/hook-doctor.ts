@@ -72,6 +72,7 @@ import { doctorOpenWebUITool } from "../openwebui/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorPiGoSkill } from "../pi-go/index.js";
 import { doctorPlandexConvention } from "../plandex/index.js";
+import { doctorQodoReviewConfig } from "../qodo/index.js";
 import { doctorQoderInstructions } from "../qoder/index.js";
 import { doctorQwenCodeHook } from "../qwen-code/index.js";
 import { doctorReplitInstructions } from "../replit/index.js";
@@ -162,6 +163,7 @@ import type { OpenWebUIDoctorReport, OpenWebUIToolOptions } from "../openwebui/i
 import type { PiDoctorReport } from "../pi/index.js";
 import type { PiGoDoctorReport, PiGoSkillOptions } from "../pi-go/index.js";
 import type { PlandexConventionOptions, PlandexDoctorReport } from "../plandex/index.js";
+import type { QodoDoctorReport, QodoReviewConfigOptions } from "../qodo/index.js";
 import type { QoderDoctorReport, QoderInstructionsOptions } from "../qoder/index.js";
 import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-code/index.js";
 import type { ReplitDoctorReport, ReplitInstructionsOptions } from "../replit/index.js";
@@ -254,6 +256,7 @@ export type HookIntegrationDoctorReport = {
   pi: PiDoctorReport;
   "pi-go": PiGoDoctorReport;
   plandex: PlandexDoctorReport;
+  qodo: QodoDoctorReport;
   qoder: QoderDoctorReport;
   "qwen-code": QwenCodeDoctorReport;
   replit: ReplitDoctorReport;
@@ -277,7 +280,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -362,6 +365,7 @@ const hookDoctorIntegrationDoctors = {
   pi: () => doctorPiExtension(),
   "pi-go": (options) => doctorPiGoSkill(undefined, getHookCommandOptions(options)),
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
+  qodo: (options) => doctorQodoReviewConfig(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),

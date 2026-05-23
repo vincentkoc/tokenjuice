@@ -51,6 +51,7 @@
 - Add a beta Knowns guidance-file integration.
 - Add a beta Ona Agent instruction integration.
 - Add a beta pi-go workspace-skill integration.
+- Add a beta Qodo review-guideline integration.
 - Add a beta Replit Agent instruction integration.
 - Add a beta Rovo Dev CLI project-memory integration.
 - Add a beta Tabby system-prompt integration.

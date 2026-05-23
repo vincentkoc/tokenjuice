@@ -66,6 +66,7 @@ import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiH
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAgentConfig } from "../hosts/mini-swe-agent/index.js";
+import { doctorSweAgentConfig, installSweAgentConfig, uninstallSweAgentConfig } from "../hosts/swe-agent/index.js";
 import { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "../hosts/mistral-vibe/index.js";
 import { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "../hosts/mux/index.js";
 import { doctorOnaInstructions, installOnaInstructions, uninstallOnaInstructions } from "../hosts/ona/index.js";
@@ -199,6 +200,7 @@ function printUsage(): void {
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install mini-swe-agent",
+      "  tokenjuice install swe-agent",
       "  tokenjuice install mistral-vibe",
       "  tokenjuice install mux [--local]",
       "  tokenjuice install ona",
@@ -265,6 +267,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall mini-swe-agent",
+      "  tokenjuice uninstall swe-agent",
       "  tokenjuice uninstall mistral-vibe",
       "  tokenjuice uninstall mux",
       "  tokenjuice uninstall ona",
@@ -292,7 +295,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aider|agent-layer|agentlink|agentloom|agents-cli|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|kimi|kiro|kilo|mini-swe-agent|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aider|agent-layer|agentlink|agentloom|agents-cli|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|kimi|kiro|kilo|mini-swe-agent|swe-agent|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1545,6 +1548,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "swe-agent" || target === "sweagent") {
+    const result = await installSweAgentConfig();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Config", value: result.configPath },
+      { label: "Beta", value: "config-fragment guidance; SWE-agent still owns command execution" },
+      { label: "Load", value: "sweagent run --config config/default.yaml --config .swe-agent/tokenjuice.yaml" },
+      { label: "Verify", value: "tokenjuice doctor swe-agent" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("swe-agent", "config", details));
+    return 0;
+  }
+
   if (target === "mux") {
     const result = await installMuxHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -2034,7 +2058,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2566,6 +2590,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "swe-agent" || target === "sweagent") {
+    const result = await uninstallSweAgentConfig();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed swe-agent config: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`config path: ${result.configPath}\n`);
+    process.stdout.write("enable: tokenjuice install swe-agent\n");
+    return 0;
+  }
+
   if (target === "mux") {
     const result = await uninstallMuxHook();
     if (args.format === "json") {
@@ -2905,7 +2942,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, deepagents, devin, dot-agents, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, deepagents, devin, dot-agents, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -4346,6 +4383,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
   if (args.positionals[0] === "mini-swe-agent" || args.positionals[0] === "mini-sweagent") {
     const report = await doctorMiniSweAgentConfig();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`config path: ${report.configPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "swe-agent" || args.positionals[0] === "sweagent") {
+    const report = await doctorSweAgentConfig();
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);

@@ -57,6 +57,7 @@ export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConv
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
 export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
+export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
 export {
   doctorVscodeCopilotHook,
@@ -286,6 +287,12 @@ export type {
   RooInstructionsOptions,
   UninstallRooInstructionsResult,
 } from "./hosts/roo/index.js";
+export type {
+  InstallRovoInstructionsResult,
+  RovoDoctorReport,
+  RovoInstructionsOptions,
+  UninstallRovoInstructionsResult,
+} from "./hosts/rovo/index.js";
 export type {
   InstallRulerRuleResult,
   RulerDoctorReport,

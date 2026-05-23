@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Rovo</title>
+  <desc id="desc">Rovo client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#0C1F4A"/>
+  <path d="M24 24h28c13 0 21 7 21 19 0 8-4 14-11 17l14 20H60L48 63H38v17H24V24Z" fill="#F8FAFC"/>
+  <path d="M38 37v14h13c5 0 8-3 8-7s-3-7-8-7H38Z" fill="#0C1F4A"/>
+  <path d="M18 78h60v8H18z" fill="#579DFF"/>
+</svg>

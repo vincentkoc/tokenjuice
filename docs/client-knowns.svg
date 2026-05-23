@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Knowns">
+  <rect width="192" height="192" rx="36" fill="#0f172a"/>
+  <path d="M52 148V44h24v42l41-42h31l-48 49 52 55h-32l-44-47v47z" fill="#f8fafc"/>
+  <circle cx="132" cy="58" r="13" fill="#38bdf8"/>
+  <circle cx="146" cy="132" r="13" fill="#34d399"/>
+</svg>

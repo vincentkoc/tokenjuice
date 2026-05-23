@@ -72,6 +72,7 @@ export { doctorLeanCtlInstructions, installLeanCtlInstructions, uninstallLeanCtl
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
+export { doctorKnownsInstructions, installKnownsInstructions, uninstallKnownsInstructions } from "./hosts/knowns/index.js";
 export { doctorMcpAgentDefinition, installMcpAgentDefinition, uninstallMcpAgentDefinition } from "./hosts/mcp-agent/index.js";
 export { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAgentConfig } from "./hosts/mini-swe-agent/index.js";
 export { doctorSweAgentConfig, installSweAgentConfig, uninstallSweAgentConfig } from "./hosts/swe-agent/index.js";
@@ -439,6 +440,12 @@ export type {
   NovaKitInstructionsOptions,
   UninstallNovaKitInstructionsResult,
 } from "./hosts/novakit/index.js";
+export type {
+  InstallKnownsInstructionsResult,
+  KnownsDoctorReport,
+  KnownsInstructionsOptions,
+  UninstallKnownsInstructionsResult,
+} from "./hosts/knowns/index.js";
 export type {
   InstallOpenHandsHookResult,
   OpenHandsDoctorReport,

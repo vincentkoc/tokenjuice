@@ -39,6 +39,7 @@
 - Add a beta Mistral Vibe instruction integration.
 - Add a beta Mux tool_post hook integration.
 - Add a beta NovaKit context-file integration.
+- Add a beta Knowns guidance-file integration.
 - Add a beta Ona Agent instruction integration.
 - Add a beta Replit Agent instruction integration.
 - Add a beta Rovo Dev CLI project-memory integration.

@@ -672,12 +672,16 @@ async function runInstall(args: ParsedArgs): Promise<number> {
 
     const details = [
       { label: "Rule", value: result.rulePath },
+      { label: "Config", value: result.configPath },
       { label: "Beta", value: "rule-based guidance; Kilo Code still owns command execution" },
       { label: "Verify", value: "tokenjuice doctor kilo" },
       { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
     ];
     if (result.backupPath) {
       details.push({ label: "Backup", value: result.backupPath });
+    }
+    if (result.configBackupPath) {
+      details.push({ label: "Config backup", value: result.configBackupPath });
     }
     process.stdout.write(formatInstallSuccess("kilo", "rule", details));
     return 0;
@@ -956,6 +960,8 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
 
     process.stdout.write(`removed kilo rule: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write(`config path: ${result.configPath}\n`);
+    process.stdout.write(`removed kilo config entry: ${result.configUpdated ? "yes" : "no"}\n`);
     process.stdout.write("enable: tokenjuice install kilo\n");
     return 0;
   }
@@ -1605,6 +1611,7 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`rule path: ${report.rulePath}\n`);
+    process.stdout.write(`config path: ${report.configPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

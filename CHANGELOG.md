@@ -7,6 +7,7 @@
 - Add a beta Agent Layer source-instruction integration.
 - Add a beta AdaL CLI instruction integration.
 - Add a beta Agentlink source-instruction integration.
+- Add a beta anywhere-agents source-instruction integration.
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
 - Add a beta Agentloom source-rule integration.
 - Add a beta agents-cli shared-memory integration.

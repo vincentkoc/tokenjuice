@@ -1,0 +1,7 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="anywhere-agents">
+  <rect width="96" height="96" rx="18" fill="#0f172a"/>
+  <path d="M22 24h52" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"/>
+  <path d="M22 48h52" fill="none" stroke="#f8fafc" stroke-width="7" stroke-linecap="round"/>
+  <path d="M22 72h52" fill="none" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+  <path d="M48 24v48" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -12,6 +12,7 @@ export { doctorAgentsMeshRule, installAgentsMeshRule, uninstallAgentsMeshRule } 
 export { doctorAmazonQRule, installAmazonQRule, uninstallAmazonQRule } from "./hosts/amazon-q/index.js";
 export { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "./hosts/amp/index.js";
 export { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule } from "./hosts/antigravity/index.js";
+export { doctorAnywhereAgentsInstructions, installAnywhereAgentsInstructions, uninstallAnywhereAgentsInstructions } from "./hosts/anywhere-agents/index.js";
 export { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "./hosts/augment/index.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
@@ -185,6 +186,12 @@ export type {
   InstallAntigravityRuleResult,
   UninstallAntigravityRuleResult,
 } from "./hosts/antigravity/index.js";
+export type {
+  AnywhereAgentsDoctorReport,
+  AnywhereAgentsInstructionsOptions,
+  InstallAnywhereAgentsInstructionsResult,
+  UninstallAnywhereAgentsInstructionsResult,
+} from "./hosts/anywhere-agents/index.js";
 export type {
   AugmentDoctorReport,
   AugmentRuleOptions,

@@ -9,6 +9,7 @@ import { doctorAgentsMeshRule } from "../agentsmesh/index.js";
 import { doctorAmazonQRule } from "../amazon-q/index.js";
 import { doctorAmpInstructions } from "../amp/index.js";
 import { doctorAntigravityRule } from "../antigravity/index.js";
+import { doctorAnywhereAgentsInstructions } from "../anywhere-agents/index.js";
 import { doctorAugmentRule } from "../augment/index.js";
 import { doctorAvanteInstructions } from "../avante/index.js";
 import { doctorBobInstructions } from "../bob/index.js";
@@ -75,6 +76,7 @@ import type { AgentsMeshDoctorReport, AgentsMeshRuleOptions } from "../agentsmes
 import type { AmazonQDoctorReport, AmazonQRuleOptions } from "../amazon-q/index.js";
 import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
 import type { AntigravityDoctorReport, AntigravityRuleOptions } from "../antigravity/index.js";
+import type { AnywhereAgentsDoctorReport, AnywhereAgentsInstructionsOptions } from "../anywhere-agents/index.js";
 import type { AugmentDoctorReport, AugmentRuleOptions } from "../augment/index.js";
 import type { AvanteDoctorReport } from "../avante/index.js";
 import type { BobDoctorReport, BobInstructionsOptions } from "../bob/index.js";
@@ -144,6 +146,7 @@ export type HookIntegrationDoctorReport = {
   "amazon-q": AmazonQDoctorReport;
   amp: AmpDoctorReport;
   antigravity: AntigravityDoctorReport;
+  "anywhere-agents": AnywhereAgentsDoctorReport;
   augment: AugmentDoctorReport;
   avante: AvanteDoctorReport;
   bob: BobDoctorReport;
@@ -205,7 +208,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -228,6 +231,7 @@ const hookDoctorIntegrationDoctors = {
   "amazon-q": (options) => doctorAmazonQRule(undefined, getHookCommandOptions(options)),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),
+  "anywhere-agents": (options) => doctorAnywhereAgentsInstructions(undefined, getHookCommandOptions(options)),
   augment: (options) => doctorAugmentRule(undefined, getHookCommandOptions(options)),
   avante: () => doctorAvanteInstructions(),
   bob: (options) => doctorBobInstructions(undefined, getHookCommandOptions(options)),

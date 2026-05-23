@@ -52,6 +52,7 @@
 - Add a beta mcp-agent agent-definition integration.
 - Add a beta mini-SWE-agent config-fragment integration.
 - Add a beta SWE-agent config-fragment integration.
+- Add a beta Stagewise workspace-skill integration.
 - Add a beta Mistral Vibe instruction integration.
 - Add a beta Mux tool_post hook integration.
 - Add a beta NovaKit context-file integration.

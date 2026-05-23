@@ -107,6 +107,7 @@ export { doctorReplitInstructions, installReplitInstructions, uninstallReplitIns
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
+export { doctorStagewiseSkill, installStagewiseSkill, uninstallStagewiseSkill } from "./hosts/stagewise/index.js";
 export { doctorTabbySystemPrompt, installTabbySystemPrompt, uninstallTabbySystemPrompt } from "./hosts/tabby/index.js";
 export { doctorTabnineInstructions, installTabnineInstructions, uninstallTabnineInstructions } from "./hosts/tabnine/index.js";
 export { doctorUiPathInstructions, installUiPathInstructions, uninstallUiPathInstructions } from "./hosts/uipath/index.js";
@@ -538,6 +539,12 @@ export type {
   SweAgentDoctorReport,
   UninstallSweAgentConfigResult,
 } from "./hosts/swe-agent/index.js";
+export type {
+  InstallStagewiseSkillResult,
+  StagewiseDoctorReport,
+  StagewiseSkillOptions,
+  UninstallStagewiseSkillResult,
+} from "./hosts/stagewise/index.js";
 export type {
   InstallMistralVibeInstructionsResult,
   MistralVibeDoctorReport,

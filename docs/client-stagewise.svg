@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Stagewise">
+  <rect width="96" height="96" rx="20" fill="#111827"/>
+  <path d="M21 27h54v12H21z" fill="#38bdf8"/>
+  <path d="M21 45h40v12H21z" fill="#f472b6"/>
+  <path d="M21 63h26v12H21z" fill="#a3e635"/>
+  <path d="M66 45l10 9-10 9V45z" fill="#facc15"/>
+</svg>

@@ -227,6 +227,7 @@ tokenjuice install localcode
 tokenjuice install mcp-agent
 tokenjuice install mini-swe-agent
 tokenjuice install swe-agent
+tokenjuice install stagewise
 tokenjuice install mistral-vibe
 tokenjuice install mux
 tokenjuice install novakit
@@ -304,6 +305,7 @@ tokenjuice doctor kimi
 tokenjuice doctor mcp-agent
 tokenjuice doctor mini-swe-agent
 tokenjuice doctor swe-agent
+tokenjuice doctor stagewise
 tokenjuice doctor mistral-vibe
 tokenjuice doctor mux
 tokenjuice doctor novakit
@@ -412,6 +414,7 @@ supported host hooks:
 | mcp-agent | `tokenjuice install mcp-agent` | `.mcp-agent/agents/tokenjuice.md` | ✴️ Beta. Installs a Markdown agent definition that tells mcp-agent workflows and subagents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; enable `.mcp-agent/agents` in `mcp_agent.config.yaml` `agents.search_paths`; see `docs/mcp-agent-integration.md` |
 | mini-SWE-agent | `tokenjuice install mini-swe-agent` | `.mini-swe-agent/tokenjuice.yaml` | ✴️ Beta. Installs a mini-SWE-agent config fragment that keeps command execution unchanged while adding tokenjuice retry guidance to long observations; load with `mini -c mini.yaml -c .mini-swe-agent/tokenjuice.yaml`; see `docs/mini-swe-agent-integration.md` |
 | SWE-agent | `tokenjuice install swe-agent` | `.swe-agent/tokenjuice.yaml` | ✴️ Beta. Installs a SWE-agent config fragment that keeps command execution unchanged while adding tokenjuice retry guidance to clipped observations; load with `sweagent run --config config/default.yaml --config .swe-agent/tokenjuice.yaml`; see `docs/swe-agent-integration.md` |
+| Stagewise | `tokenjuice install stagewise` | `.stagewise/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a Stagewise workspace skill with `name: tokenjuice` frontmatter that tells Stagewise agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Stagewise skills do not intercept command output; see `docs/stagewise-integration.md` |
 | Mistral Vibe | `tokenjuice install mistral-vibe` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Mistral Vibe to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Mistral Vibe root `AGENTS.md` instructions do not intercept tool output; see `docs/mistral-vibe-integration.md` |
 | Mux | `tokenjuice install mux` | `.mux/tool_post` | ✴️ Beta. Installs a project-local `tool_post` hook that emits compacted context for noisy `bash` output through Mux hook output; the original tool result is still shown by Mux; see `docs/mux-integration.md` |
 | NovaKit CLI | `tokenjuice install novakit` | `NOVAKIT.md` | ✴️ Beta. Inserts a marker-delimited project context block that tells NovaKit to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because NovaKit context files do not intercept command output; see `docs/novakit-integration.md` |

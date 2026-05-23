@@ -47,6 +47,7 @@ beta integrations:
 | <img width="48px" src="docs/client-openhands.svg" alt="OpenHands" /> | [OpenHands](https://docs.openhands.dev/) | `tokenjuice install openhands` | `.openhands/hooks.json` |
 | <img width="48px" src="docs/client-qwen-code.svg" alt="Qwen Code" /> | [Qwen Code](https://qwenlm.github.io/qwen-code-docs/) | `tokenjuice install qwen-code` | `.qwen/settings.json` |
 | <img width="48px" src="docs/client-roo.svg" alt="Roo Code" /> | [Roo Code](https://roocode.com/) | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` |
+| <img width="48px" src="docs/client-ruler.svg" alt="Ruler" /> | [Ruler](https://github.com/intellectronica/ruler) | `tokenjuice install ruler` | `.ruler/tokenjuice.md` |
 | <img width="48px" src="docs/client-windsurf.svg" alt="Windsurf" /> | [Windsurf](https://windsurf.com/) | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-zed.svg" alt="Zed" /> | [Zed](https://zed.dev/docs/ai/rules.html) | `tokenjuice install zed` | `.rules` |
 
@@ -68,8 +69,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|opencode|qwen-code|roo|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -91,9 +92,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|copilot-cli|zed] --local
-tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|opencode|qwen-code|roo|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed] --local
+tokenjuice uninstall [aider|amp|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -160,6 +161,7 @@ direct payload:
 - [Kilo Code integration](docs/kilo-integration.md)
 - [Qwen Code integration](docs/qwen-code-integration.md)
 - [Roo Code integration](docs/roo-integration.md)
+- [Ruler integration](docs/ruler-integration.md)
 - [Windsurf integration](docs/windsurf-integration.md)
 - [security](SECURITY.md)
 

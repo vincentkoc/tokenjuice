@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Ruler</title>
+  <desc id="desc">Simple Ruler integration mark</desc>
+  <rect width="96" height="96" rx="18" fill="#f8fafc"/>
+  <path d="M20 64 64 20l12 12-44 44H20V64Z" fill="#e0f2fe" stroke="#0f172a" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M36 60 30 54M46 50l-6-6M56 40l-6-6" stroke="#0f766e" stroke-width="5" stroke-linecap="round"/>
+  <path d="m66 18 12 12" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+</svg>

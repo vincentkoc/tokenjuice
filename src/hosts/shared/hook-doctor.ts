@@ -21,6 +21,7 @@ import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
 import { doctorQwenCodeHook } from "../qwen-code/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
+import { doctorRulerRule } from "../ruler/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 import { doctorWindsurfRule } from "../windsurf/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
@@ -48,6 +49,7 @@ import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
 import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-code/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
+import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 import type { WindsurfDoctorReport } from "../windsurf/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
@@ -77,6 +79,7 @@ export type HookIntegrationDoctorReport = {
   pi: PiDoctorReport;
   "qwen-code": QwenCodeDoctorReport;
   roo: RooDoctorReport;
+  ruler: RulerDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   windsurf: WindsurfDoctorReport;
   zed: ZedDoctorReport;
@@ -88,7 +91,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -122,6 +125,7 @@ const hookDoctorIntegrationDoctors = {
   pi: () => doctorPiExtension(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   roo: () => doctorRooInstructions(),
+  ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
   windsurf: () => doctorWindsurfRule(),
   zed: () => doctorZedInstructions(),

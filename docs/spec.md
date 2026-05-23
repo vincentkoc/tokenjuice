@@ -180,6 +180,7 @@ tokenjuice install goose
 tokenjuice install pi
 tokenjuice install opencode
 tokenjuice install qwen-code
+tokenjuice install ruler
 tokenjuice doctor hooks
 tokenjuice doctor pi
 tokenjuice doctor opencode
@@ -187,6 +188,7 @@ tokenjuice doctor crush
 tokenjuice doctor grok-cli
 tokenjuice doctor goose
 tokenjuice doctor qwen-code
+tokenjuice doctor ruler
 tokenjuice install codex --local
 tokenjuice install claude-code --local
 tokenjuice install codebuddy --local
@@ -225,6 +227,7 @@ supported host hooks:
 | pi | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` | `tokenjuice install pi --local` forces the extension bundle to be rebuilt from the current repo source and adds `/tj` controls inside pi |
 | Qwen Code | `tokenjuice install qwen-code` | `.qwen/settings.json` | ✴️ Beta. Uses a project-local `PostToolUse` hook for shell tools; compacted context is injected alongside the original output; `tokenjuice install qwen-code --local` is available for repo-local verification; see `docs/qwen-code-integration.md` |
 | Roo Code | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` | ✴️ Beta. Inserts a marker-delimited workspace rule that tells Roo to use `tokenjuice wrap` for noisy `execute_command` terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Roo workspace rules do not intercept tool output; see `docs/roo-integration.md` |
+| Ruler | `tokenjuice install ruler` | `.ruler/tokenjuice.md` | ✴️ Beta. Installs a Ruler source rule that tells configured coding agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Ruler propagates rules rather than intercepting command output; run `ruler apply` after install; see `docs/ruler-integration.md` |
 | VS Code Copilot Chat | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | Uses `preToolUse` shell input rewriting on the `run_in_terminal` tool to route commands through `tokenjuice wrap`. Requires `chat.useHooks` enabled and a trusted workspace. Ignores `COPILOT_HOME`; the shared `~/.copilot/hooks/` dir is used with a per-host filename to coexist with the Copilot CLI install. After install, run `tokenjuice doctor vscode-copilot --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required. |
 | Windsurf | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` | ✴️ Beta. Installs an always-on workspace rule that tells Cascade to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Cascade Hooks do not replace terminal command output; see `docs/windsurf-integration.md` |
 | Zed | `tokenjuice install zed` | `.rules` | ✴️ Beta. Inserts a marker-delimited rule block that tells Zed Agent to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Zed rules do not intercept tool output; see `docs/zed-integration.md` |

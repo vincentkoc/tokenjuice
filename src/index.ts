@@ -59,6 +59,7 @@ export {
   uninstallOpenCodeExtension,
 } from "./hosts/opencode/index.js";
 export { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "./hosts/qwen-code/index.js";
+export { doctorRulerRule, installRulerRule, uninstallRulerRule } from "./hosts/ruler/index.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
 export { parseReduceJsonRequest } from "./core/json-protocol.js";
@@ -184,6 +185,12 @@ export type {
   RooInstructionsOptions,
   UninstallRooInstructionsResult,
 } from "./hosts/roo/index.js";
+export type {
+  InstallRulerRuleResult,
+  RulerDoctorReport,
+  RulerRuleOptions,
+  UninstallRulerRuleResult,
+} from "./hosts/ruler/index.js";
 export type {
   InstallVscodeCopilotHookResult,
   UninstallVscodeCopilotHookResult,

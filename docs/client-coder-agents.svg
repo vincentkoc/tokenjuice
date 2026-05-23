@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Coder Agents">
+  <rect width="192" height="192" rx="36" fill="#101828"/>
+  <path d="M56 48h80c14 0 24 10 24 24v48c0 14-10 24-24 24H56c-14 0-24-10-24-24V72c0-14 10-24 24-24z" fill="#f8fafc"/>
+  <path d="M74 83 55 96l19 13v-15l-7-4 7-4zM118 83v15l7 4-7 4v15l19-13-19-13z" fill="#101828"/>
+  <path d="m103 74-22 48h-14l22-48z" fill="#2563eb"/>
+  <circle cx="144" cy="52" r="14" fill="#22c55e"/>
+  <circle cx="52" cy="140" r="12" fill="#38bdf8"/>
+</svg>

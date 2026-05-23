@@ -177,6 +177,7 @@ tokenjuice install adal
 tokenjuice install aether
 tokenjuice install codebuff
 tokenjuice install codegen
+tokenjuice install coder-agents
 tokenjuice install deepagents
 tokenjuice install agent-layer
 tokenjuice install agentinit
@@ -254,6 +255,7 @@ tokenjuice doctor bob
 tokenjuice doctor builder
 tokenjuice doctor codebuff
 tokenjuice doctor codegen
+tokenjuice doctor coder-agents
 tokenjuice doctor deepagents
 tokenjuice doctor crush
 tokenjuice doctor devin
@@ -330,6 +332,7 @@ supported host hooks:
 | Cline | `tokenjuice install cline` | `~/Documents/Cline/Hooks/tokenjuice-post-tool-use` | ✴️ Beta. Installs a global `PostToolUse` hook script for `execute_command`; enable it in Cline's Hooks tab after install; compacted context is injected through `contextModification`; `tokenjuice install cline --local` is available for repo-local verification; see `docs/cline-integration.md` |
 | Codebuff | `tokenjuice install codebuff` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited project instruction block into the current git/project root that tells Codebuff to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Codebuff instruction files do not intercept tool output; see `docs/codebuff-integration.md` |
 | Codegen | `tokenjuice install codegen` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Codegen agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Codegen rule files do not intercept command output; see `docs/codegen-integration.md` |
+| Coder Agents | `tokenjuice install coder-agents` | `.agents/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a Coder workspace skill with `name: tokenjuice` frontmatter that tells Coder Agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Coder Agents skills do not intercept command output; see `docs/coder-agents-integration.md` |
 | CodeBuddy (Linux/macOS/WSL) | `tokenjuice install codebuddy` | `~/.codebuddy/settings.json` | Uses `PreToolUse` shell input rewriting (same pattern as Cursor) to route Bash commands through `tokenjuice wrap`; preserves unrelated hooks that share a matcher group with the tokenjuice entry; `tokenjuice install codebuddy --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/codebuddy-integration.md` |
 | Codex CLI | `tokenjuice install codex` | `~/.codex/hooks.json` | `tokenjuice install codex --local` is available for repo-local verification |
 | Continue | `tokenjuice install continue` | `.continue/rules/tokenjuice.md` | ✴️ Beta. Installs a workspace rule that tells Continue agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Continue rules do not intercept tool output; see `docs/continue-integration.md` |

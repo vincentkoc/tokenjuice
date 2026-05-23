@@ -13,6 +13,7 @@ import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
+import { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "../hosts/amp/index.js";
 import { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "../hosts/aider/index.js";
 import { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "../hosts/avante/index.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
@@ -103,6 +104,7 @@ function printUsage(): void {
       "  tokenjuice wrap [--raw|--full] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install aider",
+      "  tokenjuice install amp",
       "  tokenjuice install avante",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
@@ -127,6 +129,7 @@ function printUsage(): void {
       "  tokenjuice install windsurf",
       "  tokenjuice install zed",
       "  tokenjuice uninstall aider",
+      "  tokenjuice uninstall amp",
       "  tokenjuice uninstall avante",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
@@ -150,7 +153,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|cursor|droid|gemini-cli|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|cursor|droid|gemini-cli|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -491,6 +494,29 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       details.push({ label: "Backup", value: result.backupPath });
     }
     process.stdout.write(formatInstallSuccess("aider", "convention", details));
+    return 0;
+  }
+
+  if (target === "amp") {
+    const result = await installAmpInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-based guidance; Amp still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor amp" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    if (result.instructionsPaths && result.instructionsPaths.length > 1) {
+      details.push({ label: "Updated paths", value: result.instructionsPaths.join(", ") });
+    }
+    process.stdout.write(formatInstallSuccess("amp", "instructions", details));
     return 0;
   }
 
@@ -971,7 +997,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, cursor, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -986,6 +1012,25 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed aider convention: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`convention path: ${result.conventionPath}\n`);
     process.stdout.write("enable: tokenjuice install aider\n");
+    return 0;
+  }
+
+  if (target === "amp") {
+    const result = await uninstallAmpInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed amp instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    if (result.removedPaths && result.removedPaths.length > 1) {
+      process.stdout.write("removed paths:\n");
+      for (const path of result.removedPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    process.stdout.write("enable: tokenjuice install amp\n");
     return 0;
   }
 
@@ -1244,7 +1289,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, copilot-agent, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, droid, gemini-cli, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1433,6 +1478,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`convention path: ${report.conventionPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "amp") {
+    const report = await doctorAmpInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

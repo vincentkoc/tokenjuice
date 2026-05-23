@@ -1,4 +1,5 @@
 import { doctorAiderConvention } from "../aider/index.js";
+import { doctorAmpInstructions } from "../amp/index.js";
 import { doctorAvanteInstructions } from "../avante/index.js";
 import { doctorClaudeCodeHook } from "../claude-code/index.js";
 import { doctorClineHook } from "../cline/index.js";
@@ -23,6 +24,7 @@ import { doctorWindsurfRule } from "../windsurf/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 
 import type { AiderDoctorReport } from "../aider/index.js";
+import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
 import type { AvanteDoctorReport } from "../avante/index.js";
 import type { ClaudeCodeDoctorReport, ClaudeCodeHookCommandOptions } from "../claude-code/index.js";
 import type { ClineDoctorReport } from "../cline/index.js";
@@ -50,6 +52,7 @@ export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   aider: AiderDoctorReport;
+  amp: AmpDoctorReport;
   avante: AvanteDoctorReport;
   codex: CodexDoctorReport;
   "copilot-agent": CopilotAgentDoctorReport;
@@ -79,7 +82,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & DroidHookCommandOptions & GrokCliHookCommandOptions & QwenCodeHookCommandOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -92,6 +95,7 @@ type HookDoctorIntegrationDoctors = {
 
 const hookDoctorIntegrationDoctors = {
   aider: () => doctorAiderConvention(),
+  amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   avante: () => doctorAvanteInstructions(),
   codex: (options) => doctorCodexHook(undefined, options),
   "claude-code": (options) => doctorClaudeCodeHook(undefined, getHookCommandOptions(options)),
@@ -146,6 +150,7 @@ function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCom
     ...(typeof options.binaryPath === "string" ? { binaryPath: options.binaryPath } : {}),
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
     ...(typeof options.projectDir === "string" ? { projectDir: options.projectDir } : {}),
+    ...(typeof options.scanProjectTree === "boolean" ? { scanProjectTree: options.scanProjectTree } : {}),
   };
 }
 

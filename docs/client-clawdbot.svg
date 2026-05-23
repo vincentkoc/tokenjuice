@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Clawdbot">
+  <rect width="192" height="192" rx="34" fill="#111827"/>
+  <path d="M96 28c37 0 68 30 68 68s-31 68-68 68-68-30-68-68 31-68 68-68Z" fill="#f8fafc"/>
+  <path d="M68 72c0-10 8-18 18-18h20c10 0 18 8 18 18v18h-18V74c0-3-2-5-5-5H91c-3 0-5 2-5 5v44c0 3 2 5 5 5h10c3 0 5-2 5-5v-16h18v18c0 10-8 18-18 18H86c-10 0-18-8-18-18V72Z" fill="#111827"/>
+  <path d="M130 54h24v18h-24V54Zm0 66h24v18h-24v-18ZM38 54h24v18H38V54Zm0 66h24v18H38v-18Z" fill="#22c55e"/>
+</svg>

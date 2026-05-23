@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  doctorBlackboxSkill,
+  doctorClawdbotSkill,
   doctorInstalledHooks,
-  installBlackboxSkill,
-  uninstallBlackboxSkill,
+  installClawdbotSkill,
+  uninstallClawdbotSkill,
 } from "../../src/index.js";
 
 const tempDirs: string[] = [];
@@ -118,40 +118,41 @@ afterEach(async () => {
 });
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "tokenjuice-blackbox-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "tokenjuice-clawdbot-test-"));
   const realDir = await realpath(dir);
   tempDirs.push(realDir);
   return realDir;
 }
 
-describe("Blackbox skill", () => {
-  it("installs a workspace skill with Blackbox-compatible frontmatter", async () => {
+describe("Clawdbot skill", () => {
+  it("installs a workspace skill with Clawdbot-compatible frontmatter", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
 
-    const result = await installBlackboxSkill(skillPath, { projectDir: home });
+    const result = await installClawdbotSkill(skillPath, { projectDir: home });
     const skill = await readFile(skillPath, "utf8");
 
     expect(result.skillPath).toBe(skillPath);
     expect(result.backupPath).toBeUndefined();
     expect(skill).toContain("name: tokenjuice");
     expect(skill).toContain("description:");
-    expect(skill).toContain("<!-- tokenjuice:blackbox skill -->");
+    expect(skill).toContain("user-invocable: false");
+    expect(skill).toContain("<!-- tokenjuice:clawdbot skill -->");
     expect(skill).toContain("# tokenjuice terminal output compaction");
-    expect(skill).toContain("Blackbox");
+    expect(skill).toContain("Clawdbot");
     expect(skill).toContain("tokenjuice wrap -- <command>");
     expect(skill).toContain("tokenjuice wrap --raw -- <command>");
-    expect(skill).toContain(".blackbox/skills/tokenjuice/SKILL.md");
+    expect(skill).toContain("skills/tokenjuice/SKILL.md");
     expect(skill).not.toContain("wrap --full");
   });
 
   it("backs up an existing skill before replacing it", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    await installBlackboxSkill(skillPath, { projectDir: home });
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await installClawdbotSkill(skillPath, { projectDir: home });
     await writeFile(skillPath, "# custom skill\n\nkeep me\n", "utf8");
 
-    const result = await installBlackboxSkill(skillPath, { projectDir: home });
+    const result = await installClawdbotSkill(skillPath, { projectDir: home });
 
     expect(result.backupPath).toBe(`${skillPath}.bak`);
     await expect(readFile(`${skillPath}.bak`, "utf8")).resolves.toContain("keep me");
@@ -160,18 +161,18 @@ describe("Blackbox skill", () => {
 
   it("reports installed and uninstalled skill health", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
 
-    await installBlackboxSkill(skillPath, { projectDir: home });
-    const installed = await doctorBlackboxSkill(skillPath, { projectDir: home });
+    await installClawdbotSkill(skillPath, { projectDir: home });
+    const installed = await doctorClawdbotSkill(skillPath, { projectDir: home });
 
     expect(installed.status).toBe("ok");
     expect(installed.hasTokenjuiceMarker).toBe(true);
     expect(installed.hasUnsafePathIssue).toBe(false);
     expect(installed.advisories[0]).toContain("skill-based");
 
-    const removed = await uninstallBlackboxSkill(skillPath, { projectDir: home });
-    const disabled = await doctorBlackboxSkill(skillPath, { projectDir: home });
+    const removed = await uninstallClawdbotSkill(skillPath, { projectDir: home });
+    const disabled = await doctorClawdbotSkill(skillPath, { projectDir: home });
 
     expect(removed.removed).toBe(true);
     expect(disabled.status).toBe("disabled");
@@ -181,11 +182,11 @@ describe("Blackbox skill", () => {
 
   it("preserves user-owned tokenjuice skill files on uninstall", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(skillPath, "# custom tokenjuice skill\n\nkeep me\n", "utf8");
 
-    const removed = await uninstallBlackboxSkill(undefined, { projectDir: home });
+    const removed = await uninstallClawdbotSkill(undefined, { projectDir: home });
 
     expect(removed.removed).toBe(false);
     await expect(readFile(skillPath, "utf8")).resolves.toContain("keep me");
@@ -193,11 +194,11 @@ describe("Blackbox skill", () => {
 
   it("preserves user-owned skills that mention tokenjuice compaction", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(skillPath, "# tokenjuice terminal output compaction\n\ncustom owner notes\n", "utf8");
 
-    const removed = await uninstallBlackboxSkill(undefined, { projectDir: home });
+    const removed = await uninstallClawdbotSkill(undefined, { projectDir: home });
 
     expect(removed.removed).toBe(false);
     await expect(readFile(skillPath, "utf8")).resolves.toContain("custom owner notes");
@@ -205,14 +206,15 @@ describe("Blackbox skill", () => {
 
   it("reports broken skills when required tokenjuice guidance is stale", async () => {
     const home = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(
       skillPath,
       [
         "---",
         "name: tokenjuice",
         "---",
+        "<!-- tokenjuice:clawdbot skill -->",
         "# tokenjuice terminal output compaction",
         "",
         "- Prefer `tokenjuice wrap -- <command>`.",
@@ -221,24 +223,52 @@ describe("Blackbox skill", () => {
       "utf8",
     );
 
-    const doctor = await doctorBlackboxSkill(skillPath, { projectDir: home });
+    const doctor = await doctorClawdbotSkill(skillPath, { projectDir: home });
+
+    expect(doctor.status).toBe("broken");
+    expect(doctor.hasTokenjuiceMarker).toBe(true);
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing discovery frontmatter");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing user-invocable: false frontmatter");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing the raw escape hatch");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing workspace skill path guidance");
+    expect(doctor.issues).toContain("configured Clawdbot skill still suggests the full escape hatch");
+  });
+
+  it("requires name and description in top-of-file frontmatter", async () => {
+    const home = await createTempDir();
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
+    await writeFile(
+      skillPath,
+      [
+        "# tokenjuice terminal output compaction",
+        "",
+        "name: tokenjuice",
+        "description: body text is not discovery frontmatter",
+        "- Prefer `tokenjuice wrap -- <command>`.",
+        "- Use `tokenjuice wrap --raw -- <command>` only when raw bytes are needed.",
+        "- Clawdbot discovers this reusable skill from `skills/tokenjuice/SKILL.md`.",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const doctor = await doctorClawdbotSkill(skillPath, { projectDir: home });
 
     expect(doctor.status).toBe("broken");
     expect(doctor.hasTokenjuiceMarker).toBe(false);
-    expect(doctor.issues).toContain("configured Blackbox skill is missing the tokenjuice ownership marker");
-    expect(doctor.issues).toContain("configured Blackbox skill is missing discovery frontmatter");
-    expect(doctor.issues).toContain("configured Blackbox skill is missing the raw escape hatch");
-    expect(doctor.issues).toContain("configured Blackbox skill is missing workspace skill path guidance");
-    expect(doctor.issues).toContain("configured Blackbox skill still suggests the full escape hatch");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing the tokenjuice ownership marker");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing the required tokenjuice skill name");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing discovery frontmatter");
+    expect(doctor.issues).toContain("configured Clawdbot skill is missing user-invocable: false frontmatter");
   });
 
-  it("uses BLACKBOX_PROJECT_DIR for the default skill path", async () => {
+  it("uses CLAWDBOT_PROJECT_DIR for the default skill path", async () => {
     const home = await createTempDir();
-    process.env.BLACKBOX_PROJECT_DIR = home;
+    process.env.CLAWDBOT_PROJECT_DIR = home;
 
-    const installed = await installBlackboxSkill();
-    const expectedSkillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    const doctor = await doctorBlackboxSkill();
+    const installed = await installClawdbotSkill();
+    const expectedSkillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    const doctor = await doctorClawdbotSkill();
 
     expect(installed.skillPath).toBe(expectedSkillPath);
     expect(doctor.skillPath).toBe(expectedSkillPath);
@@ -249,17 +279,17 @@ describe("Blackbox skill", () => {
   it("rejects symlinked skill files before reading or backing them up", async () => {
     const home = await createTempDir();
     const outside = await createTempDir();
-    process.env.BLACKBOX_PROJECT_DIR = home;
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    process.env.CLAWDBOT_PROJECT_DIR = home;
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(join(outside, "private.md"), "# private context\n", "utf8");
-    await symlink(join(outside, "private.md"), join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
+    await symlink(join(outside, "private.md"), join(home, "skills", "tokenjuice", "SKILL.md"));
 
-    await expect(installBlackboxSkill()).rejects.toThrow(/will not read or write through instruction symlinks/u);
-    await expect(access(join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md.bak"))).rejects.toMatchObject({
+    await expect(installClawdbotSkill()).rejects.toThrow(/will not read or write through instruction symlinks/u);
+    await expect(access(join(home, "skills", "tokenjuice", "SKILL.md.bak"))).rejects.toMatchObject({
       code: "ENOENT",
     });
 
-    const doctor = await doctorBlackboxSkill();
+    const doctor = await doctorClawdbotSkill();
 
     expect(doctor.status).toBe("broken");
     expect(doctor.hasTokenjuiceMarker).toBe(false);
@@ -272,16 +302,16 @@ describe("Blackbox skill", () => {
     const outside = await createTempDir();
 
     await expect(
-      installBlackboxSkill(join(outside, ".blackbox", "skills", "tokenjuice", "SKILL.md"), { projectDir: home }),
+      installClawdbotSkill(join(outside, "skills", "tokenjuice", "SKILL.md"), { projectDir: home }),
     ).rejects.toThrow("outside");
   });
 
   it("rejects explicit non-default project skill paths", async () => {
     const home = await createTempDir();
 
-    await expect(
-      installBlackboxSkill(join(home, ".blackbox", "skills", "other", "SKILL.md"), { projectDir: home }),
-    ).rejects.toThrow("project-local .blackbox/skills/tokenjuice/SKILL.md");
+    await expect(installClawdbotSkill(join(home, "skills", "other", "SKILL.md"), { projectDir: home })).rejects.toThrow(
+      "project-local skills/tokenjuice/SKILL.md",
+    );
   });
 
   it("rejects symlinked project roots", async () => {
@@ -289,44 +319,7 @@ describe("Blackbox skill", () => {
     const link = join(await createTempDir(), "workspace");
     await symlink(home, link);
 
-    await expect(installBlackboxSkill(undefined, { projectDir: link })).rejects.toThrow("instruction symlinks");
-  });
-
-  it("canonicalizes symlinked project ancestors before writing", async () => {
-    const realParent = await createTempDir();
-    const project = join(realParent, "project");
-    await mkdir(project);
-    const linkParent = join(await createTempDir(), "linked-parent");
-    await symlink(realParent, linkParent);
-
-    const installed = await installBlackboxSkill(undefined, { projectDir: join(linkParent, "project") });
-
-    expect(installed.skillPath).toBe(join(project, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
-    await expect(readFile(installed.skillPath, "utf8")).resolves.toContain("# tokenjuice terminal output compaction");
-  });
-
-  it("accepts explicit skill paths through symlinked project ancestors", async () => {
-    const realParent = await createTempDir();
-    const project = join(realParent, "project");
-    await mkdir(project);
-    const linkParent = join(await createTempDir(), "linked-parent");
-    await symlink(realParent, linkParent);
-    const linkedProject = join(linkParent, "project");
-    const linkedSkillPath = join(linkedProject, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-
-    const installed = await installBlackboxSkill(linkedSkillPath, { projectDir: linkedProject });
-
-    expect(installed.skillPath).toBe(join(project, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
-    await expect(readFile(installed.skillPath, "utf8")).resolves.toContain("# tokenjuice terminal output compaction");
-  });
-
-  it("rejects symlinked skill path components", async () => {
-    const home = await createTempDir();
-    const outside = await createTempDir();
-    await mkdir(join(outside, "skills", "tokenjuice"), { recursive: true });
-    await symlink(outside, join(home, ".blackbox"));
-
-    await expect(installBlackboxSkill(undefined, { projectDir: home })).rejects.toThrow("instruction symlinks");
+    await expect(installClawdbotSkill(undefined, { projectDir: link })).rejects.toThrow("instruction symlinks");
   });
 
   it("does not fail aggregate doctor for missing default skills under symlinked roots", async () => {
@@ -339,24 +332,61 @@ describe("Blackbox skill", () => {
 
     const report = await doctorInstalledHooks({ projectDir: link });
 
-    expect(report.integrations["blackbox"].status).toBe("disabled");
-    expect(report.integrations["blackbox"].hasTokenjuiceMarker).toBe(false);
-    expect(report.integrations["blackbox"].hasUnsafePathIssue).toBe(false);
+    expect(report.integrations["clawdbot"].status).toBe("disabled");
+    expect(report.integrations["clawdbot"].hasTokenjuiceMarker).toBe(false);
+    expect(report.integrations["clawdbot"].hasUnsafePathIssue).toBe(false);
+  });
+
+  it("canonicalizes symlinked project ancestors before writing", async () => {
+    const realParent = await createTempDir();
+    const project = join(realParent, "project");
+    await mkdir(project);
+    const linkParent = join(await createTempDir(), "linked-parent");
+    await symlink(realParent, linkParent);
+
+    const installed = await installClawdbotSkill(undefined, { projectDir: join(linkParent, "project") });
+
+    expect(installed.skillPath).toBe(join(project, "skills", "tokenjuice", "SKILL.md"));
+    await expect(readFile(installed.skillPath, "utf8")).resolves.toContain("# tokenjuice terminal output compaction");
+  });
+
+  it("accepts explicit skill paths through symlinked project ancestors", async () => {
+    const realParent = await createTempDir();
+    const project = join(realParent, "project");
+    await mkdir(project);
+    const linkParent = join(await createTempDir(), "linked-parent");
+    await symlink(realParent, linkParent);
+    const linkedProject = join(linkParent, "project");
+    const linkedSkillPath = join(linkedProject, "skills", "tokenjuice", "SKILL.md");
+
+    const installed = await installClawdbotSkill(linkedSkillPath, { projectDir: linkedProject });
+
+    expect(installed.skillPath).toBe(join(project, "skills", "tokenjuice", "SKILL.md"));
+    await expect(readFile(installed.skillPath, "utf8")).resolves.toContain("# tokenjuice terminal output compaction");
+  });
+
+  it("rejects symlinked skill path components", async () => {
+    const home = await createTempDir();
+    const outside = await createTempDir();
+    await mkdir(join(outside, "tokenjuice"), { recursive: true });
+    await symlink(outside, join(home, "skills"));
+
+    await expect(installClawdbotSkill(undefined, { projectDir: home })).rejects.toThrow("instruction symlinks");
   });
 
   it("rejects sibling temp or backup symlinks", async () => {
     const home = await createTempDir();
     const outside = await createTempDir();
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
     const tempTarget = join(outside, "tmp-target.md");
     const backupTarget = join(outside, "backup-target.md");
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(skillPath, "# project context\n", "utf8");
     await writeFile(tempTarget, "do not touch temp\n", "utf8");
     await writeFile(backupTarget, "do not touch backup\n", "utf8");
     await symlink(tempTarget, `${skillPath}.tmp`);
 
-    await expect(installBlackboxSkill(skillPath, { projectDir: home })).rejects.toThrow(
+    await expect(installClawdbotSkill(skillPath, { projectDir: home })).rejects.toThrow(
       /will not read or write through instruction symlinks/u,
     );
 
@@ -365,7 +395,7 @@ describe("Blackbox skill", () => {
     await symlink(backupTarget, `${skillPath}.bak`);
 
     await rm(`${skillPath}.tmp`);
-    await expect(installBlackboxSkill(skillPath, { projectDir: home })).rejects.toThrow(
+    await expect(installClawdbotSkill(skillPath, { projectDir: home })).rejects.toThrow(
       /will not read or write through instruction symlinks/u,
     );
     await expect(readFile(backupTarget, "utf8")).resolves.toBe("do not touch backup\n");
@@ -377,30 +407,30 @@ describe("Blackbox skill", () => {
     for (const key of envKeys) {
       process.env[key] = home;
     }
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
-    await writeFile(join(outside, "shared-skill.md"), "# shared Blackbox skill\n", "utf8");
-    await symlink(join(outside, "shared-skill.md"), join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
+    await writeFile(join(outside, "shared-skill.md"), "# shared Clawdbot skill\n", "utf8");
+    await symlink(join(outside, "shared-skill.md"), join(home, "skills", "tokenjuice", "SKILL.md"));
 
     const report = await doctorInstalledHooks();
 
-    expect(report.integrations["blackbox"].status).toBe("broken");
-    expect(report.integrations["blackbox"].hasUnsafePathIssue).toBe(true);
+    expect(report.integrations["clawdbot"].status).toBe("broken");
+    expect(report.integrations["clawdbot"].hasUnsafePathIssue).toBe(true);
     expect(report.status).toBe("broken");
   });
 
-  it("does not count user-owned Blackbox skill files as aggregate tokenjuice installs", async () => {
+  it("does not count user-owned Clawdbot skill files as aggregate tokenjuice installs", async () => {
     const home = await createTempDir();
     for (const key of envKeys) {
       process.env[key] = home;
     }
-    const skillPath = join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md");
-    await mkdir(join(home, ".blackbox", "skills", "tokenjuice"), { recursive: true });
+    const skillPath = join(home, "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, "skills", "tokenjuice"), { recursive: true });
     await writeFile(skillPath, "# custom skill\n", "utf8");
 
     const report = await doctorInstalledHooks();
 
-    expect(report.integrations["blackbox"].status).toBe("broken");
-    expect(report.integrations["blackbox"].hasTokenjuiceMarker).toBe(false);
+    expect(report.integrations["clawdbot"].status).toBe("broken");
+    expect(report.integrations["clawdbot"].hasTokenjuiceMarker).toBe(false);
     expect(report.status).toBe("disabled");
   });
 
@@ -411,10 +441,10 @@ describe("Blackbox skill", () => {
     await mkdir(nestedDir, { recursive: true });
     process.chdir(nestedDir);
 
-    const installed = await installBlackboxSkill();
+    const installed = await installClawdbotSkill();
     const root = await realpath(home);
 
-    expect(installed.skillPath).toBe(join(root, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
+    expect(installed.skillPath).toBe(join(root, "skills", "tokenjuice", "SKILL.md"));
   });
 
   it("is included in aggregate hook doctor output", async () => {
@@ -422,11 +452,11 @@ describe("Blackbox skill", () => {
     for (const key of envKeys) {
       process.env[key] = home;
     }
-    await installBlackboxSkill(undefined, { projectDir: home });
+    await installClawdbotSkill(undefined, { projectDir: home });
 
     const report = await doctorInstalledHooks();
 
-    expect(report.integrations["blackbox"].status).toBe("ok");
-    expect(report.integrations["blackbox"].skillPath).toBe(join(home, ".blackbox", "skills", "tokenjuice", "SKILL.md"));
+    expect(report.integrations["clawdbot"].status).toBe("ok");
+    expect(report.integrations["clawdbot"].skillPath).toBe(join(home, "skills", "tokenjuice", "SKILL.md"));
   });
 });

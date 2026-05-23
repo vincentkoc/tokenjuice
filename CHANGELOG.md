@@ -5,6 +5,7 @@
 ### Features
 
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
+- Add a beta Builder Projects rule integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta Firebase Studio AI-rules integration.
 - Add a beta Jules instruction integration.

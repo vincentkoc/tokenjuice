@@ -20,6 +20,7 @@ import { doctorAiderConvention, installAiderConvention, uninstallAiderConvention
 import { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule } from "../hosts/antigravity/index.js";
 import { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "../hosts/augment/index.js";
 import { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "../hosts/avante/index.js";
+import { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "../hosts/builder/index.js";
 import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
@@ -135,6 +136,7 @@ function printUsage(): void {
       "  tokenjuice install antigravity",
       "  tokenjuice install augment",
       "  tokenjuice install avante",
+      "  tokenjuice install builder",
       "  tokenjuice install codex [--local]",
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cline [--local]",
@@ -179,6 +181,7 @@ function printUsage(): void {
       "  tokenjuice uninstall antigravity",
       "  tokenjuice uninstall augment",
       "  tokenjuice uninstall avante",
+      "  tokenjuice uninstall builder",
       "  tokenjuice uninstall codex",
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall continue",
@@ -217,7 +220,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|ruler|trae|vscode-copilot|warp|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|ruler|trae|vscode-copilot|warp|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -662,6 +665,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       details.push({ label: "Backup", value: result.backupPath });
     }
     process.stdout.write(formatInstallSuccess("avante", "instructions", details));
+    return 0;
+  }
+
+  if (target === "builder") {
+    const result = await installBuilderRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "rule-based guidance; Builder still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor builder" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("builder", "rule", details));
     return 0;
   }
 
@@ -1447,7 +1470,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, ruler, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, builder, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, ruler, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1533,6 +1556,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed avante instructions: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
     process.stdout.write("enable: tokenjuice install avante\n");
+    return 0;
+  }
+
+  if (target === "builder") {
+    const result = await uninstallBuilderRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed builder rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install builder\n");
     return 0;
   }
 
@@ -1986,7 +2022,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, ruler, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, builder, codex, cline, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, ruler, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2311,6 +2347,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "builder") {
+    const report = await doctorBuilderRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

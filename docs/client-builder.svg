@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Builder</title>
+  <desc id="desc">Builder client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M24 22h29c12 0 19 6 19 16 0 6-3 11-8 14 7 3 11 9 11 18 0 11-8 18-21 18H24V22Z" fill="#F8FAFC"/>
+  <path d="M38 35v12h13c4 0 7-2 7-6s-3-6-7-6H38Zm0 25v15h15c5 0 8-3 8-8s-3-7-8-7H38Z" fill="#111827"/>
+  <path d="M18 78h60v8H18z" fill="#18B6F6"/>
+</svg>

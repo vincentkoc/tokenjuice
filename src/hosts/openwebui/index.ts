@@ -122,7 +122,7 @@ const TOKENJUICE_OPENWEBUI_TOOL = [
   "        try:",
   "            completed = await asyncio.to_thread(",
   "                subprocess.run,",
-  "                [tokenjuice_bin, \"reduce-json\"],",
+  "                [tokenjuice_bin, \"reduce-json\", \"--format\", \"json\"],",
   "                input=json.dumps(request),",
   "                text=True,",
   "                stdout=subprocess.PIPE,",

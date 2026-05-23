@@ -68,6 +68,7 @@ export { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallFor
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "./hosts/gitlab-duo/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
+export { doctorGreptileRule, installGreptileRule, uninstallGreptileRule } from "./hosts/greptile/index.js";
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
 export { doctorGptmeInstructions, installGptmeInstructions, uninstallGptmeInstructions } from "./hosts/gptme/index.js";
@@ -385,6 +386,12 @@ export type {
   InstallGitLabDuoRuleResult,
   UninstallGitLabDuoRuleResult,
 } from "./hosts/gitlab-duo/index.js";
+export type {
+  GreptileDoctorReport,
+  GreptileRuleOptions,
+  InstallGreptileRuleResult,
+  UninstallGreptileRuleResult,
+} from "./hosts/greptile/index.js";
 export type {
   GooseDoctorReport,
   GooseHintsOptions,

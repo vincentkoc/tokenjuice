@@ -45,6 +45,7 @@ import { doctorForgeCodeInstructions } from "../forgecode/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGitLabDuoRule } from "../gitlab-duo/index.js";
 import { doctorGooseHints } from "../goose/index.js";
+import { doctorGreptileRule } from "../greptile/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
 import { doctorGptmeInstructions } from "../gptme/index.js";
@@ -134,6 +135,7 @@ import type { ForgeCodeDoctorReport, ForgeCodeInstructionsOptions } from "../for
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GitLabDuoDoctorReport, GitLabDuoRuleOptions } from "../gitlab-duo/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
+import type { GreptileDoctorReport, GreptileRuleOptions } from "../greptile/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import type { GptmeDoctorReport, GptmeInstructionsOptions } from "../gptme/index.js";
@@ -225,6 +227,7 @@ export type HookIntegrationDoctorReport = {
   "gemini-cli": GeminiCliDoctorReport;
   "gitlab-duo": GitLabDuoDoctorReport;
   goose: GooseDoctorReport;
+  greptile: GreptileDoctorReport;
   "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
   gptme: GptmeDoctorReport;
@@ -274,7 +277,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -332,6 +335,7 @@ const hookDoctorIntegrationDoctors = {
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   "gitlab-duo": (options) => doctorGitLabDuoRule(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
+  greptile: (options) => doctorGreptileRule(undefined, getHookCommandOptions(options)),
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   gptme: (options) => doctorGptmeInstructions(undefined, getHookCommandOptions(options)),

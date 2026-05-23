@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Greptile">
+  <rect width="192" height="192" rx="36" fill="#10231f"/>
+  <path d="M54 50h84c8 0 14 6 14 14v64c0 8-6 14-14 14H88l-30 24v-24h-4c-8 0-14-6-14-14V64c0-8 6-14 14-14z" fill="#f7f5ef"/>
+  <path d="M72 82h48c5 0 9 4 9 9v10c0 19-14 31-34 31-22 0-37-15-37-36s15-36 37-36c14 0 25 6 31 16l-19 10c-3-5-7-8-13-8-9 0-15 7-15 18s6 18 16 18c7 0 12-3 14-8H72V82z" fill="#10231f"/>
+  <circle cx="145" cy="52" r="13" fill="#22c55e"/>
+  <circle cx="48" cy="139" r="11" fill="#38bdf8"/>
+  <path d="M141 137 161 157l-15 15-20-20z" fill="#f97316"/>
+</svg>

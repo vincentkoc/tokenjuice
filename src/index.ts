@@ -45,6 +45,7 @@ export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstru
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
+export { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "./hosts/mistral-vibe/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
@@ -207,6 +208,12 @@ export type {
   KiloRuleOptions,
   UninstallKiloRuleResult,
 } from "./hosts/kilo/index.js";
+export type {
+  InstallMistralVibeInstructionsResult,
+  MistralVibeDoctorReport,
+  MistralVibeInstructionsOptions,
+  UninstallMistralVibeInstructionsResult,
+} from "./hosts/mistral-vibe/index.js";
 export type {
   InstallOpenHandsHookResult,
   OpenHandsDoctorReport,

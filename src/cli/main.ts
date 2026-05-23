@@ -44,6 +44,7 @@ import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstru
 import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "../hosts/kimi/index.js";
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
+import { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "../hosts/mistral-vibe/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -146,6 +147,7 @@ function printUsage(): void {
       "  tokenjuice install kimi [--local]",
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
+      "  tokenjuice install mistral-vibe",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
@@ -181,6 +183,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kimi",
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
+      "  tokenjuice uninstall mistral-vibe",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
@@ -199,7 +202,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kimi|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|trae|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|trae|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -980,6 +983,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "mistral-vibe" || target === "mistralvibe") {
+    const result = await installMistralVibeInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-based guidance; Mistral Vibe still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor mistral-vibe" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("mistral-vibe", "instructions", details));
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await installOpenHandsHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1308,7 +1331,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1574,6 +1597,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "mistral-vibe" || target === "mistralvibe") {
+    const result = await uninstallMistralVibeInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed mistral-vibe instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install mistral-vibe\n");
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await uninstallOpenHandsHook();
     if (args.format === "json") {
@@ -1769,7 +1805,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, trae, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2835,6 +2871,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
         process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "mistral-vibe" || args.positionals[0] === "mistralvibe") {
+    const report = await doctorMistralVibeInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
       }
     }
     if (report.advisories.length > 0) {

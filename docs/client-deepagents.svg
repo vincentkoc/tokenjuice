@@ -1,0 +1,5 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Deep Agents Code">
+  <rect width="96" height="96" rx="18" fill="#0f172a"/>
+  <path d="M24 26h21c16 0 27 9 27 22s-11 22-27 22H24V26Zm12 10v24h9c9 0 15-5 15-12s-6-12-15-12h-9Z" fill="#f8fafc"/>
+  <path d="M24 22h48v6H24v-6Zm0 46h48v6H24v-6Z" fill="#22c55e"/>
+</svg>

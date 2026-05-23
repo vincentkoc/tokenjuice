@@ -44,6 +44,7 @@ export {
 } from "./hosts/copilot-cli/index.js";
 export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./hosts/crush/index.js";
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallDeepAgentsInstructions } from "./hosts/deepagents/index.js";
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
@@ -225,6 +226,12 @@ export type {
   UninstallOpenCodeExtensionResult,
 } from "./hosts/opencode/index.js";
 export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
+export type {
+  DeepAgentsDoctorReport,
+  DeepAgentsInstructionsOptions,
+  InstallDeepAgentsInstructionsResult,
+  UninstallDeepAgentsInstructionsResult,
+} from "./hosts/deepagents/index.js";
 export type {
   DroidDoctorReport,
   DroidHookCommandOptions,

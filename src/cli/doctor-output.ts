@@ -16,6 +16,9 @@ function getIntegrationPath(report: IntegrationDoctorReport): string {
   if ("rulePath" in report) {
     return report.rulePath;
   }
+  if ("steeringPath" in report) {
+    return report.steeringPath;
+  }
   if ("conventionPath" in report) {
     return report.conventionPath;
   }

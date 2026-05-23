@@ -28,6 +28,7 @@ export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
+export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
@@ -124,6 +125,12 @@ export type {
   JunieInstructionsOptions,
   UninstallJunieInstructionsResult,
 } from "./hosts/junie/index.js";
+export type {
+  InstallKiroSteeringResult,
+  KiroDoctorReport,
+  KiroSteeringOptions,
+  UninstallKiroSteeringResult,
+} from "./hosts/kiro/index.js";
 export type {
   InstallKiloRuleResult,
   KiloDoctorReport,

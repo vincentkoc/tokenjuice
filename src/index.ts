@@ -73,6 +73,7 @@ export { doctorJetBrainsAiRule, installJetBrainsAiRule, uninstallJetBrainsAiRule
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "./hosts/jules/index.js";
 export { doctorLeanCtlInstructions, installLeanCtlInstructions, uninstallLeanCtlInstructions } from "./hosts/leanctl/index.js";
+export { doctorLocalCodePlugin, installLocalCodePlugin, uninstallLocalCodePlugin } from "./hosts/localcode/index.js";
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
@@ -421,6 +422,12 @@ export type {
   LeanCtlInstructionsOptions,
   UninstallLeanCtlInstructionsResult,
 } from "./hosts/leanctl/index.js";
+export type {
+  InstallLocalCodePluginResult,
+  LocalCodeDoctorReport,
+  LocalCodePluginOptions,
+  UninstallLocalCodePluginResult,
+} from "./hosts/localcode/index.js";
 export type {
   InstallKimiHookResult,
   KimiDoctorReport,

@@ -212,6 +212,7 @@ tokenjuice install goose
 tokenjuice install jules
 tokenjuice install leanctl
 tokenjuice install kimi
+tokenjuice install localcode
 tokenjuice install mcp-agent
 tokenjuice install mini-swe-agent
 tokenjuice install swe-agent
@@ -283,6 +284,7 @@ tokenjuice doctor mistral-vibe
 tokenjuice doctor mux
 tokenjuice doctor novakit
 tokenjuice doctor knowns
+tokenjuice doctor localcode
 tokenjuice doctor ona
 tokenjuice doctor open-interpreter
 tokenjuice doctor openwebui
@@ -368,6 +370,7 @@ supported host hooks:
 | Kimi Code CLI | `tokenjuice install kimi` | `~/.kimi/config.toml` | ✴️ Beta. Uses a `PostToolUse` hook for the `Shell` tool; compacted context is injected alongside the original output; honors `KIMI_SHARE_DIR`; `tokenjuice install kimi --local` is available for repo-local verification; see `docs/kimi-integration.md` |
 | Kiro | `tokenjuice install kiro` | `.kiro/steering/tokenjuice.md` | ✴️ Beta. Installs an always-included steering file that tells Kiro to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Kiro hooks do not replace terminal command output; see `docs/kiro-integration.md` |
 | Kilo Code | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` | ✴️ Beta. Registers a workspace rule that tells Kilo Code to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Kilo Code rules do not intercept tool output; see `docs/kilo-integration.md` |
+| LocalCode | `tokenjuice install localcode` | `~/.localcode/plugins/tokenjuice/` | ✴️ Beta. Installs a LocalCode plugin that exposes `/tokenjuice` and `tokenjuice_compact_terminal_output` for compacting provided terminal output through `tokenjuice reduce-json`; it does not execute command strings or intercept LocalCode shell output; see `docs/localcode-integration.md` |
 | mcp-agent | `tokenjuice install mcp-agent` | `.mcp-agent/agents/tokenjuice.md` | ✴️ Beta. Installs a Markdown agent definition that tells mcp-agent workflows and subagents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; enable `.mcp-agent/agents` in `mcp_agent.config.yaml` `agents.search_paths`; see `docs/mcp-agent-integration.md` |
 | mini-SWE-agent | `tokenjuice install mini-swe-agent` | `.mini-swe-agent/tokenjuice.yaml` | ✴️ Beta. Installs a mini-SWE-agent config fragment that keeps command execution unchanged while adding tokenjuice retry guidance to long observations; load with `mini -c mini.yaml -c .mini-swe-agent/tokenjuice.yaml`; see `docs/mini-swe-agent-integration.md` |
 | SWE-agent | `tokenjuice install swe-agent` | `.swe-agent/tokenjuice.yaml` | ✴️ Beta. Installs a SWE-agent config fragment that keeps command execution unchanged while adding tokenjuice retry guidance to clipped observations; load with `sweagent run --config config/default.yaml --config .swe-agent/tokenjuice.yaml`; see `docs/swe-agent-integration.md` |

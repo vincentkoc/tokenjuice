@@ -76,6 +76,7 @@ import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiH
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import { doctorKnownsInstructions, installKnownsInstructions, uninstallKnownsInstructions } from "../hosts/knowns/index.js";
+import { doctorLocalCodePlugin, installLocalCodePlugin, uninstallLocalCodePlugin } from "../hosts/localcode/index.js";
 import { doctorMcpAgentDefinition, installMcpAgentDefinition, uninstallMcpAgentDefinition } from "../hosts/mcp-agent/index.js";
 import { doctorMiniSweAgentConfig, installMiniSweAgentConfig, uninstallMiniSweAgentConfig } from "../hosts/mini-swe-agent/index.js";
 import { doctorSweAgentConfig, installSweAgentConfig, uninstallSweAgentConfig } from "../hosts/swe-agent/index.js";
@@ -223,6 +224,7 @@ function printUsage(): void {
       "  tokenjuice install kimi [--local]",
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
+      "  tokenjuice install localcode",
       "  tokenjuice install mcp-agent",
       "  tokenjuice install mini-swe-agent",
       "  tokenjuice install swe-agent",
@@ -305,6 +307,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kimi",
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
+      "  tokenjuice uninstall localcode",
       "  tokenjuice uninstall mcp-agent",
       "  tokenjuice uninstall mini-swe-agent",
       "  tokenjuice uninstall swe-agent",
@@ -337,7 +340,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aether|aictl|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|coder-agents|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|mcp-agent|mini-swe-agent|swe-agent|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aether|aictl|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|coder-agents|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1713,6 +1716,32 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "localcode" || target === "local-code") {
+    const result = await installLocalCodePlugin();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Plugin", value: result.pluginDir },
+      { label: "Manifest", value: result.manifestPath },
+      { label: "Entrypoint", value: result.indexPath },
+      { label: "Tool", value: "tokenjuice_compact_terminal_output" },
+      { label: "Command", value: "/tokenjuice" },
+      { label: "Beta", value: "plugin tool/command; compacts provided output only" },
+      { label: "Verify", value: "tokenjuice doctor localcode" },
+    ];
+    if (result.manifestBackupPath) {
+      details.push({ label: "Manifest backup", value: result.manifestBackupPath });
+    }
+    if (result.indexBackupPath) {
+      details.push({ label: "Entrypoint backup", value: result.indexBackupPath });
+    }
+    process.stdout.write(formatInstallSuccess("localcode", "plugin", details));
+    return 0;
+  }
+
   if (target === "kiro") {
     const result = await installKiroSteering();
     if (args.format === "json") {
@@ -2389,7 +2418,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, coder-agents, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, coder-agents, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2974,6 +3003,21 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "localcode" || target === "local-code") {
+    const result = await uninstallLocalCodePlugin();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed localcode plugin: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`plugin dir: ${result.pluginDir}\n`);
+    process.stdout.write(`manifest path: ${result.manifestPath}\n`);
+    process.stdout.write(`entrypoint path: ${result.indexPath}\n`);
+    process.stdout.write("enable: tokenjuice install localcode\n");
+    return 0;
+  }
+
   if (target === "kiro") {
     const result = await uninstallKiroSteering();
     if (args.format === "json") {
@@ -3458,7 +3502,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, coder-agents, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, coder-agents, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi-go, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -5111,6 +5155,40 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     if (report.detectedCommand) {
       process.stdout.write(`configured command: ${report.detectedCommand}\n`);
     }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "localcode" || args.positionals[0] === "local-code") {
+    const report = await doctorLocalCodePlugin();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`plugin dir: ${report.pluginDir}\n`);
+    process.stdout.write(`manifest path: ${report.manifestPath}\n`);
+    process.stdout.write(`entrypoint path: ${report.indexPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {

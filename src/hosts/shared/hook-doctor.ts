@@ -54,6 +54,7 @@ import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorKnownsInstructions } from "../knowns/index.js";
+import { doctorLocalCodePlugin } from "../localcode/index.js";
 import { doctorMcpAgentDefinition } from "../mcp-agent/index.js";
 import { doctorMiniSweAgentConfig } from "../mini-swe-agent/index.js";
 import { doctorSweAgentConfig } from "../swe-agent/index.js";
@@ -138,6 +139,7 @@ import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js"
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
 import type { KnownsDoctorReport, KnownsInstructionsOptions } from "../knowns/index.js";
+import type { LocalCodeDoctorReport, LocalCodePluginOptions } from "../localcode/index.js";
 import type { McpAgentDefinitionOptions, McpAgentDoctorReport } from "../mcp-agent/index.js";
 import type { MiniSweAgentConfigOptions, MiniSweAgentDoctorReport } from "../mini-swe-agent/index.js";
 import type { SweAgentConfigOptions, SweAgentDoctorReport } from "../swe-agent/index.js";
@@ -224,6 +226,7 @@ export type HookIntegrationDoctorReport = {
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
   knowns: KnownsDoctorReport;
+  localcode: LocalCodeDoctorReport;
   "mcp-agent": McpAgentDoctorReport;
   "mini-swe-agent": MiniSweAgentDoctorReport;
   "swe-agent": SweAgentDoctorReport;
@@ -259,7 +262,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -326,6 +329,7 @@ const hookDoctorIntegrationDoctors = {
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),
   knowns: (options) => doctorKnownsInstructions(undefined, getHookCommandOptions(options)),
+  localcode: (options) => doctorLocalCodePlugin(getHookCommandOptions(options)),
   "mcp-agent": (options) => doctorMcpAgentDefinition(undefined, getHookCommandOptions(options)),
   "mini-swe-agent": (options) => doctorMiniSweAgentConfig(undefined, getHookCommandOptions(options)),
   "swe-agent": (options) => doctorSweAgentConfig(undefined, getHookCommandOptions(options)),
@@ -388,6 +392,7 @@ function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCom
     ...(typeof options.projectDir === "string" ? { projectDir: options.projectDir } : {}),
     ...(typeof options.scanProjectTree === "boolean" ? { scanProjectTree: options.scanProjectTree } : {}),
     ...(typeof options.configDir === "string" ? { configDir: options.configDir } : {}),
+    ...(typeof options.homeDir === "string" ? { homeDir: options.homeDir } : {}),
   };
 }
 

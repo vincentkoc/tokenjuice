@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Blocks">
+  <rect width="96" height="96" rx="20" fill="#101828"/>
+  <rect x="19" y="18" width="26" height="26" rx="7" fill="#4fd1c5"/>
+  <rect x="51" y="18" width="26" height="26" rx="7" fill="#f97316"/>
+  <rect x="19" y="52" width="26" height="26" rx="7" fill="#a78bfa"/>
+  <rect x="51" y="52" width="26" height="26" rx="7" fill="#facc15"/>
+</svg>

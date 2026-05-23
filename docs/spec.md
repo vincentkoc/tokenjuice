@@ -184,6 +184,7 @@ tokenjuice install codebuff
 tokenjuice install codegen
 tokenjuice install coder-agents
 tokenjuice install blackbox
+tokenjuice install blocks
 tokenjuice install clawdbot
 tokenjuice install coderabbit
 tokenjuice install deepagents
@@ -279,6 +280,7 @@ tokenjuice doctor codebuff
 tokenjuice doctor codegen
 tokenjuice doctor coder-agents
 tokenjuice doctor blackbox
+tokenjuice doctor blocks
 tokenjuice doctor clawdbot
 tokenjuice doctor coderabbit
 tokenjuice doctor command-code
@@ -362,6 +364,7 @@ supported host hooks:
 | Baz | `tokenjuice install baz` | `.baz/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a workspace skill that Baz can convert into AI Coding Guidelines for code review and fixer workflows; guidance-only, because Baz skills do not intercept review comments or command output; see `docs/baz-integration.md` |
 | Bito | `tokenjuice install bito` | `.bito.yaml` / `.bito/tokenjuice.md` | ✴️ Beta. Inserts marker-delimited Bito `custom_guidelines` config that points at a tokenjuice guideline file; guidance-only, because Bito config does not intercept review comments or command output; see `docs/bito-integration.md` |
 | Blackbox CLI | `tokenjuice install blackbox` | `.blackbox/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a Blackbox CLI workspace skill with `name: tokenjuice` frontmatter that tells Blackbox to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Blackbox skills do not intercept command output; see `docs/blackbox-integration.md` |
+| Blocks | `tokenjuice install blocks` | `.agents/skills/tokenjuice-blocks/SKILL.md` | ✴️ Beta. Writes a Blocks repo skill with `name: tokenjuice-blocks` frontmatter that tells Blocks to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Blocks skills do not intercept command output; see `docs/blocks-integration.md` |
 | Clawdbot | `tokenjuice install clawdbot` | `skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a non-user-invocable workspace skill with `name: tokenjuice` frontmatter that tells Clawdbot to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Clawdbot skills do not intercept command output; see `docs/clawdbot-integration.md` |
 | IBM Bob Shell | `tokenjuice install bob` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited context block into the current git/project root that tells IBM Bob Shell to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Bob context files do not intercept tool output; see `docs/bob-integration.md` |
 | Builder | `tokenjuice install builder` | `.builder/rules/tokenjuice.mdc` | ✴️ Beta. Installs an always-applied Builder Projects rule file that tells Builder and Fusion to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Builder configuration files do not intercept tool output; see `docs/builder-integration.md` |

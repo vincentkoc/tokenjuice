@@ -21,6 +21,7 @@
 - Add a beta Baz workspace-skill integration.
 - Add a beta Bito custom-guidelines integration.
 - Add a beta Blackbox CLI workspace-skill integration.
+- Add a beta Blocks repo-skill integration.
 - Add a beta Clawdbot workspace-skill integration.
 - Add a beta IBM Bob Shell context-file integration.
 - Add a beta Builder Projects rule integration.

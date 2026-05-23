@@ -23,6 +23,7 @@ export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteIns
 export { doctorBazSkill, installBazSkill, uninstallBazSkill } from "./hosts/baz/index.js";
 export { doctorBitoGuidelines, installBitoGuidelines, uninstallBitoGuidelines } from "./hosts/bito/index.js";
 export { doctorBlackboxSkill, installBlackboxSkill, uninstallBlackboxSkill } from "./hosts/blackbox/index.js";
+export { doctorBlocksSkill, installBlocksSkill, uninstallBlocksSkill } from "./hosts/blocks/index.js";
 export { doctorClawdbotSkill, installClawdbotSkill, uninstallClawdbotSkill } from "./hosts/clawdbot/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
 export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "./hosts/bob/index.js";
@@ -332,6 +333,12 @@ export type {
   InstallBlackboxSkillResult,
   UninstallBlackboxSkillResult,
 } from "./hosts/blackbox/index.js";
+export type {
+  BlocksDoctorReport,
+  BlocksSkillOptions,
+  InstallBlocksSkillResult,
+  UninstallBlocksSkillResult,
+} from "./hosts/blocks/index.js";
 export type {
   ClawdbotDoctorReport,
   ClawdbotSkillOptions,

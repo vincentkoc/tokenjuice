@@ -66,7 +66,7 @@ function setPlatform(value: NodeJS.Platform): void {
 }
 
 describe("installVscodeCopilotHook", () => {
-  it("writes a preToolUse run_in_terminal entry at the given path", async () => {
+  it("writes a PreToolUse entry at the given path", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, ".copilot", "hooks", "tokenjuice-vscode.json");
     process.env.PATH = "";
@@ -74,16 +74,16 @@ describe("installVscodeCopilotHook", () => {
     const result = await installVscodeCopilotHook(hooksPath);
     const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
       version?: number;
-      hooks: { preToolUse: Array<{ command: string; matcher?: string; type?: string }> };
+      hooks: { PreToolUse: Array<{ command: string; matcher?: string; type?: string }> };
     };
 
     expect(result.hooksPath).toBe(hooksPath);
     expect(parsed.version).toBe(1);
-    expect(parsed.hooks.preToolUse).toHaveLength(1);
-    expect(parsed.hooks.preToolUse[0]?.matcher).toBe("run_in_terminal");
-    expect(parsed.hooks.preToolUse[0]?.type).toBe("command");
-    expect(parsed.hooks.preToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
-    expect(parsed.hooks.preToolUse[0]?.command).toContain("--wrap-launcher");
+    expect(parsed.hooks.PreToolUse).toHaveLength(1);
+    expect(parsed.hooks.PreToolUse[0]?.matcher).toBe("runTerminalCommand|run_in_terminal");
+    expect(parsed.hooks.PreToolUse[0]?.type).toBe("command");
+    expect(parsed.hooks.PreToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
+    expect(parsed.hooks.PreToolUse[0]?.command).toContain("--wrap-launcher");
   });
 
   it("resolves the install directory from HOME and ignores COPILOT_HOME", async () => {
@@ -113,8 +113,8 @@ describe("installVscodeCopilotHook", () => {
     const second = await readFile(hooksPath, "utf8");
 
     expect(second).toBe(first);
-    const parsed = JSON.parse(second) as { hooks: { preToolUse: unknown[] } };
-    expect(parsed.hooks.preToolUse).toHaveLength(1);
+    const parsed = JSON.parse(second) as { hooks: { PreToolUse: unknown[] } };
+    expect(parsed.hooks.PreToolUse).toHaveLength(1);
   });
 
   it("preserves unrelated sibling hook entries and top-level keys", async () => {
@@ -130,10 +130,13 @@ describe("installVscodeCopilotHook", () => {
         disableAllHooks: false,
         customKey: { hello: "world" },
         hooks: {
-          preToolUse: [
-            { type: "command", matcher: "run_in_terminal", command: "echo user-entry" },
+          PreToolUse: [
+            { type: "command", command: "echo user-entry" },
           ],
-          postToolUse: [{ type: "command", matcher: "run_in_terminal", command: "echo user-post" }],
+          preToolUse: [
+            { type: "command", command: "echo legacy-user-entry" },
+          ],
+          PostToolUse: [{ type: "command", command: "echo user-post" }],
         },
       }, null, 2)}\n`,
       "utf8",
@@ -145,17 +148,20 @@ describe("installVscodeCopilotHook", () => {
       customKey?: { hello?: string };
       disableAllHooks?: boolean;
       hooks: {
+        PreToolUse: Array<{ command: string }>;
         preToolUse: Array<{ command: string }>;
-        postToolUse: Array<{ command: string }>;
+        PostToolUse: Array<{ command: string }>;
       };
     };
 
     expect(parsed.customKey?.hello).toBe("world");
     expect(parsed.disableAllHooks).toBe(false);
-    expect(parsed.hooks.postToolUse[0]?.command).toBe("echo user-post");
-    expect(parsed.hooks.preToolUse).toHaveLength(2);
-    expect(parsed.hooks.preToolUse.find((entry) => entry.command === "echo user-entry")).toBeTruthy();
-    expect(parsed.hooks.preToolUse.find((entry) => entry.command.includes("vscode-copilot-pre-tool-use"))).toBeTruthy();
+    expect(parsed.hooks.PostToolUse[0]?.command).toBe("echo user-post");
+    expect(parsed.hooks.PreToolUse).toHaveLength(2);
+    expect(parsed.hooks.PreToolUse.find((entry) => entry.command === "echo user-entry")).toBeTruthy();
+    expect(parsed.hooks.PreToolUse.find((entry) => entry.command.includes("vscode-copilot-pre-tool-use"))).toBeTruthy();
+    expect(parsed.hooks.preToolUse).toHaveLength(1);
+    expect(parsed.hooks.preToolUse[0]?.command).toBe("echo legacy-user-entry");
   });
 
   it("does not touch a coexisting copilot-cli hook file in the shared dir", async () => {
@@ -180,9 +186,9 @@ describe("installVscodeCopilotHook", () => {
 
     expect(await readFile(cliPath, "utf8")).toBe(cliContent);
     const parsed = JSON.parse(await readFile(vscodePath, "utf8")) as {
-      hooks: { preToolUse: Array<{ command: string }> };
+      hooks: { PreToolUse: Array<{ command: string }> };
     };
-    expect(parsed.hooks.preToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
+    expect(parsed.hooks.PreToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
   });
 
   it("migrates a legacy tokenjuice.json install to the per-host filename", async () => {
@@ -217,10 +223,11 @@ describe("installVscodeCopilotHook", () => {
     expect(result.migratedFromPath).toBe(legacyPath);
     await expect(readFile(legacyPath, "utf8")).rejects.toThrow(/ENOENT/);
     const parsed = JSON.parse(await readFile(newPath, "utf8")) as {
-      hooks: { preToolUse: Array<{ command: string }> };
+      hooks: { PreToolUse: Array<{ command: string }> };
     };
-    expect(parsed.hooks.preToolUse).toHaveLength(1);
-    expect(parsed.hooks.preToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
+    expect(parsed.hooks.PreToolUse).toHaveLength(1);
+    expect(parsed.hooks.PreToolUse[0]?.command).toContain("vscode-copilot-pre-tool-use");
+    expect("preToolUse" in parsed.hooks).toBe(false);
   });
 });
 
@@ -233,9 +240,10 @@ describe("uninstallVscodeCopilotHook", () => {
     await installVscodeCopilotHook(hooksPath, { binaryPath: join(home, "bin", "tokenjuice") });
 
     const config = JSON.parse(await readFile(hooksPath, "utf8")) as {
-      hooks: { preToolUse: unknown[] };
+      hooks: { PreToolUse: unknown[]; preToolUse?: unknown[] };
     };
-    config.hooks.preToolUse.unshift({ type: "command", matcher: "run_in_terminal", command: "echo keep" });
+    config.hooks.PreToolUse.unshift({ type: "command", command: "echo keep" });
+    config.hooks.preToolUse = [{ type: "command", command: "echo legacy keep" }];
     await writeFile(hooksPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 
     const result = await uninstallVscodeCopilotHook(hooksPath);
@@ -243,10 +251,12 @@ describe("uninstallVscodeCopilotHook", () => {
     expect(result.removed).toBe(1);
     expect(result.deletedFile).toBe(false);
     const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
-      hooks: { preToolUse: Array<{ command: string }> };
+      hooks: { PreToolUse: Array<{ command: string }>; preToolUse: Array<{ command: string }> };
     };
+    expect(parsed.hooks.PreToolUse).toHaveLength(1);
+    expect(parsed.hooks.PreToolUse[0]?.command).toBe("echo keep");
     expect(parsed.hooks.preToolUse).toHaveLength(1);
-    expect(parsed.hooks.preToolUse[0]?.command).toBe("echo keep");
+    expect(parsed.hooks.preToolUse[0]?.command).toBe("echo legacy keep");
   });
 
   it("deletes the file when it becomes empty", async () => {
@@ -396,14 +406,14 @@ describe("doctorVscodeCopilotHook", () => {
 });
 
 describe("runVscodeCopilotPreToolUseHook", () => {
-  it("rewrites run_in_terminal commands and preserves sibling fields", async () => {
+  it("rewrites current runTerminalCommand payloads and preserves sibling fields", async () => {
     process.env.SHELL = "/bin/bash";
     setPlatform("darwin");
 
     const payload = JSON.stringify({
-      hook_event_name: "PreToolUse",
-      tool_name: "run_in_terminal",
-      tool_input: {
+      hookEventName: "PreToolUse",
+      toolName: "runTerminalCommand",
+      toolInput: {
         command: "git status --short",
         explanation: "List contents",
         goal: "check repo",
@@ -437,6 +447,26 @@ describe("runVscodeCopilotPreToolUseHook", () => {
     expect(response.hookSpecificOutput.updatedInput.goal).toBe("check repo");
     expect(response.hookSpecificOutput.updatedInput.mode).toBe("sync");
     expect(response.hookSpecificOutput.updatedInput.timeout).toBe(30);
+  });
+
+  it("keeps supporting legacy run_in_terminal payloads", async () => {
+    process.env.SHELL = "/bin/bash";
+    setPlatform("darwin");
+
+    const payload = JSON.stringify({
+      hook_event_name: "PreToolUse",
+      tool_name: "run_in_terminal",
+      tool_input: { command: "git status --short" },
+    });
+
+    const { code, output } = await captureStdout(() =>
+      runVscodeCopilotPreToolUseHook(payload, "/usr/local/bin/tokenjuice"),
+    );
+
+    expect(code).toBe(0);
+    expect(JSON.parse(output).hookSpecificOutput.updatedInput.command).toContain(
+      "/usr/local/bin/tokenjuice wrap --source vscode-copilot --",
+    );
   });
 
   it("escapes commands containing single quotes and $VAR sequences", async () => {

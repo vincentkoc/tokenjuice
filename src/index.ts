@@ -60,6 +60,7 @@ export { doctorReplitInstructions, installReplitInstructions, uninstallReplitIns
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
+export { doctorTabnineInstructions, installTabnineInstructions, uninstallTabnineInstructions } from "./hosts/tabnine/index.js";
 export {
   doctorVscodeCopilotHook,
   getVscodeCopilotInstructionsSnippet,
@@ -300,6 +301,12 @@ export type {
   RovoInstructionsOptions,
   UninstallRovoInstructionsResult,
 } from "./hosts/rovo/index.js";
+export type {
+  InstallTabnineInstructionsResult,
+  TabnineDoctorReport,
+  TabnineInstructionsOptions,
+  UninstallTabnineInstructionsResult,
+} from "./hosts/tabnine/index.js";
 export type {
   InstallRulerRuleResult,
   RulerDoctorReport,

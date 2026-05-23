@@ -198,6 +198,7 @@ tokenjuice install qwen-code
 tokenjuice install replit
 tokenjuice install rovo
 tokenjuice install ruler
+tokenjuice install tabnine
 tokenjuice install trae
 tokenjuice install warp
 tokenjuice doctor hooks
@@ -225,6 +226,7 @@ tokenjuice doctor qwen-code
 tokenjuice doctor replit
 tokenjuice doctor rovo
 tokenjuice doctor ruler
+tokenjuice doctor tabnine
 tokenjuice doctor trae
 tokenjuice doctor warp
 tokenjuice install codex --local
@@ -285,6 +287,7 @@ supported host hooks:
 | Roo Code | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` | ✴️ Beta. Inserts a marker-delimited workspace rule that tells Roo to use `tokenjuice wrap` for noisy `execute_command` terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Roo workspace rules do not intercept tool output; see `docs/roo-integration.md` |
 | Rovo Dev CLI | `tokenjuice install rovo` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited project memory block into the current git/project root that tells Rovo Dev CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Rovo Dev memory files do not intercept tool output; see `docs/rovo-integration.md` |
 | Ruler | `tokenjuice install ruler` | `.ruler/tokenjuice.md` | ✴️ Beta. Installs a Ruler source rule that tells configured coding agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Ruler propagates rules rather than intercepting command output; run `ruler apply` after install; see `docs/ruler-integration.md` |
+| Tabnine CLI | `tokenjuice install tabnine` | `TABNINE.md` | ✴️ Beta. Inserts a marker-delimited project context block into the current git/project root that tells Tabnine CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Tabnine context files do not intercept tool output; see `docs/tabnine-integration.md` |
 | Trae | `tokenjuice install trae` | `.trae/rules/project_rules.md` | ✴️ Beta. Inserts a marker-delimited project rule block that tells Trae to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Trae `.rules` files do not intercept command output; see `docs/trae-integration.md` |
 | Warp | `tokenjuice install warp` | `AGENTS.md` / `WARP.md` | ✴️ Beta. Inserts a marker-delimited project rules block into the current git/project root that tells Warp to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; fresh installs write `WARP.md` when that file already exists because Warp gives it priority over `AGENTS.md`, while existing tokenjuice Warp blocks in `AGENTS.md` continue to be managed there until explicitly removed; guidance-only, because Warp rules do not intercept tool output; see `docs/warp-integration.md` |
 | VS Code Copilot Chat | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` | Uses `PreToolUse` shell input rewriting on the `runTerminalCommand` tool to route commands through `tokenjuice wrap`; still accepts the legacy `run_in_terminal` tool name and installs a matcher for both names so the shared hooks dir does not wake the hook for unrelated Copilot CLI tools. Requires `chat.useHooks` enabled and a trusted workspace. Ignores `COPILOT_HOME`; the shared `~/.copilot/hooks/` dir is used with a per-host filename to coexist with the Copilot CLI install. After install, run `tokenjuice doctor vscode-copilot --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required. |

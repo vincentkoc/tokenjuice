@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Tabnine</title>
+  <desc id="desc">Tabnine client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M20 25h56v13H55v38H41V38H20V25Z" fill="#F8FAFC"/>
+  <path d="M18 80h60v7H18z" fill="#10B981"/>
+</svg>

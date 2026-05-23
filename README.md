@@ -65,6 +65,7 @@ beta integrations:
 | <img width="48px" src="docs/client-roo.svg" alt="Roo Code" /> | [Roo Code](https://roocode.com/) | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-rovo.svg" alt="Rovo" /> | [Rovo Dev CLI](https://support.atlassian.com/rovo/docs/use-memory-in-rovo-dev-cli/) | `tokenjuice install rovo` | `AGENTS.md` |
 | <img width="48px" src="docs/client-ruler.svg" alt="Ruler" /> | [Ruler](https://github.com/intellectronica/ruler) | `tokenjuice install ruler` | `.ruler/tokenjuice.md` |
+| <img width="48px" src="docs/client-tabnine.svg" alt="Tabnine" /> | [Tabnine CLI](https://docs.tabnine.com/main/getting-started/tabnine-cli/features/cli-commands) | `tokenjuice install tabnine` | `TABNINE.md` |
 | <img width="48px" src="docs/client-trae.svg" alt="Trae" /> | [Trae](https://traeide.com/) | `tokenjuice install trae` | `.trae/rules/project_rules.md` |
 | <img width="48px" src="docs/client-warp.svg" alt="Warp" /> | [Warp](https://docs.warp.dev/agent-platform/capabilities/rules) | `tokenjuice install warp` | `AGENTS.md` / `WARP.md` |
 | <img width="48px" src="docs/client-windsurf.svg" alt="Windsurf" /> | [Windsurf](https://windsurf.com/) | `tokenjuice install windsurf` | `.windsurf/rules/tokenjuice.md` |
@@ -88,8 +89,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
-tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|cline|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
+tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|cline|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -111,9 +112,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
-tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|trae|vscode-copilot|warp|windsurf|copilot-cli|zed] --local
-tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|cline|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed] --local
+tokenjuice uninstall [aider|amazon-q|amp|antigravity|augment|avante|builder|codex|cline|continue|copilot-agent|crush|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -196,6 +197,7 @@ direct payload:
 - [Roo Code integration](docs/roo-integration.md)
 - [Rovo integration](docs/rovo-integration.md)
 - [Ruler integration](docs/ruler-integration.md)
+- [Tabnine integration](docs/tabnine-integration.md)
 - [Trae integration](docs/trae-integration.md)
 - [Warp integration](docs/warp-integration.md)
 - [Windsurf integration](docs/windsurf-integration.md)

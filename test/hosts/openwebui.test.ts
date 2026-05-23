@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,6 +13,7 @@ import {
 
 const tempDirs: string[] = [];
 const originalProjectDir = process.env.OPENWEBUI_PROJECT_DIR;
+const hasPython3 = spawnSync("python3", ["--version"], { stdio: "ignore" }).status === 0;
 
 afterEach(async () => {
   if (originalProjectDir === undefined) {
@@ -45,6 +47,16 @@ describe("openwebui tool", () => {
     expect(tool).toContain("The command string is metadata only; it is never executed by this tool.");
     expect(tool).not.toContain("shell=True");
     expect(tool).not.toContain("tokenjuice wrap -- <command>");
+  });
+
+  it.skipIf(!hasPython3)("writes Python source that parses", async () => {
+    const home = await createTempDir();
+    const toolPath = join(home, ".openwebui", "tools", "tokenjuice_compact.py");
+    await installOpenWebUITool(toolPath);
+
+    const compiled = spawnSync("python3", ["-m", "py_compile", toolPath], { encoding: "utf8" });
+
+    expect(compiled.status, compiled.stderr || compiled.stdout).toBe(0);
   });
 
   it("backs up an existing tool source before replacing it", async () => {

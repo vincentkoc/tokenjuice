@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">AgentsMesh</title>
+  <desc id="desc">AgentsMesh client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#10202f"/>
+  <circle cx="28" cy="30" r="9" fill="#38bdf8"/>
+  <circle cx="68" cy="30" r="9" fill="#34d399"/>
+  <circle cx="48" cy="68" r="10" fill="#f8fafc"/>
+  <path d="M35 34l26 0M31 38l13 21M65 38L52 59" stroke="#f8fafc" stroke-width="6" stroke-linecap="round"/>
+  <path d="M48 58v20" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"/>
+</svg>

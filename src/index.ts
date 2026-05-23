@@ -5,6 +5,7 @@ export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normaliz
 export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallAgentLayerInstructions } from "./hosts/agent-layer/index.js";
 export { doctorAgentloomRule, installAgentloomRule, uninstallAgentloomRule } from "./hosts/agentloom/index.js";
 export { doctorAgentsGeRule, installAgentsGeRule, uninstallAgentsGeRule } from "./hosts/agentsge/index.js";
+export { doctorAgentsMeshRule, installAgentsMeshRule, uninstallAgentsMeshRule } from "./hosts/agentsmesh/index.js";
 export { doctorAmazonQRule, installAmazonQRule, uninstallAmazonQRule } from "./hosts/amazon-q/index.js";
 export { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "./hosts/amp/index.js";
 export { doctorAntigravityRule, installAntigravityRule, uninstallAntigravityRule } from "./hosts/antigravity/index.js";
@@ -138,6 +139,12 @@ export type {
   InstallAgentsGeRuleResult,
   UninstallAgentsGeRuleResult,
 } from "./hosts/agentsge/index.js";
+export type {
+  AgentsMeshDoctorReport,
+  AgentsMeshRuleOptions,
+  InstallAgentsMeshRuleResult,
+  UninstallAgentsMeshRuleResult,
+} from "./hosts/agentsmesh/index.js";
 export type {
   AmazonQDoctorReport,
   AmazonQRuleOptions,

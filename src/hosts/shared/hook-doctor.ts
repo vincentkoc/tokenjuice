@@ -2,6 +2,7 @@ import { doctorAiderConvention } from "../aider/index.js";
 import { doctorAgentLayerInstructions } from "../agent-layer/index.js";
 import { doctorAgentloomRule } from "../agentloom/index.js";
 import { doctorAgentsGeRule } from "../agentsge/index.js";
+import { doctorAgentsMeshRule } from "../agentsmesh/index.js";
 import { doctorAmazonQRule } from "../amazon-q/index.js";
 import { doctorAmpInstructions } from "../amp/index.js";
 import { doctorAntigravityRule } from "../antigravity/index.js";
@@ -63,6 +64,7 @@ import type { AiderDoctorReport } from "../aider/index.js";
 import type { AgentLayerDoctorReport, AgentLayerInstructionsOptions } from "../agent-layer/index.js";
 import type { AgentloomDoctorReport, AgentloomRuleOptions } from "../agentloom/index.js";
 import type { AgentsGeDoctorReport, AgentsGeRuleOptions } from "../agentsge/index.js";
+import type { AgentsMeshDoctorReport, AgentsMeshRuleOptions } from "../agentsmesh/index.js";
 import type { AmazonQDoctorReport, AmazonQRuleOptions } from "../amazon-q/index.js";
 import type { AmpDoctorReport, AmpInstructionsOptions } from "../amp/index.js";
 import type { AntigravityDoctorReport, AntigravityRuleOptions } from "../antigravity/index.js";
@@ -127,6 +129,7 @@ export type HookIntegrationDoctorReport = {
   "agent-layer": AgentLayerDoctorReport;
   agentloom: AgentloomDoctorReport;
   agentsge: AgentsGeDoctorReport;
+  agentsmesh: AgentsMeshDoctorReport;
   "amazon-q": AmazonQDoctorReport;
   amp: AmpDoctorReport;
   antigravity: AntigravityDoctorReport;
@@ -190,7 +193,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AgentLayerInstructionsOptions & AgentloomRuleOptions & AgentsGeRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AgentLayerInstructionsOptions & AgentloomRuleOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -206,6 +209,7 @@ const hookDoctorIntegrationDoctors = {
   "agent-layer": (options) => doctorAgentLayerInstructions(undefined, getHookCommandOptions(options)),
   agentloom: (options) => doctorAgentloomRule(undefined, getHookCommandOptions(options)),
   agentsge: (options) => doctorAgentsGeRule(undefined, getHookCommandOptions(options)),
+  agentsmesh: (options) => doctorAgentsMeshRule(undefined, getHookCommandOptions(options)),
   "amazon-q": (options) => doctorAmazonQRule(undefined, getHookCommandOptions(options)),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),
@@ -309,8 +313,8 @@ export function isInstalledHookIntegration(
   if (hasDetectedCommand(report)) {
     return true;
   }
-  if ("hasTokenjuiceMarker" in report && report.hasTokenjuiceMarker === true) {
-    return true;
+  if ("hasTokenjuiceMarker" in report) {
+    return report.hasTokenjuiceMarker === true;
   }
   // Command-backed hosts can warn about missing config even when tokenjuice is
   // not installed. Instruction/extension hosts have no expected command, so a

@@ -48,6 +48,7 @@ import { doctorRovoInstructions } from "../rovo/index.js";
 import { doctorRulerRule } from "../ruler/index.js";
 import { doctorTabnineInstructions } from "../tabnine/index.js";
 import { doctorTraeRule } from "../trae/index.js";
+import { doctorUiPathInstructions } from "../uipath/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 import { doctorWarpInstructions } from "../warp/index.js";
 import { doctorWindsurfRule } from "../windsurf/index.js";
@@ -104,6 +105,7 @@ import type { RovoDoctorReport, RovoInstructionsOptions } from "../rovo/index.js
 import type { TabnineDoctorReport, TabnineInstructionsOptions } from "../tabnine/index.js";
 import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
 import type { TraeDoctorReport, TraeRuleOptions } from "../trae/index.js";
+import type { UiPathDoctorReport, UiPathInstructionsOptions } from "../uipath/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 import type { WarpDoctorReport, WarpInstructionsOptions } from "../warp/index.js";
 import type { WindsurfDoctorReport } from "../windsurf/index.js";
@@ -162,6 +164,7 @@ export type HookIntegrationDoctorReport = {
   ruler: RulerDoctorReport;
   tabnine: TabnineDoctorReport;
   trae: TraeDoctorReport;
+  uipath: UiPathDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   warp: WarpDoctorReport;
   windsurf: WindsurfDoctorReport;
@@ -175,7 +178,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -236,6 +239,7 @@ const hookDoctorIntegrationDoctors = {
   ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),
   tabnine: (options) => doctorTabnineInstructions(undefined, getHookCommandOptions(options)),
   trae: (options) => doctorTraeRule(undefined, getHookCommandOptions(options)),
+  uipath: (options) => doctorUiPathInstructions(undefined, getHookCommandOptions(options)),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
   warp: (options) => doctorWarpInstructions(undefined, getHookCommandOptions(options)),
   windsurf: () => doctorWindsurfRule(),

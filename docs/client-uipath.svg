@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">UiPath</title>
+  <desc id="desc">UiPath client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M25 24h14v27c0 8 4 13 11 13s11-5 11-13V24h14v28c0 16-10 26-25 26S25 68 25 52V24Z" fill="#F97316"/>
+  <circle cx="72" cy="24" r="8" fill="#F8FAFC"/>
+  <path d="M18 24h7v54h-7z" fill="#F8FAFC"/>
+</svg>

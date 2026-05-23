@@ -68,6 +68,7 @@ export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
 export { doctorTabnineInstructions, installTabnineInstructions, uninstallTabnineInstructions } from "./hosts/tabnine/index.js";
+export { doctorUiPathInstructions, installUiPathInstructions, uninstallUiPathInstructions } from "./hosts/uipath/index.js";
 export {
   doctorVscodeCopilotHook,
   getVscodeCopilotInstructionsSnippet,
@@ -369,6 +370,12 @@ export type {
   TraeRuleOptions,
   UninstallTraeRuleResult,
 } from "./hosts/trae/index.js";
+export type {
+  InstallUiPathInstructionsResult,
+  UiPathDoctorReport,
+  UiPathInstructionsOptions,
+  UninstallUiPathInstructionsResult,
+} from "./hosts/uipath/index.js";
 export type {
   InstallVscodeCopilotHookResult,
   UninstallVscodeCopilotHookResult,

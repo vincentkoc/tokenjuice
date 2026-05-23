@@ -52,6 +52,7 @@ import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook,
 import { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "../hosts/openwebui/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
 import { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "../hosts/plandex/index.js";
+import { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "../hosts/qoder/index.js";
 import { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "../hosts/roo/index.js";
 import { doctorRulerRule, installRulerRule, uninstallRulerRule } from "../hosts/ruler/index.js";
@@ -145,6 +146,7 @@ function printUsage(): void {
       "  tokenjuice install openwebui",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install plandex",
+      "  tokenjuice install qoder",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install qwen-code [--local]",
       "  tokenjuice install roo",
@@ -176,6 +178,7 @@ function printUsage(): void {
       "  tokenjuice uninstall openwebui",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall plandex",
+      "  tokenjuice uninstall qoder",
       "  tokenjuice uninstall qwen-code",
       "  tokenjuice uninstall roo",
       "  tokenjuice uninstall ruler",
@@ -187,7 +190,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1008,6 +1011,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "qoder") {
+    const result = await installQoderInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "instruction-based guidance; Qoder still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor qoder" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("qoder", "instructions", details));
+    return 0;
+  }
+
   if (target === "qwen-code") {
     const result = await installQwenCodeHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1214,7 +1237,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1519,6 +1542,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "qoder") {
+    const result = await uninstallQoderInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed qoder instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install qoder\n");
+    return 0;
+  }
+
   if (target === "qwen-code") {
     const result = await uninstallQwenCodeHook();
     if (args.format === "json") {
@@ -1623,7 +1659,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2040,6 +2076,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
         process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "qoder") {
+    const report = await doctorQoderInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
       }
     }
     if (report.advisories.length > 0) {

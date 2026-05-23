@@ -47,6 +47,7 @@ export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook,
 export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
+export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export {
   doctorVscodeCopilotHook,
@@ -215,6 +216,12 @@ export type {
   PlandexDoctorReport,
   UninstallPlandexConventionResult,
 } from "./hosts/plandex/index.js";
+export type {
+  InstallQoderInstructionsResult,
+  QoderDoctorReport,
+  QoderInstructionsOptions,
+  UninstallQoderInstructionsResult,
+} from "./hosts/qoder/index.js";
 export type {
   InstallQwenCodeHookResult,
   QwenCodeDoctorReport,

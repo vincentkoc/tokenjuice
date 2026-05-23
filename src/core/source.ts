@@ -70,6 +70,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("plandex")) {
     return "plandex";
   }
+  if (source.startsWith("qoder")) {
+    return "qoder";
+  }
   if (source.startsWith("qwen")) {
     return "qwen-code";
   }

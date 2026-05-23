@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Qoder">
+  <rect width="96" height="96" rx="18" fill="#101820"/>
+  <path d="M23 48c0-15 10-26 25-26s25 11 25 26c0 7-2 13-6 18l8 8H63l-3-3c-4 2-8 3-12 3-15 0-25-11-25-26Z" fill="#18E0A8"/>
+  <path d="M36 48c0 8 5 14 12 14 2 0 4 0 6-1l-8-8h13l2 2c1-2 1-5 1-7 0-8-5-14-14-14-7 0-12 6-12 14Z" fill="#F8FAFC"/>
+  <path d="M20 24h13v7H20zm43 0h13v7H63zM20 65h13v7H20z" fill="#7C3AED"/>
+</svg>

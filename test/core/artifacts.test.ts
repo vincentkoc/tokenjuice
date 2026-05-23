@@ -193,5 +193,6 @@ describe("artifacts", () => {
     expect(normalizeArtifactSource("Grok Build")).toBe("grok-build");
     expect(normalizeArtifactSource("xai-grok-build")).toBe("grok-build");
     expect(normalizeArtifactSource("grok-cli-post-tool-use")).toBe("grok-cli");
+    expect(normalizeArtifactSource("qoder")).toBe("qoder");
   });
 });

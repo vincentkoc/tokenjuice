@@ -41,6 +41,7 @@ export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstru
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
+export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "./hosts/open-interpreter/index.js";
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export {
@@ -174,6 +175,12 @@ export type {
   OpenHandsHookCommandOptions,
   UninstallOpenHandsHookResult,
 } from "./hosts/openhands/index.js";
+export type {
+  InstallOpenInterpreterInstructionsResult,
+  OpenInterpreterDoctorReport,
+  OpenInterpreterInstructionsOptions,
+  UninstallOpenInterpreterInstructionsResult,
+} from "./hosts/open-interpreter/index.js";
 export type {
   InstallOpenWebUIToolResult,
   OpenWebUIDoctorReport,

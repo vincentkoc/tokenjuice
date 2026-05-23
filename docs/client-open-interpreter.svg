@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Open Interpreter</title>
+  <desc id="desc">Open Interpreter client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#101820"/>
+  <path d="M24 28h48v12H58v28H38V40H24z" fill="#F5F7FA"/>
+  <path d="M24 56h12v12H24zM60 56h12v12H60z" fill="#32D0AA"/>
+  <path d="M42 28h12v40H42z" fill="#32D0AA" opacity=".85"/>
+</svg>

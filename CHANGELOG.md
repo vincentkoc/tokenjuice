@@ -22,6 +22,7 @@
 - Add a beta Codebuff instruction integration.
 - Add a beta Codegen instruction integration.
 - Add a beta Coder Agents workspace-skill integration.
+- Add a beta Command Code PostToolUse hook integration.
 - Add a beta Deep Agents Code instruction integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta dot-agents global-rule integration.

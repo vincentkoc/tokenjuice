@@ -28,6 +28,7 @@ export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodeb
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
+export { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "./hosts/command-code/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
   doctorCodexHook,
@@ -295,6 +296,12 @@ export type {
   InstallCoderAgentsSkillResult,
   UninstallCoderAgentsSkillResult,
 } from "./hosts/coder-agents/index.js";
+export type {
+  CommandCodeDoctorReport,
+  CommandCodeHookCommandOptions,
+  InstallCommandCodeHookResult,
+  UninstallCommandCodeHookResult,
+} from "./hosts/command-code/index.js";
 export type {
   ContinueDoctorReport,
   ContinueRuleOptions,

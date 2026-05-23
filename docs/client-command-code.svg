@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Command Code">
+  <rect width="96" height="96" rx="18" fill="#101820"/>
+  <path d="M24 30h48a6 6 0 0 1 6 6v24a6 6 0 0 1-6 6H24a6 6 0 0 1-6-6V36a6 6 0 0 1 6-6Z" fill="#f2f5f7"/>
+  <path d="m35 42-8 6 8 6" fill="none" stroke="#101820" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m61 42 8 6-8 6" fill="none" stroke="#101820" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m52 39-8 18" fill="none" stroke="#e94f37" stroke-width="5" stroke-linecap="round"/>
+</svg>

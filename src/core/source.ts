@@ -31,6 +31,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("codex")) {
     return "codex";
   }
+  if (source.startsWith("command-code") || source.startsWith("commandcode")) {
+    return "command-code";
+  }
   if (source.startsWith("copilot-agent") || source.startsWith("github-copilot-agent")) {
     return "copilot-agent";
   }

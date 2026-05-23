@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="LeanCTL">
+  <rect width="192" height="192" rx="36" fill="#10231f"/>
+  <path d="M52 44h26v82h52v24H52z" fill="#f8fafc"/>
+  <path d="M96 58h38c18 0 30 12 30 28s-12 28-30 28h-16v36H96z" fill="#34d399"/>
+  <path d="M118 80v12h14c6 0 10-2 10-6s-4-6-10-6z" fill="#10231f"/>
+  <path d="M36 150h116" stroke="#38bdf8" stroke-width="12" stroke-linecap="round"/>
+</svg>

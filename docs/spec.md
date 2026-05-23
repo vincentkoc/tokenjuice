@@ -207,6 +207,7 @@ tokenjuice install jean2
 tokenjuice install jetbrains-ai
 tokenjuice install goose
 tokenjuice install jules
+tokenjuice install leanctl
 tokenjuice install kimi
 tokenjuice install mcp-agent
 tokenjuice install mini-swe-agent
@@ -265,6 +266,7 @@ tokenjuice doctor jean2
 tokenjuice doctor jetbrains-ai
 tokenjuice doctor goose
 tokenjuice doctor jules
+tokenjuice doctor leanctl
 tokenjuice doctor kimi
 tokenjuice doctor mcp-agent
 tokenjuice doctor mini-swe-agent
@@ -348,6 +350,7 @@ supported host hooks:
 | JetBrains AI Assistant | `tokenjuice install jetbrains-ai` | `.aiassistant/rules/tokenjuice.md` | ✴️ Beta. Installs a project rule that tells JetBrains AI Assistant chat to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because AI Assistant project rules do not intercept tool output; see `docs/jetbrains-ai-integration.md` |
 | Junie | `tokenjuice install junie` | `.junie/AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block that tells Junie to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Junie instructions do not intercept tool output; see `docs/junie-integration.md` |
 | Jules | `tokenjuice install jules` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Jules to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Jules root `AGENTS.md` instructions do not intercept command output; see `docs/jules-integration.md` |
+| LeanCTL | `tokenjuice install leanctl` | `.leanctl/instructions.md` | ✴️ Beta. Writes project instructions that tell LeanCTL to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because LeanCTL project instructions do not intercept command output; see `docs/leanctl-integration.md` |
 | Kimi Code CLI | `tokenjuice install kimi` | `~/.kimi/config.toml` | ✴️ Beta. Uses a `PostToolUse` hook for the `Shell` tool; compacted context is injected alongside the original output; honors `KIMI_SHARE_DIR`; `tokenjuice install kimi --local` is available for repo-local verification; see `docs/kimi-integration.md` |
 | Kiro | `tokenjuice install kiro` | `.kiro/steering/tokenjuice.md` | ✴️ Beta. Installs an always-included steering file that tells Kiro to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Kiro hooks do not replace terminal command output; see `docs/kiro-integration.md` |
 | Kilo Code | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` | ✴️ Beta. Registers a workspace rule that tells Kilo Code to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Kilo Code rules do not intercept tool output; see `docs/kilo-integration.md` |

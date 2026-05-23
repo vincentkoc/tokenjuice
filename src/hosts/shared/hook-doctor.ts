@@ -45,6 +45,7 @@ import { doctorJean2Instructions } from "../jean2/index.js";
 import { doctorJetBrainsAiRule } from "../jetbrains-ai/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorJulesInstructions } from "../jules/index.js";
+import { doctorLeanCtlInstructions } from "../leanctl/index.js";
 import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
@@ -121,6 +122,7 @@ import type { Jean2DoctorReport, Jean2InstructionsOptions } from "../jean2/index
 import type { JetBrainsAiDoctorReport, JetBrainsAiRuleOptions } from "../jetbrains-ai/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { JulesDoctorReport, JulesInstructionsOptions } from "../jules/index.js";
+import type { LeanCtlDoctorReport, LeanCtlInstructionsOptions } from "../leanctl/index.js";
 import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
@@ -199,6 +201,7 @@ export type HookIntegrationDoctorReport = {
   "jetbrains-ai": JetBrainsAiDoctorReport;
   junie: JunieDoctorReport;
   jules: JulesDoctorReport;
+  leanctl: LeanCtlDoctorReport;
   kimi: KimiDoctorReport;
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
@@ -235,7 +238,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -293,6 +296,7 @@ const hookDoctorIntegrationDoctors = {
   "jetbrains-ai": (options) => doctorJetBrainsAiRule(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
   jules: (options) => doctorJulesInstructions(undefined, getHookCommandOptions(options)),
+  leanctl: (options) => doctorLeanCtlInstructions(undefined, getHookCommandOptions(options)),
   kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),

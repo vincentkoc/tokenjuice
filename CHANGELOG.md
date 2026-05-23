@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Add a beta Amazon Q Developer CLI workspace-rule integration.
+
 ## 0.7.1 - 2026-05-17
 
 ### Fixes

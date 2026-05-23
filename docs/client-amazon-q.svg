@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Amazon Q">
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M21 30c5-6 15-10 27-10 18 0 29 9 29 24 0 12-7 21-18 25l8 8H55l-4-5h-3c-18 0-29-10-29-26 0-6 1-11 2-16Z" fill="#FF9900"/>
+  <path d="M34 45c0 8 5 13 14 13 2 0 4 0 6-1l-8-9h12l4 4c2-2 3-5 3-8 0-8-6-13-17-13-8 0-14 5-14 14Z" fill="#FFFFFF"/>
+  <path d="M26 74c10 5 26 6 40-1" stroke="#7DD3FC" stroke-width="6" stroke-linecap="round" fill="none"/>
+</svg>

@@ -189,6 +189,9 @@ describe("artifacts", () => {
   });
 
   it("normalizes Grok Build separately from Grok CLI", () => {
+    expect(normalizeArtifactSource("amazon-q")).toBe("amazon-q");
+    expect(normalizeArtifactSource("Amazon Q")).toBe("amazon-q");
+    expect(normalizeArtifactSource("aws-q-cli")).toBe("amazon-q");
     expect(normalizeArtifactSource("grok-build")).toBe("grok-build");
     expect(normalizeArtifactSource("Grok Build")).toBe("grok-build");
     expect(normalizeArtifactSource("xai-grok-build")).toBe("grok-build");

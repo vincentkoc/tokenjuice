@@ -14,6 +14,7 @@ import {
 const tempDirs: string[] = [];
 const envKeys = [
   "AIDER_PROJECT_DIR",
+  "AMAZON_Q_PROJECT_DIR",
   "AMP_PROJECT_DIR",
   "ANTIGRAVITY_PROJECT_DIR",
   "AUGMENT_PROJECT_DIR",

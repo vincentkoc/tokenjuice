@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Roo Code">
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M25 65V31h18c8 0 14 5 14 13 0 5-3 9-7 11l10 10H49L40 56h-6v9H25Zm9-17h9c3 0 5-2 5-5s-2-5-5-5h-9v10Z" fill="#f9fafb"/>
+  <circle cx="67" cy="34" r="6" fill="#22c55e"/>
+  <circle cx="67" cy="62" r="6" fill="#38bdf8"/>
+</svg>

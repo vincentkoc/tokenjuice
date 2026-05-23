@@ -29,6 +29,7 @@ export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDr
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "./hosts/openhands/index.js";
+export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export {
   doctorVscodeCopilotHook,
   getVscodeCopilotInstructionsSnippet,
@@ -127,6 +128,12 @@ export type {
   OpenHandsHookCommandOptions,
   UninstallOpenHandsHookResult,
 } from "./hosts/openhands/index.js";
+export type {
+  InstallRooInstructionsResult,
+  RooDoctorReport,
+  RooInstructionsOptions,
+  UninstallRooInstructionsResult,
+} from "./hosts/roo/index.js";
 export type {
   InstallVscodeCopilotHookResult,
   UninstallVscodeCopilotHookResult,

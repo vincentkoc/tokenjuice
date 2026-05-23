@@ -12,6 +12,7 @@ import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
+import { doctorRooInstructions } from "../roo/index.js";
 import { doctorVscodeCopilotHook } from "../vscode-copilot/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 
@@ -29,6 +30,7 @@ import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
+import type { RooDoctorReport } from "../roo/index.js";
 import type { VscodeCopilotDoctorReport } from "../vscode-copilot/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
 
@@ -48,6 +50,7 @@ export type HookIntegrationDoctorReport = {
   junie: JunieDoctorReport;
   openhands: OpenHandsDoctorReport;
   pi: PiDoctorReport;
+  roo: RooDoctorReport;
   "vscode-copilot": VscodeCopilotDoctorReport;
   zed: ZedDoctorReport;
   "copilot-cli": CopilotCliDoctorReport;
@@ -83,6 +86,7 @@ const hookDoctorIntegrationDoctors = {
   junie: () => doctorJunieInstructions(),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),
+  roo: () => doctorRooInstructions(),
   "vscode-copilot": (options) => doctorVscodeCopilotHook(undefined, getHookCommandOptions(options)),
   zed: () => doctorZedInstructions(),
   "copilot-cli": (options) => doctorCopilotCliHook(undefined, getHookCommandOptions(options)),

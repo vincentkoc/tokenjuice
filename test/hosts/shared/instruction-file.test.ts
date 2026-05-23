@@ -48,7 +48,7 @@ describe("collectGuidanceIssues", () => {
     await expect(readFile(`${filePath}.bak.1`, "utf8")).resolves.toBe("generated guidance\n");
   });
 
-  it("skips existing backup symlinks when choosing a backup path", async () => {
+  it("rejects existing backup symlinks when choosing a backup path", async () => {
     const dir = await createTempDir();
     const filePath = join(dir, "RULES.md");
     const targetPath = join(dir, "outside-backup");
@@ -56,23 +56,18 @@ describe("collectGuidanceIssues", () => {
     await writeFile(targetPath, "outside\n", "utf8");
     await symlink(targetPath, `${filePath}.bak`);
 
-    const result = await writeInstructionFile(filePath, "generated guidance\n");
+    await expect(writeInstructionFile(filePath, "generated guidance\n")).rejects.toThrow(/instruction backup/);
 
-    expect(result.backupPath).toBe(`${filePath}.bak.1`);
     await expect(readFile(targetPath, "utf8")).resolves.toBe("outside\n");
-    await expect(readFile(`${filePath}.bak.1`, "utf8")).resolves.toBe("custom guidance\n");
   });
 
-  it("skips dangling backup symlinks when choosing a backup path", async () => {
+  it("rejects dangling backup symlinks when choosing a backup path", async () => {
     const dir = await createTempDir();
     const filePath = join(dir, "RULES.md");
     await writeFile(filePath, "custom guidance\n", "utf8");
     await symlink(join(dir, "missing-backup-target"), `${filePath}.bak`);
 
-    const result = await writeInstructionFile(filePath, "generated guidance\n");
-
-    expect(result.backupPath).toBe(`${filePath}.bak.1`);
-    await expect(readFile(`${filePath}.bak.1`, "utf8")).resolves.toBe("custom guidance\n");
+    await expect(writeInstructionFile(filePath, "generated guidance\n")).rejects.toThrow(/instruction backup/);
   });
 
   it("matches forbidden command placeholders against concrete commands", () => {
@@ -84,5 +79,16 @@ describe("collectGuidanceIssues", () => {
     });
 
     expect(issues).toEqual(["has full"]);
+  });
+
+  it("rejects symlinked backup candidates while looking for a free suffix", async () => {
+    const dir = await createTempDir();
+    const filePath = join(dir, "SKILL.md");
+    const outsidePath = join(dir, "outside.md");
+    await writeFile(filePath, "custom guidance\n", "utf8");
+    await writeFile(`${filePath}.bak`, "first backup\n", "utf8");
+    await symlink(outsidePath, `${filePath}.bak.1`);
+
+    await expect(writeInstructionFile(filePath, "generated guidance\n")).rejects.toThrow(/instruction backup/);
   });
 });

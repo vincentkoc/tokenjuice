@@ -1,6 +1,5 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 export type InstructionFileSnapshot = {
   text: string;
@@ -43,23 +42,47 @@ export async function readInstructionFile(filePath: string): Promise<Instruction
   }
 }
 
-async function instructionBackupPathExists(filePath: string): Promise<boolean> {
+async function writeInstructionFileAtomically(filePath: string, text: string): Promise<void> {
+  const tempDir = await mkdtemp(join(dirname(filePath), ".tokenjuice-"));
+  const tempPath = join(tempDir, "write");
   try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
+    await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
+    await rename(tempPath, filePath);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
   }
 }
 
-async function chooseInstructionBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await instructionBackupPathExists(candidate))) {
-      return candidate;
+async function resolveBackupPath(filePath: string): Promise<string> {
+  let suffix = 0;
+  while (true) {
+    const candidate = suffix === 0 ? `${filePath}.bak` : `${filePath}.bak.${suffix}`;
+    try {
+      const stats = await lstat(candidate);
+      if (stats.isSymbolicLink()) {
+        throw new Error(`cannot write instruction backup ${candidate}; tokenjuice will not write through instruction symlinks`);
+      }
+      suffix += 1;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return candidate;
+      }
+      throw error;
+    }
+  }
+}
+
+async function writeInstructionBackup(filePath: string, text: string): Promise<string> {
+  while (true) {
+    const backupPath = await resolveBackupPath(filePath);
+    try {
+      await writeFile(backupPath, text, { encoding: "utf8", flag: "wx" });
+      return backupPath;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        continue;
+      }
+      throw error;
     }
   }
 }
@@ -69,18 +92,10 @@ export async function writeInstructionFile(filePath: string, text: string): Prom
   await mkdir(dirname(filePath), { recursive: true });
   let backupPath: string | undefined;
   if (existing.exists) {
-    backupPath = await chooseInstructionBackupPath(filePath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
+    backupPath = await writeInstructionBackup(filePath, existing.text);
   }
 
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
+  await writeInstructionFileAtomically(filePath, text);
   return {
     filePath,
     ...(backupPath ? { backupPath } : {}),

@@ -183,6 +183,7 @@ tokenjuice install codeant
 tokenjuice install codebuff
 tokenjuice install codegen
 tokenjuice install coder-agents
+tokenjuice install blackbox
 tokenjuice install coderabbit
 tokenjuice install deepagents
 tokenjuice install agent-layer
@@ -276,6 +277,7 @@ tokenjuice doctor codeant
 tokenjuice doctor codebuff
 tokenjuice doctor codegen
 tokenjuice doctor coder-agents
+tokenjuice doctor blackbox
 tokenjuice doctor coderabbit
 tokenjuice doctor command-code
 tokenjuice doctor deepagents
@@ -357,6 +359,7 @@ supported host hooks:
 | Avante.nvim | `tokenjuice install avante` | `avante.md` | ✴️ Beta. Inserts a marker-delimited instruction block that tells Avante to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Avante instructions do not intercept tool output; see `docs/avante-integration.md` |
 | Baz | `tokenjuice install baz` | `.baz/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a workspace skill that Baz can convert into AI Coding Guidelines for code review and fixer workflows; guidance-only, because Baz skills do not intercept review comments or command output; see `docs/baz-integration.md` |
 | Bito | `tokenjuice install bito` | `.bito.yaml` / `.bito/tokenjuice.md` | ✴️ Beta. Inserts marker-delimited Bito `custom_guidelines` config that points at a tokenjuice guideline file; guidance-only, because Bito config does not intercept review comments or command output; see `docs/bito-integration.md` |
+| Blackbox CLI | `tokenjuice install blackbox` | `.blackbox/skills/tokenjuice/SKILL.md` | ✴️ Beta. Writes a Blackbox CLI workspace skill with `name: tokenjuice` frontmatter that tells Blackbox to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Blackbox skills do not intercept command output; see `docs/blackbox-integration.md` |
 | IBM Bob Shell | `tokenjuice install bob` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited context block into the current git/project root that tells IBM Bob Shell to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Bob context files do not intercept tool output; see `docs/bob-integration.md` |
 | Builder | `tokenjuice install builder` | `.builder/rules/tokenjuice.mdc` | ✴️ Beta. Installs an always-applied Builder Projects rule file that tells Builder and Fusion to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Builder configuration files do not intercept tool output; see `docs/builder-integration.md` |
 | Charlie | `tokenjuice install charlie` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Charlie to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Charlie `AGENTS.md` instructions do not intercept command output; see `docs/charlie-integration.md` |

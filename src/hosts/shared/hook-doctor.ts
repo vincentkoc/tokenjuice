@@ -19,6 +19,7 @@ import { doctorAugmentRule } from "../augment/index.js";
 import { doctorAvanteInstructions } from "../avante/index.js";
 import { doctorBazSkill } from "../baz/index.js";
 import { doctorBitoGuidelines } from "../bito/index.js";
+import { doctorBlackboxSkill } from "../blackbox/index.js";
 import { doctorBobInstructions } from "../bob/index.js";
 import { doctorBuilderRule } from "../builder/index.js";
 import { doctorCharlieInstructions } from "../charlie/index.js";
@@ -114,6 +115,7 @@ import type { AugmentDoctorReport, AugmentRuleOptions } from "../augment/index.j
 import type { AvanteDoctorReport } from "../avante/index.js";
 import type { BazDoctorReport, BazSkillOptions } from "../baz/index.js";
 import type { BitoDoctorReport, BitoGuidelinesOptions } from "../bito/index.js";
+import type { BlackboxDoctorReport, BlackboxSkillOptions } from "../blackbox/index.js";
 import type { BobDoctorReport, BobInstructionsOptions } from "../bob/index.js";
 import type { BuilderDoctorReport, BuilderRuleOptions } from "../builder/index.js";
 import type { CharlieDoctorReport, CharlieInstructionsOptions } from "../charlie/index.js";
@@ -212,6 +214,7 @@ export type HookIntegrationDoctorReport = {
   avante: AvanteDoctorReport;
   baz: BazDoctorReport;
   bito: BitoDoctorReport;
+  blackbox: BlackboxDoctorReport;
   bob: BobDoctorReport;
   builder: BuilderDoctorReport;
   charlie: CharlieDoctorReport;
@@ -292,7 +295,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BlackboxSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -325,6 +328,7 @@ const hookDoctorIntegrationDoctors = {
   avante: () => doctorAvanteInstructions(),
   baz: (options) => doctorBazSkill(undefined, getHookCommandOptions(options)),
   bito: (options) => doctorBitoGuidelines(getHookCommandOptions(options)),
+  blackbox: (options) => doctorBlackboxSkill(undefined, getHookCommandOptions(options)),
   bob: (options) => doctorBobInstructions(undefined, getHookCommandOptions(options)),
   builder: (options) => doctorBuilderRule(undefined, getHookCommandOptions(options)),
   charlie: (options) => doctorCharlieInstructions(undefined, getHookCommandOptions(options)),

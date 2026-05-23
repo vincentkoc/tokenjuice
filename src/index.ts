@@ -52,6 +52,7 @@ export { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, 
 export { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "./hosts/openwebui/index.js";
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
+export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
 export {
@@ -252,6 +253,12 @@ export type {
   QwenCodeHookCommandOptions,
   UninstallQwenCodeHookResult,
 } from "./hosts/qwen-code/index.js";
+export type {
+  InstallReplitInstructionsResult,
+  ReplitDoctorReport,
+  ReplitInstructionsOptions,
+  UninstallReplitInstructionsResult,
+} from "./hosts/replit/index.js";
 export type {
   InstallRooInstructionsResult,
   RooDoctorReport,

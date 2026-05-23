@@ -31,6 +31,7 @@ import { doctorPiExtension } from "../pi/index.js";
 import { doctorPlandexConvention } from "../plandex/index.js";
 import { doctorQoderInstructions } from "../qoder/index.js";
 import { doctorQwenCodeHook } from "../qwen-code/index.js";
+import { doctorReplitInstructions } from "../replit/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
 import { doctorRulerRule } from "../ruler/index.js";
 import { doctorTraeRule } from "../trae/index.js";
@@ -72,6 +73,7 @@ import type { PiDoctorReport } from "../pi/index.js";
 import type { PlandexConventionOptions, PlandexDoctorReport } from "../plandex/index.js";
 import type { QoderDoctorReport, QoderInstructionsOptions } from "../qoder/index.js";
 import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-code/index.js";
+import type { ReplitDoctorReport, ReplitInstructionsOptions } from "../replit/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
 import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
 import type { TraeDoctorReport, TraeRuleOptions } from "../trae/index.js";
@@ -115,6 +117,7 @@ export type HookIntegrationDoctorReport = {
   plandex: PlandexDoctorReport;
   qoder: QoderDoctorReport;
   "qwen-code": QwenCodeDoctorReport;
+  replit: ReplitDoctorReport;
   roo: RooDoctorReport;
   ruler: RulerDoctorReport;
   trae: TraeDoctorReport;
@@ -130,7 +133,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -174,6 +177,7 @@ const hookDoctorIntegrationDoctors = {
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
+  replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),
   ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),
   trae: (options) => doctorTraeRule(undefined, getHookCommandOptions(options)),

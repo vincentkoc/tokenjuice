@@ -8,6 +8,7 @@
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta Kimi Code CLI PostToolUse hook integration.
 - Add a beta Mistral Vibe instruction integration.
+- Add a beta Replit Agent instruction integration.
 - Add a beta Trae project-rule integration.
 - Add a beta Warp project-rules integration.
 

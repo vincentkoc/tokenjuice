@@ -57,7 +57,10 @@ describe("openwebui tool", () => {
 
     const compiled = spawnSync("python3", ["-m", "py_compile", toolPath], { encoding: "utf8" });
 
-    expect(compiled.status, compiled.stderr || compiled.stdout).toBe(0);
+    if (compiled.status !== 0) {
+      throw new Error(compiled.stderr || compiled.stdout || "python3 py_compile failed");
+    }
+    expect(compiled.status).toBe(0);
   });
 
   it("backs up an existing tool source before replacing it", async () => {

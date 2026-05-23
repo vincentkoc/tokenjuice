@@ -76,6 +76,7 @@ import { doctorReplitInstructions } from "../replit/index.js";
 import { doctorRooInstructions } from "../roo/index.js";
 import { doctorRovoInstructions } from "../rovo/index.js";
 import { doctorRulerRule } from "../ruler/index.js";
+import { doctorTabbySystemPrompt } from "../tabby/index.js";
 import { doctorTabnineInstructions } from "../tabnine/index.js";
 import { doctorTraeRule } from "../trae/index.js";
 import { doctorUiPathInstructions } from "../uipath/index.js";
@@ -162,6 +163,7 @@ import type { QwenCodeDoctorReport, QwenCodeHookCommandOptions } from "../qwen-c
 import type { ReplitDoctorReport, ReplitInstructionsOptions } from "../replit/index.js";
 import type { RooDoctorReport } from "../roo/index.js";
 import type { RovoDoctorReport, RovoInstructionsOptions } from "../rovo/index.js";
+import type { TabbyDoctorReport, TabbySystemPromptOptions } from "../tabby/index.js";
 import type { TabnineDoctorReport, TabnineInstructionsOptions } from "../tabnine/index.js";
 import type { RulerDoctorReport, RulerRuleOptions } from "../ruler/index.js";
 import type { TraeDoctorReport, TraeRuleOptions } from "../trae/index.js";
@@ -252,6 +254,7 @@ export type HookIntegrationDoctorReport = {
   roo: RooDoctorReport;
   rovo: RovoDoctorReport;
   ruler: RulerDoctorReport;
+  tabby: TabbyDoctorReport;
   tabnine: TabnineDoctorReport;
   trae: TraeDoctorReport;
   uipath: UiPathDoctorReport;
@@ -268,7 +271,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -357,6 +360,7 @@ const hookDoctorIntegrationDoctors = {
   roo: () => doctorRooInstructions(),
   rovo: (options) => doctorRovoInstructions(undefined, getHookCommandOptions(options)),
   ruler: (options) => doctorRulerRule(undefined, getHookCommandOptions(options)),
+  tabby: (options) => doctorTabbySystemPrompt(undefined, getHookCommandOptions(options)),
   tabnine: (options) => doctorTabnineInstructions(undefined, getHookCommandOptions(options)),
   trae: (options) => doctorTraeRule(undefined, getHookCommandOptions(options)),
   uipath: (options) => doctorUiPathInstructions(undefined, getHookCommandOptions(options)),

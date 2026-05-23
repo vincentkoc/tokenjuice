@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Tabby</title>
+  <desc id="desc">Tabby client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#0F172A"/>
+  <path d="M22 24h52v12H54v38H42V36H22V24Z" fill="#F8FAFC"/>
+  <path d="M23 75h50v8H23z" fill="#22C55E"/>
+  <path d="M62 18c7 3 12 8 14 16-8-2-13-7-14-16Z" fill="#38BDF8"/>
+</svg>

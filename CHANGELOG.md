@@ -51,6 +51,7 @@
 - Add a beta pi-go workspace-skill integration.
 - Add a beta Replit Agent instruction integration.
 - Add a beta Rovo Dev CLI project-memory integration.
+- Add a beta Tabby system-prompt integration.
 - Add a beta Tabnine CLI project-context integration.
 - Add a beta Trae project-rule integration.
 - Add a beta UiPath for Coding Agents instruction integration.

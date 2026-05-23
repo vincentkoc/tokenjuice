@@ -97,6 +97,7 @@ export { doctorReplitInstructions, installReplitInstructions, uninstallReplitIns
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
 export { doctorTraeRule, installTraeRule, uninstallTraeRule } from "./hosts/trae/index.js";
+export { doctorTabbySystemPrompt, installTabbySystemPrompt, uninstallTabbySystemPrompt } from "./hosts/tabby/index.js";
 export { doctorTabnineInstructions, installTabnineInstructions, uninstallTabnineInstructions } from "./hosts/tabnine/index.js";
 export { doctorUiPathInstructions, installUiPathInstructions, uninstallUiPathInstructions } from "./hosts/uipath/index.js";
 export {
@@ -562,6 +563,12 @@ export type {
   RovoInstructionsOptions,
   UninstallRovoInstructionsResult,
 } from "./hosts/rovo/index.js";
+export type {
+  InstallTabbySystemPromptResult,
+  TabbyDoctorReport,
+  TabbySystemPromptOptions,
+  UninstallTabbySystemPromptResult,
+} from "./hosts/tabby/index.js";
 export type {
   InstallTabnineInstructionsResult,
   TabnineDoctorReport,

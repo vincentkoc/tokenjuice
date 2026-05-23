@@ -234,6 +234,7 @@ tokenjuice install qwen-code
 tokenjuice install replit
 tokenjuice install rovo
 tokenjuice install ruler
+tokenjuice install tabby
 tokenjuice install tabnine
 tokenjuice install trae
 tokenjuice install uipath
@@ -298,6 +299,7 @@ tokenjuice doctor qwen-code
 tokenjuice doctor replit
 tokenjuice doctor rovo
 tokenjuice doctor ruler
+tokenjuice doctor tabby
 tokenjuice doctor tabnine
 tokenjuice doctor trae
 tokenjuice doctor uipath
@@ -399,6 +401,7 @@ supported host hooks:
 | Roo Code | `tokenjuice install roo` | `.roo/rules/tokenjuice.md` | ✴️ Beta. Inserts a marker-delimited workspace rule that tells Roo to use `tokenjuice wrap` for noisy `execute_command` terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Roo workspace rules do not intercept tool output; see `docs/roo-integration.md` |
 | Rovo Dev CLI | `tokenjuice install rovo` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited project memory block into the current git/project root that tells Rovo Dev CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Rovo Dev memory files do not intercept tool output; see `docs/rovo-integration.md` |
 | Ruler | `tokenjuice install ruler` | `.ruler/tokenjuice.md` | ✴️ Beta. Installs a Ruler source rule that tells configured coding agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Ruler propagates rules rather than intercepting command output; run `ruler apply` after install; see `docs/ruler-integration.md` |
+| Tabby | `tokenjuice install tabby` | `~/.tabby/config.toml` | ✴️ Beta. Inserts a marker-delimited `[answer].system_prompt` into Tabby's config so Answer Engine, chat, and inline chat guidance tells Tabby to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Tabby's system prompt does not intercept tool output; refuses to overwrite an existing user-owned system prompt; see `docs/tabby-integration.md` |
 | Tabnine CLI | `tokenjuice install tabnine` | `TABNINE.md` | ✴️ Beta. Inserts a marker-delimited project context block into the current git/project root that tells Tabnine CLI to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Tabnine context files do not intercept tool output; see `docs/tabnine-integration.md` |
 | Trae | `tokenjuice install trae` | `.trae/rules/project_rules.md` | ✴️ Beta. Inserts a marker-delimited project rule block that tells Trae to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Trae `.rules` files do not intercept command output; see `docs/trae-integration.md` |
 | UiPath for Coding Agents | `tokenjuice install uipath` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells coding agents working through UiPath to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because `AGENTS.md` instructions do not intercept command output; see `docs/uipath-integration.md` |

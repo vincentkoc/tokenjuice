@@ -57,6 +57,7 @@ export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } fro
 export { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "./hosts/docker-agent/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
+export { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallForgeCodeInstructions } from "./hosts/forgecode/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "./hosts/gitlab-duo/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
@@ -310,6 +311,12 @@ export type {
   InstallFirebaseStudioRuleResult,
   UninstallFirebaseStudioRuleResult,
 } from "./hosts/firebase-studio/index.js";
+export type {
+  ForgeCodeDoctorReport,
+  ForgeCodeInstructionsOptions,
+  InstallForgeCodeInstructionsResult,
+  UninstallForgeCodeInstructionsResult,
+} from "./hosts/forgecode/index.js";
 export type {
   GeminiCliDoctorReport,
   GeminiCliHookCommandOptions,

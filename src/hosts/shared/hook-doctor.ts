@@ -34,6 +34,7 @@ import { doctorDotAgentsRule } from "../dot-agents/index.js";
 import { doctorDockerAgentPrompt } from "../docker-agent/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorFirebaseStudioRule } from "../firebase-studio/index.js";
+import { doctorForgeCodeInstructions } from "../forgecode/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGitLabDuoRule } from "../gitlab-duo/index.js";
 import { doctorGooseHints } from "../goose/index.js";
@@ -109,6 +110,7 @@ import type { DotAgentsDoctorReport, DotAgentsRuleOptions } from "../dot-agents/
 import type { DockerAgentDoctorReport, DockerAgentPromptOptions } from "../docker-agent/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { FirebaseStudioDoctorReport, FirebaseStudioRuleOptions } from "../firebase-studio/index.js";
+import type { ForgeCodeDoctorReport, ForgeCodeInstructionsOptions } from "../forgecode/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GitLabDuoDoctorReport, GitLabDuoRuleOptions } from "../gitlab-duo/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
@@ -186,6 +188,7 @@ export type HookIntegrationDoctorReport = {
   "docker-agent": DockerAgentDoctorReport;
   droid: DroidDoctorReport;
   "firebase-studio": FirebaseStudioDoctorReport;
+  forgecode: ForgeCodeDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   "gitlab-duo": GitLabDuoDoctorReport;
   goose: GooseDoctorReport;
@@ -232,7 +235,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -279,6 +282,7 @@ const hookDoctorIntegrationDoctors = {
   "docker-agent": (options) => doctorDockerAgentPrompt(undefined, getHookCommandOptions(options)),
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
+  forgecode: (options) => doctorForgeCodeInstructions(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   "gitlab-duo": (options) => doctorGitLabDuoRule(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),

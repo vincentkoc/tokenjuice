@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="ForgeCode">
+  <rect width="192" height="192" rx="36" fill="#101820"/>
+  <path d="M50 52h92v22H75v24h54v22H75v36H50z" fill="#f8fafc"/>
+  <path d="M122 48 152 66v60l-30 18" fill="none" stroke="#38bdf8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M144 91h-28" stroke="#f59e0b" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="58" cy="145" r="10" fill="#34d399"/>
+</svg>

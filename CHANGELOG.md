@@ -25,6 +25,7 @@
 - Add a beta dot-agents global-rule integration.
 - Add a beta Docker Agent prompt-file integration.
 - Add a beta Firebase Studio AI-rules integration.
+- Add a beta ForgeCode AGENTS.md instruction integration.
 - Add a beta GitLab Duo custom-rules integration.
 - Add a beta gptme instruction integration.
 - Add a beta Jean2 instruction integration.

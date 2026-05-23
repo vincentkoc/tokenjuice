@@ -4,6 +4,7 @@
 
 ### Features
 
+- Add a beta Agent Layer source-instruction integration.
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
 - Add a beta Agentloom source-rule integration.
 - Add a beta agents.ge source-rule integration.

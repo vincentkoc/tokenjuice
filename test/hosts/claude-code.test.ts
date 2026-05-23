@@ -23,6 +23,8 @@ const tempDirs: string[] = [];
 const originalPath = process.env.PATH;
 const originalHome = process.env.HOME;
 const originalFactoryHome = process.env.FACTORY_HOME;
+const originalKimiHome = process.env.KIMI_HOME;
+const originalKimiShareDir = process.env.KIMI_SHARE_DIR;
 
 afterEach(async () => {
   delete process.env.CLAUDE_CONFIG_DIR;
@@ -35,6 +37,16 @@ afterEach(async () => {
   delete process.env.FACTORY_HOME;
   delete process.env.PI_CODING_AGENT_DIR;
   delete process.env.COPILOT_HOME;
+  if (originalKimiHome === undefined) {
+    delete process.env.KIMI_HOME;
+  } else {
+    process.env.KIMI_HOME = originalKimiHome;
+  }
+  if (originalKimiShareDir === undefined) {
+    delete process.env.KIMI_SHARE_DIR;
+  } else {
+    process.env.KIMI_SHARE_DIR = originalKimiShareDir;
+  }
   process.env.PATH = originalPath;
   if (originalHome === undefined) {
     delete process.env.HOME;
@@ -553,6 +565,8 @@ describe("doctorInstalledHooks", () => {
     process.env.CURSOR_HOME = join(home, "cursor");
     process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = join(home, "copilot");
+    process.env.KIMI_HOME = join(home, "kimi");
+    process.env.KIMI_SHARE_DIR = join(home, "kimi-share");
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(join(binDir, "tokenjuice"), "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -578,6 +592,8 @@ describe("doctorInstalledHooks", () => {
     process.env.CURSOR_HOME = home;
     process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
+    process.env.KIMI_HOME = join(home, "kimi");
+    process.env.KIMI_SHARE_DIR = join(home, "kimi-share");
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -610,6 +626,8 @@ describe("doctorInstalledHooks", () => {
     process.env.CURSOR_HOME = home;
     process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
+    process.env.KIMI_HOME = join(home, "kimi");
+    process.env.KIMI_SHARE_DIR = join(home, "kimi-share");
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
@@ -660,7 +678,8 @@ describe("doctorInstalledHooks", () => {
     process.env.CURSOR_HOME = cursorHome;
     process.env.FACTORY_HOME = join(home, "factory");
     process.env.COPILOT_HOME = home;
-    process.env.HOME = home;
+    process.env.KIMI_HOME = join(home, "kimi");
+    process.env.KIMI_SHARE_DIR = join(home, "kimi-share");
     process.env.PI_CODING_AGENT_DIR = piAgentDir;
     await mkdir(binDir, { recursive: true });
     await mkdir(join(home, "dist", "cli"), { recursive: true });

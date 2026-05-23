@@ -21,6 +21,8 @@ const originalPath = process.env.PATH;
 const originalShell = process.env.SHELL;
 const originalCodeBuddyShell = process.env.TOKENJUICE_CODEBUDDY_SHELL;
 const originalFactoryHome = process.env.FACTORY_HOME;
+const originalKimiHome = process.env.KIMI_HOME;
+const originalKimiShareDir = process.env.KIMI_SHARE_DIR;
 const originalPlatform = process.platform;
 
 afterEach(async () => {
@@ -41,6 +43,16 @@ afterEach(async () => {
   delete process.env.CLAUDE_HOME;
   delete process.env.CODEX_HOME;
   delete process.env.CURSOR_HOME;
+  if (originalKimiHome === undefined) {
+    delete process.env.KIMI_HOME;
+  } else {
+    process.env.KIMI_HOME = originalKimiHome;
+  }
+  if (originalKimiShareDir === undefined) {
+    delete process.env.KIMI_SHARE_DIR;
+  } else {
+    process.env.KIMI_SHARE_DIR = originalKimiShareDir;
+  }
   if (originalFactoryHome === undefined) {
     delete process.env.FACTORY_HOME;
   } else {
@@ -568,6 +580,8 @@ describe("doctorInstalledHooks includes codebuddy", () => {
     process.env.CODEBUDDY_HOME = codebuddyHome;
     process.env.CURSOR_HOME = home;
     process.env.FACTORY_HOME = join(home, "factory");
+    process.env.KIMI_HOME = join(home, "kimi");
+    process.env.KIMI_SHARE_DIR = join(home, "kimi-share");
     process.env.PI_CODING_AGENT_DIR = join(home, "pi-agent");
     await mkdir(binDir, { recursive: true });
     await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });

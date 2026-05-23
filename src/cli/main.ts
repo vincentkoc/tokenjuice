@@ -41,6 +41,7 @@ import { doctorGooseHints, installGooseHints, uninstallGooseHints } from "../hos
 import { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "../hosts/grok-build/index.js";
 import { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
 import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
+import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "../hosts/kimi/index.js";
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import {
@@ -141,6 +142,7 @@ function printUsage(): void {
       "  tokenjuice install grok-build",
       "  tokenjuice install grok-cli [--local]",
       "  tokenjuice install junie",
+      "  tokenjuice install kimi [--local]",
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install openhands [--local]",
@@ -174,6 +176,7 @@ function printUsage(): void {
       "  tokenjuice uninstall grok-build",
       "  tokenjuice uninstall grok-cli",
       "  tokenjuice uninstall junie",
+      "  tokenjuice uninstall kimi",
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall openhands",
@@ -193,7 +196,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kimi|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -909,6 +912,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "kimi") {
+    const result = await installKimiHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Config", value: result.configPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "PostToolUse Shell hook; compacted context is injected alongside original output" },
+      { label: "Verify", value: `tokenjuice doctor kimi${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("kimi", "hook", details));
+    return 0;
+  }
+
   if (target === "kiro") {
     const result = await installKiroSteering();
     if (args.format === "json") {
@@ -1261,7 +1285,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1486,6 +1510,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "kimi") {
+    const result = await uninstallKimiHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed kimi entries: ${result.removed}\n`);
+    process.stdout.write(`config path: ${result.configPath}\n`);
+    process.stdout.write("enable: tokenjuice install kimi\n");
+    return 0;
+  }
+
   if (target === "kiro") {
     const result = await uninstallKiroSteering();
     if (args.format === "json") {
@@ -1696,7 +1733,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-build, grok-cli, junie, kimi, kiro, kilo, openhands, open-interpreter, openwebui, opencode, plandex, qoder, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2479,6 +2516,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "kimi") {
+    const report = await doctorKimiHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`config path: ${report.configPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "openhands") {
     const report = await doctorOpenHandsHook(undefined, { local: args.local });
 
@@ -3133,6 +3206,8 @@ async function main(): Promise<number> {
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "grok-cli-post-tool-use":
       return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "kimi-post-tool-use":
+      return await runKimiPostToolUseHook(await readStdin(args.maxInputBytes));
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
     case "qwen-code-post-tool-use":

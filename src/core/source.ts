@@ -91,6 +91,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("qwen")) {
     return "qwen-code";
   }
+  if (source.startsWith("kimi")) {
+    return "kimi";
+  }
   if (source.startsWith("ruler")) {
     return "ruler";
   }

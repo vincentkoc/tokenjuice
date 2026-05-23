@@ -5,6 +5,7 @@
 ### Features
 
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
+- Add a beta Kimi Code CLI PostToolUse hook integration.
 
 ### Fixes
 

@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kimi">
+  <rect width="96" height="96" rx="18" fill="#0F172A"/>
+  <path d="M24 22h13v22l20-22h16L51 46l24 28H58L37 49v25H24V22Z" fill="#FFFFFF"/>
+  <path d="M59 21c8 3 13 8 15 16-8-3-13-8-15-16Z" fill="#7DD3FC"/>
+  <path d="M65 55c5 3 8 7 9 13-6-2-10-6-9-13Z" fill="#38BDF8"/>
+</svg>

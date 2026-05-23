@@ -19,6 +19,7 @@ import { doctorGooseHints } from "../goose/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
+import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
@@ -55,6 +56,7 @@ import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
+import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
 import type { OpenInterpreterDoctorReport, OpenInterpreterInstructionsOptions } from "../open-interpreter/index.js";
@@ -93,6 +95,7 @@ export type HookIntegrationDoctorReport = {
   "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
   junie: JunieDoctorReport;
+  kimi: KimiDoctorReport;
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
   openhands: OpenHandsDoctorReport;
@@ -115,7 +118,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -147,6 +150,7 @@ const hookDoctorIntegrationDoctors = {
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
+  kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
@@ -195,6 +199,7 @@ function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCom
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
     ...(typeof options.projectDir === "string" ? { projectDir: options.projectDir } : {}),
     ...(typeof options.scanProjectTree === "boolean" ? { scanProjectTree: options.scanProjectTree } : {}),
+    ...(typeof options.configDir === "string" ? { configDir: options.configDir } : {}),
   };
 }
 
@@ -206,6 +211,9 @@ export function isInstalledHookIntegration(
   report: HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
 ): boolean {
   if (hasDetectedCommand(report)) {
+    return true;
+  }
+  if ("hasTokenjuiceMarker" in report && report.hasTokenjuiceMarker === true) {
     return true;
   }
   // Command-backed hosts can warn about missing config even when tokenjuice is

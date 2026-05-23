@@ -44,6 +44,7 @@ import {
   uninstallOpenCodeExtension,
 } from "../hosts/opencode/index.js";
 import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "../hosts/openhands/index.js";
+import { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "../hosts/openwebui/index.js";
 import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
 import { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "../hosts/roo/index.js";
@@ -125,6 +126,7 @@ function printUsage(): void {
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install openhands [--local]",
+      "  tokenjuice install openwebui",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install qwen-code [--local]",
@@ -150,6 +152,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall openhands",
+      "  tokenjuice uninstall openwebui",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall qwen-code",
       "  tokenjuice uninstall roo",
@@ -162,7 +165,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amp|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|openwebui|pi|opencode|qwen-code|roo|ruler|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -862,6 +865,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "openwebui") {
+    const result = await installOpenWebUITool();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Tool source", value: result.toolPath },
+      { label: "Beta", value: "Workspace Tool export; review and import manually in Open WebUI" },
+      { label: "Safety", value: "compacts provided output only; does not execute user commands" },
+      { label: "Verify", value: "tokenjuice doctor openwebui" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("openwebui", "tool source", details));
+    return 0;
+  }
+
   if (target === "qwen-code") {
     const result = await installQwenCodeHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1068,7 +1091,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, pi, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amp, avante, codex, claude-code, cline, codebuddy, continue, copilot-agent, crush, cursor, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, openwebui, pi, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1282,6 +1305,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "openwebui") {
+    const result = await uninstallOpenWebUITool();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed openwebui tool source: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`tool path: ${result.toolPath}\n`);
+    process.stdout.write("enable: tokenjuice install openwebui\n");
+    return 0;
+  }
+
   if (target === "opencode") {
     const result = await uninstallOpenCodeExtension();
     if (args.format === "json") {
@@ -1399,7 +1435,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amp, avante, codex, cline, continue, copilot-agent, crush, droid, gemini-cli, goose, grok-cli, junie, kiro, kilo, openhands, openwebui, opencode, qwen-code, roo, ruler, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -2032,6 +2068,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
       process.stdout.write("missing paths:\n");
       for (const path of report.missingPaths) {
         process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "openwebui") {
+    const report = await doctorOpenWebUITool();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`tool path: ${report.toolPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
       }
     }
     if (report.advisories.length > 0) {

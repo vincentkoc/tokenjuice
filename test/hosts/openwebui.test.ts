@@ -43,6 +43,7 @@ describe("openwebui tool", () => {
     expect(tool).toContain("tokenjuice compact terminal output");
     expect(tool).toContain("class Tools:");
     expect(tool).toContain("compact_terminal_output");
+    expect(tool).toContain("await asyncio.to_thread(");
     expect(tool).toContain("[tokenjuice_bin, \"reduce-json\"]");
     expect(tool).toContain("The command string is metadata only; it is never executed by this tool.");
     expect(tool).not.toContain("shell=True");

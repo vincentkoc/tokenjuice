@@ -28,7 +28,8 @@ administrators.
   executed.
 - The `output` argument is the terminal output text to compact.
 - The tool invokes `tokenjuice reduce-json` with a fixed argv list; it does not
-  use `shell=True`.
+  use `shell=True`, and the subprocess call is offloaded from Open WebUI's async
+  event loop.
 - Admin valves configure the `tokenjuice` executable path, timeout, maximum
   input size, and maximum returned text size.
 - `tokenjuice doctor openwebui` treats edited tool source as broken, and

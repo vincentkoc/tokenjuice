@@ -1,4 +1,5 @@
-import { join } from "node:path";
+import { stat } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
@@ -34,12 +35,44 @@ const TOKENJUICE_OPENWEBUI_FIX_COMMAND = "tokenjuice install openwebui";
 const TOKENJUICE_OPENWEBUI_TOOL_MARKER = "tokenjuice compact terminal output";
 const TOKENJUICE_OPENWEBUI_ADVISORY = "Open WebUI support is beta and exports a Workspace Tool source file; review and import it manually as an administrator.";
 
-function getProjectDir(options: OpenWebUIToolOptions = {}): string {
-  return options.projectDir || process.env.OPENWEBUI_PROJECT_DIR || process.cwd();
+function getExplicitProjectDir(options: OpenWebUIToolOptions = {}): string | undefined {
+  return options.projectDir || process.env.OPENWEBUI_PROJECT_DIR;
 }
 
-function getDefaultToolPath(options: OpenWebUIToolOptions = {}): string {
-  return join(getProjectDir(options), ".openwebui", "tools", "tokenjuice_compact.py");
+async function hasGitMetadata(dir: string): Promise<boolean> {
+  try {
+    await stat(join(dir, ".git"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function findGitRoot(startDir: string): Promise<string | undefined> {
+  let current = resolve(startDir);
+  while (true) {
+    if (await hasGitMetadata(current)) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) {
+      return undefined;
+    }
+    current = parent;
+  }
+}
+
+async function resolveProjectDir(options: OpenWebUIToolOptions = {}): Promise<string> {
+  const explicitProjectDir = getExplicitProjectDir(options);
+  if (explicitProjectDir) {
+    return resolve(explicitProjectDir);
+  }
+
+  return (await findGitRoot(process.cwd())) ?? resolve(process.cwd());
+}
+
+async function getDefaultToolPath(options: OpenWebUIToolOptions = {}): Promise<string> {
+  return join(await resolveProjectDir(options), ".openwebui", "tools", "tokenjuice_compact.py");
 }
 
 const TOKENJUICE_OPENWEBUI_TOOL = [
@@ -161,7 +194,7 @@ export async function installOpenWebUITool(
   toolPath?: string,
   options: OpenWebUIToolOptions = {},
 ): Promise<InstallOpenWebUIToolResult> {
-  const resolvedToolPath = toolPath ?? getDefaultToolPath(options);
+  const resolvedToolPath = toolPath ?? await getDefaultToolPath(options);
   const result = await writeInstructionFile(resolvedToolPath, TOKENJUICE_OPENWEBUI_TOOL);
   return {
     toolPath: result.filePath,
@@ -169,17 +202,21 @@ export async function installOpenWebUITool(
   };
 }
 
-export async function uninstallOpenWebUITool(toolPath = getDefaultToolPath()): Promise<UninstallOpenWebUIToolResult> {
-  const existing = await readInstructionFile(toolPath);
+export async function uninstallOpenWebUITool(
+  toolPath?: string,
+  options: OpenWebUIToolOptions = {},
+): Promise<UninstallOpenWebUIToolResult> {
+  const resolvedToolPath = toolPath ?? await getDefaultToolPath(options);
+  const existing = await readInstructionFile(resolvedToolPath);
   if (!existing.exists) {
-    return { toolPath, removed: false };
+    return { toolPath: resolvedToolPath, removed: false };
   }
   if (existing.text !== TOKENJUICE_OPENWEBUI_TOOL) {
     throw new Error(
-      `refusing to remove ${toolPath}; it does not match the current tokenjuice Open WebUI tool source. Review and remove it manually, or reinstall tokenjuice openwebui first.`,
+      `refusing to remove ${resolvedToolPath}; it does not match the current tokenjuice Open WebUI tool source. Review and remove it manually, or reinstall tokenjuice openwebui first.`,
     );
   }
-  const result = await removeInstructionFile(toolPath);
+  const result = await removeInstructionFile(resolvedToolPath);
   return { toolPath: result.filePath, removed: result.removed };
 }
 
@@ -187,7 +224,7 @@ export async function doctorOpenWebUITool(
   toolPath?: string,
   options: OpenWebUIToolOptions = {},
 ): Promise<OpenWebUIDoctorReport> {
-  const resolvedToolPath = toolPath ?? getDefaultToolPath(options);
+  const resolvedToolPath = toolPath ?? await getDefaultToolPath(options);
   const existing = await readInstructionFile(resolvedToolPath);
   if (!existing.exists) {
     return {

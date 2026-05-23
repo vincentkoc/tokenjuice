@@ -3,8 +3,9 @@
 Open WebUI support is beta.
 
 `tokenjuice install openwebui` writes
-`.openwebui/tools/tokenjuice_compact.py` in the current workspace. This is a
-Workspace Tool source file that you review and import manually in Open WebUI.
+`.openwebui/tools/tokenjuice_compact.py` in the current git root, or in
+`OPENWEBUI_PROJECT_DIR` when set. This is a Workspace Tool source file that you
+review and import manually in Open WebUI.
 
 Open WebUI Workspace Tools execute Python on the server, so tokenjuice does not
 auto-import into an Open WebUI instance, modify its database, or enable the tool

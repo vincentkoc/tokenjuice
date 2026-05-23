@@ -1,25 +1,62 @@
 import { spawnSync } from "node:child_process";
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  doctorInstalledHooks,
   doctorOpenWebUITool,
   installOpenWebUITool,
   uninstallOpenWebUITool,
 } from "../../src/index.js";
 
 const tempDirs: string[] = [];
-const originalProjectDir = process.env.OPENWEBUI_PROJECT_DIR;
+const originalCwd = process.cwd();
+const envKeys = [
+  "AIDER_PROJECT_DIR",
+  "AMP_PROJECT_DIR",
+  "AVANTE_PROJECT_DIR",
+  "CLINE_HOOKS_DIR",
+  "CLAUDE_CONFIG_DIR",
+  "CODEBUDDY_CONFIG_DIR",
+  "CODEX_HOME",
+  "CONTINUE_PROJECT_DIR",
+  "COPILOT_AGENT_PROJECT_DIR",
+  "COPILOT_HOME",
+  "CRUSH_PROJECT_DIR",
+  "CURSOR_HOME",
+  "FACTORY_HOME",
+  "GEMINI_HOME",
+  "GOOSE_PROJECT_DIR",
+  "GROK_HOME",
+  "HOME",
+  "JUNIE_PROJECT_DIR",
+  "KILO_PROJECT_DIR",
+  "KIRO_PROJECT_DIR",
+  "OPENCODE_CONFIG_DIR",
+  "OPENHANDS_PROJECT_DIR",
+  "OPENWEBUI_PROJECT_DIR",
+  "PI_CODING_AGENT_DIR",
+  "QWEN_PROJECT_DIR",
+  "ROO_PROJECT_DIR",
+  "RULER_PROJECT_DIR",
+  "WINDSURF_PROJECT_DIR",
+  "ZED_PROJECT_DIR",
+] as const;
+const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
 const hasPython3 = spawnSync("python3", ["--version"], { stdio: "ignore" }).status === 0;
 
 afterEach(async () => {
-  if (originalProjectDir === undefined) {
-    delete process.env.OPENWEBUI_PROJECT_DIR;
-  } else {
-    process.env.OPENWEBUI_PROJECT_DIR = originalProjectDir;
+  process.chdir(originalCwd);
+  for (const key of envKeys) {
+    const value = originalEnv[key];
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
   }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -140,14 +177,65 @@ describe("openwebui tool", () => {
     expect(doctor.status).toBe("ok");
   });
 
+  it("passes projectDir through aggregate hook doctor", async () => {
+    const home = await createTempDir();
+    const configHome = join(home, "home");
+    await mkdir(configHome, { recursive: true });
+    process.env.HOME = configHome;
+    process.env.FACTORY_HOME = join(configHome, ".factory");
+    process.env.CODEX_HOME = join(configHome, ".codex");
+    process.env.CLAUDE_CONFIG_DIR = join(configHome, ".claude");
+    process.env.CODEBUDDY_CONFIG_DIR = join(configHome, ".codebuddy");
+    process.env.CURSOR_HOME = join(configHome, ".cursor");
+    process.env.GEMINI_HOME = join(configHome, ".gemini");
+    process.env.GROK_HOME = join(configHome, ".grok");
+    process.env.COPILOT_HOME = join(configHome, ".copilot");
+    process.env.PI_CODING_AGENT_DIR = join(configHome, ".pi", "agent");
+    process.env.OPENCODE_CONFIG_DIR = join(configHome, ".config", "opencode");
+    process.env.CLINE_HOOKS_DIR = join(configHome, "Cline", "Hooks");
+    await installOpenWebUITool(undefined, { projectDir: home });
+
+    const report = await doctorInstalledHooks({ projectDir: home });
+
+    expect(report.integrations.openwebui.status).toBe("ok");
+    expect(report.integrations.openwebui.toolPath).toBe(join(home, ".openwebui", "tools", "tokenjuice_compact.py"));
+  });
+
+  it("installs into the git root when run from a nested directory", async () => {
+    const home = await createTempDir();
+    const nestedDir = join(home, "packages", "app");
+    await mkdir(join(home, ".git"), { recursive: true });
+    await mkdir(nestedDir, { recursive: true });
+    process.chdir(nestedDir);
+
+    const installed = await installOpenWebUITool();
+    const expectedToolPath = join(await realpath(home), ".openwebui", "tools", "tokenjuice_compact.py");
+
+    expect(installed.toolPath).toBe(expectedToolPath);
+    expect(await readFile(join(home, ".openwebui", "tools", "tokenjuice_compact.py"), "utf8")).toContain("class Tools:");
+    await expect(access(join(nestedDir, ".openwebui", "tools", "tokenjuice_compact.py"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("removes the default tool source file", async () => {
     const home = await createTempDir();
     process.env.OPENWEBUI_PROJECT_DIR = home;
     const toolPath = join(home, ".openwebui", "tools", "tokenjuice_compact.py");
 
     await installOpenWebUITool();
-    await uninstallOpenWebUITool(toolPath);
+    await uninstallOpenWebUITool();
 
+    await expect(access(toolPath)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("uses projectDir when uninstalling the default tool source file", async () => {
+    const home = await createTempDir();
+    const toolPath = join(home, ".openwebui", "tools", "tokenjuice_compact.py");
+
+    await installOpenWebUITool(undefined, { projectDir: home });
+    const removed = await uninstallOpenWebUITool(undefined, { projectDir: home });
+
+    expect(removed.toolPath).toBe(toolPath);
+    expect(removed.removed).toBe(true);
     await expect(access(toolPath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 });

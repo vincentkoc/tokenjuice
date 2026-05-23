@@ -19,6 +19,7 @@
 - Add a beta agents.ge source-rule integration.
 - Add a beta AgentsMesh source-rule integration.
 - Add a beta Baz workspace-skill integration.
+- Add a beta Bito custom-guidelines integration.
 - Add a beta IBM Bob Shell context-file integration.
 - Add a beta Builder Projects rule integration.
 - Add a beta Codebuff instruction integration.

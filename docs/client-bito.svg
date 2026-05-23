@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Bito</title>
+  <desc id="desc">Bito integration icon</desc>
+  <rect width="96" height="96" rx="20" fill="#101828"/>
+  <path fill="#35C2FF" d="M25 22h27c12 0 20 7 20 17 0 6-3 11-8 14 7 3 11 9 11 17 0 13-10 20-24 20H25V22Zm16 14v12h10c5 0 8-2 8-6s-3-6-8-6H41Zm0 25v15h12c6 0 9-3 9-8s-3-7-9-7H41Z"/>
+</svg>

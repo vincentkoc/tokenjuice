@@ -21,6 +21,7 @@ export { doctorAnywhereAgentsInstructions, installAnywhereAgentsInstructions, un
 export { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "./hosts/augment/index.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorBazSkill, installBazSkill, uninstallBazSkill } from "./hosts/baz/index.js";
+export { doctorBitoGuidelines, installBitoGuidelines, uninstallBitoGuidelines } from "./hosts/bito/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
 export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "./hosts/bob/index.js";
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
@@ -266,6 +267,12 @@ export type {
   UninstallAvanteInstructionsResult,
 } from "./hosts/avante/index.js";
 export type { BazDoctorReport, BazSkillOptions, InstallBazSkillResult, UninstallBazSkillResult } from "./hosts/baz/index.js";
+export type {
+  BitoDoctorReport,
+  BitoGuidelinesOptions,
+  InstallBitoGuidelinesResult,
+  UninstallBitoGuidelinesResult,
+} from "./hosts/bito/index.js";
 export type {
   BobDoctorReport,
   BobInstructionsOptions,

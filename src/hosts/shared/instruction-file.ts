@@ -72,6 +72,18 @@ async function resolveBackupPath(filePath: string): Promise<string> {
   }
 }
 
+export async function assertSafeInstructionBackupPath(filePath: string): Promise<void> {
+  try {
+    await lstat(filePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return;
+    }
+    throw error;
+  }
+  await resolveBackupPath(filePath);
+}
+
 async function writeInstructionBackup(filePath: string, text: string): Promise<string> {
   while (true) {
     const backupPath = await resolveBackupPath(filePath);

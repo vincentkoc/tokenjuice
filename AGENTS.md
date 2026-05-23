@@ -44,6 +44,8 @@ This repo uses Vitest in Node (`vitest.config.ts`). Add or update tests with eve
 
 Host tests read environment variables (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `CURSOR_HOME`, `PI_CODING_AGENT_DIR`, `OPENCODE_CONFIG_DIR`, `TOKENJUICE_CURSOR_SHELL`, `SHELL`, `HOME`, `PATH`, `process.platform`). Any new host suite must snapshot and restore them; follow the existing files in [test/hosts/](test/hosts/) as the pattern.
 
+For non-trivial code changes, run `$autoreview` or `.agents/skills/autoreview/scripts/autoreview --mode branch --base origin/main` before handoff and address accepted/actionable findings.
+
 ## Further reading
 
 In-repo docs (link, don't duplicate):

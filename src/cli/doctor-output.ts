@@ -21,6 +21,7 @@ function getIntegrationPath(report: IntegrationDoctorReport): string {
     getStringField(report, "hintsPath") ??
     getStringField(report, "rulePath") ??
     getStringField(report, "skillPath") ??
+    getStringField(report, "promptPath") ??
     getStringField(report, "configPath") ??
     getStringField(report, "steeringPath") ??
     getStringField(report, "conventionPath") ??

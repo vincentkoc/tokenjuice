@@ -51,6 +51,7 @@ export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./
 export { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallDeepAgentsInstructions } from "./hosts/deepagents/index.js";
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "./hosts/dot-agents/index.js";
+export { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "./hosts/docker-agent/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
@@ -269,6 +270,12 @@ export type {
   InstallDotAgentsRuleResult,
   UninstallDotAgentsRuleResult,
 } from "./hosts/dot-agents/index.js";
+export type {
+  DockerAgentDoctorReport,
+  DockerAgentPromptOptions,
+  InstallDockerAgentPromptResult,
+  UninstallDockerAgentPromptResult,
+} from "./hosts/docker-agent/index.js";
 export type {
   DroidDoctorReport,
   DroidHookCommandOptions,

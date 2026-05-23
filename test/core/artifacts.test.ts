@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, normalizeArtifactSource, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -186,5 +186,12 @@ describe("artifacts", () => {
 
     expect(metadata[0]?.id).toBe(metadataRef.id);
     expect(metadata[0]?.metadata.source).toBe("codex");
+  });
+
+  it("normalizes Grok Build separately from Grok CLI", () => {
+    expect(normalizeArtifactSource("grok-build")).toBe("grok-build");
+    expect(normalizeArtifactSource("Grok Build")).toBe("grok-build");
+    expect(normalizeArtifactSource("xai-grok-build")).toBe("grok-build");
+    expect(normalizeArtifactSource("grok-cli-post-tool-use")).toBe("grok-cli");
   });
 });

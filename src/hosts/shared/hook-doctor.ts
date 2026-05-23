@@ -15,6 +15,7 @@ import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorGooseHints } from "../goose/index.js";
+import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
@@ -48,6 +49,7 @@ import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
+import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
@@ -83,6 +85,7 @@ export type HookIntegrationDoctorReport = {
   droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   goose: GooseDoctorReport;
+  "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
   junie: JunieDoctorReport;
   kiro: KiroDoctorReport;
@@ -106,7 +109,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
+export type HookDoctorCommandOptions = AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DroidHookCommandOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QwenCodeHookCommandOptions & RulerRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -134,6 +137,7 @@ const hookDoctorIntegrationDoctors = {
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
+  "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
   kiro: () => doctorKiroSteering(),

@@ -1,0 +1,6 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Grok Build">
+  <rect width="96" height="96" rx="18" fill="#111827"/>
+  <path d="M25 47c0-14 11-24 26-24 8 0 15 3 20 8l-7 7c-3-3-8-5-13-5-9 0-16 6-16 14 0 9 6 15 16 15 7 0 12-3 14-9H50v-9h27v5c0 14-10 23-26 23-15 0-26-10-26-25Z" fill="#f8fafc"/>
+  <path d="M18 24h17v8H18v-8Zm0 40h17v8H18v-8Zm48-40h10v48H66V24Z" fill="#38bdf8"/>
+  <path d="M29 76h38v8H29z" fill="#a3e635"/>
+</svg>

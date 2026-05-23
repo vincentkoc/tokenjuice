@@ -41,6 +41,7 @@ beta integrations:
 | <img width="48px" src="docs/client-crush.svg" alt="Crush" /> | [Crush](https://github.com/charmbracelet/crush) | `tokenjuice install crush` | `.crush/skills/tokenjuice/SKILL.md` |
 | <img width="48px" src="docs/client-gemini.png" alt="Gemini" /> | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` |
 | <img width="48px" src="docs/client-goose.svg" alt="Goose" /> | [Goose](https://goose-docs.ai/) | `tokenjuice install goose` | `.goosehints` |
+| <img width="48px" src="docs/client-grok-build.svg" alt="Grok Build" /> | [Grok Build](https://docs.x.ai/build/overview) | `tokenjuice install grok-build` | `AGENTS.md` |
 | <img width="48px" src="docs/client-grok-cli.svg" alt="Grok CLI" /> | [Grok CLI](https://github.com/superagent-ai/grok-cli) | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` |
 | <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot coding agent" /> | [GitHub Copilot coding agent](https://docs.github.com/en/copilot/using-github-copilot/coding-agent) | `tokenjuice install copilot-agent` | `.github/hooks/tokenjuice-agent.json` |
 | <img width="48px" src="docs/client-junie.svg" alt="Junie" /> | [Junie](https://junie.jetbrains.com/docs/junie-cli-usage.html) | `tokenjuice install junie` | `.junie/AGENTS.md` |
@@ -74,8 +75,8 @@ then:
 ```bash
 tokenjuice --help
 tokenjuice --version
-tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice uninstall [aider|amp|antigravity|augment|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice uninstall [aider|amp|antigravity|augment|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 ```
 
 OpenClaw support is bundled on the OpenClaw side. Do not run
@@ -97,9 +98,9 @@ tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
-tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
-tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed] --local
-tokenjuice uninstall [aider|amp|antigravity|augment|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
+tokenjuice install [aider|amp|antigravity|augment|avante|codex|claude-code|cline|codebuddy|continue|copilot-agent|crush|cursor|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|pi|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed] --local
+tokenjuice uninstall [aider|amp|antigravity|augment|avante|codex|cline|continue|copilot-agent|crush|droid|gemini-cli|goose|grok-build|grok-cli|junie|kiro|kilo|openhands|open-interpreter|openwebui|opencode|plandex|qwen-code|roo|ruler|vscode-copilot|windsurf|copilot-cli|zed]
 tokenjuice ls
 tokenjuice cat <artifact-id>
 tokenjuice verify
@@ -163,6 +164,7 @@ direct payload:
 - [Cursor integration](docs/cursor-integration.md)
 - [CodeBuddy integration](docs/codebuddy-integration.md)
 - [Goose integration](docs/goose-integration.md)
+- [Grok Build integration](docs/grok-build-integration.md)
 - [Grok CLI integration](docs/grok-cli-integration.md)
 - [Kiro integration](docs/kiro-integration.md)
 - [Kilo Code integration](docs/kilo-integration.md)

@@ -1,3 +1,4 @@
+import { doctorAdalInstructions } from "../adal/index.js";
 import { doctorAiderConvention } from "../aider/index.js";
 import { doctorAgentLayerInstructions } from "../agent-layer/index.js";
 import { doctorAgentloomRule } from "../agentloom/index.js";
@@ -62,6 +63,7 @@ import { doctorWindsurfRule } from "../windsurf/index.js";
 import { doctorZedInstructions } from "../zed/index.js";
 import { doctorZencoderRule } from "../zencoder/index.js";
 
+import type { AdalDoctorReport, AdalInstructionsOptions } from "../adal/index.js";
 import type { AiderDoctorReport } from "../aider/index.js";
 import type { AgentLayerDoctorReport, AgentLayerInstructionsOptions } from "../agent-layer/index.js";
 import type { AgentloomDoctorReport, AgentloomRuleOptions } from "../agentloom/index.js";
@@ -129,6 +131,7 @@ import type { ZencoderDoctorReport, ZencoderRuleOptions } from "../zencoder/inde
 export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
+  adal: AdalDoctorReport;
   aider: AiderDoctorReport;
   "agent-layer": AgentLayerDoctorReport;
   agentloom: AgentloomDoctorReport;
@@ -199,7 +202,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AgentLayerInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AgentLayerInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & DeepAgentsInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -211,6 +214,7 @@ type HookDoctorIntegrationDoctors = {
 };
 
 const hookDoctorIntegrationDoctors = {
+  adal: (options) => doctorAdalInstructions(undefined, getHookCommandOptions(options)),
   aider: () => doctorAiderConvention(),
   "agent-layer": (options) => doctorAgentLayerInstructions(undefined, getHookCommandOptions(options)),
   agentloom: (options) => doctorAgentloomRule(undefined, getHookCommandOptions(options)),

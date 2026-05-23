@@ -53,6 +53,7 @@ import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiH
 import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import { doctorMistralVibeInstructions, installMistralVibeInstructions, uninstallMistralVibeInstructions } from "../hosts/mistral-vibe/index.js";
+import { doctorMuxHook, installMuxHook, runMuxPostToolUseHook, uninstallMuxHook } from "../hosts/mux/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -169,6 +170,7 @@ function printUsage(): void {
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install mistral-vibe",
+      "  tokenjuice install mux [--local]",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
@@ -218,6 +220,7 @@ function printUsage(): void {
       "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall mistral-vibe",
+      "  tokenjuice uninstall mux",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
@@ -241,7 +244,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1203,6 +1206,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "mux") {
+    const result = await installMuxHook(undefined, { local: args.local });
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Hook", value: result.hookPath },
+      { label: "Command", value: result.command },
+      { label: "Beta", value: "project-local tool_post hook; compacted context is injected alongside original output" },
+      { label: "Verify", value: `tokenjuice doctor mux${args.local ? " --local" : ""}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("mux", "hook", details));
+    return 0;
+  }
+
   if (target === "warp") {
     const result = await installWarpInstructions();
     if (args.format === "json") {
@@ -1631,7 +1655,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2001,6 +2025,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "mux") {
+    const result = await uninstallMuxHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed mux hook: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`hook path: ${result.hookPath}\n`);
+    process.stdout.write("enable: tokenjuice install mux\n");
+    return 0;
+  }
+
   if (target === "warp") {
     const result = await uninstallWarpInstructions();
     if (args.format === "json") {
@@ -2274,7 +2311,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3692,6 +3729,42 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     return report.status === "broken" ? 1 : 0;
   }
 
+  if (args.positionals[0] === "mux") {
+    const report = await doctorMuxHook(undefined, { local: args.local });
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`hook path: ${report.hookPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
   if (args.positionals[0] === "warp") {
     const report = await doctorWarpInstructions();
 
@@ -4175,6 +4248,8 @@ async function main(): Promise<number> {
       return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "kimi-post-tool-use":
       return await runKimiPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "mux-post-tool-use":
+      return await runMuxPostToolUseHook();
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
     case "qwen-code-post-tool-use":

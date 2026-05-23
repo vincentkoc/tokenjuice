@@ -31,6 +31,7 @@ import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorMistralVibeInstructions } from "../mistral-vibe/index.js";
+import { doctorMuxHook } from "../mux/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorOpenInterpreterInstructions } from "../open-interpreter/index.js";
 import { doctorOpenWebUITool } from "../openwebui/index.js";
@@ -83,6 +84,7 @@ import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js"
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
 import type { MistralVibeDoctorReport, MistralVibeInstructionsOptions } from "../mistral-vibe/index.js";
+import type { MuxDoctorReport, MuxHookCommandOptions } from "../mux/index.js";
 import type { OpenInterpreterDoctorReport, OpenInterpreterInstructionsOptions } from "../open-interpreter/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { OpenWebUIDoctorReport, OpenWebUIToolOptions } from "../openwebui/index.js";
@@ -137,6 +139,7 @@ export type HookIntegrationDoctorReport = {
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
   "mistral-vibe": MistralVibeDoctorReport;
+  mux: MuxDoctorReport;
   openhands: OpenHandsDoctorReport;
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
@@ -163,7 +166,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -207,6 +210,7 @@ const hookDoctorIntegrationDoctors = {
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),
   "mistral-vibe": (options) => doctorMistralVibeInstructions(undefined, getHookCommandOptions(options)),
+  mux: (options) => doctorMuxHook(undefined, getHookCommandOptions(options)),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),

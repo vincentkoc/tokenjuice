@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Mux</title>
+  <desc id="desc">Mux client mark for tokenjuice docs.</desc>
+  <rect width="64" height="64" rx="12" fill="#111827"/>
+  <path fill="#60a5fa" d="M12 16h9l11 14 11-14h9v32h-9V29L32 43 21 29v19h-9z"/>
+  <path fill="#34d399" d="M18 10h28v6H18zm0 38h28v6H18z"/>
+</svg>

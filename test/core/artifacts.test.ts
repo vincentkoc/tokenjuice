@@ -200,6 +200,7 @@ describe("artifacts", () => {
     expect(normalizeArtifactSource("xai-grok-build")).toBe("grok-build");
     expect(normalizeArtifactSource("grok-cli-post-tool-use")).toBe("grok-cli");
     expect(normalizeArtifactSource("kimi-post-tool-use")).toBe("kimi");
+    expect(normalizeArtifactSource("mux-post-tool-use")).toBe("mux");
     expect(normalizeArtifactSource("qoder")).toBe("qoder");
     expect(normalizeArtifactSource("vscode-copilot-pre-tool-use")).toBe("vscode-copilot");
   });

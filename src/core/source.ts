@@ -94,6 +94,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("kimi")) {
     return "kimi";
   }
+  if (source.startsWith("mux")) {
+    return "mux";
+  }
   if (source.startsWith("ruler")) {
     return "ruler";
   }

@@ -173,6 +173,7 @@ install host wiring when tokenjuice can own it directly:
 tokenjuice install codex
 tokenjuice install claude-code
 tokenjuice install codebuddy
+tokenjuice install codebuff
 tokenjuice install amazon-q
 tokenjuice install antigravity
 tokenjuice install augment
@@ -210,6 +211,7 @@ tokenjuice doctor antigravity
 tokenjuice doctor augment
 tokenjuice doctor bob
 tokenjuice doctor builder
+tokenjuice doctor codebuff
 tokenjuice doctor crush
 tokenjuice doctor devin
 tokenjuice doctor firebase-studio
@@ -257,6 +259,7 @@ supported host hooks:
 | Builder | `tokenjuice install builder` | `.builder/rules/tokenjuice.mdc` | ✴️ Beta. Installs an always-applied Builder Projects rule file that tells Builder and Fusion to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Builder configuration files do not intercept tool output; see `docs/builder-integration.md` |
 | Claude Code | `tokenjuice install claude-code` | `~/.claude/settings.json` | Uses `PreToolUse` Bash input rewriting to route commands through `tokenjuice wrap` without bypassing Claude Code's own approval prompt; preserves unrelated hooks and migrates older Tokenjuice `PostToolUse` entries; `tokenjuice install claude-code --local` is available for repo-local verification |
 | Cline | `tokenjuice install cline` | `~/Documents/Cline/Hooks/tokenjuice-post-tool-use` | ✴️ Beta. Installs a global `PostToolUse` hook script for `execute_command`; enable it in Cline's Hooks tab after install; compacted context is injected through `contextModification`; `tokenjuice install cline --local` is available for repo-local verification; see `docs/cline-integration.md` |
+| Codebuff | `tokenjuice install codebuff` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited project instruction block into the current git/project root that tells Codebuff to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Codebuff instruction files do not intercept tool output; see `docs/codebuff-integration.md` |
 | CodeBuddy (Linux/macOS/WSL) | `tokenjuice install codebuddy` | `~/.codebuddy/settings.json` | Uses `PreToolUse` shell input rewriting (same pattern as Cursor) to route Bash commands through `tokenjuice wrap`; preserves unrelated hooks that share a matcher group with the tokenjuice entry; `tokenjuice install codebuddy --local` is available for repo-local verification; native Windows shell interception is intentionally blocked for now; see `docs/codebuddy-integration.md` |
 | Codex CLI | `tokenjuice install codex` | `~/.codex/hooks.json` | `tokenjuice install codex --local` is available for repo-local verification |
 | Continue | `tokenjuice install continue` | `.continue/rules/tokenjuice.md` | ✴️ Beta. Installs a workspace rule that tells Continue agents to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Continue rules do not intercept tool output; see `docs/continue-integration.md` |

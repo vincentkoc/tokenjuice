@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Goose</title>
+  <desc id="desc">Simple Goose integration mark</desc>
+  <rect width="96" height="96" rx="18" fill="#f8fafc"/>
+  <path d="M31 57c0-15 9-27 24-27 9 0 16 5 20 12" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M26 62c12 8 27 10 42 4" fill="none" stroke="#0f766e" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="62" cy="36" r="4" fill="#0f172a"/>
+  <path d="M74 42l12 2-11 7" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -35,6 +35,7 @@ export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./host
 export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
@@ -135,6 +136,12 @@ export type {
   InstallGeminiCliHookResult,
   UninstallGeminiCliHookResult,
 } from "./hosts/gemini-cli/index.js";
+export type {
+  GooseDoctorReport,
+  GooseHintsOptions,
+  InstallGooseHintsResult,
+  UninstallGooseHintsResult,
+} from "./hosts/goose/index.js";
 export type {
   GrokCliDoctorReport,
   GrokCliHookCommandOptions,

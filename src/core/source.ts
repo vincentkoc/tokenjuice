@@ -37,6 +37,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
   if (source.startsWith("grok")) {
     return "grok-cli";
   }
+  if (source.startsWith("goose")) {
+    return "goose";
+  }
   if (source.startsWith("openclaw")) {
     return "openclaw";
   }

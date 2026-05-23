@@ -46,6 +46,7 @@ import { doctorGooseHints, installGooseHints, uninstallGooseHints } from "../hos
 import { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "../hosts/grok-build/index.js";
 import { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
 import { doctorGptmeInstructions, installGptmeInstructions, uninstallGptmeInstructions } from "../hosts/gptme/index.js";
+import { doctorJetBrainsAiRule, installJetBrainsAiRule, uninstallJetBrainsAiRule } from "../hosts/jetbrains-ai/index.js";
 import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
 import { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "../hosts/jules/index.js";
 import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "../hosts/kimi/index.js";
@@ -160,6 +161,7 @@ function printUsage(): void {
       "  tokenjuice install grok-build",
       "  tokenjuice install grok-cli [--local]",
       "  tokenjuice install gptme",
+      "  tokenjuice install jetbrains-ai",
       "  tokenjuice install junie",
       "  tokenjuice install jules",
       "  tokenjuice install kimi [--local]",
@@ -207,6 +209,7 @@ function printUsage(): void {
       "  tokenjuice uninstall grok-build",
       "  tokenjuice uninstall grok-cli",
       "  tokenjuice uninstall gptme",
+      "  tokenjuice uninstall jetbrains-ai",
       "  tokenjuice uninstall junie",
       "  tokenjuice uninstall jules",
       "  tokenjuice uninstall kimi",
@@ -235,7 +238,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -1052,6 +1055,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "jetbrains-ai") {
+    const result = await installJetBrainsAiRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "rule-based guidance; JetBrains AI Assistant still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor jetbrains-ai" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("jetbrains-ai", "rule", details));
+    return 0;
+  }
+
   if (target === "junie") {
     const result = await installJunieInstructions();
     if (args.format === "json") {
@@ -1585,7 +1608,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1859,6 +1882,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed goose hints: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`hints path: ${result.hintsPath}\n`);
     process.stdout.write("enable: tokenjuice install goose\n");
+    return 0;
+  }
+
+  if (target === "jetbrains-ai") {
+    const result = await uninstallJetBrainsAiRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed jetbrains-ai rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install jetbrains-ai\n");
     return 0;
   }
 
@@ -2202,7 +2238,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3120,6 +3156,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`hints path: ${report.hintsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "jetbrains-ai") {
+    const report = await doctorJetBrainsAiRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

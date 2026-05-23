@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">JetBrains AI Assistant</title>
+  <desc id="desc">JetBrains AI Assistant client mark for tokenjuice docs.</desc>
+  <rect width="64" height="64" rx="12" fill="#111111"/>
+  <path fill="#08d9d6" d="M8 8h28L8 36z"/>
+  <path fill="#ff2e63" d="M28 8h28L28 36z"/>
+  <path fill="#f9ed69" d="M8 36h28L8 56z"/>
+  <path fill="#7c3aed" d="M28 36h28L28 56z"/>
+  <rect x="17" y="17" width="30" height="30" fill="#111111"/>
+  <path fill="#ffffff" d="M22 41h16v3H22zM22 22h4v13h-4zm7 0h13v4h-4v9h-4v-9h-5z"/>
+</svg>

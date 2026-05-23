@@ -7,6 +7,7 @@ export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallA
 export { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "./hosts/agentlink/index.js";
 export { doctorAgentloomRule, installAgentloomRule, uninstallAgentloomRule } from "./hosts/agentloom/index.js";
 export { doctorAgentsCliMemory, installAgentsCliMemory, uninstallAgentsCliMemory } from "./hosts/agents-cli/index.js";
+export { doctorAgentsMdInstructions, installAgentsMdInstructions, uninstallAgentsMdInstructions } from "./hosts/agents-md/index.js";
 export { doctorAgentsGeRule, installAgentsGeRule, uninstallAgentsGeRule } from "./hosts/agentsge/index.js";
 export { doctorAgentsMeshRule, installAgentsMeshRule, uninstallAgentsMeshRule } from "./hosts/agentsmesh/index.js";
 export { doctorAmazonQRule, installAmazonQRule, uninstallAmazonQRule } from "./hosts/amazon-q/index.js";
@@ -160,6 +161,12 @@ export type {
   InstallAgentsCliMemoryResult,
   UninstallAgentsCliMemoryResult,
 } from "./hosts/agents-cli/index.js";
+export type {
+  AgentsMdDoctorReport,
+  AgentsMdInstructionsOptions,
+  InstallAgentsMdInstructionsResult,
+  UninstallAgentsMdInstructionsResult,
+} from "./hosts/agents-md/index.js";
 export type {
   AgentsGeDoctorReport,
   AgentsGeRuleOptions,

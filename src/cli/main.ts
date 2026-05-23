@@ -19,6 +19,7 @@ import { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallA
 import { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "../hosts/agentlink/index.js";
 import { doctorAgentloomRule, installAgentloomRule, uninstallAgentloomRule } from "../hosts/agentloom/index.js";
 import { doctorAgentsCliMemory, installAgentsCliMemory, uninstallAgentsCliMemory } from "../hosts/agents-cli/index.js";
+import { doctorAgentsMdInstructions, installAgentsMdInstructions, uninstallAgentsMdInstructions } from "../hosts/agents-md/index.js";
 import { doctorAgentsGeRule, installAgentsGeRule, uninstallAgentsGeRule } from "../hosts/agentsge/index.js";
 import { doctorAgentsMeshRule, installAgentsMeshRule, uninstallAgentsMeshRule } from "../hosts/agentsmesh/index.js";
 import { doctorAmazonQRule, installAmazonQRule, uninstallAmazonQRule } from "../hosts/amazon-q/index.js";
@@ -162,6 +163,7 @@ function printUsage(): void {
       "  tokenjuice install agentlink",
       "  tokenjuice install agentloom",
       "  tokenjuice install agents-cli",
+      "  tokenjuice install agents-md",
       "  tokenjuice install agentsge",
       "  tokenjuice install agentsmesh",
       "  tokenjuice install amazon-q",
@@ -233,6 +235,7 @@ function printUsage(): void {
       "  tokenjuice uninstall agentlink",
       "  tokenjuice uninstall agentloom",
       "  tokenjuice uninstall agents-cli",
+      "  tokenjuice uninstall agents-md",
       "  tokenjuice uninstall agentsge",
       "  tokenjuice uninstall agentsmesh",
       "  tokenjuice uninstall amazon-q",
@@ -298,7 +301,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aider|agent-layer|agentlink|agentloom|agents-cli|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|kimi|kiro|kilo|mini-swe-agent|swe-agent|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aider|agent-layer|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codegen|codebuddy|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|kimi|kiro|kilo|mini-swe-agent|swe-agent|mistral-vibe|mux|ona|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -744,6 +747,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       details.push({ label: "Backup", value: result.backupPath });
     }
     process.stdout.write(formatInstallSuccess("agents-cli", "memory", details));
+    return 0;
+  }
+
+  if (target === "agents-md" || target === "agentsmd") {
+    const result = await installAgentsMdInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Instructions", value: result.instructionsPath },
+      { label: "Beta", value: "generic AGENTS.md guidance; the active agent still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor agents-md" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("agents-md", "instructions", details));
     return 0;
   }
 
@@ -2082,7 +2105,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codegen, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -2166,6 +2189,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`memory path: ${result.instructionsPath}\n`);
     process.stdout.write(`sync: ${result.syncCommand}\n`);
     process.stdout.write("enable: tokenjuice install agents-cli\n");
+    return 0;
+  }
+
+  if (target === "agents-md" || target === "agentsmd") {
+    const result = await uninstallAgentsMdInstructions();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed agents-md instructions: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+    process.stdout.write("enable: tokenjuice install agents-md\n");
     return 0;
   }
 
@@ -2979,7 +3015,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aider, agent-layer, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, bob, builder, codex, cline, codebuff, codegen, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, kimi, kiro, kilo, mini-swe-agent, swe-agent, mistral-vibe, mux, ona, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3314,6 +3350,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
     process.stdout.write(`repair: ${report.fixCommand}\n`);
     process.stdout.write(`sync: ${report.syncCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "agents-md" || args.positionals[0] === "agentsmd") {
+    const report = await doctorAgentsMdInstructions();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
     return report.status === "broken" ? 1 : 0;
   }
 

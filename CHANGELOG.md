@@ -11,6 +11,7 @@
 - Add a beta Amazon Q Developer CLI workspace-rule integration.
 - Add a beta Agentloom source-rule integration.
 - Add a beta agents-cli shared-memory integration.
+- Add a beta AGENTS.md instruction integration.
 - Add a beta agents.ge source-rule integration.
 - Add a beta AgentsMesh source-rule integration.
 - Add a beta IBM Bob Shell context-file integration.

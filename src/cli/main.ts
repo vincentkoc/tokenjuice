@@ -31,6 +31,7 @@ import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "..
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
 import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
+import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import {
   doctorOpenCodeExtension,
@@ -109,6 +110,7 @@ function printUsage(): void {
       "  tokenjuice install droid [--local]",
       "  tokenjuice install gemini-cli [--local]",
       "  tokenjuice install junie",
+      "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install pi [--local]",
@@ -126,6 +128,7 @@ function printUsage(): void {
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall junie",
+      "  tokenjuice uninstall kiro",
       "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
@@ -138,7 +141,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kiro|kilo|openhands|pi|opencode|roo|vscode-copilot|windsurf|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -666,6 +669,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "kiro") {
+    const result = await installKiroSteering();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Steering", value: result.steeringPath },
+      { label: "Beta", value: "steering-based guidance; Kiro still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor kiro" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("kiro", "steering", details));
+    return 0;
+  }
+
   if (target === "kilo") {
     const result = await installKiloRule();
     if (args.format === "json") {
@@ -875,7 +898,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kiro, kilo, openhands, pi, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -971,6 +994,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed junie instructions: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
     process.stdout.write("enable: tokenjuice install junie\n");
+    return 0;
+  }
+
+  if (target === "kiro") {
+    const result = await uninstallKiroSteering();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed kiro steering: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`steering path: ${result.steeringPath}\n`);
+    process.stdout.write("enable: tokenjuice install kiro\n");
     return 0;
   }
 
@@ -1093,7 +1129,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kilo, openhands, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kiro, kilo, openhands, opencode, roo, vscode-copilot, windsurf, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1648,6 +1684,32 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 
     process.stdout.write(`rule path: ${report.rulePath}\n`);
     process.stdout.write(`config path: ${report.configPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "kiro") {
+    const report = await doctorKiroSteering();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`steering path: ${report.steeringPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

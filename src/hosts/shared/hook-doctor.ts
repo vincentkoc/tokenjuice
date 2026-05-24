@@ -10,6 +10,7 @@ import { doctorCursorHook } from "../cursor/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
+import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorPiExtension } from "../pi/index.js";
@@ -30,6 +31,7 @@ import type { CursorDoctorReport } from "../cursor/index.js";
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
+import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { PiDoctorReport } from "../pi/index.js";
@@ -52,6 +54,7 @@ export type HookIntegrationDoctorReport = {
   droid: DroidDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   junie: JunieDoctorReport;
+  kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
   openhands: OpenHandsDoctorReport;
   pi: PiDoctorReport;
@@ -90,6 +93,7 @@ const hookDoctorIntegrationDoctors = {
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
+  kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),

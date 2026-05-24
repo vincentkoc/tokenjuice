@@ -93,7 +93,7 @@ describe("JetBrains AI Assistant rules", () => {
     expect(result.rulePath).toBe(rulePath);
     expect(result.backupPath).toBeUndefined();
     expect(rule).toContain("<!-- tokenjuice:jetbrains-ai-rule -->");
-    expect(rule).not.toContain("<!-- tokenjuice:jetbrains-ai-restore-backup -->");
+    expect(rule).not.toContain("<!-- tokenjuice:jetbrains-ai-restore-backup=");
     expect(rule).toContain("tokenjuice terminal output compaction");
     expect(rule).toContain("JetBrains AI Assistant chat");
     expect(rule).toContain("tokenjuice wrap -- <command>");
@@ -112,7 +112,7 @@ describe("JetBrains AI Assistant rules", () => {
 
     expect(result.backupPath).toBe(`${rulePath}.bak`);
     await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toContain("keep this");
-    expect(rule).toContain("<!-- tokenjuice:jetbrains-ai-restore-backup -->");
+    expect(rule).toContain("<!-- tokenjuice:jetbrains-ai-restore-backup=.bak -->");
     expect(rule).toContain("tokenjuice terminal output compaction");
     expect(rule).not.toContain("keep this");
   });
@@ -185,12 +185,37 @@ describe("JetBrains AI Assistant rules", () => {
     await mkdir(join(home, ".aiassistant", "rules"), { recursive: true });
     await writeFile(rulePath, "# custom local rule\n", "utf8");
     await installJetBrainsAiRule(rulePath);
-    await expect(readFile(rulePath, "utf8")).resolves.toContain("<!-- tokenjuice:jetbrains-ai-restore-backup -->");
+    await expect(readFile(rulePath, "utf8")).resolves.toContain("<!-- tokenjuice:jetbrains-ai-restore-backup=.bak -->");
 
     const removed = await uninstallJetBrainsAiRule(rulePath);
 
     expect(removed.removed).toBe(true);
     await expect(readFile(rulePath, "utf8")).resolves.toContain("custom local rule");
+  });
+
+  it("restores legacy pre-tokenjuice backups on uninstall", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".aiassistant", "rules", "tokenjuice.md");
+    await mkdir(join(home, ".aiassistant", "rules"), { recursive: true });
+    await writeFile(
+      rulePath,
+      [
+        "<!-- tokenjuice:jetbrains-ai-rule -->",
+        "<!-- tokenjuice:jetbrains-ai-restore-backup -->",
+        "",
+        "# tokenjuice terminal output compaction",
+        "",
+        "- When running terminal commands from JetBrains AI Assistant chat, prefer `tokenjuice wrap -- <command>`.",
+        "- Use `tokenjuice wrap --raw -- <command>` when exact output is required.",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(`${rulePath}.bak`, "# legacy custom rule\n", "utf8");
+
+    const removed = await uninstallJetBrainsAiRule(rulePath);
+
+    expect(removed.removed).toBe(true);
+    await expect(readFile(rulePath, "utf8")).resolves.toContain("legacy custom rule");
   });
 
   it("does not restore a stale backup tokenjuice did not create", async () => {
@@ -205,6 +230,57 @@ describe("JetBrains AI Assistant rules", () => {
     expect(removed.removed).toBe(true);
     await expect(access(rulePath)).rejects.toMatchObject({ code: "ENOENT" });
     await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toContain("stale local rule");
+  });
+
+  it("does not overwrite an existing user backup when preserving a rule file", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".aiassistant", "rules", "tokenjuice.md");
+    await mkdir(join(home, ".aiassistant", "rules"), { recursive: true });
+    await writeFile(rulePath, "# custom local rule\n", "utf8");
+    await writeFile(`${rulePath}.bak`, "# user backup\n", "utf8");
+
+    const result = await installJetBrainsAiRule(rulePath);
+    const rule = await readFile(rulePath, "utf8");
+
+    expect(result.backupPath).toBe(`${rulePath}.tokenjuice.bak`);
+    await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toContain("user backup");
+    await expect(readFile(`${rulePath}.tokenjuice.bak`, "utf8")).resolves.toContain("custom local rule");
+    expect(rule).toContain("<!-- tokenjuice:jetbrains-ai-restore-backup=.tokenjuice.bak -->");
+
+    const removed = await uninstallJetBrainsAiRule(rulePath);
+
+    expect(removed.removed).toBe(true);
+    await expect(readFile(rulePath, "utf8")).resolves.toContain("custom local rule");
+    await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toContain("user backup");
+    await expect(access(`${rulePath}.tokenjuice.bak`)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("upgrades legacy restore markers without clobbering their backups", async () => {
+    const home = await createTempDir();
+    const rulePath = join(home, ".aiassistant", "rules", "tokenjuice.md");
+    await mkdir(join(home, ".aiassistant", "rules"), { recursive: true });
+    await writeFile(
+      rulePath,
+      [
+        "<!-- tokenjuice:jetbrains-ai-rule -->",
+        "<!-- tokenjuice:jetbrains-ai-restore-backup -->",
+        "",
+        "# tokenjuice terminal output compaction",
+        "",
+        "- old generated guidance",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(`${rulePath}.bak`, "# legacy custom rule\n", "utf8");
+
+    const result = await installJetBrainsAiRule(rulePath);
+    const rule = await readFile(rulePath, "utf8");
+
+    expect(result.backupPath).toBe(`${rulePath}.tokenjuice.bak`);
+    await expect(readFile(`${rulePath}.bak`, "utf8")).resolves.toContain("legacy custom rule");
+    await expect(readFile(`${rulePath}.tokenjuice.bak`, "utf8")).resolves.toContain("old generated guidance");
+    expect(rule).toContain("<!-- tokenjuice:jetbrains-ai-restore-backup=.bak -->");
+    expect(rule).not.toContain("<!-- tokenjuice:jetbrains-ai-restore-backup -->");
   });
 
   it("uses JETBRAINS_AI_PROJECT_DIR for the default rule file", async () => {

@@ -24,6 +24,7 @@
 
 ### Fixes
 
+- Preserve existing JetBrains AI Assistant `.bak` rule backups when installing over a custom rule.
 - Normalize stored artifact sources for Copilot, Droid, and VS Code Copilot hook adapters.
 
 ## 0.7.1 - 2026-05-17

@@ -19,7 +19,8 @@ repository in scripts or tests.
 
 If the target rule file already exists, tokenjuice backs it up before replacing
 it. `tokenjuice uninstall jetbrains-ai` only removes tokenjuice-managed rule
-files; when a pre-tokenjuice backup exists, uninstall restores that backup.
+files; when a pre-tokenjuice backup exists, uninstall restores the backup
+recorded in the tokenjuice rule. Existing user `.bak` files are left untouched.
 
 The installed rule tells JetBrains AI Assistant to use:
 

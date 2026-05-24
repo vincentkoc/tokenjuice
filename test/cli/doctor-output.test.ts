@@ -46,7 +46,7 @@ describe("formatHookDoctorReport", () => {
       "- configured command: tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice",
       "- repair: tokenjuice install claude-code",
       "",
-      "available integrations: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, openhands, pi, roo, vscode-copilot, zed, copilot-cli",
+      "available integrations: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, roo, vscode-copilot, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));
@@ -71,7 +71,7 @@ describe("formatHookDoctorReport", () => {
       "hook health: disabled",
       "no tokenjuice hooks installed",
       "",
-      "available integrations: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, openhands, pi, roo, vscode-copilot, zed, copilot-cli",
+      "available integrations: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, roo, vscode-copilot, zed, copilot-cli",
       "enable another integration: tokenjuice install <host>",
       "",
     ].join("\n"));

@@ -31,6 +31,7 @@ import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "..
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
 import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "../hosts/junie/index.js";
+import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -107,6 +108,7 @@ function printUsage(): void {
       "  tokenjuice install droid [--local]",
       "  tokenjuice install gemini-cli [--local]",
       "  tokenjuice install junie",
+      "  tokenjuice install kilo",
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install pi [--local]",
       "  tokenjuice install opencode [--local]",
@@ -122,6 +124,7 @@ function printUsage(): void {
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall junie",
+      "  tokenjuice uninstall kilo",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall roo",
@@ -132,7 +135,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|openhands|pi|opencode|roo|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|avante|codex|claude-code|cline|codebuddy|continue|cursor|droid|gemini-cli|junie|kilo|openhands|pi|opencode|roo|vscode-copilot|zed|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -660,6 +663,30 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "kilo") {
+    const result = await installKiloRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Config", value: result.configPath },
+      { label: "Beta", value: "rule-based guidance; Kilo Code still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor kilo" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    if (result.configBackupPath) {
+      details.push({ label: "Config backup", value: result.configBackupPath });
+    }
+    process.stdout.write(formatInstallSuccess("kilo", "rule", details));
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await installOpenHandsHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -825,7 +852,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, openhands, pi, opencode, roo, vscode-copilot, copilot-cli, zed");
+  throw new Error("install currently supports: aider, avante, codex, claude-code, cline, codebuddy, continue, cursor, droid, gemini-cli, junie, kilo, openhands, pi, opencode, roo, vscode-copilot, copilot-cli, zed");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -924,6 +951,21 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "kilo") {
+    const result = await uninstallKiloRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed kilo rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write(`config path: ${result.configPath}\n`);
+    process.stdout.write(`removed kilo config entry: ${result.configUpdated ? "yes" : "no"}\n`);
+    process.stdout.write("enable: tokenjuice install kilo\n");
+    return 0;
+  }
+
   if (target === "openhands") {
     const result = await uninstallOpenHandsHook();
     if (args.format === "json") {
@@ -1015,7 +1057,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, openhands, opencode, roo, vscode-copilot, copilot-cli, zed");
+  throw new Error("uninstall currently supports: aider, avante, codex, cline, continue, droid, gemini-cli, junie, kilo, openhands, opencode, roo, vscode-copilot, copilot-cli, zed");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1543,6 +1585,33 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     }
 
     process.stdout.write(`rules path: ${report.instructionsPath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "kilo") {
+    const report = await doctorKiloRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
+    process.stdout.write(`config path: ${report.configPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");

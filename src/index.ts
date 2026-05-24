@@ -4,6 +4,7 @@ export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
 export { doctorAetherPrompt, installAetherPrompt, uninstallAetherPrompt } from "./hosts/aether/index.js";
+export { doctorAictlInstructions, installAictlInstructions, uninstallAictlInstructions } from "./hosts/aictl/index.js";
 export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallAgentLayerInstructions } from "./hosts/agent-layer/index.js";
 export { doctorAgentInitInstructions, installAgentInitInstructions, uninstallAgentInitInstructions } from "./hosts/agentinit/index.js";
 export { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "./hosts/agentlink/index.js";
@@ -235,6 +236,12 @@ export type {
   InstallAiderConventionResult,
   UninstallAiderConventionResult,
 } from "./hosts/aider/index.js";
+export type {
+  AictlDoctorReport,
+  AictlInstructionsOptions,
+  InstallAictlInstructionsResult,
+  UninstallAictlInstructionsResult,
+} from "./hosts/aictl/index.js";
 export type {
   AvanteDoctorReport,
   AvanteInstructionsOptions,

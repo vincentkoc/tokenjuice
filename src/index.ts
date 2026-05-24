@@ -29,6 +29,7 @@ export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallCl
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
+export { doctorCodeRabbitConfig, installCodeRabbitConfig, uninstallCodeRabbitConfig } from "./hosts/coderabbit/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
 export { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "./hosts/command-code/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
@@ -308,6 +309,12 @@ export type {
   InstallCoderAgentsSkillResult,
   UninstallCoderAgentsSkillResult,
 } from "./hosts/coder-agents/index.js";
+export type {
+  CodeRabbitConfigOptions,
+  CodeRabbitDoctorReport,
+  InstallCodeRabbitConfigResult,
+  UninstallCodeRabbitConfigResult,
+} from "./hosts/coderabbit/index.js";
 export type {
   CommandCodeDoctorReport,
   CommandCodeHookCommandOptions,

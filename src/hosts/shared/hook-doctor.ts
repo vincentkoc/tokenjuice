@@ -20,6 +20,7 @@ import { doctorDevinHook } from "../devin/index.js";
 import { doctorDroidHook } from "../droid/index.js";
 import { doctorFirebaseStudioRule } from "../firebase-studio/index.js";
 import { doctorGeminiCliHook } from "../gemini-cli/index.js";
+import { doctorGitLabDuoRule } from "../gitlab-duo/index.js";
 import { doctorGooseHints } from "../goose/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
@@ -73,6 +74,7 @@ import type { DevinDoctorReport, DevinHookCommandOptions } from "../devin/index.
 import type { DroidDoctorReport, DroidHookCommandOptions } from "../droid/index.js";
 import type { FirebaseStudioDoctorReport, FirebaseStudioRuleOptions } from "../firebase-studio/index.js";
 import type { GeminiCliDoctorReport } from "../gemini-cli/index.js";
+import type { GitLabDuoDoctorReport, GitLabDuoRuleOptions } from "../gitlab-duo/index.js";
 import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
@@ -128,6 +130,7 @@ export type HookIntegrationDoctorReport = {
   droid: DroidDoctorReport;
   "firebase-studio": FirebaseStudioDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
+  "gitlab-duo": GitLabDuoDoctorReport;
   goose: GooseDoctorReport;
   "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
@@ -166,7 +169,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -199,6 +202,7 @@ const hookDoctorIntegrationDoctors = {
   droid: (options) => doctorDroidHook(undefined, getHookCommandOptions(options)),
   "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
+  "gitlab-duo": (options) => doctorGitLabDuoRule(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),

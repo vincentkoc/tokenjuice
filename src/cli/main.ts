@@ -42,6 +42,7 @@ import { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDev
 import { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "../hosts/droid/index.js";
 import { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "../hosts/gemini-cli/index.js";
+import { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { doctorGooseHints, installGooseHints, uninstallGooseHints } from "../hosts/goose/index.js";
 import { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "../hosts/grok-build/index.js";
 import { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
@@ -159,6 +160,7 @@ function printUsage(): void {
       "  tokenjuice install droid [--local]",
       "  tokenjuice install firebase-studio",
       "  tokenjuice install gemini-cli [--local]",
+      "  tokenjuice install gitlab-duo",
       "  tokenjuice install goose",
       "  tokenjuice install grok-build",
       "  tokenjuice install grok-cli [--local]",
@@ -209,6 +211,7 @@ function printUsage(): void {
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall firebase-studio",
       "  tokenjuice uninstall gemini-cli",
+      "  tokenjuice uninstall gitlab-duo",
       "  tokenjuice uninstall goose",
       "  tokenjuice uninstall grok-build",
       "  tokenjuice uninstall grok-cli",
@@ -244,7 +247,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|aider|amazon-q|amp|antigravity|augment|avante|bob|builder|codex|claude-code|cline|codebuff|codebuddy|continue|copilot-agent|crush|cursor|devin|droid|firebase-studio|gemini-cli|gitlab-duo|goose|grok-build|grok-cli|gptme|jetbrains-ai|junie|jules|kimi|kiro|kilo|mistral-vibe|mux|openhands|open-interpreter|openwebui|pi|opencode|plandex|qoder|qwen-code|replit|roo|rovo|ruler|tabnine|trae|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -979,6 +982,26 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "gitlab-duo") {
+    const result = await installGitLabDuoRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    const details = [
+      { label: "Rule", value: result.rulePath },
+      { label: "Beta", value: "custom-rules guidance; GitLab Duo still owns command execution" },
+      { label: "Verify", value: "tokenjuice doctor gitlab-duo" },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess("gitlab-duo", "rule", details));
+    return 0;
+  }
+
   if (target === "grok-cli") {
     const result = await installGrokCliHook(undefined, { local: args.local });
     if (args.format === "json") {
@@ -1655,7 +1678,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, claude-code, cline, codebuff, codebuddy, continue, copilot-agent, crush, cursor, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, pi, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -1877,6 +1900,19 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
     process.stdout.write(`settings path: ${result.settingsPath}\n`);
     process.stdout.write("enable: tokenjuice install gemini-cli\n");
+    return 0;
+  }
+
+  if (target === "gitlab-duo") {
+    const result = await uninstallGitLabDuoRule();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed gitlab-duo rule: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`rule path: ${result.rulePath}\n`);
+    process.stdout.write("enable: tokenjuice install gitlab-duo\n");
     return 0;
   }
 
@@ -2311,7 +2347,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: aider, amazon-q, amp, antigravity, augment, avante, bob, builder, codex, cline, codebuff, continue, copilot-agent, crush, devin, droid, firebase-studio, gemini-cli, gitlab-duo, goose, grok-build, grok-cli, gptme, jetbrains-ai, junie, jules, kimi, kiro, kilo, mistral-vibe, mux, openhands, open-interpreter, openwebui, opencode, plandex, qoder, replit, qwen-code, roo, rovo, ruler, tabnine, trae, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -3104,6 +3140,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
     if (report.detectedCommand) {
       process.stdout.write(`configured command: ${report.detectedCommand}\n`);
     }
+    if (report.issues.length > 0) {
+      process.stdout.write("issues:\n");
+      for (const issue of report.issues) {
+        process.stdout.write(`- ${issue}\n`);
+      }
+    }
+    if (report.missingPaths.length > 0) {
+      process.stdout.write("missing paths:\n");
+      for (const path of report.missingPaths) {
+        process.stdout.write(`- ${path}\n`);
+      }
+    }
+    if (report.advisories.length > 0) {
+      process.stdout.write("advisories:\n");
+      for (const advisory of report.advisories) {
+        process.stdout.write(`- ${advisory}\n`);
+      }
+    }
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+    return report.status === "broken" ? 1 : 0;
+  }
+
+  if (args.positionals[0] === "gitlab-duo") {
+    const report = await doctorGitLabDuoRule();
+
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      return report.status === "broken" ? 1 : 0;
+    }
+
+    process.stdout.write(`rule path: ${report.rulePath}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {

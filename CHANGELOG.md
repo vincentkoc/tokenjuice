@@ -10,6 +10,7 @@
 - Add a beta Codebuff instruction integration.
 - Add a beta Devin for Terminal PreToolUse hook integration.
 - Add a beta Firebase Studio AI-rules integration.
+- Add a beta GitLab Duo custom-rules integration.
 - Add a beta gptme instruction integration.
 - Add a beta JetBrains AI Assistant project-rule integration.
 - Add a beta Jules instruction integration.

@@ -183,6 +183,7 @@ tokenjuice install crush
 tokenjuice install cursor
 tokenjuice install devin
 tokenjuice install firebase-studio
+tokenjuice install gitlab-duo
 tokenjuice install grok-build
 tokenjuice install grok-cli
 tokenjuice install gptme
@@ -218,6 +219,7 @@ tokenjuice doctor codebuff
 tokenjuice doctor crush
 tokenjuice doctor devin
 tokenjuice doctor firebase-studio
+tokenjuice doctor gitlab-duo
 tokenjuice doctor grok-build
 tokenjuice doctor grok-cli
 tokenjuice doctor gptme
@@ -275,6 +277,7 @@ supported host hooks:
 | Droid (Factory CLI) | `tokenjuice install droid` | `~/.factory/settings.json` | Uses a `PostToolUse` hook for the `Execute` tool to compact shell output before Droid sees it; preserves unrelated settings keys; `tokenjuice install droid --local` is available for repo-local verification |
 | Firebase Studio | `tokenjuice install firebase-studio` | `.idx/airules.md` | ✴️ Beta. Inserts a marker-delimited AI rules block that tells Gemini in Firebase chat to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Firebase Studio rules do not intercept command output; see `docs/firebase-studio-integration.md` |
 | Gemini CLI | `tokenjuice install gemini-cli` | `~/.gemini/settings.json` | ✴️ Beta. Uses an `AfterTool` hook for `run_shell_command` to compact shell output before Gemini CLI sees it; `tokenjuice install gemini-cli --local` is available for repo-local verification; see `docs/gemini-cli-integration.md` |
+| GitLab Duo Agent Platform | `tokenjuice install gitlab-duo` | `.gitlab/duo/chat-rules.md` | ✴️ Beta. Inserts a marker-delimited custom-rules block that tells GitLab Duo to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because GitLab Duo custom rules do not intercept command output; see `docs/gitlab-duo-integration.md` |
 | Goose | `tokenjuice install goose` | `.goosehints` | ✴️ Beta. Inserts a marker-delimited hints block that tells Goose to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Goose hints do not intercept tool output; restart the Goose session after install; see `docs/goose-integration.md` |
 | Grok Build | `tokenjuice install grok-build` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Grok Build to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Grok Build instructions do not intercept command output; see `docs/grok-build-integration.md` |
 | Grok CLI | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` | ✴️ Beta. Uses a user-level `PostToolUse` hook for the `bash` tool; compacted context is injected alongside the original output; `tokenjuice install grok-cli --local` is available for repo-local verification; see `docs/grok-cli-integration.md` |

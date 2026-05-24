@@ -43,6 +43,7 @@ export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDev
 export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "./hosts/gitlab-duo/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
@@ -204,6 +205,12 @@ export type {
   InstallGeminiCliHookResult,
   UninstallGeminiCliHookResult,
 } from "./hosts/gemini-cli/index.js";
+export type {
+  GitLabDuoDoctorReport,
+  GitLabDuoRuleOptions,
+  InstallGitLabDuoRuleResult,
+  UninstallGitLabDuoRuleResult,
+} from "./hosts/gitlab-duo/index.js";
 export type {
   GooseDoctorReport,
   GooseHintsOptions,

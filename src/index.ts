@@ -44,6 +44,7 @@ export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./host
 export { doctorGrokBuildInstructions, installGrokBuildInstructions, uninstallGrokBuildInstructions } from "./hosts/grok-build/index.js";
 export { doctorGrokCliHook, installGrokCliHook, runGrokCliPostToolUseHook, uninstallGrokCliHook } from "./hosts/grok-cli/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
+export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "./hosts/jules/index.js";
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
@@ -200,6 +201,12 @@ export type {
   JunieInstructionsOptions,
   UninstallJunieInstructionsResult,
 } from "./hosts/junie/index.js";
+export type {
+  InstallJulesInstructionsResult,
+  JulesDoctorReport,
+  JulesInstructionsOptions,
+  UninstallJulesInstructionsResult,
+} from "./hosts/jules/index.js";
 export type {
   InstallKimiHookResult,
   KimiDoctorReport,

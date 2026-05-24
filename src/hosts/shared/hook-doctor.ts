@@ -21,6 +21,7 @@ import { doctorGooseHints } from "../goose/index.js";
 import { doctorGrokBuildInstructions } from "../grok-build/index.js";
 import { doctorGrokCliHook } from "../grok-cli/index.js";
 import { doctorJunieInstructions } from "../junie/index.js";
+import { doctorJulesInstructions } from "../jules/index.js";
 import { doctorKimiHook } from "../kimi/index.js";
 import { doctorKiroSteering } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
@@ -64,6 +65,7 @@ import type { GooseDoctorReport, GooseHintsOptions } from "../goose/index.js";
 import type { GrokBuildDoctorReport, GrokBuildInstructionsOptions } from "../grok-build/index.js";
 import type { GrokCliDoctorReport, GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import type { JunieDoctorReport } from "../junie/index.js";
+import type { JulesDoctorReport, JulesInstructionsOptions } from "../jules/index.js";
 import type { KimiDoctorReport, KimiHookCommandOptions } from "../kimi/index.js";
 import type { KiroDoctorReport } from "../kiro/index.js";
 import type { KiloDoctorReport } from "../kilo/index.js";
@@ -109,6 +111,7 @@ export type HookIntegrationDoctorReport = {
   "grok-build": GrokBuildDoctorReport;
   "grok-cli": GrokCliDoctorReport;
   junie: JunieDoctorReport;
+  jules: JulesDoctorReport;
   kimi: KimiDoctorReport;
   kiro: KiroDoctorReport;
   kilo: KiloDoctorReport;
@@ -136,7 +139,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
+export type HookDoctorCommandOptions = AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AugmentRuleOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & JulesInstructionsOptions & KimiHookCommandOptions & MistralVibeInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RulerRuleOptions & TraeRuleOptions & WarpInstructionsOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -170,6 +173,7 @@ const hookDoctorIntegrationDoctors = {
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   junie: () => doctorJunieInstructions(),
+  jules: (options) => doctorJulesInstructions(undefined, getHookCommandOptions(options)),
   kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),
   kiro: () => doctorKiroSteering(),
   kilo: () => doctorKiloRule(),

@@ -25,6 +25,7 @@ export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHo
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
+export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
@@ -271,6 +272,12 @@ export type {
   InstallCodegenInstructionsResult,
   UninstallCodegenInstructionsResult,
 } from "./hosts/codegen/index.js";
+export type {
+  CoderAgentsDoctorReport,
+  CoderAgentsSkillOptions,
+  InstallCoderAgentsSkillResult,
+  UninstallCoderAgentsSkillResult,
+} from "./hosts/coder-agents/index.js";
 export type {
   ContinueDoctorReport,
   ContinueRuleOptions,

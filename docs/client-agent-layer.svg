@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Agent Layer</title>
+  <desc id="desc">Agent Layer client mark for tokenjuice docs.</desc>
+  <rect width="96" height="96" rx="18" fill="#172033"/>
+  <path d="M24 66h48L48 28z" fill="#f8fafc"/>
+  <path d="M32 62h32L48 38z" fill="#38bdf8"/>
+  <path d="M26 74h44M34 82h28" stroke="#34d399" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="48" cy="28" r="7" fill="#34d399"/>
+</svg>

@@ -73,7 +73,7 @@ import { doctorStagewiseSkill } from "../stagewise/index.js";
 import { doctorMistralVibeInstructions } from "../mistral-vibe/index.js";
 import { doctorMuxHook } from "../mux/index.js";
 import { doctorNovaKitInstructions } from "../novakit/index.js";
-import { doctorOnaInstructions } from "../ona/index.js";
+import { doctorOnaSkill } from "../ona/index.js";
 import { doctorOpenHandsHook } from "../openhands/index.js";
 import { doctorOpenInterpreterInstructions } from "../open-interpreter/index.js";
 import { doctorOpenWebUITool } from "../openwebui/index.js";
@@ -172,7 +172,7 @@ import type { StagewiseDoctorReport, StagewiseSkillOptions } from "../stagewise/
 import type { MistralVibeDoctorReport, MistralVibeInstructionsOptions } from "../mistral-vibe/index.js";
 import type { MuxDoctorReport, MuxHookCommandOptions } from "../mux/index.js";
 import type { NovaKitDoctorReport, NovaKitInstructionsOptions } from "../novakit/index.js";
-import type { OnaDoctorReport, OnaInstructionsOptions } from "../ona/index.js";
+import type { OnaDoctorReport, OnaSkillOptions } from "../ona/index.js";
 import type { OpenInterpreterDoctorReport, OpenInterpreterInstructionsOptions } from "../open-interpreter/index.js";
 import type { OpenHandsDoctorReport } from "../openhands/index.js";
 import type { OpenWebUIDoctorReport, OpenWebUIToolOptions } from "../openwebui/index.js";
@@ -304,7 +304,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BlackboxSkillOptions & BlocksSkillOptions & ClawdbotSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & StagewiseSkillOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BlackboxSkillOptions & BlocksSkillOptions & ClawdbotSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & StagewiseSkillOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaSkillOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -390,7 +390,7 @@ const hookDoctorIntegrationDoctors = {
   "mistral-vibe": (options) => doctorMistralVibeInstructions(undefined, getHookCommandOptions(options)),
   mux: (options) => doctorMuxHook(undefined, getHookCommandOptions(options)),
   novakit: (options) => doctorNovaKitInstructions(undefined, getHookCommandOptions(options)),
-  ona: (options) => doctorOnaInstructions(undefined, getHookCommandOptions(options)),
+  ona: (options) => doctorOnaSkill(undefined, getHookCommandOptions(options)),
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),

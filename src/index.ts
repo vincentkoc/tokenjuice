@@ -3,6 +3,7 @@ export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAmpInstructions, installAmpInstructions, uninstallAmpInstructions } from "./hosts/amp/index.js";
+export { doctorAugmentRule, installAugmentRule, uninstallAugmentRule } from "./hosts/augment/index.js";
 export { doctorAvanteInstructions, installAvanteInstructions, uninstallAvanteInstructions } from "./hosts/avante/index.js";
 export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention } from "./hosts/aider/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
@@ -96,6 +97,12 @@ export type {
   InstallAmpInstructionsResult,
   UninstallAmpInstructionsResult,
 } from "./hosts/amp/index.js";
+export type {
+  AugmentDoctorReport,
+  AugmentRuleOptions,
+  InstallAugmentRuleResult,
+  UninstallAugmentRuleResult,
+} from "./hosts/augment/index.js";
 export type {
   AiderConventionOptions,
   AiderDoctorReport,

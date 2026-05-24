@@ -19,6 +19,9 @@ export function normalizeArtifactSource(value: unknown): string | null {
     return null;
   }
 
+  if (source.startsWith("amazon-q") || source.startsWith("amazonq") || source.startsWith("aws-q")) {
+    return "amazon-q";
+  }
   if (source.startsWith("claude-code") || source === "claude") {
     return "claude-code";
   }

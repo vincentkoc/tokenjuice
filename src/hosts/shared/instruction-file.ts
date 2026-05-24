@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 export type InstructionFileSnapshot = {
@@ -42,15 +42,36 @@ export async function readInstructionFile(filePath: string): Promise<Instruction
   }
 }
 
+async function instructionBackupPathExists(filePath: string): Promise<boolean> {
+  try {
+    await lstat(filePath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function chooseInstructionBackupPath(filePath: string): Promise<string> {
+  for (let index = 0; ; index += 1) {
+    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
+    if (!(await instructionBackupPathExists(candidate))) {
+      return candidate;
+    }
+  }
+}
+
 export async function writeInstructionFile(filePath: string, text: string): Promise<WriteInstructionFileResult> {
   const existing = await readInstructionFile(filePath);
+  await mkdir(dirname(filePath), { recursive: true });
   let backupPath: string | undefined;
   if (existing.exists) {
-    backupPath = `${filePath}.bak`;
-    await writeFile(backupPath, existing.text, "utf8");
+    backupPath = await chooseInstructionBackupPath(filePath);
+    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
   }
 
-  await mkdir(dirname(filePath), { recursive: true });
   const tempPath = `${filePath}.tmp`;
   await writeFile(tempPath, text, "utf8");
   await rename(tempPath, filePath);

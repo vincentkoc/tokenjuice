@@ -82,7 +82,12 @@ export function upsertMarkerDelimitedBlock(text: string, config: MarkerDelimited
 
 export async function installMarkerDelimitedBlock(filePath: string, config: MarkerDelimitedBlockConfig): Promise<InstallMarkerDelimitedBlockResult> {
   const existing = await readInstructionFile(filePath);
-  const result = await writeInstructionFile(filePath, upsertMarkerDelimitedBlock(existing.text, config));
+  const nextText = upsertMarkerDelimitedBlock(existing.text, config);
+  if (existing.exists && existing.text === nextText) {
+    return { filePath };
+  }
+
+  const result = await writeInstructionFile(filePath, nextText);
   return {
     filePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),

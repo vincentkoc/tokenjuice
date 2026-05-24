@@ -176,6 +176,20 @@ describe("mini-SWE-agent config", () => {
     await expect(readFile(`${configPath}.bak`, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("does not restore incidental backups when uninstalling a fresh tokenjuice fragment", async () => {
+    const home = await createTempDir();
+    const configPath = join(home, ".mini-swe-agent", "tokenjuice.yaml");
+
+    await installMiniSweAgentConfig(configPath);
+    await writeFile(`${configPath}.bak`, "unrelated backup\n", "utf8");
+
+    const removed = await uninstallMiniSweAgentConfig(configPath);
+
+    expect(removed.removed).toBe(true);
+    await expect(access(configPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(`${configPath}.bak`, "utf8")).resolves.toBe("unrelated backup\n");
+  });
+
   it("reports installed and uninstalled config health", async () => {
     const home = await createTempDir();
     const configPath = join(home, ".mini-swe-agent", "tokenjuice.yaml");

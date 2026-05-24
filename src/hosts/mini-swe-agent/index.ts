@@ -218,12 +218,14 @@ export async function uninstallMiniSweAgentConfig(
   }
 
   const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  const backupPath = restoreBackupSuffix ? `${resolvedConfigPath}${restoreBackupSuffix}` : `${resolvedConfigPath}.bak`;
-  const backup = await readInstructionFile(backupPath);
-  if (backup.exists && !isTokenjuiceMiniSweAgentConfigText(backup.text)) {
-    await rm(resolvedConfigPath, { force: true });
-    await rename(backupPath, resolvedConfigPath);
-    return { configPath: resolvedConfigPath, removed: true };
+  if (restoreBackupSuffix) {
+    const backupPath = `${resolvedConfigPath}${restoreBackupSuffix}`;
+    const backup = await readInstructionFile(backupPath);
+    if (backup.exists && !isTokenjuiceMiniSweAgentConfigText(backup.text)) {
+      await rm(resolvedConfigPath, { force: true });
+      await rename(backupPath, resolvedConfigPath);
+      return { configPath: resolvedConfigPath, removed: true };
+    }
   }
 
   const result = await removeInstructionFile(resolvedConfigPath);

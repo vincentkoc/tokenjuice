@@ -51,14 +51,20 @@ export type VscodeCopilotDoctorReport = {
 
 type VscodeCopilotPreToolUsePayload = {
   hook_event_name?: unknown;
+  hookEventName?: unknown;
   tool_name?: unknown;
+  toolName?: unknown;
   tool_input?: unknown;
+  toolInput?: unknown;
 };
 
 const TOKENJUICE_VSCODE_COPILOT_FIX_COMMAND = "tokenjuice install vscode-copilot";
 const TOKENJUICE_VSCODE_COPILOT_FILENAME = "tokenjuice-vscode.json";
 const TOKENJUICE_VSCODE_COPILOT_LEGACY_FILENAME = "tokenjuice.json";
-const TOKENJUICE_VSCODE_COPILOT_MATCHER = "run_in_terminal";
+const TOKENJUICE_VSCODE_COPILOT_LEGACY_TOOL_NAME = "run_in_terminal";
+const TOKENJUICE_VSCODE_COPILOT_TOOL_NAME = "runTerminalCommand";
+const TOKENJUICE_VSCODE_COPILOT_MATCHER =
+  `${TOKENJUICE_VSCODE_COPILOT_TOOL_NAME}|${TOKENJUICE_VSCODE_COPILOT_LEGACY_TOOL_NAME}`;
 const TOKENJUICE_VSCODE_COPILOT_SUBCOMMAND = "vscode-copilot-pre-tool-use";
 const TOKENJUICE_VSCODE_COPILOT_SOURCE = "vscode-copilot";
 const TOKENJUICE_VSCODE_COPILOT_ADVISORY =
@@ -193,13 +199,14 @@ function createTokenjuiceVscodeCopilotHook(command: string): Record<string, unkn
   };
 }
 
-function findTokenjuiceVscodeCopilotHookCommand(config: VscodeCopilotHooksConfig): string | undefined {
-  const preToolUse = config.hooks.preToolUse;
-  if (!Array.isArray(preToolUse)) {
-    return undefined;
-  }
+function getPreToolUseHooks(config: VscodeCopilotHooksConfig): unknown[] {
+  const current = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
+  const legacy = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
+  return [...current, ...legacy];
+}
 
-  for (const hook of preToolUse) {
+function findTokenjuiceVscodeCopilotHookCommand(config: VscodeCopilotHooksConfig): string | undefined {
+  for (const hook of getPreToolUseHooks(config)) {
     if (isTokenjuiceVscodeCopilotHook(hook) && isRecord(hook) && typeof hook.command === "string") {
       return hook.command;
     }
@@ -245,10 +252,16 @@ export async function installVscodeCopilotHook(
 
   const { config, backupPath } = await loadCopilotHooksConfigWithBackup(hooksPath, "vscode-copilot");
   const command = await buildVscodeCopilotHookCommand(options);
-  const preToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
-  const retained = preToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
-  retained.push(createTokenjuiceVscodeCopilotHook(command));
-  config.hooks.preToolUse = retained;
+  const currentPreToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
+  const legacyPreToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
+  const retainedCurrent = currentPreToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
+  const retainedLegacy = legacyPreToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
+  config.hooks.PreToolUse = [...retainedCurrent, createTokenjuiceVscodeCopilotHook(command)];
+  if (retainedLegacy.length > 0) {
+    config.hooks.preToolUse = retainedLegacy;
+  } else {
+    delete config.hooks.preToolUse;
+  }
   if (typeof config.version !== "number") {
     config.version = 1;
   }
@@ -272,18 +285,26 @@ export async function uninstallVscodeCopilotHook(
     return { hooksPath, removed: 0, deletedFile: false };
   }
 
-  const preToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
-  const retained = preToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
-  const removed = preToolUse.length - retained.length;
+  const currentPreToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
+  const legacyPreToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
+  const retainedCurrent = currentPreToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
+  const retainedLegacy = legacyPreToolUse.filter((hook) => !isTokenjuiceVscodeCopilotHook(hook));
+  const removed =
+    currentPreToolUse.length + legacyPreToolUse.length - retainedCurrent.length - retainedLegacy.length;
 
   if (removed === 0) {
     return { hooksPath, removed: 0, deletedFile: false };
   }
 
-  if (retained.length === 0) {
+  if (retainedCurrent.length === 0) {
+    delete config.hooks.PreToolUse;
+  } else {
+    config.hooks.PreToolUse = retainedCurrent;
+  }
+  if (retainedLegacy.length === 0) {
     delete config.hooks.preToolUse;
   } else {
-    config.hooks.preToolUse = retained;
+    config.hooks.preToolUse = retainedLegacy;
   }
 
   // If the file has no remaining meaningful content (no hook events, no other
@@ -467,6 +488,14 @@ function resolveWrapperShell(): { path: string; flag: string; platform: "win32" 
   return { path: shell, flag: "-lc", platform: "posix" };
 }
 
+function readPayloadField(payload: VscodeCopilotPreToolUsePayload, snakeKey: "tool_name" | "tool_input", camelKey: "toolName" | "toolInput"): unknown {
+  return payload[snakeKey] ?? payload[camelKey];
+}
+
+function isTerminalToolName(value: unknown): boolean {
+  return value === TOKENJUICE_VSCODE_COPILOT_TOOL_NAME || value === TOKENJUICE_VSCODE_COPILOT_LEGACY_TOOL_NAME;
+}
+
 export async function runVscodeCopilotPreToolUseHook(
   rawText: string,
   wrapLauncher = "tokenjuice",
@@ -479,12 +508,13 @@ export async function runVscodeCopilotPreToolUseHook(
     return 0;
   }
 
-  if (payload.tool_name !== TOKENJUICE_VSCODE_COPILOT_MATCHER || !isRecord(payload.tool_input)) {
+  const toolInputValue = readPayloadField(payload, "tool_input", "toolInput");
+  if (!isTerminalToolName(readPayloadField(payload, "tool_name", "toolName")) || !isRecord(toolInputValue)) {
     process.stdout.write("{}\n");
     return 0;
   }
 
-  const toolInput = payload.tool_input as Record<string, unknown>;
+  const toolInput = toolInputValue;
   const command = typeof toolInput.command === "string" ? toolInput.command : undefined;
   if (!command || !command.trim()) {
     process.stdout.write("{}\n");

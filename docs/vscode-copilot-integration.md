@@ -1,15 +1,16 @@
 # VS Code Copilot Chat integration
 
 `tokenjuice install vscode-copilot` wires a **PreToolUse** hook that
-wraps every `run_in_terminal` command Copilot Chat asks VS Code to
+wraps every `runTerminalCommand` command Copilot Chat asks VS Code to
 execute. The wrapped command routes through `tokenjuice wrap`,
 which runs the original command, captures its output, and emits a
 compacted version plus a `[tokenjuice] ...` footer to the model.
 
-This is a pre-tool wrap (like the Cursor adapter), not a post-tool
-output rewrite. VS Code Copilot Chat does not currently expose a
-hook that can modify tool output after the fact, so the adapter
-intercepts at the command level.
+This remains a pre-tool wrap (like the Cursor adapter). VS Code now
+also exposes `PostToolUse` hooks that can add context after a tool
+finishes, but that path would leave the full raw terminal output in
+the conversation. The adapter intercepts at the command level so the
+terminal result itself is compacted.
 
 ## Preconditions
 
@@ -37,8 +38,11 @@ will never run.
 - Hooks file: `$HOME/.copilot/hooks/tokenjuice-vscode.json`
   (`COPILOT_HOME` is **ignored** — VS Code Copilot Chat always
   resolves under the OS home directory via `pathService.userHome()`).
-- Event: `preToolUse`.
-- Matcher: `"run_in_terminal"` (strict string match).
+- Event: `PreToolUse`.
+- Matcher: `"runTerminalCommand|run_in_terminal"` to keep the VS Code
+  hook from waking up in unrelated Copilot CLI sessions that share the
+  same hooks directory. The tokenjuice command also checks the payload
+  tool name and still accepts the legacy `run_in_terminal` name.
 - Command: `tokenjuice vscode-copilot-pre-tool-use
   --wrap-launcher <path>`, invoked with the `PreToolUse` payload on
   stdin.
@@ -49,7 +53,7 @@ Install is atomic and idempotent. A legacy `tokenjuice.json`
 
 ### Transform semantics
 
-On a matching `run_in_terminal` call, the adapter rewrites the
+On a matching `runTerminalCommand` call, the adapter rewrites the
 `tool_input.command` field to:
 
 ```
@@ -66,7 +70,7 @@ any regression that strips them would silently disable the hook.
 
 The adapter emits `{}` (no rewrite) for any of:
 
-- non-`run_in_terminal` tools
+- non-terminal tools
 - empty or missing command
 - commands already wrapped with `tokenjuice wrap ...`
 - commands explicitly bypassing with `tokenjuice wrap --raw --` /

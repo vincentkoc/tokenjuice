@@ -18,6 +18,7 @@ const tempDirs: string[] = [];
 const envKeys = [
   "ADAL_PROJECT_DIR",
   "AETHER_PROJECT_DIR",
+  "AI_MEMORY_PROTOCOL_DIR",
   "AGENTINIT_PROJECT_DIR",
   "AGENT_LAYER_PROJECT_DIR",
   "AGENTLINK_PROJECT_DIR",

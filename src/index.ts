@@ -5,6 +5,7 @@ export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normaliz
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
 export { doctorAetherPrompt, installAetherPrompt, uninstallAetherPrompt } from "./hosts/aether/index.js";
 export { doctorAictlInstructions, installAictlInstructions, uninstallAictlInstructions } from "./hosts/aictl/index.js";
+export { doctorAiMemoryProtocolMemory, installAiMemoryProtocolMemory, uninstallAiMemoryProtocolMemory } from "./hosts/ai-memory-protocol/index.js";
 export { doctorAgentLayerInstructions, installAgentLayerInstructions, uninstallAgentLayerInstructions } from "./hosts/agent-layer/index.js";
 export { doctorAgentInitInstructions, installAgentInitInstructions, uninstallAgentInitInstructions } from "./hosts/agentinit/index.js";
 export { doctorAgentlinkInstructions, installAgentlinkInstructions, uninstallAgentlinkInstructions } from "./hosts/agentlink/index.js";
@@ -247,6 +248,12 @@ export type {
   InstallAictlInstructionsResult,
   UninstallAictlInstructionsResult,
 } from "./hosts/aictl/index.js";
+export type {
+  AiMemoryProtocolDoctorReport,
+  AiMemoryProtocolOptions,
+  InstallAiMemoryProtocolResult,
+  UninstallAiMemoryProtocolResult,
+} from "./hosts/ai-memory-protocol/index.js";
 export type {
   AvanteDoctorReport,
   AvanteInstructionsOptions,

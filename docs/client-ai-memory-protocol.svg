@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="AI Memory Protocol">
+  <rect width="192" height="192" rx="36" fill="#172554"/>
+  <path d="M54 44h84c8.8 0 16 7.2 16 16v72c0 8.8-7.2 16-16 16H54c-8.8 0-16-7.2-16-16V60c0-8.8 7.2-16 16-16Z" fill="#eff6ff"/>
+  <path d="M60 71h72M60 96h72M60 121h44" stroke="#172554" stroke-width="10" stroke-linecap="round"/>
+  <path d="M139 75c-15 0-27 12-27 27s12 27 27 27" fill="none" stroke="#0f766e" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="139" cy="75" r="9" fill="#22c55e"/>
+  <circle cx="139" cy="129" r="9" fill="#22c55e"/>
+  <circle cx="112" cy="102" r="9" fill="#38bdf8"/>
+</svg>

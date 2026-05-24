@@ -2,6 +2,7 @@ import { doctorAdalInstructions } from "../adal/index.js";
 import { doctorAetherPrompt } from "../aether/index.js";
 import { doctorAiderConvention } from "../aider/index.js";
 import { doctorAictlInstructions } from "../aictl/index.js";
+import { doctorAiMemoryProtocolMemory } from "../ai-memory-protocol/index.js";
 import { doctorAgentLayerInstructions } from "../agent-layer/index.js";
 import { doctorAgentInitInstructions } from "../agentinit/index.js";
 import { doctorAgentlinkInstructions } from "../agentlink/index.js";
@@ -88,6 +89,7 @@ import type { AdalDoctorReport, AdalInstructionsOptions } from "../adal/index.js
 import type { AetherDoctorReport, AetherPromptOptions } from "../aether/index.js";
 import type { AiderDoctorReport } from "../aider/index.js";
 import type { AictlDoctorReport, AictlInstructionsOptions } from "../aictl/index.js";
+import type { AiMemoryProtocolDoctorReport, AiMemoryProtocolOptions } from "../ai-memory-protocol/index.js";
 import type { AgentLayerDoctorReport, AgentLayerInstructionsOptions } from "../agent-layer/index.js";
 import type { AgentInitDoctorReport, AgentInitInstructionsOptions } from "../agentinit/index.js";
 import type { AgentlinkDoctorReport, AgentlinkInstructionsOptions } from "../agentlink/index.js";
@@ -176,6 +178,7 @@ export type HookIntegrationDoctorReport = {
   adal: AdalDoctorReport;
   aether: AetherDoctorReport;
   aictl: AictlDoctorReport;
+  "ai-memory-protocol": AiMemoryProtocolDoctorReport;
   aider: AiderDoctorReport;
   "agent-layer": AgentLayerDoctorReport;
   agentinit: AgentInitDoctorReport;
@@ -265,7 +268,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BobInstructionsOptions & BuilderRuleOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GrokBuildInstructionsOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaInstructionsOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -280,6 +283,7 @@ const hookDoctorIntegrationDoctors = {
   adal: (options) => doctorAdalInstructions(undefined, getHookCommandOptions(options)),
   aether: (options) => doctorAetherPrompt(undefined, getHookCommandOptions(options)),
   aictl: (options) => doctorAictlInstructions(undefined, getHookCommandOptions(options)),
+  "ai-memory-protocol": (options) => doctorAiMemoryProtocolMemory(undefined, getHookCommandOptions(options)),
   aider: () => doctorAiderConvention(),
   "agent-layer": (options) => doctorAgentLayerInstructions(undefined, getHookCommandOptions(options)),
   agentinit: (options) => doctorAgentInitInstructions(undefined, getHookCommandOptions(options)),
@@ -393,6 +397,7 @@ function getHookCommandOptions(options: HookDoctorCommandOptions): HookDoctorCom
     ...(typeof options.local === "boolean" ? { local: options.local } : {}),
     ...(typeof options.binaryPath === "string" ? { binaryPath: options.binaryPath } : {}),
     ...(typeof options.nodePath === "string" ? { nodePath: options.nodePath } : {}),
+    ...(typeof options.memoryDir === "string" ? { memoryDir: options.memoryDir } : {}),
     ...(typeof options.projectDir === "string" ? { projectDir: options.projectDir } : {}),
     ...(typeof options.scanProjectTree === "boolean" ? { scanProjectTree: options.scanProjectTree } : {}),
     ...(typeof options.configDir === "string" ? { configDir: options.configDir } : {}),

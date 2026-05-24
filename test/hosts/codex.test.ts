@@ -640,12 +640,12 @@ describe("runCodexPostToolUseHook", () => {
       },
       tool_response: Array.from({ length: 18 }, (_, index) => {
         if (index === 0) {
-          return "cwd: /Users/vincentkoc/GIT/_Perso/openclaw";
+          return "cwd: /workspace/openclaw";
         }
         if (index === 1) {
-          return "repo: /Users/vincentkoc/GIT/_Perso/openclaw";
+          return "repo: /workspace/openclaw";
         }
-        return `worktree /Users/vincentkoc/GIT/_Perso/openclaw/.worktrees/pr-${66200 + index}`;
+        return `worktree /workspace/openclaw/.worktrees/pr-${66200 + index}`;
       }).join("\n"),
     });
 
@@ -1017,13 +1017,15 @@ describe("runCodexPostToolUseHook", () => {
     process.env.HOME = home;
 
     expect(artifactDir).toBeTruthy();
+    const command = "tokenjuice wrap --raw -- printf 'ok\\n'";
     const metadataBefore = await listArtifactMetadata();
+    const matchingBefore = metadataBefore.filter((entry) => entry.metadata.command === command);
 
     const payload = JSON.stringify({
       hook_event_name: "PostToolUse",
       tool_name: "Bash",
       tool_input: {
-        command: "tokenjuice wrap --raw -- printf 'ok\\n'",
+        command,
       },
       tool_response: "ok\n",
     });
@@ -1034,14 +1036,15 @@ describe("runCodexPostToolUseHook", () => {
       skipped?: string;
     };
     const metadata = await listArtifactMetadata();
-    const newMetadata = metadata.find((entry) => !metadataBefore.some((before) => before.id === entry.id));
+    const matchingMetadata = metadata.filter((entry) => entry.metadata.command === command);
+    const newMetadata = matchingMetadata.find((entry) => !matchingBefore.some((before) => before.id === entry.id));
 
     expect(code).toBe(0);
     expect(output).toBe("");
     expect(debug.rewrote).toBe(false);
     expect(debug.skipped).toBe("explicit-raw-bypass");
-    expect(metadata).toHaveLength(metadataBefore.length + 1);
-    expect(newMetadata?.metadata.command).toBe("tokenjuice wrap --raw -- printf 'ok\\n'");
+    expect(matchingMetadata).toHaveLength(matchingBefore.length + 1);
+    expect(newMetadata?.metadata.command).toBe(command);
     expect(newMetadata?.metadata.rawChars).toBeGreaterThan(0);
     expect(newMetadata?.metadata.reducedChars).toBe(newMetadata?.metadata.rawChars);
     expect(newMetadata?.metadata.ratio).toBe(1);

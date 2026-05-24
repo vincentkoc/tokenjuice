@@ -68,6 +68,7 @@ export { doctorJean2Instructions, installJean2Instructions, uninstallJean2Instru
 export { doctorJetBrainsAiRule, installJetBrainsAiRule, uninstallJetBrainsAiRule } from "./hosts/jetbrains-ai/index.js";
 export { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstructions } from "./hosts/junie/index.js";
 export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "./hosts/jules/index.js";
+export { doctorLeanCtlInstructions, installLeanCtlInstructions, uninstallLeanCtlInstructions } from "./hosts/leanctl/index.js";
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
 export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
@@ -377,6 +378,12 @@ export type {
   JulesInstructionsOptions,
   UninstallJulesInstructionsResult,
 } from "./hosts/jules/index.js";
+export type {
+  InstallLeanCtlInstructionsResult,
+  LeanCtlDoctorReport,
+  LeanCtlInstructionsOptions,
+  UninstallLeanCtlInstructionsResult,
+} from "./hosts/leanctl/index.js";
 export type {
   InstallKimiHookResult,
   KimiDoctorReport,

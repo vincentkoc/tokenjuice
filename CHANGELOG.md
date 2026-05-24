@@ -31,6 +31,7 @@
 - Add a beta Jean2 instruction integration.
 - Add a beta JetBrains AI Assistant project-rule integration.
 - Add a beta Jules instruction integration.
+- Add a beta LeanCTL project-instruction integration.
 - Add a beta Kimi Code CLI PostToolUse hook integration.
 - Add a beta mcp-agent agent-definition integration.
 - Add a beta mini-SWE-agent config-fragment integration.

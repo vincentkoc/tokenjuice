@@ -33,6 +33,7 @@ describe("parseReduceJsonRequest", () => {
       options: {
         classifier: "tests/pnpm-test",
         raw: true,
+        noOmit: true,
         store: true,
         maxInlineChars: 800,
       },
@@ -48,6 +49,7 @@ describe("parseReduceJsonRequest", () => {
       options: {
         classifier: "tests/pnpm-test",
         raw: true,
+        noOmit: true,
         store: true,
         maxInlineChars: 800,
       },
@@ -93,6 +95,17 @@ describe("parseReduceJsonRequest", () => {
         raw: "yes",
       },
     })).toThrow("options.raw");
+  });
+
+  it("rejects invalid noOmit option types", () => {
+    expect(() => parseReduceJsonRequest({
+      input: {
+        toolName: "exec",
+      },
+      options: {
+        noOmit: "yes",
+      },
+    })).toThrow("options.noOmit");
   });
 
   it("rejects NUL bytes in string fields", () => {

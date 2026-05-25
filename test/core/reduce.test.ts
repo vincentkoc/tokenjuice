@@ -903,6 +903,59 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toBe("custom: checks passed");
   });
 
+  it("bypasses rule-level matchOutput short-circuits when noOmit is enabled", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "tokenjuice-no-omit-match-output-"));
+    tempDirs.push(cwd);
+    const rulesDir = join(cwd, ".tokenjuice", "rules", "custom");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(
+      join(rulesDir, "match-output.json"),
+      JSON.stringify({
+        id: "custom/match-output",
+        family: "custom",
+        match: {
+          argv0: ["custom-tool"],
+        },
+        matchOutput: [
+          {
+            pattern: "All checks passed",
+            message: "custom: checks passed",
+          },
+        ],
+        transforms: {
+          trimEmptyEdges: true,
+        },
+        summarize: {
+          head: 1,
+          tail: 1,
+        },
+      }, null, 2),
+      "utf8",
+    );
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      argv: ["custom-tool", "check"],
+      combinedText: [
+        "Preparing workspace...",
+        "All checks passed in 42ms",
+        "Additional verbose line that should be retained",
+      ].join("\n"),
+      exitCode: 0,
+    }, {
+      cwd,
+      noOmit: true,
+      maxInlineChars: 20_000,
+    });
+
+    expect(result.classification.matchedReducer).toBe("custom/match-output");
+    expect(result.inlineText).toContain("Preparing workspace...");
+    expect(result.inlineText).toContain("All checks passed in 42ms");
+    expect(result.inlineText).toContain("Additional verbose line that should be retained");
+    expect(result.inlineText).not.toBe("custom: checks passed");
+  });
+
   it("pretty-prints minified JSON before applying line-based reducers when enabled", async () => {
     const result = await reduceExecution({
       toolName: "sessions_history",
@@ -1239,6 +1292,7 @@ describe("reduceExecution", () => {
         "--- a/src/index.ts",
         "+++ b/src/index.ts",
         "@@ -1,3 +1,33 @@",
+        " const unchangedContext = true;",
         "-const old = true;",
         ...changedLines,
       ].join("\n"),
@@ -1251,6 +1305,7 @@ describe("reduceExecution", () => {
     expect(result.classification.matchedReducer).toBe("git/diff");
     expect(result.inlineText).toContain("30 added lines");
     expect(result.inlineText).toContain("1 removed line");
+    expect(result.inlineText).toContain(" const unchangedContext = true;");
     expect(result.inlineText).toContain("value29");
     expect(result.inlineText).not.toContain("hunk clipped");
     expect(result.inlineText).not.toContain("sha256:");
@@ -1260,6 +1315,33 @@ describe("reduceExecution", () => {
       "no-omit-domain-passthrough",
       "no-omit-char-clip-passthrough",
     ]));
+  });
+
+  it("bypasses rule filters and adjacent dedupe when noOmit is enabled", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "pnpm test",
+      argv: ["pnpm", "test"],
+      combinedText: [
+        "> tokenjuice test /repo",
+        " RUN  v3.2.4 /repo",
+        "debug line not matched by keepPatterns",
+        "debug line not matched by keepPatterns",
+        " ✓ test/core/example.test.ts (1 test) 3ms",
+        " Test Files  1 passed (1)",
+        " Tests  1 passed (1)",
+        " Duration  100ms",
+      ].join("\n"),
+      exitCode: 0,
+    }, {
+      noOmit: true,
+      maxInlineChars: 20_000,
+    });
+
+    expect(result.classification.matchedReducer).toBe("tests/pnpm-test");
+    expect(result.inlineText).toContain("> tokenjuice test /repo");
+    expect(result.inlineText).toContain(" RUN  v3.2.4 /repo");
+    expect(result.inlineText.match(/debug line not matched by keepPatterns/gu)).toHaveLength(2);
   });
 
   it("clears lossy compaction metadata when passthrough text wins", async () => {

@@ -69,7 +69,7 @@ function applyRule(
 
   const outputMatchText = trimEmptyEdges(lines).join("\n");
   const matchedOutput = compiledRule.compiled.outputMatches.find((entry) => entry.pattern.test(outputMatchText));
-  if (matchedOutput) {
+  if (!noOmit && matchedOutput) {
     return {
       summary: matchedOutput.message,
       facts,
@@ -77,13 +77,13 @@ function applyRule(
     };
   }
 
-  if (rule.filters?.skipPatterns?.length) {
+  if (!noOmit && rule.filters?.skipPatterns?.length) {
     lines = lines.filter((line) => !compiledRule.compiled.skipPatterns.some((pattern) => pattern.test(line)));
   }
 
   let counterLines = [...lines];
 
-  if (rule.filters?.keepPatterns?.length) {
+  if (!noOmit && rule.filters?.keepPatterns?.length) {
     const kept = lines.filter((line) => compiledRule.compiled.keepPatterns.some((pattern) => pattern.test(line)));
     if (kept.length > 0) {
       lines = kept;
@@ -95,7 +95,7 @@ function applyRule(
     lines = trimEmptyEdges(lines);
   }
 
-  if (rule.transforms?.dedupeAdjacent) {
+  if (!noOmit && rule.transforms?.dedupeAdjacent) {
     counterLines = dedupeAdjacent(counterLines);
     lines = dedupeAdjacent(lines);
   }

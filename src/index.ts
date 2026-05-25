@@ -29,14 +29,14 @@ export { doctorAiderConvention, installAiderConvention, uninstallAiderConvention
 export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "./hosts/bob/index.js";
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
 export { doctorCharlieInstructions, installCharlieInstructions, uninstallCharlieInstructions } from "./hosts/charlie/index.js";
-export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "./hosts/claude-code/index.js";
+export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook, uninstallClaudeCodeHook } from "./hosts/claude-code/index.js";
 export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "./hosts/codeant/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
 export { doctorCodeRabbitConfig, installCodeRabbitConfig, uninstallCodeRabbitConfig } from "./hosts/coderabbit/index.js";
-export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "./hosts/codebuddy/index.js";
+export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook, uninstallCodeBuddyHook } from "./hosts/codebuddy/index.js";
 export { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "./hosts/command-code/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
@@ -62,7 +62,7 @@ export {
   uninstallCopilotCliHook,
 } from "./hosts/copilot-cli/index.js";
 export { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "./hosts/crush/index.js";
-export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "./hosts/cursor/index.js";
+export { doctorCursorHook, installCursorHook, runCursorPreToolUseHook, uninstallCursorHook } from "./hosts/cursor/index.js";
 export { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallDeepAgentsInstructions } from "./hosts/deepagents/index.js";
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "./hosts/dot-agents/index.js";
@@ -130,7 +130,7 @@ export { doctorWindsurfRule, installWindsurfRule, uninstallWindsurfRule } from "
 export { doctorZedInstructions, installZedInstructions, uninstallZedInstructions } from "./hosts/zed/index.js";
 export { doctorZencoderRule, installZencoderRule, uninstallZencoderRule } from "./hosts/zencoder/index.js";
 export { doctorInstalledHooks } from "./hosts/shared/hook-doctor.js";
-export { doctorPiExtension, installPiExtension } from "./hosts/pi/index.js";
+export { doctorPiExtension, installPiExtension, uninstallPiExtension } from "./hosts/pi/index.js";
 export {
   doctorOpenCodeExtension,
   installOpenCodeExtension,
@@ -304,7 +304,24 @@ export type {
   InstallCharlieInstructionsResult,
   UninstallCharlieInstructionsResult,
 } from "./hosts/charlie/index.js";
-export type { InstallPiExtensionResult, PiDoctorReport, PiExtensionCommandOptions } from "./hosts/pi/index.js";
+export type {
+  ClaudeCodeDoctorReport,
+  ClaudeCodeHookCommandOptions,
+  InstallClaudeCodeHookResult,
+  UninstallClaudeCodeHookResult,
+} from "./hosts/claude-code/index.js";
+export type {
+  CodeBuddyDoctorReport,
+  CodeBuddyHookCommandOptions,
+  InstallCodeBuddyHookResult,
+  UninstallCodeBuddyHookResult,
+} from "./hosts/codebuddy/index.js";
+export type {
+  InstallPiExtensionResult,
+  PiDoctorReport,
+  PiExtensionCommandOptions,
+  UninstallPiExtensionResult,
+} from "./hosts/pi/index.js";
 export type {
   InstallPiGoSkillResult,
   PiGoDoctorReport,
@@ -383,7 +400,7 @@ export type {
   OpenCodeExtensionCommandOptions,
   UninstallOpenCodeExtensionResult,
 } from "./hosts/opencode/index.js";
-export type { CursorDoctorReport, InstallCursorHookResult } from "./hosts/cursor/index.js";
+export type { CursorDoctorReport, InstallCursorHookResult, UninstallCursorHookResult } from "./hosts/cursor/index.js";
 export type {
   DeepAgentsDoctorReport,
   DeepAgentsInstructionsOptions,

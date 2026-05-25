@@ -13,6 +13,7 @@ import {
   installCursorHook,
   installPiExtension,
   runCodeBuddyPreToolUseHook,
+  uninstallCodeBuddyHook,
 } from "../../src/index.js";
 import { parseWrappedCommand } from "./shared/wrap-command.js";
 
@@ -449,6 +450,99 @@ describe("installCodeBuddyHook", () => {
     await expect(installCodeBuddyHook(settingsPath)).rejects.toThrow(
       "tokenjuice codebuddy integration does not support native Windows shells",
     );
+  });
+});
+
+describe("uninstallCodeBuddyHook", () => {
+  it("removes tokenjuice hook entries without deleting unrelated hooks in the same group", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        env: { NODE_ENV: "test" },
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice" },
+                { type: "command", command: "echo keep-pre" },
+              ],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "tokenjuice codebuddy-post-tool-use", statusMessage: "compacting bash output with tokenjuice" },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await uninstallCodeBuddyHook(settingsPath);
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      env?: unknown;
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result).toEqual({ settingsPath, backupPath: `${settingsPath}.bak`, removed: true });
+    expect(parsed.env).toEqual({ NODE_ENV: "test" });
+    expect(parsed.hooks.PreToolUse).toEqual([
+      {
+        matcher: "Bash",
+        hooks: [{ type: "command", command: "echo keep-pre" }],
+      },
+    ]);
+    expect(parsed.hooks.PostToolUse).toBeUndefined();
+  });
+
+  it("reports no removal when settings are missing", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await expect(uninstallCodeBuddyHook(settingsPath)).resolves.toEqual({ settingsPath, removed: false });
+  });
+
+  it("keeps existing backups on no-op uninstall and chooses a new backup on removal", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const backupPath = `${settingsPath}.bak`;
+    const nextBackupPath = `${settingsPath}.bak.1`;
+
+    await writeFile(settingsPath, `${JSON.stringify({ hooks: { PreToolUse: [] } }, null, 2)}\n`, "utf8");
+    await writeFile(backupPath, "existing backup\n", "utf8");
+
+    await expect(uninstallCodeBuddyHook(settingsPath)).resolves.toEqual({ settingsPath, removed: false });
+    await expect(readFile(backupPath, "utf8")).resolves.toBe("existing backup\n");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{ type: "command", command: "tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice" }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await expect(uninstallCodeBuddyHook(settingsPath)).resolves.toEqual({
+      settingsPath,
+      backupPath: nextBackupPath,
+      removed: true,
+    });
+    await expect(readFile(backupPath, "utf8")).resolves.toBe("existing backup\n");
+    await expect(readFile(nextBackupPath, "utf8")).resolves.toContain("codebuddy-pre-tool-use");
   });
 });
 

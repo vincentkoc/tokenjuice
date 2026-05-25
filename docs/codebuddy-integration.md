@@ -113,6 +113,7 @@ inspect:
 pnpm build
 node dist/cli/main.js install codebuddy
 node dist/cli/main.js doctor codebuddy
+node dist/cli/main.js uninstall codebuddy
 node dist/cli/main.js wrap --format json --trace -- "$SHELL" -lc "git status --short"
 node dist/cli/main.js wrap --format json --trace -- pnpm --help
 node dist/cli/main.js wrap --format json --trace --raw -- pnpm --help
@@ -122,6 +123,7 @@ expected:
 
 - `doctor codebuddy` reports `health: ok`
 - the hook entry in `~/.codebuddy/settings.json` has `matcher: "Bash"` and a command containing `codebuddy-pre-tool-use --wrap-launcher ...`
+- `uninstall codebuddy` removes tokenjuice-managed `PreToolUse` and legacy `PostToolUse` entries while preserving unrelated hooks
 - wrapped shell commands show nested normalized command/argv in trace
 - `--raw` keeps `ratio = 1`
 - non-raw wraps usually produce `ratio < 1`

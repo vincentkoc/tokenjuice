@@ -43,14 +43,14 @@ import { doctorClawdbotSkill, installClawdbotSkill, uninstallClawdbotSkill } fro
 import { doctorBobInstructions, installBobInstructions, uninstallBobInstructions } from "../hosts/bob/index.js";
 import { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "../hosts/builder/index.js";
 import { doctorCharlieInstructions, installCharlieInstructions, uninstallCharlieInstructions } from "../hosts/charlie/index.js";
-import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
+import { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook, uninstallClaudeCodeHook } from "../hosts/claude-code/index.js";
 import { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "../hosts/cline/index.js";
 import { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "../hosts/codeant/index.js";
 import { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "../hosts/codebuff/index.js";
 import { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "../hosts/codegen/index.js";
 import { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { doctorCodeRabbitConfig, installCodeRabbitConfig, uninstallCodeRabbitConfig } from "../hosts/coderabbit/index.js";
-import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
+import { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook, uninstallCodeBuddyHook } from "../hosts/codebuddy/index.js";
 import { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "../hosts/command-code/index.js";
 import { doctorContinueRule, installContinueRule, uninstallContinueRule } from "../hosts/continue/index.js";
 import { doctorCodexHook, installCodexHook, runCodexPostToolUseHook, uninstallCodexHook } from "../hosts/codex/index.js";
@@ -63,7 +63,7 @@ import {
   uninstallCopilotCliHook,
 } from "../hosts/copilot-cli/index.js";
 import { doctorCrushSkill, installCrushSkill, uninstallCrushSkill } from "../hosts/crush/index.js";
-import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../hosts/cursor/index.js";
+import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook, uninstallCursorHook } from "../hosts/cursor/index.js";
 import { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallDeepAgentsInstructions } from "../hosts/deepagents/index.js";
 import { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "../hosts/devin/index.js";
 import { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "../hosts/dot-agents/index.js";
@@ -106,7 +106,7 @@ import {
 import { doctorOpenInterpreterInstructions, installOpenInterpreterInstructions, uninstallOpenInterpreterInstructions } from "../hosts/open-interpreter/index.js";
 import { doctorOpenHandsHook, installOpenHandsHook, runOpenHandsPostToolUseHook, uninstallOpenHandsHook } from "../hosts/openhands/index.js";
 import { doctorOpenWebUITool, installOpenWebUITool, uninstallOpenWebUITool } from "../hosts/openwebui/index.js";
-import { doctorPiExtension, installPiExtension } from "../hosts/pi/index.js";
+import { doctorPiExtension, installPiExtension, uninstallPiExtension } from "../hosts/pi/index.js";
 import { doctorPiGoSkill, installPiGoSkill, uninstallPiGoSkill } from "../hosts/pi-go/index.js";
 import { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "../hosts/plandex/index.js";
 import { doctorQodoReviewConfig, installQodoReviewConfig, uninstallQodoReviewConfig } from "../hosts/qodo/index.js";
@@ -314,16 +314,19 @@ function printUsage(): void {
       "  tokenjuice uninstall builder",
       "  tokenjuice uninstall charlie",
       "  tokenjuice uninstall codex",
+      "  tokenjuice uninstall claude-code",
       "  tokenjuice uninstall cline",
       "  tokenjuice uninstall codeant",
       "  tokenjuice uninstall codebuff",
       "  tokenjuice uninstall codegen",
       "  tokenjuice uninstall coder-agents",
       "  tokenjuice uninstall coderabbit",
+      "  tokenjuice uninstall codebuddy",
       "  tokenjuice uninstall command-code",
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall copilot-agent",
       "  tokenjuice uninstall crush",
+      "  tokenjuice uninstall cursor",
       "  tokenjuice uninstall deepagents",
       "  tokenjuice uninstall devin",
       "  tokenjuice uninstall dot-agents",
@@ -361,6 +364,7 @@ function printUsage(): void {
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
+      "  tokenjuice uninstall pi",
       "  tokenjuice uninstall pi-go",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall plandex",
@@ -3156,6 +3160,22 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "claude-code") {
+    const result = await uninstallClaudeCodeHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed claude-code hook: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`settings path: ${result.settingsPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("enable: tokenjuice install claude-code\n");
+    return 0;
+  }
+
   if (target === "cline") {
     const result = await uninstallClineHook();
     if (args.format === "json") {
@@ -3218,6 +3238,22 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed coder-agents skill: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`skill path: ${result.skillPath}\n`);
     process.stdout.write("enable: tokenjuice install coder-agents\n");
+    return 0;
+  }
+
+  if (target === "codebuddy") {
+    const result = await uninstallCodeBuddyHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed codebuddy hook: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`settings path: ${result.settingsPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("enable: tokenjuice install codebuddy\n");
     return 0;
   }
 
@@ -3286,6 +3322,22 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     process.stdout.write(`removed crush skill: ${result.removed ? "yes" : "no"}\n`);
     process.stdout.write(`skill path: ${result.skillPath}\n`);
     process.stdout.write("enable: tokenjuice install crush\n");
+    return 0;
+  }
+
+  if (target === "cursor") {
+    const result = await uninstallCursorHook();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed cursor hook: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`hooks path: ${result.hooksPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    process.stdout.write("enable: tokenjuice install cursor\n");
     return 0;
   }
 
@@ -3722,6 +3774,25 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
+  if (target === "pi") {
+    const result = await uninstallPiExtension();
+    if (args.format === "json") {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return 0;
+    }
+
+    process.stdout.write(`removed pi extension: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`extension path: ${result.extensionPath}\n`);
+    if (result.backupPath) {
+      process.stdout.write(`backup: ${result.backupPath}\n`);
+    }
+    if (result.restoredBackup) {
+      process.stdout.write("restored backup: yes\n");
+    }
+    process.stdout.write("enable: tokenjuice install pi\n");
+    return 0;
+  }
+
   if (target === "opencode") {
     const result = await uninstallOpenCodeExtension();
     if (args.format === "json") {
@@ -4035,7 +4106,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     return 0;
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, cline, codeant, codebuff, codegen, coder-agents, coderabbit, command-code, continue, copilot-agent, crush, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {

@@ -74,6 +74,7 @@
 - Preserve existing instruction-file `.bak` backups instead of overwriting them during install.
 - Preserve existing JetBrains AI Assistant `.bak` rule backups when installing over a custom rule.
 - Normalize stored artifact sources for Copilot, Droid, and VS Code Copilot hook adapters.
+- Add missing uninstall coverage for Claude Code, CodeBuddy, Cursor, and pi integrations.
 
 ## 0.7.1 - 2026-05-17
 

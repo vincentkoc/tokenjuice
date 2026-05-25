@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -49,9 +49,15 @@ export type InstallClaudeCodeHookResult = {
   command: string;
 };
 
+export type UninstallClaudeCodeHookResult = {
+  settingsPath: string;
+  backupPath?: string;
+  removed: boolean;
+};
+
 export type ClaudeCodeDoctorReport = {
   settingsPath: string;
-  status: "ok" | "warn" | "broken";
+  status: "ok" | "warn" | "broken" | "disabled";
   issues: string[];
   fixCommand: string;
   expectedCommand: string;
@@ -212,6 +218,20 @@ async function readClaudeCodeSettings(settingsPath: string): Promise<{ config: C
   }
 }
 
+async function chooseBackupPath(filePath: string): Promise<string> {
+  for (let index = 0; ; index += 1) {
+    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
+    try {
+      await access(candidate);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return candidate;
+      }
+      throw error;
+    }
+  }
+}
+
 function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
   const pruned: unknown[] = [];
   for (const group of groups) {
@@ -230,6 +250,26 @@ function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
     pruned.push({ ...group, hooks: retainedHooks });
   }
   return pruned;
+}
+
+function removeTokenjuiceHookEvent(config: ClaudeCodeSettings, event: ClaudeCodeHookEvent): boolean {
+  if (!Array.isArray(config.hooks[event])) {
+    return false;
+  }
+
+  const groups = config.hooks[event];
+  const pruned = pruneTokenjuiceHookEntries(groups);
+  const changed = pruned.length !== groups.length || pruned.some((group, index) => group !== groups[index]);
+  if (!changed) {
+    return false;
+  }
+
+  if (pruned.length === 0) {
+    delete config.hooks[event];
+  } else {
+    config.hooks[event] = pruned;
+  }
+  return true;
 }
 
 async function resolveClaudeCodeHostShell(toolInput: ClaudeCodeBashToolInput): Promise<string | undefined> {
@@ -275,6 +315,49 @@ export async function installClaudeCodeHook(
   };
 }
 
+export async function uninstallClaudeCodeHook(
+  settingsPath = getDefaultSettingsPath(),
+): Promise<UninstallClaudeCodeHookResult> {
+  let rawText: string;
+  try {
+    rawText = await readFile(settingsPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { settingsPath, removed: false };
+    }
+    throw new Error(`failed to read claude code settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText) as unknown;
+  } catch (error) {
+    throw new Error(`failed to read claude code settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const config = sanitizeClaudeCodeSettings(parsed);
+  const removedPreToolUse = removeTokenjuiceHookEvent(config, "PreToolUse");
+  const removedPostToolUse = removeTokenjuiceHookEvent(config, "PostToolUse");
+  const removed = removedPreToolUse || removedPostToolUse;
+
+  if (!removed) {
+    return { settingsPath, removed: false };
+  }
+
+  const backupPath = await chooseBackupPath(settingsPath);
+  await writeFile(backupPath, rawText, "utf8");
+  await mkdir(dirname(settingsPath), { recursive: true });
+  const tempPath = `${settingsPath}.tmp`;
+  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await rename(tempPath, settingsPath);
+
+  return {
+    settingsPath,
+    backupPath,
+    removed: true,
+  };
+}
+
 export async function doctorClaudeCodeHook(
   settingsPath = getDefaultSettingsPath(),
   options: ClaudeCodeHookCommandOptions = {},
@@ -288,8 +371,8 @@ export async function doctorClaudeCodeHook(
   if (!exists) {
     return {
       settingsPath,
-      status: "warn",
-      issues: ["claude code settings.json is missing"],
+      status: "disabled",
+      issues: [],
       fixCommand,
       expectedCommand,
       checkedPaths: [],
@@ -300,8 +383,8 @@ export async function doctorClaudeCodeHook(
   if (!detectedCommand || !detected) {
     return {
       settingsPath,
-      status: "warn",
-      issues: ["tokenjuice PreToolUse hook is not installed for Claude Code"],
+      status: "disabled",
+      issues: [],
       fixCommand,
       expectedCommand,
       checkedPaths: [],

@@ -69,6 +69,7 @@ inspect:
 pnpm build
 node dist/cli/main.js install cursor
 node dist/cli/main.js doctor cursor
+node dist/cli/main.js uninstall cursor
 node dist/cli/main.js wrap --format json --trace -- "$SHELL" -lc "git status --short"
 node dist/cli/main.js wrap --format json --trace -- pnpm --help
 node dist/cli/main.js wrap --format json --trace --raw -- pnpm --help
@@ -77,6 +78,7 @@ node dist/cli/main.js wrap --format json --trace --raw -- pnpm --help
 expected:
 
 - `doctor cursor` reports `health: ok`
+- `uninstall cursor` removes tokenjuice-managed `preToolUse` hooks while preserving unrelated hooks
 - wrapped shell commands show nested normalized command/argv in trace
 - `--raw` keeps `ratio = 1`
 - non-raw wraps usually produce `ratio < 1`

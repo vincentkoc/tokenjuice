@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook } from "../../src/index.js";
+import { doctorCursorHook, installCursorHook, runCursorPreToolUseHook, uninstallCursorHook } from "../../src/index.js";
 import { parseWrappedCommand } from "./shared/wrap-command.js";
 
 const tempDirs: string[] = [];
@@ -143,6 +143,62 @@ describe("installCursorHook", () => {
     await expect(installCursorHook(hooksPath)).rejects.toThrow(
       "tokenjuice cursor integration does not support native Windows shells yet. run Cursor in WSL instead.",
     );
+  });
+});
+
+describe("uninstallCursorHook", () => {
+  it("removes tokenjuice preToolUse hooks while preserving unrelated hooks", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        version: 1,
+        hooks: {
+          preToolUse: [
+            { type: "command", matcher: "Shell", command: "tokenjuice cursor-pre-tool-use --wrap-launcher tokenjuice" },
+            { type: "command", matcher: "Shell", command: "echo keep" },
+          ],
+          postToolUse: [
+            { type: "command", matcher: "Shell", command: "echo post" },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await uninstallCursorHook(hooksPath);
+    const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+      hooks: Record<string, Array<{ command: string }>>;
+    };
+
+    expect(result).toEqual({ hooksPath, backupPath: `${hooksPath}.bak`, removed: true });
+    expect(parsed.hooks.preToolUse).toEqual([
+      { type: "command", matcher: "Shell", command: "echo keep" },
+    ]);
+    expect(parsed.hooks.postToolUse).toEqual([
+      { type: "command", matcher: "Shell", command: "echo post" },
+    ]);
+  });
+
+  it("reports no removal when hooks are missing", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+
+    await expect(uninstallCursorHook(hooksPath)).resolves.toEqual({ hooksPath, removed: false });
+  });
+
+  it("does not rewrite backups when no tokenjuice hook is installed", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const backupPath = `${hooksPath}.bak`;
+
+    await writeFile(hooksPath, `${JSON.stringify({ version: 1, hooks: { preToolUse: [] } }, null, 2)}\n`, "utf8");
+    await writeFile(backupPath, "existing backup\n", "utf8");
+
+    await expect(uninstallCursorHook(hooksPath)).resolves.toEqual({ hooksPath, removed: false });
+    await expect(readFile(backupPath, "utf8")).resolves.toBe("existing backup\n");
   });
 });
 

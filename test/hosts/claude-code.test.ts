@@ -16,6 +16,7 @@ import {
   installQwenCodeHook,
   runClaudeCodePostToolUseHook,
   runClaudeCodePreToolUseHook,
+  uninstallClaudeCodeHook,
 } from "../../src/index.js";
 import { getInstalledHookIntegrations } from "../../src/hosts/shared/hook-doctor.js";
 
@@ -401,7 +402,110 @@ describe("installClaudeCodeHook", () => {
   });
 });
 
+describe("uninstallClaudeCodeHook", () => {
+  it("removes current and legacy tokenjuice hooks while preserving unrelated settings", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        permissions: { allow: ["Bash(git status)"] },
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "tokenjuice claude-code-pre-tool-use --wrap-launcher tokenjuice" },
+                { type: "command", command: "echo keep-pre" },
+              ],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [
+                { type: "command", command: "tokenjuice claude-code-post-tool-use", statusMessage: "compacting bash output with tokenjuice" },
+              ],
+            },
+            {
+              matcher: "Edit",
+              hooks: [{ type: "command", command: "echo keep-post" }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const result = await uninstallClaudeCodeHook(settingsPath);
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      permissions?: unknown;
+      hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result).toEqual({ settingsPath, backupPath: `${settingsPath}.bak`, removed: true });
+    expect(parsed.permissions).toEqual({ allow: ["Bash(git status)"] });
+    expect(parsed.hooks.PreToolUse).toEqual([
+      {
+        matcher: "Bash",
+        hooks: [{ type: "command", command: "echo keep-pre" }],
+      },
+    ]);
+    expect(parsed.hooks.PostToolUse).toEqual([
+      {
+        matcher: "Edit",
+        hooks: [{ type: "command", command: "echo keep-post" }],
+      },
+    ]);
+  });
+
+  it("reports no removal when settings are missing", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await expect(uninstallClaudeCodeHook(settingsPath)).resolves.toEqual({ settingsPath, removed: false });
+  });
+
+  it("does not rewrite backups when no tokenjuice hook is installed", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    const backupPath = `${settingsPath}.bak`;
+
+    await writeFile(settingsPath, `${JSON.stringify({ hooks: { PreToolUse: [] } }, null, 2)}\n`, "utf8");
+    await writeFile(backupPath, "existing backup\n", "utf8");
+
+    await expect(uninstallClaudeCodeHook(settingsPath)).resolves.toEqual({ settingsPath, removed: false });
+    await expect(readFile(backupPath, "utf8")).resolves.toBe("existing backup\n");
+  });
+});
+
 describe("doctorClaudeCodeHook", () => {
+  it("reports disabled when the settings file exists without a tokenjuice hook", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+
+    await writeFile(
+      settingsPath,
+      `${JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{ type: "command", command: "echo keep" }],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorClaudeCodeHook(settingsPath);
+
+    expect(report.status).toBe("disabled");
+    expect(report.issues).toEqual([]);
+  });
+
   it("reports a healthy installed launcher hook", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -574,7 +678,7 @@ describe("doctorInstalledHooks", () => {
     const report = await doctorInstalledHooks();
 
     expect(report.status).toBe("disabled");
-    expect(report.integrations["claude-code"].status).toBe("warn");
+    expect(report.integrations["claude-code"].status).toBe("disabled");
     expect(getInstalledHookIntegrations(report)).toEqual([]);
   });
 

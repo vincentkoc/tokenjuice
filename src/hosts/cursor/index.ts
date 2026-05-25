@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -38,6 +38,12 @@ export type InstallCursorHookResult = {
   hooksPath: string;
   backupPath?: string;
   command: string;
+};
+
+export type UninstallCursorHookResult = {
+  hooksPath: string;
+  backupPath?: string;
+  removed: boolean;
 };
 
 export type CursorDoctorReport = {
@@ -143,6 +149,20 @@ async function readCursorHooksConfig(hooksPath: string): Promise<{ config: Curso
   }
 }
 
+async function chooseBackupPath(filePath: string): Promise<string> {
+  for (let index = 0; ; index += 1) {
+    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
+    try {
+      await access(candidate);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return candidate;
+      }
+      throw error;
+    }
+  }
+}
+
 function findTokenjuiceCursorHookCommand(config: CursorHooksConfig): string | undefined {
   const preToolUse = config.hooks.preToolUse;
   if (!Array.isArray(preToolUse)) {
@@ -197,6 +217,55 @@ export async function installCursorHook(
     hooksPath,
     ...(backupPath ? { backupPath } : {}),
     command,
+  };
+}
+
+export async function uninstallCursorHook(
+  hooksPath = getDefaultHooksPath(),
+): Promise<UninstallCursorHookResult> {
+  let rawText: string;
+  try {
+    rawText = await readFile(hooksPath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { hooksPath, removed: false };
+    }
+    throw new Error(`failed to read cursor hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawText) as unknown;
+  } catch (error) {
+    throw new Error(`failed to read cursor hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const config = sanitizeCursorHooksConfig(parsed);
+  const preToolUse = Array.isArray(config.hooks.preToolUse) ? config.hooks.preToolUse : [];
+  const retained = preToolUse.filter((hook) => !isTokenjuiceCursorHook(hook));
+  const removed = retained.length !== preToolUse.length;
+
+  if (!removed) {
+    return { hooksPath, removed: false };
+  }
+
+  if (retained.length > 0) {
+    config.hooks.preToolUse = retained;
+  } else {
+    delete config.hooks.preToolUse;
+  }
+
+  const backupPath = await chooseBackupPath(hooksPath);
+  await writeFile(backupPath, rawText, "utf8");
+  await mkdir(dirname(hooksPath), { recursive: true });
+  const tempPath = `${hooksPath}.tmp`;
+  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await rename(tempPath, hooksPath);
+
+  return {
+    hooksPath,
+    backupPath,
+    removed: true,
   };
 }
 

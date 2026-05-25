@@ -1364,6 +1364,26 @@ describe("reduceExecution", () => {
     expect(result.compaction?.kinds).toEqual(expect.arrayContaining(["no-omit-domain-passthrough"]));
   });
 
+  it("keeps all gh labels when noOmit is enabled", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "gh issue view 42 --json number,title,labels",
+      argv: ["gh", "issue", "view", "42", "--json", "number,title,labels"],
+      combinedText: JSON.stringify({
+        number: 42,
+        title: "Needs many labels",
+        labels: ["bug", "regression", "platform:macos", "area:cli", "priority:high"],
+      }),
+      exitCode: 0,
+    }, {
+      noOmit: true,
+      maxInlineChars: 20_000,
+    });
+
+    expect(result.classification.matchedReducer).toBe("cloud/gh");
+    expect(result.inlineText).toContain("{bug, regression, platform:macos, area:cli, priority:high}");
+  });
+
   it("keeps successful gh status checks when noOmit is enabled", async () => {
     const result = await reduceExecution({
       toolName: "exec",

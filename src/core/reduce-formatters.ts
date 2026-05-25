@@ -192,7 +192,8 @@ function formatGhJsonRecord(record: Record<string, unknown>, noOmit = false): { 
     return null;
   }
 
-  const labels = extractGhLabelNames(record.labels).slice(0, 3);
+  const extractedLabels = extractGhLabelNames(record.labels);
+  const labels = noOmit ? extractedLabels : extractedLabels.slice(0, 3);
   const comments = extractGhCommentCount(record.comments);
   const branch = typeof record.headBranch === "string" ? record.headBranch
     : typeof record.headRefName === "string" ? record.headRefName

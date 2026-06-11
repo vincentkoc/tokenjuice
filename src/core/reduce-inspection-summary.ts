@@ -1,4 +1,4 @@
-import { isFileContentInspectionCommand } from "./command-identity.js";
+import { isFileContentInspectionCommand, isPlutilFileContentInspectionCommand } from "./command-identity.js";
 import { createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { clipMiddleWithHash, parseJsonValue } from "./reduce-utils.js";
 import { countTextChars, headTail, normalizeLines, stripAnsi, trimEmptyEdges } from "./text.js";
@@ -138,6 +138,10 @@ export function buildInspectionSummary(input: ToolExecutionInput, rawText: strin
     return lines.length > 0
       ? { lines, matchedReducer: "generic/package-lock-summary", compaction: createCompactionMetadata("inspection-package-lock-summary") }
       : null;
+  }
+
+  if (isPlutilFileContentInspectionCommand(input)) {
+    return null;
   }
 
   const rawChars = countTextChars(rawText);

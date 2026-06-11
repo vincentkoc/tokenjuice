@@ -416,6 +416,53 @@ describe("reduceExecution", () => {
     expect(result.stats.ratio).toBe(1);
   });
 
+  it("keeps plutil plist dumps verbatim", async () => {
+    const rawText = [
+      "{",
+      ...Array.from({ length: 40 }, (_, index) => `  "Key${index + 1}" => "value ${index + 1}"`),
+      "}",
+    ].join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "plutil -p /Library/LaunchDaemons/com.example.daemon.plist",
+      argv: ["plutil", "-p", "/Library/LaunchDaemons/com.example.daemon.plist"],
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("keeps read-only config inspection output verbatim", async () => {
+    const rawText = Array.from({ length: 30 }, (_, index) => `setting-${index + 1}: value-${index + 1}`).join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "openclaw config get agents.defaults",
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("keeps ssh-wrapped file inspection output verbatim", async () => {
+    const rawText = Array.from({ length: 30 }, (_, index) => `host-line ${index + 1}`).join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "ssh build-host 'cat /var/log/app.log'",
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
   it("still compacts filesystem inventory commands through their dedicated reducers", async () => {
     const result = await reduceExecution({
       toolName: "exec",

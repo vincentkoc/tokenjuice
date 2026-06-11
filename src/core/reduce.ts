@@ -452,7 +452,7 @@ export async function reduceExecutionWithRules(
     };
   }
 
-  if (classification.matchedReducer === "generic/fallback" && isFileContentInspectionCommand(normalizedInput)) {
+  if (isFileContentInspectionCommand(normalizedInput)) {
     if (!opts.store && opts.recordStats) {
       await storeArtifactMetadata(
         {

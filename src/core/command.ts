@@ -10,6 +10,7 @@ export type { CommandMatchCandidate } from "./command-match.js";
 export {
   deriveCommandMatchCandidates,
   getEffectiveCommandArgv,
+  hasMultipleSubstantiveShellCommands,
   isSetupWrapperSegment,
   resolveEffectiveCommand,
   stripLeadingEnvAssignments,

@@ -1,4 +1,5 @@
 import { loadRules } from "./rules.js";
+import { hasMultipleSubstantiveShellCommands } from "./command-match.js";
 import { classifyExecution, resolveRuleMatch } from "./classify.js";
 import { isFileContentInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
@@ -323,12 +324,21 @@ export async function reduceExecutionWithRules(
     reducedChars,
     ratio: measuredRawChars === 0 ? 1 : reducedChars / measuredRawChars,
   });
-  const resolvedMatch = opts.classifier
+  const multipleSubstantiveCommands = !opts.classifier && hasMultipleSubstantiveShellCommands(input);
+  const resolvedMatch = opts.classifier || multipleSubstantiveCommands
     ? undefined
     : resolveRuleMatch(input, rules);
-  const classification = resolvedMatch?.classification
-    ?? classifyExecution(input, rules, opts.classifier);
-  const reducerInput = resolvedMatch?.candidateInput ?? normalizedInput;
+  const classification = multipleSubstantiveCommands
+    ? {
+        family: "generic",
+        confidence: 0.2,
+        matchedReducer: "generic/fallback",
+      }
+    : resolvedMatch?.classification
+      ?? classifyExecution(input, rules, opts.classifier);
+  const reducerInput = multipleSubstantiveCommands
+    ? normalizedInput
+    : resolvedMatch?.candidateInput ?? normalizedInput;
   const trace = opts.trace
     ? {
         ...(normalizedInput.command ? { normalizedCommand: normalizedInput.command } : {}),
@@ -390,7 +400,9 @@ export async function reduceExecutionWithRules(
     };
   }
 
-  const inspectionSummary = buildInspectionSummary(normalizedInput, rawText, opts.noOmit);
+  const inspectionSummary = multipleSubstantiveCommands
+    ? null
+    : buildInspectionSummary(normalizedInput, rawText, opts.noOmit);
   if (inspectionSummary) {
     const summaryText = inspectionSummary.lines.join("\n").trim();
     const selectedText = clampTextMiddleWithMetadata(summaryText, maxInlineChars, opts.noOmit);

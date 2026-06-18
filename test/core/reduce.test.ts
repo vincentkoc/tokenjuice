@@ -710,7 +710,7 @@ describe("reduceExecution", () => {
     }
   });
 
-  it("matches wrapped rg search commands and prefers the first substantive command in a chain", async () => {
+  it("matches wrapped rg search commands after setup commands", async () => {
     const searchResult = await reduceExecution({
       toolName: "exec",
       command: "pwd && rg -n AssertionError src",
@@ -721,20 +721,69 @@ describe("reduceExecution", () => {
     expect(searchResult.classification.matchedReducer).toBe("search/rg");
     expect(searchResult.classification.matchedVia).toBe("effective");
     expect(searchResult.classification.matchedCommand).toBe("rg -n AssertionError src");
+  });
 
-    const firstCommandWins = await reduceExecution({
+  it("preserves all short output from a multi-command sequence", async () => {
+    const rawText = [
+      "127.0.0.1 github.com",
+      "---dig:",
+      "140.82.121.4",
+      "---scutil:",
+      "DNS configuration",
+    ].join("\n");
+
+    const result = await reduceExecution({
       toolName: "exec",
-      command: "cd repo && swift test && rg -n failure src",
-      combinedText: [
-        "Test Case 'FooTests.testExample' failed (0.12 seconds).",
-        "Executed 1 test, with 1 failure (0 unexpected) in 0.12 (0.12) seconds",
-      ].join("\n"),
-      exitCode: 1,
+      command: "grep -i github /etc/hosts; echo '---dig:'; dig +short api.github.com @1.1.1.1; echo '---scutil:'; scutil --dns | head -1",
+      combinedText: rawText,
+      exitCode: 0,
     });
 
-    expect(firstCommandWins.classification.matchedReducer).toBe("tests/swift-test");
-    expect(firstCommandWins.classification.matchedVia).toBe("effective");
-    expect(firstCommandWins.classification.matchedCommand).toBe("swift test");
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("uses authoritative generic compaction for large multi-command output", async () => {
+    const rawText = Array.from({ length: 80 }, (_, index) => `output ${index + 1} ${"x".repeat(48)}`).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "grep -i github /etc/hosts; dig +short api.github.com @1.1.1.1",
+      combinedText: rawText,
+      exitCode: 0,
+    }, {
+      maxInlineChars: 240,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("output 1");
+    expect(result.inlineText).toContain("output 80");
+    expect(result.inlineText).not.toContain("output 40");
+    expect(result.compaction).toEqual({
+      authoritative: true,
+      kinds: expect.arrayContaining(["head-tail-omission"]),
+    });
+  });
+
+  it("does not summarize file inspection output from a multi-command sequence", async () => {
+    const rawText = [
+      "{",
+      "  \"name\": \"example\",",
+      "  \"lockfileVersion\": 3,",
+      "  \"packages\": {}",
+      "}",
+      "DONE",
+    ].join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "cat package-lock.json; echo DONE",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
   });
 
   it("keeps wrapped file inspection output verbatim under generic fallback", async () => {

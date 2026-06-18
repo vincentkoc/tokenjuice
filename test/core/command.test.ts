@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveCommandMatchCandidates,
   getGitSubcommand,
+  hasMultipleSubstantiveShellCommands,
   hasSequentialShellCommands,
   isFileContentInspectionCommand,
   isRepositoryInspectionCommand,
@@ -368,6 +369,26 @@ describe("hasSequentialShellCommands", () => {
     "sed -n '1,20p' README.md",
   ])("does not treat `%s` as a sequential command", (command) => {
     expect(hasSequentialShellCommands(command)).toBe(false);
+  });
+});
+
+describe("hasMultipleSubstantiveShellCommands", () => {
+  it.each([
+    "grep -i github /etc/hosts; echo '---dig:'; dig +short api.github.com @1.1.1.1; scutil --dns",
+    "cd repo && swift test && rg -n failure src",
+    "command -v rg || cargo install ripgrep; rg --files src",
+    "bash -lc 'grep -i github /etc/hosts; dig +short api.github.com @1.1.1.1'",
+  ])("detects `%s` as multiple substantive commands", (command) => {
+    expect(hasMultipleSubstantiveShellCommands({ command })).toBe(true);
+  });
+
+  it.each([
+    "cd repo && pnpm test",
+    "source .env && cargo test",
+    "if command -v tt >/dev/null 2>&1; then tt title 'tests'; else tmux select-pane -T 'tests' 2>/dev/null || true; fi; pnpm test",
+    "bash -lc 'cd repo && pnpm test'",
+  ])("keeps setup-wrapped `%s` as one substantive command", (command) => {
+    expect(hasMultipleSubstantiveShellCommands({ command })).toBe(false);
   });
 });
 

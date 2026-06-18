@@ -2,6 +2,7 @@ import type { CommandMatchSource, ToolExecutionInput } from "../types.js";
 
 import {
   ENV_ASSIGNMENT_PATTERN,
+  hasSequentialShellCommands,
   isCompoundShellCommand,
   splitTopLevelCommandChain,
   stripLeadingEnvAssignmentsFromCommand,
@@ -521,6 +522,40 @@ export function resolveEffectiveCommand(input: Pick<ToolExecutionInput, "argv" |
   }
 
   return null;
+}
+
+export function hasMultipleSubstantiveShellCommands(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  const shellBody = unwrapShellRunner(input);
+  const command = (shellBody ?? input.command ?? "").trim();
+  if (!command || !hasSequentialShellCommands(command)) {
+    return false;
+  }
+
+  let effectiveCommand = command;
+  for (let iteration = 0; iteration < 16; iteration += 1) {
+    const setupIfTail = stripLeadingSetupIfBlock(effectiveCommand);
+    const setupSegmentTail = setupIfTail ?? stripLeadingSetupSegment(effectiveCommand);
+    if (!setupSegmentTail) {
+      break;
+    }
+    effectiveCommand = setupSegmentTail;
+  }
+
+  let substantiveCount = 0;
+  for (const sequenceSegment of splitTopLevelCommandChain(effectiveCommand)) {
+    for (const segment of splitTopLevelOrChain(sequenceSegment)) {
+      const candidate = buildEffectiveCandidate(tokenizeCommand(segment), true, segment);
+      if (!candidate) {
+        continue;
+      }
+      substantiveCount += 1;
+      if (substantiveCount > 1) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 export function getEffectiveCommandArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {

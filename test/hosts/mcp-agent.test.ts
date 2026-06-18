@@ -117,6 +117,7 @@ describe("mcp-agent definition", () => {
     expect(result.agentPath).toBe(agentPath);
     expect(result.backupPath).toBeUndefined();
     expect(definition).toContain("name: tokenjuice");
+    expect(definition).toContain("<!-- tokenjuice:mcp-agent -->");
     expect(definition).toContain("tokenjuice mcp-agent terminal output compaction");
     expect(definition).toContain("mcp-agent workflow");
     expect(definition).toContain("tokenjuice wrap -- <command>");
@@ -205,6 +206,20 @@ describe("mcp-agent definition", () => {
     await expect(readFile(`${agentPath}.bak`, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it("recognizes and removes an exact legacy tokenjuice definition", async () => {
+    const home = await createTempDir();
+    const agentPath = join(home, ".mcp-agent", "agents", "tokenjuice.md");
+    await installMcpAgentDefinition(agentPath, { projectDir: home });
+    const currentDefinition = await readFile(agentPath, "utf8");
+    const legacyDefinition = currentDefinition.replace("<!-- tokenjuice:mcp-agent -->\n\n", "");
+    await writeFile(agentPath, legacyDefinition, "utf8");
+
+    const removed = await uninstallMcpAgentDefinition(agentPath, { projectDir: home });
+
+    expect(removed.removed).toBe(true);
+    await expect(readFile(agentPath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("does not restore incidental backups when uninstalling a fresh tokenjuice definition", async () => {
     const home = await createTempDir();
     const agentPath = join(home, ".mcp-agent", "agents", "tokenjuice.md");
@@ -249,6 +264,7 @@ describe("mcp-agent definition", () => {
         "name: tokenjuice",
         "description: stale",
         "---",
+        "<!-- tokenjuice:mcp-agent -->",
         "# tokenjuice mcp-agent terminal output compaction",
         "- Prefer `tokenjuice wrap -- <command>`.",
         "- If output looks wrong, rerun with `tokenjuice wrap --full -- <command>`.",
@@ -277,6 +293,27 @@ describe("mcp-agent definition", () => {
 
     expect(removed.removed).toBe(false);
     expect(definition).toBe("custom mcp-agent definition\n");
+  });
+
+  it("does not claim an unrelated definition that only mentions the tokenjuice marker", async () => {
+    const home = await createTempDir();
+    const agentPath = join(home, ".mcp-agent", "agents", "tokenjuice.md");
+    const customDefinition = [
+      "---",
+      "name: tokenjuice",
+      "---",
+      "",
+      "# tokenjuice mcp-agent terminal output compaction",
+      "",
+      "Custom guidance.",
+    ].join("\n");
+    await mkdir(join(home, ".mcp-agent", "agents"), { recursive: true });
+    await writeFile(agentPath, customDefinition, "utf8");
+
+    const removed = await uninstallMcpAgentDefinition(agentPath, { projectDir: home });
+
+    expect(removed.removed).toBe(false);
+    await expect(readFile(agentPath, "utf8")).resolves.toBe(customDefinition);
   });
 
   it("reports non-tokenjuice agent definitions as disabled", async () => {

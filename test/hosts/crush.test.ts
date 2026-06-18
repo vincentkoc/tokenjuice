@@ -105,18 +105,19 @@ describe("crush skill", () => {
     await expect(readFile(skillPath, "utf8")).resolves.toContain("tokenjuice wrap --raw -- <command>");
   });
 
-  it("does not restore tokenjuice guidance with an edited marker on uninstall", async () => {
+  it("restores a markerless existing skill that mentions tokenjuice commands", async () => {
     const home = await createTempDir();
     const skillPath = join(home, ".crush", "skills", "tokenjuice", "SKILL.md");
-    await installCrushSkill(undefined, { projectDir: home });
-    await writeFile(skillPath, "---\nname: tokenjuice\n---\n\nuse `tokenjuice wrap -- <command>`\n", "utf8");
+    const customSkill = "---\nname: tokenjuice\n---\n\nuse `tokenjuice wrap -- <command>`\n";
+    await mkdir(join(home, ".crush", "skills", "tokenjuice"), { recursive: true });
+    await writeFile(skillPath, customSkill, "utf8");
     await installCrushSkill(undefined, { projectDir: home });
 
     const removed = await uninstallCrushSkill(skillPath);
 
     expect(removed.removed).toBe(true);
-    await expect(access(skillPath)).rejects.toMatchObject({ code: "ENOENT" });
-    await expect(readFile(`${skillPath}.bak`, "utf8")).resolves.toContain("tokenjuice wrap -- <command>");
+    await expect(readFile(skillPath, "utf8")).resolves.toBe(customSkill);
+    await expect(access(`${skillPath}.bak`)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("restores a backed-up custom skill on uninstall", async () => {
@@ -200,6 +201,18 @@ describe("crush skill", () => {
 
     expect(removed.removed).toBe(false);
     await expect(readFile(skillPath, "utf8")).resolves.toContain("custom skill");
+  });
+
+  it("does not remove a custom skill that only mentions tokenjuice commands", async () => {
+    const home = await createTempDir();
+    const skillPath = join(home, ".crush", "skills", "tokenjuice", "SKILL.md");
+    await mkdir(join(home, ".crush", "skills", "tokenjuice"), { recursive: true });
+    await writeFile(skillPath, "---\nname: tokenjuice\n---\n\nrun tokenjuice wrap -- <command>\n", "utf8");
+
+    const removed = await uninstallCrushSkill(skillPath);
+
+    expect(removed.removed).toBe(false);
+    await expect(readFile(skillPath, "utf8")).resolves.toContain("run tokenjuice wrap -- <command>");
   });
 
   it("uses CRUSH_PROJECT_DIR for the default skill file", async () => {

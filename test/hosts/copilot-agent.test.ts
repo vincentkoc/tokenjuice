@@ -131,6 +131,22 @@ describe("installCopilotAgentHook", () => {
     expect(parsed.hooks.postToolUse.find((entry) => entry.bash.includes("copilot-agent-post-tool-use"))).toBeTruthy();
   });
 
+  it("enables hooks when reinstalling into a disabled configuration", async () => {
+    const projectDir = await createTempDir();
+    const hooksPath = join(projectDir, ".github", "hooks", "tokenjuice-agent.json");
+    await mkdir(join(projectDir, ".github", "hooks"), { recursive: true });
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({ version: 1, disableAllHooks: true, hooks: {} }, null, 2)}\n`,
+      "utf8",
+    );
+
+    await installCopilotAgentHook(undefined, { projectDir });
+    const config = JSON.parse(await readFile(hooksPath, "utf8")) as { disableAllHooks?: boolean };
+
+    expect(config.disableAllHooks).toBe(false);
+  });
+
   it("removes stale tokenjuice entries from sibling repo hook files", async () => {
     const projectDir = await createTempDir();
     const hooksDir = join(projectDir, ".github", "hooks");

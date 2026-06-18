@@ -343,6 +343,9 @@ export async function installCopilotAgentHook(
   removeTokenjuiceCopilotAgentHooks(config);
   const retained = getPostToolUseHooks(config);
   config.hooks.postToolUse = [...retained, createTokenjuiceCopilotAgentHook(command)];
+  if (config.disableAllHooks === true) {
+    config.disableAllHooks = false;
+  }
   if (typeof config.version !== "number") {
     config.version = 1;
   }

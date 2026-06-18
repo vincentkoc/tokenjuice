@@ -40,6 +40,7 @@ export type McpAgentDoctorReport = {
 };
 
 const TOKENJUICE_MCP_AGENT_FIX_COMMAND = "tokenjuice install mcp-agent";
+const TOKENJUICE_MCP_AGENT_OWNERSHIP_MARKER = "<!-- tokenjuice:mcp-agent -->";
 const TOKENJUICE_MCP_AGENT_MARKER = "tokenjuice mcp-agent terminal output compaction";
 const TOKENJUICE_MCP_AGENT_RESTORE_BACKUP_MARKER_PREFIX = "<!-- tokenjuice:mcp-agent-restore-backup=";
 const TOKENJUICE_MCP_AGENT_LOAD_GUIDANCE = "enable agents.search_paths with .mcp-agent/agents in mcp_agent.config.yaml";
@@ -47,7 +48,13 @@ const TOKENJUICE_MCP_AGENT_ADVISORY =
   "mcp-agent support is beta and agent-file based; enable `.mcp-agent/agents` in `agents.search_paths` so mcp-agent can load it.";
 
 function isTokenjuiceMcpAgentDefinitionText(text: string): boolean {
-  return text.includes(TOKENJUICE_MCP_AGENT_MARKER);
+  return text.includes(TOKENJUICE_MCP_AGENT_OWNERSHIP_MARKER)
+    || isLegacyTokenjuiceMcpAgentDefinitionText(text);
+}
+
+function isLegacyTokenjuiceMcpAgentDefinitionText(text: string): boolean {
+  const restoreBackupSuffix = readRestoreBackupSuffix(text);
+  return text === buildMcpAgentDefinition({ restoreBackupSuffix, includeOwnershipMarker: false });
 }
 
 function readRestoreBackupSuffix(text: string): string | undefined {
@@ -199,7 +206,10 @@ async function resolveAgentPath(agentPath?: string, options: McpAgentDefinitionO
 }
 
 function buildMcpAgentDefinition(
-  { restoreBackupSuffix }: { restoreBackupSuffix?: string | undefined } = {},
+  {
+    restoreBackupSuffix,
+    includeOwnershipMarker = true,
+  }: { restoreBackupSuffix?: string | undefined; includeOwnershipMarker?: boolean } = {},
 ): string {
   return [
     "---",
@@ -207,6 +217,7 @@ function buildMcpAgentDefinition(
     "description: Use when mcp-agent workflows run terminal commands likely to produce long output or need compacted shell evidence.",
     "---",
     "",
+    ...(includeOwnershipMarker ? [TOKENJUICE_MCP_AGENT_OWNERSHIP_MARKER, ""] : []),
     ...(restoreBackupSuffix
       ? [`${TOKENJUICE_MCP_AGENT_RESTORE_BACKUP_MARKER_PREFIX}${restoreBackupSuffix} -->`, ""]
       : []),
@@ -285,7 +296,6 @@ export async function uninstallMcpAgentDefinition(
     await rejectDefinitionSymlink(backupPath);
     const backup = await readInstructionFile(backupPath);
     if (backup.exists && !isTokenjuiceMcpAgentDefinitionText(backup.text)) {
-      await rm(resolvedAgentPath, { force: true });
       await rename(backupPath, resolvedAgentPath);
       return { agentPath: resolvedAgentPath, removed: true };
     }

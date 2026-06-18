@@ -78,6 +78,35 @@ describe("gemini-cli hooks", () => {
     expect(parsed.hooks.AfterTool[1]?.hooks[0]?.command).toBe(`${launcherPath} gemini-cli-after-tool`);
   });
 
+  it("preserves unrelated hooks that mention the tokenjuice subcommand", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "settings.json");
+    await writeFile(settingsPath, JSON.stringify({
+      hooks: {
+        AfterTool: [
+          {
+            matcher: "run_shell_command",
+            hooks: [{ type: "command", name: "custom", command: "echo gemini-cli-after-tool" }],
+          },
+        ],
+      },
+    }));
+
+    await installGeminiCliHook(settingsPath);
+    const removed = await uninstallGeminiCliHook(settingsPath);
+    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
+      hooks: { AfterTool: Array<{ hooks: Array<{ name?: string; command: string }> }> };
+    };
+
+    expect(removed.removed).toBe(1);
+    expect(parsed.hooks.AfterTool).toEqual([
+      {
+        matcher: "run_shell_command",
+        hooks: [{ type: "command", name: "custom", command: "echo gemini-cli-after-tool" }],
+      },
+    ]);
+  });
+
   it("reports installed and uninstalled hook health", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");

@@ -67,9 +67,7 @@ async function writeCrushSkillWithoutBackup(skillPath: string): Promise<void> {
 }
 
 function isTokenjuiceCrushSkillText(text: string): boolean {
-  return text.includes(TOKENJUICE_CRUSH_MARKER)
-    || text.includes(TOKENJUICE_WRAP_COMMAND)
-    || text.includes(TOKENJUICE_RAW_COMMAND);
+  return text.includes(TOKENJUICE_CRUSH_MARKER);
 }
 
 export async function installCrushSkill(

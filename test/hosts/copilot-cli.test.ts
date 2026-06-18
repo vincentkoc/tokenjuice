@@ -504,10 +504,9 @@ describe("runCopilotCliPostToolUseHook", () => {
       cwd: "/tmp",
       toolName: "bash",
       toolArgs: { command: "git ls-files" },
-      toolResult: {
-        resultType: "success",
-        textResultForLlm: longOutput,
-      },
+      toolResult: "raw tool result",
+      resultType: "success",
+      textResultForLlm: longOutput,
     });
 
     const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));

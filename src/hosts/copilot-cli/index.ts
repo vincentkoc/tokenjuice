@@ -63,6 +63,10 @@ type CopilotCliPostToolUsePayload = {
   toolArgs?: unknown;
   tool_result?: unknown;
   toolResult?: unknown;
+  result_type?: unknown;
+  resultType?: unknown;
+  text_result_for_llm?: unknown;
+  textResultForLlm?: unknown;
 };
 
 const TOKENJUICE_COPILOT_CLI_FIX_COMMAND = "tokenjuice install copilot-cli";
@@ -492,14 +496,14 @@ export async function runCopilotCliPostToolUseHook(rawText: string): Promise<num
     : isRecord(payload.tool_result)
     ? payload.tool_result
     : undefined;
-  if (!toolResult) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
 
-  const resultType = typeof toolResult.resultType === "string"
+  const resultType = typeof payload.resultType === "string"
+    ? payload.resultType
+    : typeof payload.result_type === "string"
+    ? payload.result_type
+    : typeof toolResult?.resultType === "string"
     ? toolResult.resultType
-    : typeof toolResult.result_type === "string"
+    : typeof toolResult?.result_type === "string"
     ? toolResult.result_type
     : undefined;
   // Only rewrite success output; failure/rejected/denied payloads pass
@@ -509,9 +513,13 @@ export async function runCopilotCliPostToolUseHook(rawText: string): Promise<num
     return 0;
   }
 
-  const combinedText = typeof toolResult.textResultForLlm === "string"
+  const combinedText = typeof payload.textResultForLlm === "string"
+    ? payload.textResultForLlm
+    : typeof payload.text_result_for_llm === "string"
+    ? payload.text_result_for_llm
+    : typeof toolResult?.textResultForLlm === "string"
     ? toolResult.textResultForLlm
-    : typeof toolResult.text_result_for_llm === "string"
+    : typeof toolResult?.text_result_for_llm === "string"
     ? toolResult.text_result_for_llm
     : "";
   if (!combinedText.trim()) {

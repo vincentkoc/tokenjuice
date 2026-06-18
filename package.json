@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.7.0",
-    "esbuild": "^0.25.11",
+    "esbuild": "^0.28.1",
     "madge": "^8.0.0",
     "oxlint": "^1.61.0",
     "publint": "^0.3.18",

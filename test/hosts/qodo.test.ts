@@ -210,6 +210,14 @@ describe("Qodo review config", () => {
     await expect(installQodoReviewConfig(configPath, { projectDir: home })).rejects.toThrow(/inline TOML table/u);
   });
 
+  it("refuses quoted inline review_agent tables before adding a table section", async () => {
+    const home = await createTempDir();
+    const configPath = join(home, ".pr_agent.toml");
+    await writeFile(configPath, '"review_agent" = { issues_user_guidelines = "keep my review guidance" }\n', "utf8");
+
+    await expect(installQodoReviewConfig(configPath, { projectDir: home })).rejects.toThrow(/inline TOML table/u);
+  });
+
   it("ignores table-looking text inside review-agent multiline strings", async () => {
     const home = await createTempDir();
     const configPath = join(home, ".pr_agent.toml");

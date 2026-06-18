@@ -95,12 +95,30 @@ async function readConfig(configPath: string): Promise<{ text: string; exists: b
   }
 }
 
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
 function hasMalformedMarkerStructure(text: string): boolean {
-  return countMarker(text, TOKENJUICE_KIMI_BEGIN) !== countMarker(text, TOKENJUICE_KIMI_END);
+  let offset = 0;
+  let hasOpenBlock = false;
+  while (offset < text.length) {
+    const beginIndex = text.indexOf(TOKENJUICE_KIMI_BEGIN, offset);
+    const endIndex = text.indexOf(TOKENJUICE_KIMI_END, offset);
+    if (beginIndex === -1 && endIndex === -1) {
+      break;
+    }
+    if (beginIndex !== -1 && (endIndex === -1 || beginIndex < endIndex)) {
+      if (hasOpenBlock) {
+        return true;
+      }
+      hasOpenBlock = true;
+      offset = beginIndex + TOKENJUICE_KIMI_BEGIN.length;
+    } else {
+      if (!hasOpenBlock) {
+        return true;
+      }
+      hasOpenBlock = false;
+      offset = endIndex + TOKENJUICE_KIMI_END.length;
+    }
+  }
+  return hasOpenBlock;
 }
 
 function removeKimiHookBlock(text: string): { text: string; removed: number } {

@@ -1,4 +1,4 @@
-import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import {
@@ -151,7 +151,6 @@ export async function uninstallAmazonQRule(
   const backupPath = `${resolvedRulePath}.bak`;
   const backup = await readInstructionFile(backupPath);
   if (existing.exists && backup.exists && !isTokenjuiceAmazonQRuleText(backup.text)) {
-    await rm(resolvedRulePath, { force: true });
     await rename(backupPath, resolvedRulePath);
     return { rulePath: resolvedRulePath, removed: true };
   }

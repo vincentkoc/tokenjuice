@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Harden ownership detection, restoration, and malformed marker handling for beta host integrations.
+
 ## 0.8.0 - 2026-05-25
 
 ### Features

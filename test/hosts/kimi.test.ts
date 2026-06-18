@@ -169,6 +169,24 @@ describe("kimi hook", () => {
     expect(disabled.status).toBe("disabled");
   });
 
+  it("refuses balanced but misordered tokenjuice markers", async () => {
+    const home = await createTempDir();
+    const configPath = join(home, ".kimi", "config.toml");
+    const malformed = [
+      "# tokenjuice:kimi begin",
+      'theme = "dark"',
+      "# tokenjuice:kimi begin",
+      "# tokenjuice:kimi end",
+      'model = "keep"',
+      "# tokenjuice:kimi end",
+    ].join("\n");
+    await mkdir(join(home, ".kimi"), { recursive: true });
+    await writeFile(configPath, malformed, "utf8");
+
+    await expect(uninstallKimiHook(configPath)).rejects.toThrow(/malformed tokenjuice Kimi markers/u);
+    await expect(readFile(configPath, "utf8")).resolves.toBe(malformed);
+  });
+
   it("uses KIMI_HOME for the default config path", async () => {
     const home = await createTempDir();
     process.env.KIMI_HOME = home;

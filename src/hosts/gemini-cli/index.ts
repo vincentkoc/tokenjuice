@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -99,13 +100,19 @@ async function loadGeminiSettingsWithBackup(settingsPath: string): Promise<{ con
 
 async function writeGeminiSettings(settingsPath: string, config: GeminiSettings): Promise<void> {
   await mkdir(dirname(settingsPath), { recursive: true });
-  const tempPath = `${settingsPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, settingsPath);
+  const tempPath = `${settingsPath}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    await rename(tempPath, settingsPath);
+  } finally {
+    await rm(tempPath, { force: true });
+  }
 }
 
 function isTokenjuiceGeminiHook(entry: unknown): boolean {
   return isRecord(entry)
+    && entry.type === "command"
+    && entry.name === "tokenjuice"
     && typeof entry.command === "string"
     && entry.command.includes(TOKENJUICE_GEMINI_CLI_SUBCOMMAND);
 }

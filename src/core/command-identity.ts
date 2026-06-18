@@ -2,21 +2,16 @@ import { basename } from "node:path";
 
 import type { ToolExecutionInput } from "../types.js";
 
-import { deriveCommandMatchCandidates, getSourcePriority, type CommandMatchCandidate } from "./command-match.js";
-import { stripLeadingCdPrefix, tokenizeCommand } from "./command-shell.js";
+import { deriveCommandMatchCandidates, getSourcePriority, type CommandMatchCandidate, unwrapShellRunner } from "./command-match.js";
+import { hasSequentialShellCommands, isCompoundShellCommand, stripLeadingCdPrefix, tokenizeCommand } from "./command-shell.js";
 
 const FILE_CONTENT_INSPECTION_COMMANDS = new Set(["cat", "sed", "head", "tail", "nl", "bat", "batcat", "jq", "yq"]);
 const REPO_INVENTORY_COMMANDS = new Set(["find", "fd", "fdfind", "ls", "tree"]);
 
-// Read-only configuration-inspection CLIs whose output agents rely on verbatim.
-// Compacting these can silently drop config keys and make agents act on wrong data.
-const READ_ONLY_CONFIG_INSPECTION_COMMAND_PATTERNS = [
-  /(?:^|[;&|]\s*|\s)openclaw\s+config\s+get(?:\s|$)/u,
-];
-
 // ssh options that consume a separate value argument (per ssh(1)); needed to
 // find where the destination ends and the remote command begins.
 const SSH_OPTIONS_WITH_VALUES = new Set([
+  "-B",
   "-b",
   "-c",
   "-D",
@@ -31,6 +26,7 @@ const SSH_OPTIONS_WITH_VALUES = new Set([
   "-m",
   "-O",
   "-o",
+  "-P",
   "-p",
   "-Q",
   "-R",
@@ -152,9 +148,10 @@ function isPlutilFileContentArgv(argv: string[]): boolean {
   return outputIndex !== -1 && argv[outputIndex + 1] === "-";
 }
 
-function isReadOnlyConfigInspectionCommand(command: string | undefined): boolean {
-  return typeof command === "string"
-    && READ_ONLY_CONFIG_INSPECTION_COMMAND_PATTERNS.some((pattern) => pattern.test(command));
+function isReadOnlyConfigInspectionArgv(argv: string[]): boolean {
+  return getCommandName(argv) === "openclaw"
+    && argv[1] === "config"
+    && argv[2] === "get";
 }
 
 function getSshRemoteCommand(argv: string[]): string | null {
@@ -190,9 +187,7 @@ export function isFileContentInspectionArgv(argv: string[]): boolean {
   if (!argv0) {
     return false;
   }
-  return FILE_CONTENT_INSPECTION_COMMANDS.has(argv0)
-    || isGitShowFileContentArgv(argv)
-    || isPlutilFileContentArgv(argv);
+  return FILE_CONTENT_INSPECTION_COMMANDS.has(argv0) || isGitShowFileContentArgv(argv);
 }
 
 function isGhApiContentsDecodeCommand(command: string | undefined): boolean {
@@ -288,21 +283,46 @@ function getInspectionArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
   return sourceCommand ? tokenizeCommand(sourceCommand) : [];
 }
 
-export function isPlutilFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  return isPlutilFileContentArgv(getInspectionArgv(input));
+export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  return isFileContentInspectionArgv(getInspectionArgv(input))
+    || deriveCommandMatchCandidates(input).some((candidate) => isGhApiContentsDecodeCommand(candidate.command));
 }
 
-export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+function isVerbatimRemoteInspectionCommand(command: string): boolean {
+  const effectiveCommand = unwrapShellRunner({ command }) ?? command;
+  const isSingleGhContentsDecode = isGhApiContentsDecodeCommand(effectiveCommand)
+    && !hasSequentialShellCommands(effectiveCommand)
+    && /^[^|]+\|\s*base64\s+(?:-[dD]\b|--decode\b)\s*$/u.test(effectiveCommand.trim());
+  if (isSingleGhContentsDecode) {
+    return true;
+  }
+  if (
+    isCompoundShellCommand(stripLeadingCdPrefix(command))
+    || isCompoundShellCommand(effectiveCommand)
+  ) {
+    return false;
+  }
+
+  const argv = getInspectionArgv({ command: effectiveCommand });
+  return isPlutilFileContentArgv(argv)
+    || isReadOnlyConfigInspectionArgv(argv)
+    || isFileContentInspectionArgv(argv);
+}
+
+export function isVerbatimConfigInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  if (input.command && isCompoundShellCommand(stripLeadingCdPrefix(input.command))) {
+    return false;
+  }
+
   const candidates = deriveCommandMatchCandidates(input);
-  return isFileContentInspectionArgv(getInspectionArgv(input))
-    || candidates.some((candidate) => isGhApiContentsDecodeCommand(candidate.command))
-    || candidates.some((candidate) => isReadOnlyConfigInspectionCommand(candidate.command))
+  return candidates.some((candidate) => (
+    isPlutilFileContentArgv(candidate.argv)
+    || isReadOnlyConfigInspectionArgv(candidate.argv)
+  ))
     || candidates.some((candidate) => {
       const remoteCommand = getSshRemoteCommand(candidate.argv);
       return remoteCommand !== null
-        && (isReadOnlyConfigInspectionCommand(remoteCommand)
-          || isFileContentInspectionArgv(getInspectionArgv({ command: remoteCommand }))
-          || isGhApiContentsDecodeCommand(remoteCommand));
+        && isVerbatimRemoteInspectionCommand(remoteCommand);
     });
 }
 

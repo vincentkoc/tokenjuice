@@ -22,6 +22,7 @@ export {
   getGitSubcommand,
   isFileContentInspectionCommand,
   isRepositoryInspectionCommand,
+  isVerbatimConfigInspectionCommand,
   normalizeCommandSignature,
   normalizeEffectiveCommandSignature,
 } from "./command-identity.js";

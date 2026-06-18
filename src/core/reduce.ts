@@ -1,7 +1,7 @@
 import { loadRules } from "./rules.js";
 import { hasMultipleSubstantiveShellCommands } from "./command-match.js";
 import { classifyExecution, resolveRuleMatch } from "./classify.js";
-import { isFileContentInspectionCommand } from "./command-identity.js";
+import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
@@ -354,7 +354,9 @@ export async function reduceExecutionWithRules(
       }
     : undefined;
 
-  if (opts.raw) {
+  const requiresVerbatimOutput = !multipleSubstantiveCommands
+    && isVerbatimConfigInspectionCommand(input);
+  if (opts.raw || requiresVerbatimOutput) {
     const rawRef = opts.store
       ? await storeArtifact(
           {
@@ -452,7 +454,7 @@ export async function reduceExecutionWithRules(
     };
   }
 
-  if (isFileContentInspectionCommand(normalizedInput)) {
+  if (classification.matchedReducer === "generic/fallback" && isFileContentInspectionCommand(normalizedInput)) {
     if (!opts.store && opts.recordStats) {
       await storeArtifactMetadata(
         {

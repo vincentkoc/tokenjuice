@@ -419,7 +419,7 @@ describe("reduceExecution", () => {
   it("keeps plutil plist dumps verbatim", async () => {
     const rawText = [
       "{",
-      ...Array.from({ length: 40 }, (_, index) => `  "Key${index + 1}" => "value ${index + 1}"`),
+      ...Array.from({ length: 80 }, (_, index) => `  "Key${index + 1}" => "${"value ".repeat(12)}${index + 1}"`),
       "}",
     ].join("\n");
 
@@ -436,7 +436,7 @@ describe("reduceExecution", () => {
   });
 
   it("keeps read-only config inspection output verbatim", async () => {
-    const rawText = Array.from({ length: 30 }, (_, index) => `setting-${index + 1}: value-${index + 1}`).join("\n");
+    const rawText = Array.from({ length: 80 }, (_, index) => `setting-${index + 1}: ${"value ".repeat(12)}${index + 1}`).join("\n");
 
     const result = await reduceExecution({
       toolName: "exec",
@@ -450,11 +450,25 @@ describe("reduceExecution", () => {
   });
 
   it("keeps ssh-wrapped file inspection output verbatim", async () => {
-    const rawText = Array.from({ length: 30 }, (_, index) => `host-line ${index + 1}`).join("\n");
+    const rawText = Array.from({ length: 80 }, (_, index) => `host-line ${index + 1} ${"value ".repeat(12)}`).join("\n");
 
     const result = await reduceExecution({
       toolName: "exec",
       command: "ssh build-host 'cat /var/log/app.log'",
+      stdout: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
+  it("keeps ssh-wrapped gh contents decode output verbatim", async () => {
+    const rawText = Array.from({ length: 80 }, (_, index) => `file-line ${index + 1} ${"value ".repeat(12)}`).join("\n");
+
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "ssh build-host 'gh api repos/o/r/contents/file --jq .content | base64 --decode'",
       stdout: rawText,
       exitCode: 0,
     });

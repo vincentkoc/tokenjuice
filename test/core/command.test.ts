@@ -7,6 +7,7 @@ import {
   hasSequentialShellCommands,
   isFileContentInspectionCommand,
   isRepositoryInspectionCommand,
+  isVerbatimConfigInspectionCommand,
   normalizeCommandSignature,
   normalizeEffectiveCommandSignature,
   normalizeExecutionInput,
@@ -420,12 +421,6 @@ describe("isFileContentInspectionCommand", () => {
     { label: "clustered shell wrapper", command: "bash -ec 'cat README.md'" },
     { label: "git show blob", command: "git show HEAD:src/core/reduce.ts" },
     { label: "gh contents decode", command: "gh api repos/gumadeiras/tokenjuice/contents/src/core/reduce.ts --jq .content | base64 -d" },
-    { label: "plutil print", command: "plutil -p /Library/LaunchDaemons/com.example.daemon.plist" },
-    { label: "plutil convert to stdout", command: "plutil -convert json -o - settings.plist" },
-    { label: "read-only config get", command: "openclaw config get agents.defaults" },
-    { label: "ssh-wrapped cat", command: "ssh build-host 'cat /etc/hosts'" },
-    { label: "ssh-wrapped plutil with ssh options", command: "ssh -p 2222 -i ~/.ssh/id_ed25519 build-host 'plutil -p /Library/LaunchDaemons/com.example.daemon.plist'" },
-    { label: "ssh-wrapped read-only config get", command: "ssh build-host 'openclaw config get gateway'" },
   ])("detects $label as file inspection from command text", ({ command }) => {
     expect(isFileContentInspectionCommand({ command })).toBe(true);
   });
@@ -450,20 +445,38 @@ describe("isFileContentInspectionCommand", () => {
     expect(isFileContentInspectionCommand({ command: "git show HEAD --stat" })).toBe(false);
   });
 
-  it("does not treat plutil in-place conversions as file inspection", () => {
-    expect(isFileContentInspectionCommand({ command: "plutil -convert binary1 settings.plist" })).toBe(false);
+});
+
+describe("isVerbatimConfigInspectionCommand", () => {
+  it.each([
+    { label: "plutil print", command: "plutil -p /Library/LaunchDaemons/com.example.daemon.plist" },
+    { label: "plutil convert to stdout", command: "plutil -convert json -o - settings.plist" },
+    { label: "read-only config get", command: "openclaw config get agents.defaults" },
+    { label: "ssh-wrapped cat", command: "ssh build-host 'cat /etc/hosts'" },
+    { label: "ssh-wrapped cat with compression", command: "ssh -C build-host 'cat /etc/hosts'" },
+    { label: "ssh-wrapped cat with cipher", command: "ssh -c aes128-ctr build-host 'cat /etc/hosts'" },
+    { label: "ssh-wrapped cat with bind interface", command: "ssh -B en0 build-host 'cat /etc/hosts'" },
+    { label: "ssh-wrapped cat with tag", command: "ssh -P audit build-host 'cat /etc/hosts'" },
+    { label: "ssh-wrapped shell runner", command: "ssh build-host \"bash -lc 'cat /etc/hosts'\"" },
+    { label: "ssh-wrapped plutil with ssh options", command: "ssh -p 2222 -i ~/.ssh/id_ed25519 build-host 'plutil -p /Library/LaunchDaemons/com.example.daemon.plist'" },
+    { label: "ssh-wrapped read-only config get", command: "ssh build-host 'openclaw config get gateway'" },
+    { label: "ssh-wrapped gh contents decode", command: "ssh build-host 'gh api repos/o/r/contents/file --jq .content | base64 --decode'" },
+  ])("detects $label as a verbatim config inspection", ({ command }) => {
+    expect(isVerbatimConfigInspectionCommand({ command })).toBe(true);
   });
 
-  it("does not treat config writes as file inspection", () => {
-    expect(isFileContentInspectionCommand({ command: "openclaw config set agents.defaults.model test" })).toBe(false);
-  });
-
-  it("does not treat ssh remote mutations as file inspection", () => {
-    expect(isFileContentInspectionCommand({ command: "ssh build-host 'rm -rf /tmp/scratch'" })).toBe(false);
-  });
-
-  it("does not treat ssh without a remote command as file inspection", () => {
-    expect(isFileContentInspectionCommand({ command: "ssh build-host" })).toBe(false);
+  it.each([
+    "plutil -convert binary1 settings.plist",
+    "openclaw config set agents.defaults.model test",
+    "ssh build-host 'rm -rf /tmp/scratch'",
+    "ssh build-host",
+    "ssh build-host 'cat /etc/hosts && pytest -q'",
+    "ssh build-host \"bash -lc 'cat /etc/hosts; pytest -q'\"",
+    "ssh build-host 'gh api repos/o/r/contents/file --jq .content | base64 --decode; pytest -q'",
+    "bash -lc 'openclaw config get gateway' && pytest -q",
+    "ssh build-host \"bash -lc 'cat /etc/hosts' && pytest -q\"",
+  ])("does not treat `%s` as a verbatim config inspection", (command) => {
+    expect(isVerbatimConfigInspectionCommand({ command })).toBe(false);
   });
 });
 

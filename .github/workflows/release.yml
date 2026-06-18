@@ -26,12 +26,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
       - name: Resolve release tag
+        id: release
         env:
           INPUT_TAG: ${{ inputs.tag_name }}
         run: |
@@ -43,6 +39,19 @@ jobs:
           fi
           echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+
+      - name: Verify checked out release tag
+        run: |
+          set -euo pipefail
+          git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
 
       - name: Setup Node
         uses: actions/setup-node@v6

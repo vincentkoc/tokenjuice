@@ -5,6 +5,7 @@
 ### Fixes
 
 - Harden ownership detection, restoration, and malformed marker handling for beta host integrations.
+- Build release artifacts from explicit tags and validate Homebrew tap release-tag input.
 
 ## 0.8.0 - 2026-05-25
 

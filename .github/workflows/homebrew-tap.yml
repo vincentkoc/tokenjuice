@@ -17,6 +17,16 @@ jobs:
     if: startsWith(inputs.tag_name, 'v')
 
     steps:
+      - name: Validate release tag
+        env:
+          TAG: ${{ inputs.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
+            echo "Invalid release tag: ${TAG}"
+            exit 1
+          fi
+
       - name: Validate tap configuration
         run: |
           set -euo pipefail

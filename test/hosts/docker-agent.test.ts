@@ -267,6 +267,7 @@ describe("Docker Agent prompt", () => {
 
     const installed = await installDockerAgentPrompt();
 
+    expect(installed.promptPath).toBe(join(home, ".docker-agent", "tokenjuice.md"));
     await expectSamePath(installed.promptPath, join(home, ".docker-agent", "tokenjuice.md"));
   });
 

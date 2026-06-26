@@ -139,7 +139,7 @@ import { doctorZencoderRule, installZencoderRule, uninstallZencoderRule } from "
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { shellQuote } from "../hosts/shared/hook-command.js";
 import { formatHookDoctorReport } from "./doctor-output.js";
-import { formatInstallSuccess } from "./install-output.js";
+import { formatCodeBuddyInstallSuccess, formatInstallSuccess } from "./install-output.js";
 
 type Format = "text" | "json";
 
@@ -1496,12 +1496,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed codebuddy hook: ${result.settingsPath}\n`);
-    process.stdout.write(`command: ${result.command}\n`);
-    if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
-    }
-    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
+    process.stdout.write(formatCodeBuddyInstallSuccess({ ...result, local: args.local }));
     return 0;
   }
 

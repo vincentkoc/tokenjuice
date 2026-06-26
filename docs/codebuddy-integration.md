@@ -123,10 +123,21 @@ expected:
 
 - `doctor codebuddy` reports `health: ok`
 - the hook entry in `~/.codebuddy/settings.json` has `matcher: "Bash"` and a command containing `codebuddy-pre-tool-use --wrap-launcher ...`
+- if CodeBuddy was already running when tokenjuice wrote the settings file, open `/hooks` and review the external change for this session, or start a new CodeBuddy session.
 - `uninstall codebuddy` removes tokenjuice-managed `PreToolUse` and legacy `PostToolUse` entries while preserving unrelated hooks
 - wrapped shell commands show nested normalized command/argv in trace
 - `--raw` keeps `ratio = 1`
 - non-raw wraps usually produce `ratio < 1`
+
+## runtime reload behavior
+
+`tokenjuice install codebuddy` edits `~/.codebuddy/settings.json` from outside
+CodeBuddy. CodeBuddy reviews external hook changes at the session boundary. Open
+`/hooks` and review the external change for this session, or start a new
+CodeBuddy session.
+
+`tokenjuice doctor codebuddy` verifies the persisted settings file. It does not
+verify that an active CodeBuddy session has reviewed or activated the hook.
 
 ## environment variables
 

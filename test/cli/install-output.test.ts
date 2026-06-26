@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatInstallSuccess } from "../../src/cli/install-output.js";
+import { formatCodeBuddyInstallSuccess, formatInstallSuccess } from "../../src/cli/install-output.js";
 
 describe("formatInstallSuccess", () => {
   it("renders an explicit success line before aligned install details", () => {
@@ -20,5 +20,38 @@ describe("formatInstallSuccess", () => {
         "",
       ].join("\n"),
     );
+  });
+});
+
+describe("formatCodeBuddyInstallSuccess", () => {
+  it("explains session activation separately from persisted-config verification", () => {
+    expect(
+      formatCodeBuddyInstallSuccess({
+        settingsPath: "/tmp/settings.json",
+        command: "tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice",
+        local: true,
+      }),
+    ).toBe(
+      [
+        "success: codebuddy hook installed successfully",
+        "",
+        "  Settings: /tmp/settings.json",
+        "  Command : tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice",
+        "  Activate: open /hooks and review the external change for this session, or start a new CodeBuddy session",
+        "  Verify  : tokenjuice doctor codebuddy --local (persisted config only; not active-session activation)",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("includes a backup path when installation created one", () => {
+    expect(
+      formatCodeBuddyInstallSuccess({
+        settingsPath: "/tmp/settings.json",
+        command: "tokenjuice codebuddy-pre-tool-use --wrap-launcher tokenjuice",
+        backupPath: "/tmp/settings.json.bak",
+        local: false,
+      }),
+    ).toContain("  Backup  : /tmp/settings.json.bak\n");
   });
 });

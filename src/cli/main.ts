@@ -14,6 +14,7 @@ import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { WRAP_AUTHORITATIVE_FOOTER } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
+import { UNKNOWN_ARTIFACT_SOURCE } from "../core/source.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "../hosts/adal/index.js";
@@ -1451,12 +1452,19 @@ async function runInstall(args: ParsedArgs): Promise<number> {
       return 0;
     }
 
-    process.stdout.write(`installed codebuddy hook: ${result.settingsPath}\n`);
-    process.stdout.write(`command: ${result.command}\n`);
+    const details = [
+      { label: "Settings", value: result.settingsPath },
+      { label: "Command", value: result.command },
+      // CodeBuddy snapshots hook settings at session startup. When tokenjuice is
+      // installed from another terminal, a running CodeBuddy session will not
+      // show or execute the new hook until the user reloads that snapshot.
+      { label: "Reload", value: "restart CodeBuddy, or open /hooks and confirm the external settings change" },
+      { label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` },
+    ];
     if (result.backupPath) {
-      process.stdout.write(`backup: ${result.backupPath}\n`);
+      details.push({ label: "Backup", value: result.backupPath });
     }
-    process.stdout.write(`doctor: tokenjuice doctor hooks${args.local ? " --local" : ""}\n`);
+    process.stdout.write(formatInstallSuccess("codebuddy", "hook", details));
     return 0;
   }
 
@@ -7315,9 +7323,14 @@ async function runStats(args: ParsedArgs): Promise<number> {
 
   if (report.sources && report.sources.length > 0) {
     process.stdout.write("sources:\n");
-    for (const source of report.sources) {
+    const sourcesByObservedCost = [...report.sources].sort((left, right) =>
+      right.totals.rawChars - left.totals.rawChars
+      || right.totals.savedChars - left.totals.savedChars
+      || left.source.localeCompare(right.source)
+    );
+    for (const source of sourcesByObservedCost) {
       process.stdout.write(
-        `source ${source.source}: entries=${formatMetric(source.totals.entries)} saved=${formatMetric(source.totals.savedChars)} avgRatio=${formatRatio(source.totals.avgRatio)}\n`,
+        `source ${source.source}: entries=${formatMetric(source.totals.entries)} raw=${formatMetric(source.totals.rawChars)} reduced=${formatMetric(source.totals.reducedChars)} saved=${formatMetric(source.totals.savedChars)} avgRatio=${formatRatio(source.totals.avgRatio)}\n`,
       );
       if (source.reducers.length > 0) {
         process.stdout.write(
@@ -7329,6 +7342,9 @@ async function runStats(args: ParsedArgs): Promise<number> {
           `  commands: ${source.commands.slice(0, 3).map((command) => `${command.signature}(${formatMetric(command.count)})`).join(", ")}\n`,
         );
       }
+    }
+    if (sourcesByObservedCost.some((source) => source.source === UNKNOWN_ARTIFACT_SOURCE)) {
+      process.stdout.write("note: source unknown means stored artifacts have missing or invalid source metadata, usually from older tokenjuice versions.\n");
     }
   }
 

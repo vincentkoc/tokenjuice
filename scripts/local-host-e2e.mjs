@@ -20,10 +20,6 @@ function assert(condition, message) {
   }
 }
 
-function compactableOutput(prefix, count) {
-  return Array.from({ length: count }, (_, index) => `${prefix}/example-${index + 1}.json`).join("\n");
-}
-
 function postToolUsePayload(command, toolResponse) {
   return `${JSON.stringify({
     hook_event_name: "PostToolUse",
@@ -128,8 +124,18 @@ async function runCodexE2E() {
   assert(report.status === "ok", `expected Codex doctor status ok, got ${doctor.stdout}`);
 
   const payload = postToolUsePayload(
-    "find src/rules -maxdepth 2 -type f | head -n 40",
-    compactableOutput("src/rules", 40),
+    "git status",
+    [
+      "On branch pr-65478-security-fix",
+      "Your branch and 'origin/pr-65478-security-fix' have diverged,",
+      "and have 8 and 642 different commits each, respectively.",
+      "",
+      "Changes not staged for commit:",
+      "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
+      "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
+      "",
+      "no changes added to commit",
+    ].join("\n"),
   );
   const hook = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
     env: { CODEX_HOME: codexHome },
@@ -139,10 +145,15 @@ async function runCodexE2E() {
   assert(hook.stderr === "", `expected Codex hook stderr to stay empty, got ${hook.stderr}`);
   const output = JSON.parse(hook.stdout);
   const additionalContext = output.hookSpecificOutput?.additionalContext;
+  assert(output.continue === false, "expected Codex hook output to replace the original tool result");
   assert(output.hookSpecificOutput?.hookEventName === "PostToolUse", "expected Codex PostToolUse output");
   assert(typeof additionalContext === "string", "expected Codex additionalContext");
-  assert(additionalContext.includes("40 matches"), "expected Codex hook output to contain compacted match count");
-  assert(additionalContext.includes("src/rules/example-1.json"), "expected Codex hook output to include compacted paths");
+  assert(additionalContext.includes("Changes not staged:"), "expected Codex hook output to retain status context");
+  assert(
+    additionalContext.includes("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts"),
+    "expected Codex hook output to include compacted status paths",
+  );
+  assert(!additionalContext.includes("and have 8 and 642"), "expected Codex hook output to omit noisy branch details");
   assert(additionalContext.includes("tokenjuice wrap --raw -- <command>"), "expected Codex hook output to include raw rerun hint");
   assert(!hook.stdout.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
 

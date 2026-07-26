@@ -738,6 +738,8 @@ function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
   const feedback = buildCodexFeedback(inlineText, rawRefId);
   return {
+    // PostToolUse continues the turn with this feedback while suppressing the original result.
+    continue: false,
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
       additionalContext: feedback,

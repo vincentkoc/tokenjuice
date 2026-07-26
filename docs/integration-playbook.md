@@ -130,6 +130,18 @@ for truncation-related debugging, verify both boundaries explicitly:
 - capture truncation: if output includes `[tokenjuice: output truncated]`, rerun with a larger capture ceiling (for example `--max-capture-bytes 52428800`).
 - do not treat these as the same failure mode; reducer bypass and capture-size tuning solve different problems.
 
+### Codex live context replacement
+
+Run the authenticated Codex regression manually:
+
+```bash
+pnpm e2e:codex-live
+```
+
+This command builds the current source, installs its hook into an isolated temporary `CODEX_HOME`, runs a fixed fake `gh` command through the real `codex exec`, and inspects the saved transcript plus Tokenjuice hook debug output. It requires an existing Codex login at `$CODEX_HOME/auth.json` (or `~/.codex/auth.json`); set `TOKENJUICE_CODEX_LIVE_SOURCE_HOME` to select a different authenticated home.
+
+The command invokes a model and consumes account quota, so keep it out of normal CI. It removes the temporary Codex home and authentication symlink before reporting success.
+
 ## docs updates required in same PR
 
 when adding a host integration, update:

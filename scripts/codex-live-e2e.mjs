@@ -215,6 +215,8 @@ async function runLiveE2E() {
     CODEX_HOME: codexHome,
     PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`,
     TOKENJUICE_DEBUG: "1",
+    // This regression must exercise compaction even when the caller normally disables omission.
+    TOKENJUICE_NO_OMISSION: "",
   };
   const codexVersion = (await run("codex", ["--version"], { env })).stdout.trim();
   await run(process.execPath, [distCliPath, "install", "codex", "--local"], { env });

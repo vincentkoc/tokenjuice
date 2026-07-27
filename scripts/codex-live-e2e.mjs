@@ -251,13 +251,21 @@ async function runLiveE2E() {
   const responseItems = transcriptEntries
     .filter((entry) => entry.type === "response_item")
     .map((entry) => entry.payload);
-  const summaryText = responseItems
-    .filter((payload) => payload.type === "message" && payload.role === "developer")
-    .map(messageText)
-    .find((text) => text.includes("#206 fix(core): preserve compound command output"));
+  const summaryIndex = responseItems.findIndex((payload) =>
+    payload.type === "message"
+    && payload.role === "developer"
+    && messageText(payload).includes("#206 fix(core): preserve compound command output")
+  );
+  const summaryText = summaryIndex >= 0 ? messageText(responseItems[summaryIndex]) : undefined;
   assert(typeof summaryText === "string", "expected Tokenjuice summary in Codex developer context");
   assert(summaryText.includes("need raw? `tokenjuice wrap --raw -- <command>`"), "expected raw rerun hint in Tokenjuice summary");
   assert(!summaryText.includes(rawMarker), "raw marker leaked into Tokenjuice summary");
+  const continuedAssistantText = responseItems
+    .slice(summaryIndex + 1)
+    .filter((payload) => payload.type === "message" && payload.role === "assistant")
+    .map(messageText)
+    .find((text) => text.trim().length > 0);
+  assert(typeof continuedAssistantText === "string", "expected the assistant to continue after replacement");
 
   const functionCallOutputs = responseItems
     .filter((payload) => payload.type === "function_call_output")
@@ -284,6 +292,7 @@ async function runLiveE2E() {
       summaryPresent: true,
       rawMarkerAbsentFromFunctionCallOutput: true,
       replacementReasonPresent: true,
+      turnContinued: true,
       hookRewrote: true,
     },
     chars: {

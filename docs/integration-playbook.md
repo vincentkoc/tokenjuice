@@ -140,6 +140,8 @@ pnpm e2e:codex-live
 
 This command builds the current source, installs its hook into an isolated temporary `CODEX_HOME`, runs a fixed fake `gh` command through the real `codex exec`, and inspects the saved transcript plus Tokenjuice hook debug output. It requires an existing Codex login at `$CODEX_HOME/auth.json` (or `~/.codex/auth.json`); set `TOKENJUICE_CODEX_LIVE_SOURCE_HOME` to select a different authenticated home.
 
+The transcript must contain the compacted developer context, the model-visible replacement reason, and a later assistant response, while excluding the raw marker from the compacted context and function-call output. With the currently tested Codex CLI, replacement renders as `PostToolUse hook (stopped)` because `continue:false` is required to suppress the original result. Treat that status as expected only when the Tokenjuice replacement reason and compacted context are present; it describes hook replacement, not the Bash exit status.
+
 The command invokes a model and consumes account quota, so keep it out of normal CI. It removes the temporary Codex home and authentication symlink before reporting success.
 
 ## docs updates required in same PR

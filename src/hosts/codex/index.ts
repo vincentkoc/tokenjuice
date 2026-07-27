@@ -735,11 +735,16 @@ function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
   return `${inlineText}\n\n${buildCompactionHint(rawRefId)}`;
 }
 
+const CODEX_COMPACTION_STOP_REASON = "Tokenjuice replaced the original Bash output with the compacted context above.";
+
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
   const feedback = buildCodexFeedback(inlineText, rawRefId);
   return {
-    // PostToolUse continues the turn with this feedback while suppressing the original result.
+    // Codex uses separate fields for the hook event and model feedback. Set both so replacement
+    // does not look like a failed tool call, while keeping the full summary in additionalContext.
     continue: false,
+    stopReason: CODEX_COMPACTION_STOP_REASON,
+    reason: CODEX_COMPACTION_STOP_REASON,
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
       additionalContext: feedback,

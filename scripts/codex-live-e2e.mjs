@@ -10,6 +10,7 @@ const repoRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.ur
 const distCliPath = join(repoRoot, "dist", "cli", "main.js");
 const tempRoot = await mkdtemp(join(tmpdir(), "tokenjuice-codex-live-e2e-"));
 const rawMarker = "TOKENJUICE_CODEX_LIVE_RAW_MARKER";
+const replacementReason = "Tokenjuice replaced the original Bash output with the compacted context above.";
 const ghArgs = [
   "pr",
   "view",
@@ -266,6 +267,7 @@ async function runLiveE2E() {
   const functionCallOutput = functionCallOutputs[0];
   assert(typeof functionCallOutput === "string", "expected model-visible function_call_output");
   assert(!functionCallOutput.includes(rawMarker), "raw marker leaked into model-visible function_call_output");
+  assert(functionCallOutput === replacementReason, `unexpected model-visible function_call_output: ${functionCallOutput}`);
 
   const debug = JSON.parse(await readFile(debugPath, "utf8"));
   assert(debug.rewrote === true, "expected Tokenjuice hook debug rewrote:true");
@@ -281,6 +283,7 @@ async function runLiveE2E() {
     checks: {
       summaryPresent: true,
       rawMarkerAbsentFromFunctionCallOutput: true,
+      replacementReasonPresent: true,
       hookRewrote: true,
     },
     chars: {

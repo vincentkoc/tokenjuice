@@ -208,6 +208,34 @@ describe("installCodexHook", () => {
     expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(`${launcherPath} codex-post-tool-use`);
   });
 
+  it("pins the current Node runtime when the installed launcher resolves to JavaScript", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const wrongNodePath = join(binDir, "node");
+    const installedCliPath = join(home, "lib", "tokenjuice", "dist", "cli", "main.js");
+    const nodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(dirname(installedCliPath), { recursive: true });
+    await writeFile(wrongNodePath, "#!/usr/bin/env bash\nexit 99\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(installedCliPath, "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(nodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await symlink(installedCliPath, launcherPath);
+
+    const result = await installCodexHook(hooksPath, { nodePath });
+    const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result.command).toBe(`${nodePath} ${launcherPath} codex-post-tool-use`);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(
+      `${nodePath} ${launcherPath} codex-post-tool-use`,
+    );
+  });
+
   it("does not persist the no-omit environment in the installed hook command", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");
@@ -447,6 +475,69 @@ describe("doctorCodexHook", () => {
     expect(explicitReport.expectedCommand).toBe(`${launcherPath} codex-post-tool-use --no-omit`);
     expect(explicitReport.fixCommand).toBe("tokenjuice install codex --no-omit");
     expect(explicitReport.issues).toEqual([]);
+  });
+
+  it("warns for an npm launcher-only hook and accepts the pinned Node command", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const installedCliPath = join(home, "lib", "tokenjuice", "dist", "cli", "main.js");
+    const nodePath = join(home, "node");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await mkdir(dirname(installedCliPath), { recursive: true });
+    await writeFile(installedCliPath, "#!/usr/bin/env node\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(nodePath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await symlink(installedCliPath, launcherPath);
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [
+                {
+                  type: "command",
+                  command: `${launcherPath} codex-post-tool-use`,
+                  statusMessage: "compacting bash output with tokenjuice",
+                  timeout: 30,
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const staleReport = await doctorCodexHook(hooksPath, { nodePath });
+
+    expect(staleReport.status).toBe("warn");
+    expect(staleReport.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(staleReport.expectedCommand).toBe(`${nodePath} ${launcherPath} codex-post-tool-use`);
+    expect(staleReport.issues).toContain(
+      "configured Codex hook command does not match the current recommended command",
+    );
+
+    await installCodexHook(hooksPath, { nodePath });
+    const currentReport = await doctorCodexHook(hooksPath, { nodePath });
+
+    expect(currentReport.status).toBe("ok");
+    expect(currentReport.detectedCommand).toBe(`${nodePath} ${launcherPath} codex-post-tool-use`);
+    expect(currentReport.issues).toEqual([]);
+
+    await rm(launcherPath);
+    const missingLauncherReport = await doctorCodexHook(hooksPath, {
+      binaryPath: installedCliPath,
+      nodePath,
+    });
+
+    expect(missingLauncherReport.status).toBe("broken");
+    expect(missingLauncherReport.checkedPaths).toContain(launcherPath);
+    expect(missingLauncherReport.missingPaths).toContain(launcherPath);
   });
 
   it("warns when the stable launcher resolves to an older Homebrew tokenjuice version", async () => {

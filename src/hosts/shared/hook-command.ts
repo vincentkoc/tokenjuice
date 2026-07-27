@@ -159,7 +159,12 @@ export function extractHookCommandPaths(command: string, platform = process.plat
   }
 
   const second = argv[1];
-  if (first && second && isNodeExecutablePath(first) && second.endsWith(".js")) {
+  if (
+    first
+    && second
+    && isNodeExecutablePath(first)
+    && (second.endsWith(".js") || isTokenjuiceExecutablePath(second))
+  ) {
     paths.add(second);
   }
 

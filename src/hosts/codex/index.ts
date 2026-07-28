@@ -6,12 +6,12 @@ import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import type { CompactionMetadata } from "../../core/compaction-metadata.js";
 import { readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
-import { countTextChars, stripAnsi } from "../../core/text.js";
+import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
 import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
-import { buildCompactionHint } from "../shared/hook-output.js";
 
 import type { ToolExecutionInput } from "../../types.js";
 
@@ -745,17 +745,75 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
 }
 
-function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
-  return `${inlineText}\n\n${buildCompactionHint(rawRefId)}`;
+function buildCodexFeedback(
+  inlineText: string,
+  rawRefId?: string,
+  compaction?: CompactionMetadata,
+  exitCode?: number,
+  maxChars = 1200,
+  noOmit = false,
+): { text: string; truncated: boolean } | undefined {
+  const recoveryReference = rawRefId
+    ? `tokenjuice cat ${rawRefId}`
+    : "tokenjuice wrap --raw -- <command>";
+  const serialize = (compactedOutput: string, authoritative: boolean): string => [
+    "<tokenjuice_compacted_tool_observation>",
+    JSON.stringify({
+      source: "codex-post-tool-use",
+      exitCode: exitCode ?? null,
+      authority: authoritative ? "authoritative-omission" : "non-authoritative-rewrite",
+      compactedOutput,
+      ...(authoritative ? { recoveryReference } : {}),
+    }, null, 2),
+    "</tokenjuice_compacted_tool_observation>",
+  ].join("\n");
+
+  const feedback = serialize(inlineText, compaction?.authoritative === true);
+  if (countTextChars(feedback) <= maxChars) {
+    return { text: feedback, truncated: false };
+  }
+  if (noOmit) {
+    return undefined;
+  }
+
+  const truncationMarker = "\n... compacted observation truncated ...";
+  let low = 0;
+  let high = countTextChars(inlineText);
+  let best: string | undefined;
+  while (low <= high) {
+    const midpoint = Math.floor((low + high) / 2);
+    const candidate = serialize(`${sliceTextChars(inlineText, 0, midpoint)}${truncationMarker}`, true);
+    if (countTextChars(candidate) <= maxChars) {
+      best = candidate;
+      low = midpoint + 1;
+    } else {
+      high = midpoint - 1;
+    }
+  }
+
+  return best ? { text: best, truncated: true } : undefined;
 }
 
-function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
-  const feedback = buildCodexFeedback(inlineText, rawRefId);
+function buildCodexReplacementOutput(
+  inlineText: string,
+  rawRefId?: string,
+  compaction?: CompactionMetadata,
+  exitCode?: number,
+  maxChars?: number,
+  noOmit?: boolean,
+): { payload: Record<string, unknown>; truncated: boolean } | undefined {
+  const feedback = buildCodexFeedback(inlineText, rawRefId, compaction, exitCode, maxChars, noOmit);
+  if (!feedback) {
+    return undefined;
+  }
   return {
-    hookSpecificOutput: {
-      hookEventName: "PostToolUse",
-      additionalContext: feedback,
+    payload: {
+      hookSpecificOutput: {
+        hookEventName: "PostToolUse",
+        additionalContext: feedback.text,
+      },
     },
+    truncated: feedback.truncated,
   };
 }
 
@@ -1205,6 +1263,7 @@ export async function runCodexPostToolUseHook(
       debug.savedChars = savedChars;
       debug.ratio = result.stats.ratio;
       debug.matchedReducer = result.classification.matchedReducer;
+      debug.compaction = result.compaction;
     }
 
     if (outcome.action === "keep") {
@@ -1212,8 +1271,25 @@ export async function runCodexPostToolUseHook(
       return 0;
     }
 
-    process.stdout.write(`${JSON.stringify(buildCodexReplacementOutput(outcome.result.inlineText, outcome.result.rawRef?.id))}\n`);
-    await writeHookDebug({ ...debug, rewrote: true });
+    const replacement = buildCodexReplacementOutput(
+      outcome.result.inlineText,
+      outcome.result.rawRef?.id,
+      outcome.result.compaction,
+      exitCode,
+      maxInlineChars,
+      noOmit,
+    );
+    if (!replacement) {
+      await writeHookDebug({ ...debug, skipped: "observation-inline-limit" });
+      return 0;
+    }
+
+    process.stdout.write(`${JSON.stringify(replacement.payload)}\n`);
+    await writeHookDebug({
+      ...debug,
+      rewrote: true,
+      feedbackTruncated: replacement.truncated,
+    });
     return 0;
   } catch (error) {
     await writeHookDebug({

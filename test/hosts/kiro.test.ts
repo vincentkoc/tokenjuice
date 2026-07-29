@@ -209,6 +209,19 @@ describe("kiro native hook", () => {
     expect(node).toBe(0);
   });
 
+  it("blocks outer Windows operators even when surrounded by single quotes", async () => {
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    const result = await runKiroPreToolUseHook(
+      kiroEvent(String.raw`C:\Tools\tokenjuice.cmd wrap -- echo 'ok & unwrapped-command'`),
+      String.raw`C:\Tools\tokenjuice.cmd`,
+      "win32",
+      String.raw`C:\Program Files\nodejs\node.exe`,
+    );
+
+    expect(result).toBe(2);
+  });
+
   it("blocks lookalike wrapper launchers and preserves explicit wrapper options in the retry", async () => {
     const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 

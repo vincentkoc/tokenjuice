@@ -217,7 +217,9 @@ function containsUnsafeOuterShellSyntax(command: string, platform: NodeJS.Platfo
       }
       continue;
     }
-    if (char === "'") {
+    // cmd.exe treats single quotes as ordinary characters, so accepting them
+    // as quoting on Windows would hide outer operators from the guard.
+    if (platform !== "win32" && quote === null && char === "'") {
       quote = "'";
       continue;
     }

@@ -544,12 +544,18 @@ export async function runKiroPreToolUseHook(
   platform: NodeJS.Platform = process.platform,
   nodePath = process.execPath,
 ): Promise<number> {
-  let payload: KiroPreToolUsePayload;
+  let parsedPayload: unknown;
   try {
-    payload = JSON.parse(rawText) as KiroPreToolUsePayload;
+    parsedPayload = JSON.parse(rawText) as unknown;
   } catch {
     return writeKiroBlock("tokenjuice Kiro hook blocked a shell command because the hook payload was not valid JSON.");
   }
+  // Kiro recognizes exit code 2 as a block, so reject valid non-object JSON
+  // here instead of letting property access throw and turn the guard fail-open.
+  if (!isRecord(parsedPayload)) {
+    return writeKiroBlock("tokenjuice Kiro hook blocked a shell command because the hook payload was not a JSON object.");
+  }
+  const payload: KiroPreToolUsePayload = parsedPayload;
 
   if (payload.hook_event_name !== "preToolUse") {
     return 0;

@@ -250,6 +250,7 @@ describe("kiro native hook", () => {
     vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 
     await expect(runKiroPreToolUseHook("not-json")).resolves.toBe(2);
+    await expect(runKiroPreToolUseHook("null")).resolves.toBe(2);
     await expect(runKiroPreToolUseHook(JSON.stringify({
       hook_event_name: "preToolUse",
       tool_name: "shell",

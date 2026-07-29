@@ -86,7 +86,15 @@ export { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstru
 export { doctorLeanCtlInstructions, installLeanCtlInstructions, uninstallLeanCtlInstructions } from "./hosts/leanctl/index.js";
 export { doctorLocalCodePlugin, installLocalCodePlugin, uninstallLocalCodePlugin } from "./hosts/localcode/index.js";
 export { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "./hosts/kimi/index.js";
-export { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "./hosts/kiro/index.js";
+export {
+  doctorKiroHook,
+  doctorKiroSteering,
+  installKiroHook,
+  installKiroSteering,
+  runKiroPreToolUseHook,
+  uninstallKiroHook,
+  uninstallKiroSteering,
+} from "./hosts/kiro/index.js";
 export { doctorKiloRule, installKiloRule, uninstallKiloRule } from "./hosts/kilo/index.js";
 export { doctorKnownsInstructions, installKnownsInstructions, uninstallKnownsInstructions } from "./hosts/knowns/index.js";
 export { doctorMcpAgentDefinition, installMcpAgentDefinition, uninstallMcpAgentDefinition } from "./hosts/mcp-agent/index.js";
@@ -534,9 +542,13 @@ export type {
   UninstallKimiHookResult,
 } from "./hosts/kimi/index.js";
 export type {
+  InstallKiroHookResult,
   InstallKiroSteeringResult,
   KiroDoctorReport,
+  KiroHookDoctorReport,
+  KiroHookOptions,
   KiroSteeringOptions,
+  UninstallKiroHookResult,
   UninstallKiroSteeringResult,
 } from "./hosts/kiro/index.js";
 export type {

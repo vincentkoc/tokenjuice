@@ -89,7 +89,7 @@ beta integrations:
 | <img width="48px" src="docs/client-jules.svg" alt="Jules" /> | [Jules](https://jules.google/docs/) | `tokenjuice install jules` | `AGENTS.md` |
 | <img width="48px" src="docs/client-leanctl.svg" alt="LeanCTL" /> | [LeanCTL](https://leanctl.com/docs/configuration) | `tokenjuice install leanctl` | `.leanctl/instructions.md` |
 | <img width="48px" src="docs/client-kimi.svg" alt="Kimi" /> | [Kimi Code CLI](https://moonshotai.github.io/kimi-cli/en/) | `tokenjuice install kimi` | `~/.kimi/config.toml` |
-| <img width="48px" src="docs/client-kiro.svg" alt="Kiro" /> | [Kiro](https://kiro.dev/) | `tokenjuice install kiro` | `.kiro/steering/tokenjuice.md` |
+| <img width="48px" src="docs/client-kiro.svg" alt="Kiro" /> | [Kiro CLI](https://kiro.dev/) | `tokenjuice install kiro` | `.kiro/agents/tokenjuice.json` + `.kiro/steering/tokenjuice.md` |
 | <img width="48px" src="docs/client-kilo.svg" alt="Kilo Code" /> | [Kilo Code](https://kilocode.ai/) | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-localcode.svg" alt="LocalCode" /> | [LocalCode](https://www.localcode.codes/) | `tokenjuice install localcode` | `~/.localcode/plugins/tokenjuice/` |
 | <img width="48px" src="docs/client-mcp-agent.svg" alt="mcp-agent" /> | [mcp-agent](https://docs.mcp-agent.com/) | `tokenjuice install mcp-agent` | `.mcp-agent/agents/tokenjuice.md` |

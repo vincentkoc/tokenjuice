@@ -62,7 +62,7 @@ import { doctorJunieInstructions } from "../junie/index.js";
 import { doctorJulesInstructions } from "../jules/index.js";
 import { doctorLeanCtlInstructions } from "../leanctl/index.js";
 import { doctorKimiHook } from "../kimi/index.js";
-import { doctorKiroSteering } from "../kiro/index.js";
+import { doctorKiroHook } from "../kiro/index.js";
 import { doctorKiloRule } from "../kilo/index.js";
 import { doctorKnownsInstructions } from "../knowns/index.js";
 import { doctorLocalCodePlugin } from "../localcode/index.js";
@@ -379,7 +379,7 @@ const hookDoctorIntegrationDoctors = {
   jules: (options) => doctorJulesInstructions(undefined, getHookCommandOptions(options)),
   leanctl: (options) => doctorLeanCtlInstructions(undefined, getHookCommandOptions(options)),
   kimi: (options) => doctorKimiHook(undefined, getHookCommandOptions(options)),
-  kiro: () => doctorKiroSteering(),
+  kiro: (options) => doctorKiroHook(undefined, getHookCommandOptions(options)),
   kilo: () => doctorKiloRule(),
   knowns: (options) => doctorKnownsInstructions(undefined, getHookCommandOptions(options)),
   localcode: (options) => doctorLocalCodePlugin(getHookCommandOptions(options)),

@@ -86,7 +86,7 @@ import { doctorJunieInstructions, installJunieInstructions, uninstallJunieInstru
 import { doctorJulesInstructions, installJulesInstructions, uninstallJulesInstructions } from "../hosts/jules/index.js";
 import { doctorLeanCtlInstructions, installLeanCtlInstructions, uninstallLeanCtlInstructions } from "../hosts/leanctl/index.js";
 import { doctorKimiHook, installKimiHook, runKimiPostToolUseHook, uninstallKimiHook } from "../hosts/kimi/index.js";
-import { doctorKiroSteering, installKiroSteering, uninstallKiroSteering } from "../hosts/kiro/index.js";
+import { doctorKiroHook, installKiroHook, runKiroPreToolUseHook, uninstallKiroHook } from "../hosts/kiro/index.js";
 import { doctorKiloRule, installKiloRule, uninstallKiloRule } from "../hosts/kilo/index.js";
 import { doctorKnownsInstructions, installKnownsInstructions, uninstallKnownsInstructions } from "../hosts/knowns/index.js";
 import { doctorLocalCodePlugin, installLocalCodePlugin, uninstallLocalCodePlugin } from "../hosts/localcode/index.js";
@@ -250,7 +250,7 @@ function printUsage(): void {
       "  tokenjuice install jules",
       "  tokenjuice install leanctl",
       "  tokenjuice install kimi [--local]",
-      "  tokenjuice install kiro",
+      "  tokenjuice install kiro [--local]",
       "  tokenjuice install kilo",
       "  tokenjuice install localcode",
       "  tokenjuice install mcp-agent",
@@ -2057,22 +2057,27 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "kiro") {
-    const result = await installKiroSteering();
+    const result = await installKiroHook(undefined, { local: args.local });
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
     }
 
     const details = [
+      { label: "Agent", value: result.agentPath },
       { label: "Steering", value: result.steeringPath },
-      { label: "Beta", value: "steering-based guidance; Kiro still owns command execution" },
-      { label: "Verify", value: "tokenjuice doctor kiro" },
+      { label: "Hook", value: "native Kiro PreToolUse shell guard" },
+      { label: "Use", value: "kiro-cli chat --agent tokenjuice" },
+      { label: "Verify", value: `tokenjuice doctor kiro${args.local ? " --local" : ""}` },
       { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
     ];
-    if (result.backupPath) {
-      details.push({ label: "Backup", value: result.backupPath });
+    if (result.agentBackupPath) {
+      details.push({ label: "Agent backup", value: result.agentBackupPath });
     }
-    process.stdout.write(formatInstallSuccess("kiro", "steering", details));
+    if (result.steeringBackupPath) {
+      details.push({ label: "Steering backup", value: result.steeringBackupPath });
+    }
+    process.stdout.write(formatInstallSuccess("kiro", "native hook", details));
     return 0;
   }
 
@@ -3579,13 +3584,15 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "kiro") {
-    const result = await uninstallKiroSteering();
+    const result = await uninstallKiroHook();
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`removed kiro steering: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`removed kiro native agent: ${result.removedAgent ? "yes" : "no"}\n`);
+    process.stdout.write(`agent path: ${result.agentPath}\n`);
+    process.stdout.write(`removed kiro steering: ${result.removedSteering ? "yes" : "no"}\n`);
     process.stdout.write(`steering path: ${result.steeringPath}\n`);
     process.stdout.write("enable: tokenjuice install kiro\n");
     return 0;
@@ -6857,15 +6864,20 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   }
 
   if (args.positionals[0] === "kiro") {
-    const report = await doctorKiroSteering();
+    const report = await doctorKiroHook(undefined, { local: args.local });
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
       return report.status === "broken" ? 1 : 0;
     }
 
+    process.stdout.write(`agent path: ${report.agentPath}\n`);
     process.stdout.write(`steering path: ${report.steeringPath}\n`);
     process.stdout.write(`health: ${report.status}\n`);
+    process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+    if (report.detectedCommand) {
+      process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+    }
     if (report.issues.length > 0) {
       process.stdout.write("issues:\n");
       for (const issue of report.issues) {
@@ -7391,6 +7403,8 @@ async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "grok-cli-post-tool-use":
       return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "kiro-pre-tool-use":
+      return await runKiroPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "kimi-post-tool-use":
       return await runKimiPostToolUseHook(await readStdin(args.maxInputBytes));
     case "mux-post-tool-use":

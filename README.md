@@ -89,7 +89,7 @@ beta integrations:
 | <img width="48px" src="docs/client-jules.svg" alt="Jules" /> | [Jules](https://jules.google/docs/) | `tokenjuice install jules` | `AGENTS.md` |
 | <img width="48px" src="docs/client-leanctl.svg" alt="LeanCTL" /> | [LeanCTL](https://leanctl.com/docs/configuration) | `tokenjuice install leanctl` | `.leanctl/instructions.md` |
 | <img width="48px" src="docs/client-kimi.svg" alt="Kimi" /> | [Kimi Code CLI](https://moonshotai.github.io/kimi-cli/en/) | `tokenjuice install kimi` | `~/.kimi/config.toml` |
-| <img width="48px" src="docs/client-kiro.svg" alt="Kiro" /> | [Kiro CLI](https://kiro.dev/) | `tokenjuice install kiro` | `.kiro/agents/tokenjuice.json` + `.kiro/steering/tokenjuice.md` |
+| <img width="48px" src="docs/client-kiro.svg" alt="Kiro" /> | [Kiro CLI](https://kiro.dev/) ([integration notes](docs/kiro-integration.md)) | `tokenjuice install kiro` | `.kiro/agents/tokenjuice.json` + `.kiro/steering/tokenjuice.md` |
 | <img width="48px" src="docs/client-kilo.svg" alt="Kilo Code" /> | [Kilo Code](https://kilocode.ai/) | `tokenjuice install kilo` | `kilo.jsonc` or `.kilo/kilo.jsonc` + `.kilo/rules/tokenjuice.md` |
 | <img width="48px" src="docs/client-localcode.svg" alt="LocalCode" /> | [LocalCode](https://www.localcode.codes/) | `tokenjuice install localcode` | `~/.localcode/plugins/tokenjuice/` |
 | <img width="48px" src="docs/client-mcp-agent.svg" alt="mcp-agent" /> | [mcp-agent](https://docs.mcp-agent.com/) | `tokenjuice install mcp-agent` | `.mcp-agent/agents/tokenjuice.md` |
@@ -152,6 +152,32 @@ openclaw config set plugins.entries.tokenjuice.enabled true
 ```
 
 this requires OpenClaw `2026.4.22` or newer.
+
+### kiro cli
+
+from the workspace root, install and validate the Kiro CLI 2.x agent, then start
+Kiro with that agent:
+
+```bash
+tokenjuice install kiro
+tokenjuice doctor kiro
+kiro-cli agent validate --path .kiro/agents/tokenjuice.json
+kiro-cli chat --agent tokenjuice
+```
+
+while that custom agent is active, its native built-in shell guard requires
+`tokenjuice wrap -- <command>`. it blocks unwrapped commands and returns an exact
+wrapped retry command. use `tokenjuice wrap --raw -- <command>` as the raw escape
+hatch.
+
+if Kiro inherits `TOKENJUICE_NO_OMISSION=1`, lossless normalization and
+structured rewrites still run, but filtering, adjacent dedupe, clipping,
+head/tail omission, and lossy summaries do not. unset it and restart Kiro when
+large outputs such as `git ls-files` need omission-based savings; already-compact
+input may not get smaller.
+
+this adapter does not install Kiro CLI 3's incompatible standalone hook schema;
+see the [integration notes](docs/kiro-integration.md) for details.
 
 ## commands
 

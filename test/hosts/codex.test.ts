@@ -944,6 +944,44 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.ratio).toBe(1);
   });
 
+  it("keeps raw bypasses fail-open when optional stats cannot be written", async () => {
+    const home = await createTempDir();
+    const blockedArtifactDir = join(home, "artifact-dir-is-a-file");
+    const originalArtifactDir = process.env.TOKENJUICE_ARTIFACT_DIR;
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_ARTIFACT_DIR = blockedArtifactDir;
+    await writeFile(blockedArtifactDir, "not a directory", "utf8");
+
+    try {
+      const payload = JSON.stringify({
+        hook_event_name: "PostToolUse",
+        tool_name: "Bash",
+        tool_input: {
+          command: "tokenjuice wrap --raw -- bash -lc 'git show HEAD --stat'",
+        },
+        tool_response: "commit abcdef\n README.md | 1 +\n",
+      });
+
+      const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+      const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+        rewrote: boolean;
+        skipped?: string;
+      };
+
+      expect(code).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+      expect(debug.rewrote).toBe(false);
+      expect(debug.skipped).toBe("explicit-raw-bypass");
+    } finally {
+      if (originalArtifactDir === undefined) {
+        delete process.env.TOKENJUICE_ARTIFACT_DIR;
+      } else {
+        process.env.TOKENJUICE_ARTIFACT_DIR = originalArtifactDir;
+      }
+    }
+  });
+
   it("honors absolute tokenjuice raw bypass commands without re-compacting them", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;

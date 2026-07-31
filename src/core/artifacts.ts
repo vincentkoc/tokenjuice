@@ -153,6 +153,19 @@ export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir
   };
 }
 
+export async function tryStoreArtifactMetadata(
+  input: StoredArtifactInput,
+  storeDir?: string,
+): Promise<ArtifactMetadataRef | undefined> {
+  try {
+    return await storeArtifactMetadata(input, storeDir);
+  } catch {
+    // Stats are ancillary: a read-only or unavailable artifact directory must not discard the
+    // command result. Explicit artifact storage remains strict through storeArtifact().
+    return undefined;
+  }
+}
+
 export async function getArtifact(id: string, storeDir?: string): Promise<StoredArtifact | null> {
   if (!isValidArtifactId(id)) {
     return null;

@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
-import { storeArtifactMetadata } from "../../core/artifacts.js";
+import { tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, stripAnsi } from "../../core/text.js";
@@ -1064,7 +1064,7 @@ async function recordImmediateHookStats(
 
   const stats = buildImmediateSkipStats(rawText);
   const classification = await classifyOnly(input);
-  await storeArtifactMetadata(
+  await tryStoreArtifactMetadata(
     {
       input,
       rawText,

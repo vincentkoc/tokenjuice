@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -91,6 +91,43 @@ describe("runWrappedCommand", () => {
 
     expect(wrapped.result.inlineText).toBe("usage: cmd\n\nflag\n");
     expect(wrapped.result.stats.ratio).toBe(1);
+  });
+
+  it("preserves raw output when optional stats cannot be written", async () => {
+    const tempDir = await createTempDir();
+    const blockedStoreDir = join(tempDir, "artifact-dir-is-a-file");
+    await writeFile(blockedStoreDir, "not a directory", "utf8");
+
+    const wrapped = await runWrappedCommand([
+      process.execPath,
+      "-e",
+      "require('node:fs').writeSync(1, 'raw marker\\n'); process.exit(7);",
+    ], {
+      raw: true,
+      recordStats: true,
+      storeDir: blockedStoreDir,
+    });
+
+    expect(wrapped.exitCode).toBe(7);
+    expect(wrapped.stdout).toBe("raw marker\n");
+    expect(wrapped.result.inlineText).toBe("raw marker\n");
+    expect(wrapped.result.stats.ratio).toBe(1);
+  });
+
+  it("keeps explicit artifact storage failures strict", async () => {
+    const tempDir = await createTempDir();
+    const blockedStoreDir = join(tempDir, "artifact-dir-is-a-file");
+    await writeFile(blockedStoreDir, "not a directory", "utf8");
+
+    await expect(runWrappedCommand([
+      process.execPath,
+      "-e",
+      "require('node:fs').writeSync(1, 'raw marker\\n');",
+    ], {
+      raw: true,
+      store: true,
+      storeDir: blockedStoreDir,
+    })).rejects.toThrow(/EEXIST|ENOTDIR/u);
   });
 
   it("records the requested source for wrapper stats", async () => {

@@ -4,7 +4,7 @@ import { classifyExecution, resolveRuleMatch } from "./classify.js";
 import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
-import { storeArtifact, storeArtifactMetadata } from "./artifacts.js";
+import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
 import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
@@ -373,7 +373,7 @@ export async function reduceExecutionWithRules(
         )
       : undefined;
     if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
+      await tryStoreArtifactMetadata(
         {
           input: normalizedInput,
           rawText,
@@ -432,7 +432,7 @@ export async function reduceExecutionWithRules(
       : undefined;
 
     if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
+      await tryStoreArtifactMetadata(
         {
           input: normalizedInput,
           rawText,
@@ -456,7 +456,7 @@ export async function reduceExecutionWithRules(
 
   if (classification.matchedReducer === "generic/fallback" && isFileContentInspectionCommand(normalizedInput)) {
     if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
+      await tryStoreArtifactMetadata(
         {
           input: normalizedInput,
           rawText,
@@ -515,7 +515,7 @@ export async function reduceExecutionWithRules(
       : undefined;
 
     if (!opts.store && opts.recordStats) {
-      await storeArtifactMetadata(
+      await tryStoreArtifactMetadata(
         {
           input: normalizedInput,
           rawText,
@@ -565,7 +565,7 @@ export async function reduceExecutionWithRules(
         : undefined;
 
       if (!opts.store && opts.recordStats) {
-        await storeArtifactMetadata(
+        await tryStoreArtifactMetadata(
           {
             input: normalizedInput,
             rawText,
@@ -611,7 +611,7 @@ export async function reduceExecutionWithRules(
     : undefined;
 
   if (!opts.store && opts.recordStats) {
-    await storeArtifactMetadata(
+    await tryStoreArtifactMetadata(
       {
         input: normalizedInput,
         rawText,

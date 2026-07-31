@@ -675,7 +675,7 @@ describe("doctorInstalledHooks", () => {
     await mkdir(binDir, { recursive: true });
     await writeFile(join(binDir, "tokenjuice"), "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
 
-    const report = await doctorInstalledHooks();
+    const report = await doctorInstalledHooks({ projectDir: home });
 
     expect(report.status).toBe("disabled");
     expect(report.integrations["claude-code"].status).toBe("disabled");
@@ -707,7 +707,7 @@ describe("doctorInstalledHooks", () => {
     await installCodeBuddyHook();
     await installPiExtension(undefined, { local: true });
 
-    const report = await doctorInstalledHooks();
+    const report = await doctorInstalledHooks({ projectDir: home });
 
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("ok");
@@ -752,7 +752,7 @@ describe("doctorInstalledHooks", () => {
     await installCodeBuddyHook();
     await installPiExtension(undefined, { local: true });
 
-    const report = await doctorInstalledHooks();
+    const report = await doctorInstalledHooks({ projectDir: home });
 
     expect(report.status).toBe("ok");
     expect(report.integrations.codex.status).toBe("disabled");

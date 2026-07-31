@@ -69,6 +69,17 @@ describe("parseShellWords", () => {
 });
 
 describe("extractHookCommandPaths", () => {
+  it("extracts both Node and a stable tokenjuice launcher from pinned commands", () => {
+    expect(
+      extractHookCommandPaths(
+        "/opt/node/bin/node /usr/local/bin/tokenjuice codex-post-tool-use --no-omit",
+      ),
+    ).toEqual([
+      "/opt/node/bin/node",
+      "/usr/local/bin/tokenjuice",
+    ]);
+  });
+
   it("extracts Windows launcher and script paths from quoted node commands", () => {
     const nodePath = String.raw`C:\Program Files\nodejs\node.exe`;
     const scriptPath = String.raw`C:\Users\andre\OneDrive\Documents\Github\tokenjuice\dist\cli\main.js`;

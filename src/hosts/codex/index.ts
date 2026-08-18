@@ -740,9 +740,9 @@ const CODEX_COMPACTION_STOP_REASON = "Tokenjuice replaced the original Bash outp
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
   const feedback = buildCodexFeedback(inlineText, rawRefId);
   return {
-    // Codex uses separate fields for the hook event and model feedback. Set both so replacement
-    // does not look like a failed tool call, while keeping the full summary in additionalContext.
-    continue: false,
+    // `decision:block` replaces both native function output and Code Mode's outer custom-tool
+    // output; `continue:false` only replaces the native path and leaks nested Bash output.
+    decision: "block",
     stopReason: CODEX_COMPACTION_STOP_REASON,
     reason: CODEX_COMPACTION_STOP_REASON,
     hookSpecificOutput: {

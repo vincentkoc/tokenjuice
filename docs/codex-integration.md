@@ -8,7 +8,8 @@ left unchanged.
 ## Expected replacement status
 
 With the currently tested Codex CLI, a PostToolUse hook must return
-`continue:false` to suppress the original tool result. A successful Tokenjuice
+`decision:"block"` to suppress the original tool result across both native Bash
+calls and Bash calls nested inside Code Mode. A successful Tokenjuice
 rewrite has been observed as:
 
 ```text
@@ -23,11 +24,12 @@ replacement reason and compacted hook context are present. In that case,
 exit status. The authenticated regression verifies that the agent can produce
 a later assistant response after the replacement.
 
-Without `continue:false`, the currently tested Codex CLI retains the full
-original result and adds the summary beside it, which does not provide the
-intended context-token savings. Until Codex exposes a clean "replace output"
-primitive, the `stopped` label is an expected UI tradeoff for real output
-replacement.
+`continue:false` suppresses native `function_call_output`, but does not reject a
+Code Mode tool promise. In that path, the outer `custom_tool_call_output` keeps
+the full original result alongside the compacted summary. `decision:"block"`
+uses Codex's shared PostToolUse replacement path and avoids that leak. Until
+Codex exposes a clean "replace output" primitive, the `stopped` label is an
+expected UI tradeoff for real output replacement.
 
 Use `tokenjuice wrap --raw -- <command>` when the full command output is
 required. This escape hatch reruns the command; review side effects before using

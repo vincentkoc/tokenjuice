@@ -52,6 +52,7 @@
     "bench:verify": "node scripts/bench.mjs verify",
     "contracts": "publint run --strict --pack pnpm",
     "e2e:codex-live": "pnpm build && node scripts/codex-live-e2e.mjs",
+    "e2e:codex-code-mode": "pnpm build && node scripts/codex-code-mode-e2e.mjs",
     "e2e:local": "pnpm build && node scripts/local-host-e2e.mjs",
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
     "prepare": "pnpm repair:pnpm-bin-shims",

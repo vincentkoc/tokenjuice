@@ -13,14 +13,14 @@ calls and Bash calls nested inside Code Mode. A successful Tokenjuice
 rewrite has been observed as:
 
 ```text
-PostToolUse hook (stopped)
+PostToolUse hook (blocked)
   hook context: <compacted output>
-  stop: Tokenjuice replaced the original Bash output with the compacted context above.
+  feedback: Tokenjuice compacted this Bash output successfully. Use the compacted context provided separately.
 ```
 
 Interpret this status as a successful replacement only when both the Tokenjuice
-replacement reason and compacted hook context are present. In that case,
-`stopped` describes the hook suppressing the original result; it is not the Bash
+success feedback and compacted hook context are present. In that case,
+`blocked` describes the hook suppressing the original result; it is not the Bash
 exit status. The authenticated regression verifies that the agent can produce
 a later assistant response after the replacement.
 
@@ -28,7 +28,7 @@ a later assistant response after the replacement.
 Code Mode tool promise. In that path, the outer `custom_tool_call_output` keeps
 the full original result alongside the compacted summary. `decision:"block"`
 uses Codex's shared PostToolUse replacement path and avoids that leak. Until
-Codex exposes a clean "replace output" primitive, the `stopped` label is an
+Codex exposes a clean "replace output" primitive, the `blocked` label is an
 expected UI tradeoff for real output replacement.
 
 Use `tokenjuice wrap --raw -- <command>` when the full command output is
@@ -61,6 +61,6 @@ The E2E builds and installs into an isolated temporary `CODEX_HOME`; it does not
 require the real-home local install above. It consumes Codex quota and requires
 an existing login at `$CODEX_HOME/auth.json` (or `~/.codex/auth.json`). Set
 `TOKENJUICE_CODEX_LIVE_SOURCE_HOME` to select a different authenticated home.
-It verifies that the compacted context and replacement reason are model-visible,
+It verifies that the compacted context and success feedback are model-visible,
 a later assistant response is present, and the original marker is absent from
 the compacted context and function-call output.

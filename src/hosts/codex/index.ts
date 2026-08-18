@@ -735,7 +735,8 @@ function buildCodexFeedback(inlineText: string, rawRefId?: string): string {
   return `${inlineText}\n\n${buildCompactionHint(rawRefId)}`;
 }
 
-const CODEX_COMPACTION_STOP_REASON = "Tokenjuice replaced the original Bash output with the compacted context above.";
+const CODEX_COMPACTION_FEEDBACK =
+  "Tokenjuice compacted this Bash output successfully. Use the compacted context provided separately.";
 
 function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Record<string, unknown> {
   const feedback = buildCodexFeedback(inlineText, rawRefId);
@@ -743,8 +744,7 @@ function buildCodexReplacementOutput(inlineText: string, rawRefId?: string): Rec
     // `decision:block` replaces both native function output and Code Mode's outer custom-tool
     // output; `continue:false` only replaces the native path and leaks nested Bash output.
     decision: "block",
-    stopReason: CODEX_COMPACTION_STOP_REASON,
-    reason: CODEX_COMPACTION_STOP_REASON,
+    reason: CODEX_COMPACTION_FEEDBACK,
     hookSpecificOutput: {
       hookEventName: "PostToolUse",
       additionalContext: feedback,

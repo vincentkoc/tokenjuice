@@ -66,7 +66,6 @@ async function captureStdio(run: () => Promise<number>): Promise<{ code: number;
 
 function parseCodexReplacementOutput(stdout: string): {
   decision?: string;
-  stopReason?: string;
   reason?: string;
   hookSpecificOutput?: {
     hookEventName?: string;
@@ -75,7 +74,6 @@ function parseCodexReplacementOutput(stdout: string): {
 } {
   return JSON.parse(stdout) as {
     decision?: string;
-    stopReason?: string;
     reason?: string;
     hookSpecificOutput?: {
       hookEventName?: string;
@@ -625,8 +623,10 @@ describe("runCodexPostToolUseHook", () => {
     expect(code).toBe(0);
     expect(stderr).toBe("");
     expect(response.decision).toBe("block");
-    expect(response.stopReason).toBe("Tokenjuice replaced the original Bash output with the compacted context above.");
-    expect(response.reason).toBe("Tokenjuice replaced the original Bash output with the compacted context above.");
+    expect(response).not.toHaveProperty("stopReason");
+    expect(response.reason).toBe(
+      "Tokenjuice compacted this Bash output successfully. Use the compacted context provided separately.",
+    );
     expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
     expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
     expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");

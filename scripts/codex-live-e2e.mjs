@@ -10,7 +10,8 @@ const repoRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.ur
 const distCliPath = join(repoRoot, "dist", "cli", "main.js");
 const tempRoot = await mkdtemp(join(tmpdir(), "tokenjuice-codex-live-e2e-"));
 const rawMarker = "TOKENJUICE_CODEX_LIVE_RAW_MARKER";
-const replacementReason = "Tokenjuice replaced the original Bash output with the compacted context above.";
+const replacementReason =
+  "Tokenjuice compacted this Bash output successfully. Use the compacted context provided separately.";
 const ghArgs = [
   "pr",
   "view",

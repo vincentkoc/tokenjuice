@@ -5,6 +5,7 @@
 ### Fixes
 
 - Let Codex hooks fail open without adding context when tool responses or hook input exceed safety limits.
+- Pin Codex JavaScript launchers to a verified Node runtime and report duplicate, missing, non-executable, runtime-skewed, and package-skewed hook commands.
 - Preserve quoted commands and Windows paths when wrapping POSIX shell payloads.
 - Keep installed Codex hooks omission-policy neutral while honoring runtime environment policy.
 - Keep Codex compaction feedback inert and omit recovery references for non-authoritative rewrites.

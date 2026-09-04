@@ -123,6 +123,13 @@ async function runCodexE2E() {
   });
   const report = JSON.parse(doctor.stdout);
   assert(report.status === "ok", `expected Codex doctor status ok, got ${doctor.stdout}`);
+  assert(report.detectedCommands?.length === 1, `expected one Codex hook command, got ${doctor.stdout}`);
+  assert(report.detectedCommands[0]?.runtimePath === process.execPath, `expected pinned Codex Node runtime, got ${doctor.stdout}`);
+  assert(report.duplicateHookCount === 0, `expected no duplicate Codex hooks, got ${doctor.stdout}`);
+  assert(report.missingPaths?.length === 0, `expected no missing Codex hook paths, got ${doctor.stdout}`);
+  assert(report.nonExecutablePaths?.length === 0, `expected executable Codex hook paths, got ${doctor.stdout}`);
+  assert(report.runtimeMismatches?.length === 0, `expected current Codex Node runtime, got ${doctor.stdout}`);
+  assert(report.packageVersionMismatches?.length === 0, `expected current Codex package version, got ${doctor.stdout}`);
   const hookEnv = {
     CODEX_HOME: codexHome,
     // Keep the authoritative-vs-normalized assertions independent of a developer's shell env.

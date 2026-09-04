@@ -1,6 +1,5 @@
-import { constants as fsConstants } from "node:fs";
-import { access, appendFile, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
@@ -11,9 +10,15 @@ import { readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
-import { extractHookCommandPaths, isNodeExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { isNodeExecutablePath, parseShellWords } from "../shared/hook-command.js";
+import { buildTokenjuiceHookCommand } from "../shared/host-command.js";
+import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 
 import type { ToolExecutionInput } from "../../types.js";
+import type {
+  HookCommandPackageVersionMismatch,
+  HookCommandRuntimeMismatch,
+} from "../shared/hook-command-doctor.js";
 
 type CodexHookCommand = Record<string, unknown> & {
   type?: string;
@@ -118,6 +123,17 @@ function validateCodexOmissionPolicy(options: { noOmit?: boolean; allowOmit?: bo
   }
 }
 
+export type CodexHookCommandDiagnostic = {
+  location: string;
+  command: string;
+  checkedPaths: string[];
+  missingPaths: string[];
+  nonExecutablePaths: string[];
+  runtimePath?: string;
+  runtimeMismatch?: HookCommandRuntimeMismatch;
+  packageVersionMismatch?: HookCommandPackageVersionMismatch;
+};
+
 export type CodexDoctorReport = {
   hooksPath: string;
   status: "ok" | "warn" | "broken" | "disabled";
@@ -125,8 +141,13 @@ export type CodexDoctorReport = {
   fixCommand: string;
   expectedCommand: string;
   detectedCommand?: string;
+  detectedCommands: CodexHookCommandDiagnostic[];
+  duplicateHookCount: number;
   checkedPaths: string[];
   missingPaths: string[];
+  nonExecutablePaths: string[];
+  runtimeMismatches: Array<HookCommandRuntimeMismatch & { location: string }>;
+  packageVersionMismatches: Array<HookCommandPackageVersionMismatch & { location: string }>;
   featureFlag: CodexFeatureFlagStatus;
   runtimeConfig: CodexRuntimeConfigStatus;
 };
@@ -336,73 +357,11 @@ function parseCodexRuntimeConfig(source: string): Omit<CodexRuntimeConfigStatus,
   return values;
 }
 
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
-}
-
 async function buildCodexHookCommand(options: CodexHookCommandOptions = {}): Promise<string> {
-  const rawBinaryPath = options.binaryPath ?? process.argv[1];
-  const binaryPath = rawBinaryPath && !isAbsolute(rawBinaryPath) ? resolve(rawBinaryPath) : rawBinaryPath;
-  const nodePath = options.nodePath ?? process.execPath;
-  if (!binaryPath) {
-    throw new Error("unable to resolve tokenjuice binary path for codex install");
-  }
-
-  let command: string | undefined;
-  if (!options.local) {
-    const installedBinaryPath = await resolveInstalledTokenjuicePath();
-    if (installedBinaryPath) {
-      let launcher = shellQuote(installedBinaryPath);
-      try {
-        if ((await realpath(installedBinaryPath)).endsWith(".js")) {
-          // Codex may execute hooks from a non-login environment with a different PATH.
-          // Pin the interpreter, but retain the launcher so package-manager upgrades stay atomic.
-          launcher = `${shellQuote(nodePath)} ${launcher}`;
-        }
-      } catch {
-        // Preserve package-manager wrappers when their final target cannot be inspected.
-      }
-      command = `${launcher} codex-post-tool-use`;
-    }
-  }
-
-  if (!command) {
-    command = binaryPath.endsWith(".js")
-      ? `${shellQuote(nodePath)} ${shellQuote(binaryPath)} codex-post-tool-use`
-      : `${shellQuote(binaryPath)} codex-post-tool-use`;
-  }
-
+  const command = await buildTokenjuiceHookCommand("codex-post-tool-use", "codex", {
+    ...options,
+    pinNodeForJavaScriptLauncher: true,
+  });
   return options.noOmit ? `${command} --no-omit` : command;
 }
 
@@ -411,15 +370,6 @@ function getCodexFixCommand(local = false, noOmit = false): string {
     local ? "tokenjuice install codex --local" : TOKENJUICE_CODEX_FIX_COMMAND,
     ...(noOmit ? ["--no-omit"] : []),
   ].join(" ");
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function newestMtimeMs(path: string): Promise<number | undefined> {
@@ -506,37 +456,36 @@ function createTokenjuiceCodexHook(command: string): CodexHookMatcherGroup {
   };
 }
 
+function isTokenjuiceCodexHookCommand(hook: CodexHookCommand): boolean {
+  const command = typeof hook.command === "string" ? hook.command : "";
+  return hook.statusMessage === TOKENJUICE_CODEX_STATUS
+    || command.includes("codex-post-tool-use")
+    || command.includes("post_tool_use_tokenjuice.py");
+}
+
 function isTokenjuiceCodexHook(group: CodexHookMatcherGroup): boolean {
-  return group.hooks.some((hook) => {
-    const command = typeof hook.command === "string" ? hook.command : "";
-    return hook.statusMessage === TOKENJUICE_CODEX_STATUS
-      || command.includes("codex-post-tool-use")
-      || command.includes("post_tool_use_tokenjuice.py");
-  });
+  return group.hooks.some((hook) => isTokenjuiceCodexHookCommand(hook));
 }
 
-function findTokenjuiceCodexHookCommand(config: CodexHooksConfig): string | undefined {
-  return findTokenjuiceCodexHook(config)?.command;
-}
-
-function findTokenjuiceCodexHook(config: CodexHooksConfig): CodexHookCommand | undefined {
-  for (const group of config.hooks.PostToolUse ?? []) {
-    if (!isTokenjuiceCodexHook(group)) {
-      continue;
-    }
-
-    const hook = group.hooks.find((hook) => {
-      const hookCommand = typeof hook.command === "string" ? hook.command : "";
-      return hook.statusMessage === TOKENJUICE_CODEX_STATUS
-        || hookCommand.includes("codex-post-tool-use")
-        || hookCommand.includes("post_tool_use_tokenjuice.py");
+function collectTokenjuiceCodexHookCommands(
+  config: CodexHooksConfig,
+): Array<{ location: string; hook: CodexHookCommand; command: string }> {
+  const commands: Array<{ location: string; hook: CodexHookCommand; command: string }> = [];
+  for (const [eventName, groups] of Object.entries(config.hooks)) {
+    groups.forEach((group, groupIndex) => {
+      group.hooks.forEach((hook, hookIndex) => {
+        if (!isTokenjuiceCodexHookCommand(hook) || typeof hook.command !== "string") {
+          return;
+        }
+        commands.push({
+          location: `${eventName}[${groupIndex}].hooks[${hookIndex}]`,
+          hook,
+          command: hook.command,
+        });
+      });
     });
-    if (hook) {
-      return hook;
-    }
   }
-
-  return undefined;
+  return commands;
 }
 
 function truncateHookCommand(command: string, maxLength = 80): string {
@@ -545,42 +494,6 @@ function truncateHookCommand(command: string, maxLength = 80): string {
     return trimmed;
   }
   return `${trimmed.slice(0, maxLength - 3)}...`;
-}
-
-function extractHomebrewCellarVersion(path: string): string | undefined {
-  const normalized = path.replace(/\\/gu, "/");
-  const match = normalized.match(/\/Cellar\/tokenjuice\/([^/]+)\//u);
-  return match?.[1];
-}
-
-async function detectResolvedHomebrewVersionMismatch(
-  commandPaths: string[],
-): Promise<{ launcherPath: string; resolvedPath: string; resolvedVersion: string } | undefined> {
-  for (const path of commandPaths) {
-    if (!path.endsWith("/tokenjuice") && !path.endsWith("\\tokenjuice") && !path.endsWith("\\tokenjuice.exe")) {
-      continue;
-    }
-
-    let resolvedPath: string;
-    try {
-      resolvedPath = await realpath(path);
-    } catch {
-      continue;
-    }
-
-    const resolvedVersion = extractHomebrewCellarVersion(resolvedPath);
-    if (!resolvedVersion || resolvedVersion === packageJson.version) {
-      continue;
-    }
-
-    return {
-      launcherPath: path,
-      resolvedPath,
-      resolvedVersion,
-    };
-  }
-
-  return undefined;
 }
 
 function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
@@ -618,18 +531,16 @@ function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
 }
 
 function collectTokenjuiceHookTimeoutWarnings(config: CodexHooksConfig, fixCommand: string): string[] {
-  const hook = findTokenjuiceCodexHook(config);
-  if (!hook) {
-    return [];
-  }
-
-  if (hook.timeout !== TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS) {
+  const staleCommands = collectTokenjuiceCodexHookCommands(config)
+    .filter(({ hook }) => hook.timeout !== TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS);
+  if (staleCommands.length === 1) {
     return [
       `configured Codex tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS}s safety cap`,
     ];
   }
-
-  return [];
+  return staleCommands.map(({ location }) =>
+    `configured Codex tokenjuice hook ${location} timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS}s safety cap`
+  );
 }
 
 function sanitizeHooksConfig(raw: unknown): CodexHooksConfig {
@@ -916,10 +827,35 @@ export async function doctorCodexHook(
 ): Promise<CodexDoctorReport> {
   const noOmit = options.noOmit === true;
   const expectedCommand = await buildCodexHookCommand(options);
+  const expectedNodePath = options.nodePath ?? process.execPath;
   const installFixCommand = getCodexFixCommand(options.local, noOmit);
   let fixCommand = installFixCommand;
   const { config, exists } = await readHooksConfig(hooksPath);
-  const detectedCommand = findTokenjuiceCodexHookCommand(config);
+  const locatedCommands = collectTokenjuiceCodexHookCommands(config);
+  const detectedCommands = await Promise.all(
+    locatedCommands.map(async ({ location, command }): Promise<CodexHookCommandDiagnostic> => ({
+      location,
+      command,
+      ...(await inspectTokenjuiceHookCommand({
+        command,
+        expectedNodePath,
+        expectedPackageVersion: packageJson.version,
+      })),
+    })),
+  );
+  const detectedCommand = detectedCommands[0]?.command;
+  const duplicateHookCount = Math.max(0, detectedCommands.length - 1);
+  const checkedPaths = [...new Set(detectedCommands.flatMap((entry) => entry.checkedPaths))];
+  const missingPaths = [...new Set(detectedCommands.flatMap((entry) => entry.missingPaths))];
+  const nonExecutablePaths = [...new Set(detectedCommands.flatMap((entry) => entry.nonExecutablePaths))];
+  const runtimeMismatches = detectedCommands.flatMap((entry) =>
+    entry.runtimeMismatch ? [{ location: entry.location, ...entry.runtimeMismatch }] : []
+  );
+  const packageVersionMismatches = detectedCommands.flatMap((entry) =>
+    entry.packageVersionMismatch
+      ? [{ location: entry.location, ...entry.packageVersionMismatch }]
+      : []
+  );
   const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
   const runtimeConfig = await inspectCodexRuntimeConfig(options.featureFlagConfigPath);
 
@@ -930,8 +866,13 @@ export async function doctorCodexHook(
       issues: [],
       fixCommand,
       expectedCommand,
+      detectedCommands,
+      duplicateHookCount,
       checkedPaths: [],
       missingPaths: [],
+      nonExecutablePaths: [],
+      runtimeMismatches: [],
+      packageVersionMismatches: [],
       featureFlag,
       runtimeConfig,
     };
@@ -944,25 +885,27 @@ export async function doctorCodexHook(
       issues: [],
       fixCommand,
       expectedCommand,
+      detectedCommands,
+      duplicateHookCount,
       checkedPaths: [],
       missingPaths: [],
+      nonExecutablePaths: [],
+      runtimeMismatches: [],
+      packageVersionMismatches: [],
       featureFlag,
       runtimeConfig,
     };
   }
 
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
-
   const issues: string[] = [];
-  const commandMismatch = detectedCommand !== expectedCommand;
+  const commandMismatch = detectedCommands.some((entry) => entry.command !== expectedCommand);
+  if (duplicateHookCount > 0) {
+    issues.push(
+      `configured Codex hooks contain ${detectedCommands.length} tokenjuice commands; expected exactly one managed hook`,
+    );
+  }
   if (commandMismatch) {
-    if (detectedCommand.includes("/Cellar/")) {
+    if (detectedCommands.some((entry) => entry.command.includes("/Cellar/"))) {
       issues.push("configured Codex hook is pinned to a versioned Homebrew Cellar path");
     } else {
       issues.push("configured Codex hook command does not match the current recommended command");
@@ -971,10 +914,17 @@ export async function doctorCodexHook(
   if (missingPaths.length > 0) {
     issues.push(`configured Codex hook points at missing path${missingPaths.length === 1 ? "" : "s"}`);
   }
-  const resolvedVersionMismatch = await detectResolvedHomebrewVersionMismatch(checkedPaths);
-  if (resolvedVersionMismatch) {
+  if (nonExecutablePaths.length > 0) {
+    issues.push(`configured Codex hook points at non-executable path${nonExecutablePaths.length === 1 ? "" : "s"}`);
+  }
+  for (const mismatch of runtimeMismatches) {
     issues.push(
-      `configured Codex hook launcher resolves to Homebrew tokenjuice ${resolvedVersionMismatch.resolvedVersion}, but this tokenjuice is ${packageJson.version}`,
+      `configured Codex hook ${mismatch.location} uses Node runtime ${mismatch.configuredPath}, but this tokenjuice uses ${mismatch.expectedPath}`,
+    );
+  }
+  for (const mismatch of packageVersionMismatches) {
+    issues.push(
+      `configured Codex hook launcher resolves to Homebrew tokenjuice ${mismatch.resolvedVersion}, but this tokenjuice is ${mismatch.expectedVersion}`,
     );
     fixCommand = commandMismatch
       ? `brew upgrade tokenjuice && ${installFixCommand}`
@@ -994,13 +944,22 @@ export async function doctorCodexHook(
 
   return {
     hooksPath,
-    status: missingPaths.length > 0 ? "broken" : issues.length > 0 ? "warn" : "ok",
+    status: missingPaths.length > 0 || nonExecutablePaths.length > 0
+      ? "broken"
+      : issues.length > 0
+        ? "warn"
+        : "ok",
     issues,
     fixCommand,
     expectedCommand,
     detectedCommand,
+    detectedCommands,
+    duplicateHookCount,
     checkedPaths,
     missingPaths,
+    nonExecutablePaths,
+    runtimeMismatches,
+    packageVersionMismatches,
     featureFlag,
     runtimeConfig,
   };

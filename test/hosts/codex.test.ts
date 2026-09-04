@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -404,6 +404,19 @@ describe("doctorCodexHook", () => {
 
     expect(report.status).toBe("ok");
     expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(report.detectedCommands).toEqual([
+      {
+        location: "PostToolUse[0].hooks[0]",
+        command: `${launcherPath} codex-post-tool-use`,
+        checkedPaths: [launcherPath],
+        missingPaths: [],
+        nonExecutablePaths: [],
+      },
+    ]);
+    expect(report.duplicateHookCount).toBe(0);
+    expect(report.nonExecutablePaths).toEqual([]);
+    expect(report.runtimeMismatches).toEqual([]);
+    expect(report.packageVersionMismatches).toEqual([]);
     expect(report.issues).toEqual([]);
     expect(report.featureFlag.enabled).toBe(true);
   });
@@ -527,6 +540,11 @@ describe("doctorCodexHook", () => {
 
     expect(currentReport.status).toBe("ok");
     expect(currentReport.detectedCommand).toBe(`${nodePath} ${launcherPath} codex-post-tool-use`);
+    expect(currentReport.detectedCommands[0]).toMatchObject({
+      location: "PostToolUse[0].hooks[0]",
+      command: `${nodePath} ${launcherPath} codex-post-tool-use`,
+      runtimePath: nodePath,
+    });
     expect(currentReport.issues).toEqual([]);
 
     await rm(launcherPath);
@@ -565,6 +583,15 @@ describe("doctorCodexHook", () => {
     expect(report.issues).toContain(
       `configured Codex hook launcher resolves to Homebrew tokenjuice 0.0.1, but this tokenjuice is ${PACKAGE_VERSION}`,
     );
+    expect(report.packageVersionMismatches).toEqual([
+      {
+        location: "PostToolUse[0].hooks[0]",
+        launcherPath,
+        resolvedPath: await realpath(resolvedLauncherPath),
+        resolvedVersion: "0.0.1",
+        expectedVersion: PACKAGE_VERSION,
+      },
+    ]);
     expect(report.issues).not.toContain("configured Codex hook command does not match the current recommended command");
 
     const policyReport = await doctorCodexHook(hooksPath, {
@@ -580,6 +607,159 @@ describe("doctorCodexHook", () => {
     expect(policyReport.issues).toContain(
       "configured Codex hook command does not match the current recommended command",
     );
+  });
+
+  it("reports every managed command and duplicate Codex hooks", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const launcherPath = join(home, "tokenjuice");
+    const command = `${launcherPath} codex-post-tool-use`;
+
+    process.env.PATH = "";
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [
+                {
+                  type: "command",
+                  command,
+                  statusMessage: "compacting bash output with tokenjuice",
+                  timeout: 10,
+                },
+              ],
+            },
+            {
+              matcher: "^Bash$",
+              hooks: [
+                {
+                  type: "command",
+                  command,
+                  statusMessage: "compacting bash output with tokenjuice",
+                  timeout: 10,
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, {
+      local: true,
+      binaryPath: launcherPath,
+    });
+
+    expect(report.status).toBe("warn");
+    expect(report.detectedCommands.map((entry) => entry.location)).toEqual([
+      "PostToolUse[0].hooks[0]",
+      "PostToolUse[1].hooks[0]",
+    ]);
+    expect(report.duplicateHookCount).toBe(1);
+    expect(report.issues).toContain(
+      "configured Codex hooks contain 2 tokenjuice commands; expected exactly one managed hook",
+    );
+  });
+
+  it("reports absolute Node runtime drift without executing the configured hook", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const configuredNodePath = join(home, "old", "bin", "node");
+    const expectedNodePath = join(home, "current", "bin", "node");
+    const launcherPath = join(home, "tokenjuice");
+    const command = `${configuredNodePath} ${launcherPath} codex-post-tool-use`;
+
+    process.env.PATH = "";
+    await mkdir(join(home, "old", "bin"), { recursive: true });
+    await mkdir(join(home, "current", "bin"), { recursive: true });
+    await writeFile(configuredNodePath, "#!/usr/bin/env bash\nexit 91\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(expectedNodePath, "#!/usr/bin/env bash\nexit 92\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 93\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [
+                {
+                  type: "command",
+                  command,
+                  statusMessage: "compacting bash output with tokenjuice",
+                  timeout: 10,
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, {
+      local: true,
+      binaryPath: launcherPath,
+      nodePath: expectedNodePath,
+    });
+
+    expect(report.status).toBe("warn");
+    expect(report.runtimeMismatches).toEqual([
+      {
+        location: "PostToolUse[0].hooks[0]",
+        configuredPath: configuredNodePath,
+        expectedPath: expectedNodePath,
+      },
+    ]);
+    expect(report.issues).toContain(
+      `configured Codex hook PostToolUse[0].hooks[0] uses Node runtime ${configuredNodePath}, but this tokenjuice uses ${expectedNodePath}`,
+    );
+  });
+
+  it("reports present but non-executable hook paths as broken", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const launcherPath = join(home, "tokenjuice");
+    const command = `${launcherPath} codex-post-tool-use`;
+
+    process.env.PATH = "";
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o644 });
+    await writeFile(
+      hooksPath,
+      `${JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: "^Bash$",
+              hooks: [
+                {
+                  type: "command",
+                  command,
+                  statusMessage: "compacting bash output with tokenjuice",
+                  timeout: 10,
+                },
+              ],
+            },
+          ],
+        },
+      }, null, 2)}\n`,
+      "utf8",
+    );
+
+    const report = await doctorCodexHook(hooksPath, {
+      local: true,
+      binaryPath: launcherPath,
+    });
+
+    expect(report.status).toBe("broken");
+    expect(report.missingPaths).toEqual([]);
+    expect(report.nonExecutablePaths).toEqual([launcherPath]);
+    expect(report.issues).toContain("configured Codex hook points at non-executable path");
   });
 
   it("treats absent hooks feature flag as enabled for current Codex", async () => {

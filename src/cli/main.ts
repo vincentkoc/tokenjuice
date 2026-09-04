@@ -8,12 +8,14 @@ import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
+import type { StatsSourceReport } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { readNoOmissionFromEnv } from "../core/env.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
 import { WRAP_AUTHORITATIVE_FOOTER } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
+import { UNKNOWN_ARTIFACT_SOURCE } from "../core/source.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "../hosts/adal/index.js";
@@ -4273,6 +4275,43 @@ function formatMetric(value: number): string {
     .replace(/([KMBT])$/u, (suffix) => suffix.toLowerCase());
 }
 
+export function formatStatsSources(sources: StatsSourceReport[]): string {
+  if (sources.length === 0) {
+    return "";
+  }
+
+  const orderedSources = [...sources].sort((left, right) =>
+    right.totals.observedRawChars - left.totals.observedRawChars
+    || left.source.localeCompare(right.source)
+  );
+  const lines = ["sources:"];
+
+  for (const source of orderedSources) {
+    const observedRaw = source.totals.captureTruncatedEntries > 0
+      ? ` observedRaw=${formatMetric(source.totals.observedRawChars)}`
+      : "";
+    lines.push(
+      `source ${source.source}: entries=${formatMetric(source.totals.entries)} raw=${formatMetric(source.totals.rawChars)}${observedRaw} reduced=${formatMetric(source.totals.reducedChars)} saved=${formatMetric(source.totals.savedChars)} avgRatio=${formatRatio(source.totals.avgRatio)}`,
+    );
+    if (source.reducers.length > 0) {
+      lines.push(
+        `  reducers: ${source.reducers.slice(0, 3).map((reducer) => `${reducer.reducer}(${formatMetric(reducer.count)})`).join(", ")}`,
+      );
+    }
+    if (source.commands.length > 0) {
+      lines.push(
+        `  commands: ${source.commands.slice(0, 3).map((command) => `${command.signature}(${formatMetric(command.count)})`).join(", ")}`,
+      );
+    }
+  }
+
+  if (orderedSources.some((source) => source.source === UNKNOWN_ARTIFACT_SOURCE)) {
+    lines.push("note: source unknown means stored artifacts have missing or invalid source metadata.");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
 async function runDiscover(args: ParsedArgs): Promise<number> {
   const direct = await loadDirectAnalysisEntry(args);
   const entries = direct ? [direct.entry] : await listArtifactMetadata(args.storeDir);
@@ -7357,22 +7396,7 @@ async function runStats(args: ParsedArgs): Promise<number> {
   }
 
   if (report.sources && report.sources.length > 0) {
-    process.stdout.write("sources:\n");
-    for (const source of report.sources) {
-      process.stdout.write(
-        `source ${source.source}: entries=${formatMetric(source.totals.entries)} saved=${formatMetric(source.totals.savedChars)} avgRatio=${formatRatio(source.totals.avgRatio)}\n`,
-      );
-      if (source.reducers.length > 0) {
-        process.stdout.write(
-          `  reducers: ${source.reducers.slice(0, 3).map((reducer) => `${reducer.reducer}(${formatMetric(reducer.count)})`).join(", ")}\n`,
-        );
-      }
-      if (source.commands.length > 0) {
-        process.stdout.write(
-          `  commands: ${source.commands.slice(0, 3).map((command) => `${command.signature}(${formatMetric(command.count)})`).join(", ")}\n`,
-        );
-      }
-    }
+    process.stdout.write(formatStatsSources(report.sources));
   }
 
   return 0;

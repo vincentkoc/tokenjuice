@@ -67,10 +67,13 @@ brew tap vincentkoc/tap
 brew install tokenjuice
 ```
 
+Homebrew maps the `vincentkoc/tap` alias to the canonical
+`vincentkoc/homebrew-tap` GitHub repository.
+
 the release flow now mirrors `autosecure`:
 
 - GitHub release uploads `sha256sums.txt`
-- the tap sync workflow updates `vincentkoc/tap`
+- the tap sync workflow updates `vincentkoc/homebrew-tap`
 - the tap formula points at the GitHub release tarball
 
 ## apt / dnf / yum

@@ -67,7 +67,7 @@ Releases are tag-driven and should stay aligned with `package.json`.
 3. Commit the version bump and any required workflow fixes to `main`, then push `main`.
 4. Create and push an annotated tag: `git tag -a v0.6.0 -m "v0.6.0"` and `git push origin v0.6.0`.
 5. Watch the `Release` GitHub Actions workflow and confirm the GitHub release is published with the `.tar.gz`, `.deb`, `.rpm`, `sha256sums.txt`, and `tokenjuice.rb` assets.
-6. Confirm the `homebrew-tap.yml` sync workflow succeeds and that `vincentkoc/tap` points at the new tarball and SHA.
+6. Confirm the `homebrew-tap.yml` sync workflow succeeds and that the canonical `vincentkoc/homebrew-tap` repository points at the new tarball and SHA.
 
 If a release tag was pushed against a broken workflow, fix `main`, delete and recreate the tag, then rerun the release from the corrected commit.
 

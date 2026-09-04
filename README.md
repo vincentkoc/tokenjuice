@@ -130,7 +130,7 @@ npm install -g tokenjuice
 pnpm add -g tokenjuice
 # or
 yarn global add tokenjuice
-# or
+# or (the vincentkoc/tap alias maps to github.com/vincentkoc/homebrew-tap)
 brew tap vincentkoc/tap
 brew install tokenjuice
 ```

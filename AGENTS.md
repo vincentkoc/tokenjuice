@@ -67,9 +67,9 @@ Releases are tag-driven and should stay aligned with `package.json`.
 3. Commit the version bump and any required workflow fixes to `main`, then push `main`.
 4. Create and push an annotated tag: `git tag -a v0.6.0 -m "v0.6.0"` and `git push origin v0.6.0`.
 5. Watch the `Release` GitHub Actions workflow and confirm the GitHub release is published with the `.tar.gz`, `.deb`, `.rpm`, `sha256sums.txt`, and `tokenjuice.rb` assets.
-6. Confirm the `homebrew-tap.yml` sync workflow succeeds and that the canonical `vincentkoc/homebrew-tap` repository points at the new tarball and SHA.
+6. Manually dispatch the Tokenjuice publisher workflow in the canonical `vincentkoc/homebrew-tap` repository with the release tag, then confirm its formula points at the published tarball and SHA. Keep this manual until GitHub App dispatch automation lands.
 
-If a release tag was pushed against a broken workflow, fix `main`, delete and recreate the tag, then rerun the release from the corrected commit.
+For formula-only recovery against an existing immutable tarball, download and verify the published checksum, then run `pnpm release:formula -- --published-tarball-sha256 <64-lowercase-hex>`. This mode is offline and does not require a local tarball. Replace only the broken formula asset; do not retag or republish unrelated artifacts.
 
 ## Commit & Pull Request Guidelines
 

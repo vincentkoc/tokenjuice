@@ -135,6 +135,10 @@ brew tap vincentkoc/tap
 brew install tokenjuice
 ```
 
+Homebrew publication is owned by the Tokenjuice workflow in the canonical
+`vincentkoc/homebrew-tap` repository. Release maintainers dispatch it manually
+with the published tag until GitHub App automation lands.
+
 then:
 
 ```bash

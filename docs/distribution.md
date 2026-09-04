@@ -39,6 +39,17 @@ pnpm release:checksums
 pnpm release:formula
 ```
 
+normal formula generation verifies that the selected checksum entry matches the
+actual local tarball before writing Ruby. For formula-only recovery against an
+existing published tarball, first verify its published checksum, then run:
+
+```bash
+pnpm release:formula -- --published-tarball-sha256 <64-lowercase-hex>
+```
+
+the recovery override is intentionally offline and does not require or rebuild a
+local tarball.
+
 that writes:
 
 - `release/tokenjuice-v<version>.tar.gz`
@@ -70,10 +81,13 @@ brew install tokenjuice
 Homebrew maps the `vincentkoc/tap` alias to the canonical
 `vincentkoc/homebrew-tap` GitHub repository.
 
-the release flow now mirrors `autosecure`:
+Homebrew publication is target-owned:
 
 - GitHub release uploads `sha256sums.txt`
-- the tap sync workflow updates `vincentkoc/homebrew-tap`
+- the Tokenjuice workflow in `vincentkoc/homebrew-tap` validates the published
+  release assets and updates its formula
+- release maintainers manually dispatch that target workflow with the published
+  tag until GitHub App automation lands
 - the tap formula points at the GitHub release tarball
 
 ## apt / dnf / yum

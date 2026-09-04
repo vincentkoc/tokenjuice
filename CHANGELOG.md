@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Generate strict-audit-compatible Homebrew formulas with verified local checksums, support explicit published-tarball recovery, and leave tap publication to the target repository workflow.
+
 ## 0.8.2 - 2026-09-04
 
 ### Fixes

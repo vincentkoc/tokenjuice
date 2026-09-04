@@ -9,6 +9,9 @@ const TRUNCATION_SUFFIX = "\n... truncated ...";
 const MIDDLE_TRUNCATION_MARKER = "\n... omitted ...\n";
 const COMBINING_MARK_PATTERN = /\p{Mark}/u;
 const EMOJI_PATTERN = /\p{Extended_Pictographic}/u;
+const FLAG_EMOJI_PATTERN = /^\p{Regional_Indicator}{2}$/u;
+const KEYCAP_EMOJI_PATTERN = /^[#*0-9]\uFE0F?\u20E3$/u;
+const REPEATED_EMOJI_BANNER_MIN_REPETITIONS = 24;
 const graphemeSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl
   ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
   : null;
@@ -137,6 +140,42 @@ export function dedupeAdjacent(lines: string[]): string[] {
     }
   }
   return next;
+}
+
+function formatCodePoints(text: string): string {
+  return Array.from(text, (character) => `U+${character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0")}`).join("+");
+}
+
+function isEmojiGrapheme(text: string): boolean {
+  return EMOJI_PATTERN.test(text)
+    || FLAG_EMOJI_PATTERN.test(text)
+    || KEYCAP_EMOJI_PATTERN.test(text);
+}
+
+export function collapseRepeatedEmojiBanner(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
+  let collapsed = false;
+  const nextLines = lines.map((line) => {
+    const visibleSegments = graphemes(line).filter((segment) => !/^\s+$/u.test(segment));
+    const repeatedEmoji = visibleSegments[0];
+    if (
+      visibleSegments.length < REPEATED_EMOJI_BANNER_MIN_REPETITIONS
+      || !repeatedEmoji
+      || !isEmojiGrapheme(repeatedEmoji)
+      || visibleSegments.some((segment) => segment !== repeatedEmoji)
+    ) {
+      return line;
+    }
+
+    collapsed = true;
+    return `[repeated emoji banner omitted: ${formatCodePoints(repeatedEmoji)} x${visibleSegments.length}]`;
+  });
+
+  return collapsed
+    ? {
+        lines: nextLines,
+        compaction: createCompactionMetadata("repeated-emoji-banner-omission"),
+      }
+    : { lines: nextLines };
 }
 
 export function headTail(lines: string[], head: number, tail: number, noOmit = false): { lines: string[]; compaction?: CompactionMetadata } {

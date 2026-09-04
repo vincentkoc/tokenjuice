@@ -3,7 +3,7 @@ import { hasMultipleSubstantiveShellCommands } from "./command-match.js";
 import { classifyExecution, resolveRuleMatch } from "./classify.js";
 import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
-import { clampTextMiddleWithMetadata, clampTextWithMetadata, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
+import { clampTextMiddleWithMetadata, clampTextWithMetadata, collapseRepeatedEmojiBanner, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
 import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
@@ -68,6 +68,13 @@ function applyRule(
     lines = normalizeLines(stripAnsi(lines.join("\n")));
   }
 
+  let rewriteCompaction: CompactionMetadata | undefined;
+  if (!noOmit && rule.id === "generic/fallback") {
+    const collapsed = collapseRepeatedEmojiBanner(lines);
+    lines = collapsed.lines;
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, collapsed.compaction);
+  }
+
   const outputMatchText = trimEmptyEdges(lines).join("\n");
   const matchedOutput = compiledRule.compiled.outputMatches.find((entry) => entry.pattern.test(outputMatchText));
   if (!noOmit && matchedOutput) {
@@ -106,7 +113,6 @@ function applyRule(
     lines = rewriteGitStatusLines(lines);
   }
   const preRewriteLines = [...lines];
-  let rewriteCompaction: CompactionMetadata | undefined;
   if (rule.id === "cloud/gh") {
     counterLines = rewriteGhLines(counterLines, input, noOmit).lines;
     const rewritten = rewriteGhLines(lines, input, noOmit);

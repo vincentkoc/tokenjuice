@@ -265,6 +265,29 @@ describe("compactBashResult", () => {
     expect(kept.result?.classification.matchedReducer).toBe("generic/fallback");
   });
 
+  it("removes repeated emoji banners from Crabbox-like generic output", async () => {
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "crabbox run inspect-model",
+      visibleText: [
+        "generated modeling_modernbert.py",
+        "🚨".repeat(1_935),
+        "inspection complete",
+      ].join("\n"),
+      maxInlineChars: 1_200,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    const rewritten = expectRewrite(outcome);
+    expect(rewritten.result.classification.matchedReducer).toBe("generic/fallback");
+    expect(rewritten.result.inlineText).toContain("[repeated emoji banner omitted: U+1F6A8 x1935]");
+    expect(rewritten.result.inlineText).not.toContain("🚨");
+    expect(rewritten.result.compaction?.kinds).toContain("repeated-emoji-banner-omission");
+  });
+
   it("compacts generic/fallback output when the command is only a cd-prefixed chain", async () => {
     // Regression: a leading `cd <dir> && <cmd>` is classified as compound by
     // `isCompoundShellCommand`, which trips `skipGenericFallbackForCompoundCommands`

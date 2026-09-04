@@ -300,6 +300,86 @@ describe("reduceExecution", () => {
     expect(result.inlineText).toContain("lines omitted");
   });
 
+  it("collapses repeated emoji banners in generic fallback output", async () => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      combinedText: [
+        "generated source follows",
+        Array.from({ length: 1_935 }, () => "🚨").join(" "),
+        "done",
+      ].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toContain("[repeated emoji banner omitted: U+1F6A8 x1935]");
+    expect(result.inlineText).not.toContain("🚨");
+    expect(result.compaction).toEqual({
+      authoritative: true,
+      kinds: ["repeated-emoji-banner-omission"],
+    });
+  });
+
+  it.each([
+    {
+      label: "flag",
+      emoji: "🇫🇷",
+      codePoints: "U+1F1EB+U+1F1F7",
+    },
+    {
+      label: "keycap",
+      emoji: "1️⃣",
+      codePoints: "U+0031+U+FE0F+U+20E3",
+    },
+  ])("collapses repeated $label emoji graphemes", async ({ emoji, codePoints }) => {
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      combinedText: Array.from({ length: 48 }, () => emoji).join(" "),
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(`[repeated emoji banner omitted: ${codePoints} x48]`);
+    expect(result.compaction?.kinds).toContain("repeated-emoji-banner-omission");
+  });
+
+  it("preserves normal emoji, CJK, and mixed-content lines", async () => {
+    const rawText = [
+      "状态正常 🚨",
+      "🚨".repeat(23),
+      `${"🚨".repeat(24)} warning`,
+      Array.from({ length: 24 }, () => "🇫").join(" "),
+      "1".repeat(24),
+      Array.from({ length: 24 }, (_, index) => index % 2 === 0 ? "🇫🇷" : "🇺🇸").join(" "),
+    ].join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.compaction?.authoritative).toBe(false);
+  });
+
+  it("preserves repeated emoji banners when noOmit is enabled", async () => {
+    const rawText = "🚨".repeat(48);
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-tool check",
+      combinedText: rawText,
+      exitCode: 0,
+    }, {
+      noOmit: true,
+      maxInlineChars: 20_000,
+    });
+
+    expect(result.inlineText).toBe(rawText);
+    expect(result.compaction?.kinds).not.toContain("repeated-emoji-banner-omission");
+  });
+
   it("minifies whole JSON object output before generic fallback", async () => {
     const rawText = prettyJson({
       runtimeVersion: "2026.5.7",

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- Add a beta Grok Bot project-guidance integration through a Cursor-format `.cursor/rules/tokenjuice.mdc` rule with `alwaysApply: true` metadata.
+
 ### Fixes
 
 - Generate strict-audit-compatible Homebrew formulas with verified local checksums, support explicit published-tarball recovery, and leave tap publication to the target repository workflow.

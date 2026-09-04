@@ -80,6 +80,7 @@ beta integrations:
 | <img width="48px" src="docs/client-goose.svg" alt="Goose" /> | [Goose](https://goose-docs.ai/) | `tokenjuice install goose` | `.goosehints` |
 | <img width="48px" src="docs/client-greptile.svg" alt="Greptile" /> | [Greptile](https://www.greptile.com/docs/code-review/greptile-config) | `tokenjuice install greptile` | `.greptile/rules.md` |
 | <img width="48px" src="docs/client-grok-build.svg" alt="Grok Build" /> | [Grok Build](https://docs.x.ai/build/overview) | `tokenjuice install grok-build` | `AGENTS.md` |
+| <img width="48px" src="docs/client-grok-bot.svg" alt="Grok Bot" /> | Grok Bot | `tokenjuice install grok-bot` | `.cursor/rules/tokenjuice.mdc` |
 | <img width="48px" src="docs/client-grok-cli.svg" alt="Grok CLI" /> | [Grok CLI](https://github.com/superagent-ai/grok-cli) | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` |
 | <img width="48px" src="docs/client-gptme.svg" alt="gptme" /> | [gptme](https://gptme.org/docs/prompts.html) | `tokenjuice install gptme` | `AGENTS.md` |
 | <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot coding agent" /> | [GitHub Copilot coding agent](https://docs.github.com/en/copilot/using-github-copilot/coding-agent) | `tokenjuice install copilot-agent` | `.github/hooks/tokenjuice-agent.json` |

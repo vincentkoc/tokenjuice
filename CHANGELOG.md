@@ -2,13 +2,16 @@
 
 ## Unreleased
 
+## 0.8.3 - 2026-09-04
+
 ### Features
 
-- Add a beta Grok Bot project-guidance integration through a Cursor-format `.cursor/rules/tokenjuice.mdc` rule with `alwaysApply: true` metadata.
+- Add a beta Grok Bot project-guidance integration through a Cursor-format `.cursor/rules/tokenjuice.mdc` rule with `alwaysApply: true` metadata. (#222)
 
 ### Fixes
 
-- Generate strict-audit-compatible Homebrew formulas with verified local checksums, support explicit published-tarball recovery, and leave tap publication to the target repository workflow.
+- Sync the canonical Homebrew tap from the published Tokenjuice release. (#225)
+- Generate strict-audit-compatible Homebrew formulas with verified local checksums, support explicit published-tarball recovery, and leave tap publication to the target repository workflow. (#226)
 
 ## 0.8.2 - 2026-09-04
 

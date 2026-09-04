@@ -47,6 +47,15 @@ jobs:
           fetch-depth: 0
           ref: refs/tags/${{ steps.release.outputs.tag }}
 
+      - name: Verify release version
+        run: |
+          set -euo pipefail
+          PACKAGE_VERSION="$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version)')"
+          if [ "${RELEASE_VERSION}" != "${PACKAGE_VERSION}" ]; then
+            echo "Release version ${RELEASE_VERSION} does not match package.json version ${PACKAGE_VERSION}."
+            exit 1
+          fi
+
       - name: Verify checked out release tag
         run: |
           set -euo pipefail

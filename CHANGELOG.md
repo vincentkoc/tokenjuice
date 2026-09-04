@@ -2,18 +2,29 @@
 
 ## Unreleased
 
+## 0.8.2 - 2026-09-04
+
 ### Fixes
 
-- Let Codex hooks fail open without adding context when tool responses or hook input exceed safety limits.
-- Pin Codex JavaScript launchers to a verified Node runtime and report duplicate, missing, non-executable, runtime-skewed, and package-skewed hook commands.
-- Clarify CodeBuddy hook activation after external settings changes and keep doctor claims limited to persisted configuration.
-- Rank per-source stats by observed cost and clarify missing source metadata.
-- Preserve quoted commands and Windows paths when wrapping POSIX shell payloads.
-- Keep installed Codex hooks omission-policy neutral while honoring runtime environment policy.
-- Keep Codex compaction feedback inert and omit recovery references for non-authoritative rewrites.
-- Keep raw and full command output available when optional telemetry storage is unavailable.
-- Collapse oversized repeated-emoji banners in generic fallback summaries while preserving raw and no-omission output.
-- Render successful generic error and warning counters as neutral mentions.
+- Let Codex hooks fail open without adding context when tool responses or hook input exceed safety limits. (#211)
+- Pin Codex JavaScript launchers to a verified Node runtime and report duplicate, missing, non-executable, runtime-skewed, and package-skewed hook commands. (#213)
+- Clarify CodeBuddy hook activation after external settings changes and keep doctor claims limited to persisted configuration. (#208)
+- Rank per-source stats by observed cost and clarify missing source metadata. (#223)
+- Preserve quoted commands and Windows paths when wrapping POSIX shell payloads. (#219)
+- Keep installed Codex hooks omission-policy neutral while honoring runtime environment policy. (#218)
+- Keep Codex compaction feedback inert and omit recovery references for non-authoritative rewrites. (#214)
+- Keep raw and full command output available when optional telemetry storage is unavailable. (#216)
+- Collapse oversized repeated-emoji banners in generic fallback summaries while preserving raw and no-omission output. (#220)
+- Render successful generic error and warning counters as neutral mentions. (#221)
+
+### Maintenance
+
+- Isolate the test suite from local environment state. (#217)
+
+## 0.8.1 - 2026-06-18
+
+### Fixes
+
 - Harden ownership detection, restoration, and malformed marker handling for beta host integrations.
 - Build release artifacts from explicit tags and validate Homebrew tap release-tag input.
 - Make `pnpm build` portable across supported Node platforms.

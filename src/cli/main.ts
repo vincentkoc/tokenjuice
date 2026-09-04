@@ -156,6 +156,7 @@ type ParsedArgs = {
   tee: boolean;
   raw: boolean;
   noOmit: boolean;
+  allowOmit: boolean;
   storeDir: string | undefined;
   maxInlineChars: number | undefined;
   maxCaptureBytes: number | undefined;
@@ -214,7 +215,7 @@ function printUsage(): void {
       "  tokenjuice install bob",
       "  tokenjuice install builder",
       "  tokenjuice install charlie",
-      "  tokenjuice install codex [--local]",
+      "  tokenjuice install codex [--local] [--no-omit]",
       "  tokenjuice install claude-code [--local]",
       "  tokenjuice install cline [--local]",
       "  tokenjuice install codeant",
@@ -390,6 +391,7 @@ function printUsage(): void {
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
       "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qodo|qoder|qwen-code|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor codex [--local] [--no-omit]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
     ].join("\n"),
   );
@@ -411,6 +413,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let tee = false;
   let raw = false;
   let noOmit = false;
+  let allowOmit = false;
   let storeDir: string | undefined;
   let maxInlineChars: number | undefined;
   let maxCaptureBytes: number | undefined;
@@ -494,6 +497,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
         noOmit = true;
         index += 1;
         break;
+      case "--allow-omit":
+        allowOmit = true;
+        index += 1;
+        break;
       case "--tee":
         tee = true;
         index += 1;
@@ -564,6 +571,13 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
+  if (noOmit && allowOmit) {
+    throw new Error("--no-omit and --allow-omit cannot be used together");
+  }
+  if (allowOmit && (command === "install" || command === "doctor")) {
+    throw new Error("--allow-omit is not supported for install or doctor; Codex hooks honor the configured omission policy");
+  }
+
   return {
     command,
     format,
@@ -577,6 +591,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     tee,
     raw,
     noOmit,
+    allowOmit,
     storeDir,
     maxInlineChars,
     maxCaptureBytes,
@@ -1298,7 +1313,10 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "codex") {
-    const result = await installCodexHook(undefined, { local: args.local });
+    const result = await installCodexHook(undefined, {
+      local: args.local,
+      ...(args.noOmit ? { noOmit: true } : {}),
+    });
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
@@ -5056,7 +5074,10 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
   }
 
   if (args.positionals[0] === "codex") {
-    const report = await doctorCodexHook(undefined, { local: args.local });
+    const report = await doctorCodexHook(undefined, {
+      local: args.local,
+      ...(args.noOmit ? { noOmit: true } : {}),
+    });
 
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -7372,7 +7393,10 @@ async function main(argv = process.argv.slice(2)): Promise<number> {
     case "stats":
       return await runStats(args);
     case "codex-post-tool-use":
-      return await runCodexPostToolUseHook(await readStdin(args.maxInputBytes));
+      return await runCodexPostToolUseHook(
+        await readStdin(args.maxInputBytes),
+        { noOmit: args.noOmit, allowOmit: args.allowOmit },
+      );
     case "claude-code-pre-tool-use":
       return await runClaudeCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "claude-code-post-tool-use":

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, symlink, utimes, writeFile } from "node:f
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { doctorCodexHook, installCodexHook, listArtifactMetadata, runCodexPostToolUseHook, uninstallCodexHook } from "../../src/index.js";
 
@@ -11,11 +11,21 @@ const tempDirs: string[] = [];
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version as string;
 const originalHome = process.env.HOME;
 const originalPath = process.env.PATH;
+const originalNoOmission = process.env.TOKENJUICE_NO_OMISSION;
+
+beforeEach(() => {
+  delete process.env.TOKENJUICE_NO_OMISSION;
+});
 
 afterEach(async () => {
   delete process.env.CODEX_HOME;
   process.env.HOME = originalHome;
   process.env.PATH = originalPath;
+  if (originalNoOmission === undefined) {
+    delete process.env.TOKENJUICE_NO_OMISSION;
+  } else {
+    process.env.TOKENJUICE_NO_OMISSION = originalNoOmission;
+  }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -169,6 +179,86 @@ describe("installCodexHook", () => {
     expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(`${launcherPath} codex-post-tool-use`);
   });
 
+  it("does not persist the no-omit environment in the installed hook command", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    process.env.TOKENJUICE_NO_OMISSION = "1";
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const result = await installCodexHook(hooksPath);
+    const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result.command).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(
+      `${launcherPath} codex-post-tool-use`,
+    );
+  });
+
+  it("persists no-omit only when explicitly requested", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    const result = await installCodexHook(hooksPath, { noOmit: true });
+    const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+
+    expect(result.command).toBe(`${launcherPath} codex-post-tool-use --no-omit`);
+    expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(
+      `${launcherPath} codex-post-tool-use --no-omit`,
+    );
+  });
+
+  it("removes legacy omission flags when reinstalling without explicit policy", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+
+    for (const legacyFlag of ["--allow-omit", "--no-omit"]) {
+      await writeFile(hooksPath, `${JSON.stringify({
+        hooks: {
+          PostToolUse: [{
+            matcher: "^Bash$",
+            hooks: [{
+              type: "command",
+              command: `${launcherPath} codex-post-tool-use ${legacyFlag}`,
+              statusMessage: "compacting bash output with tokenjuice",
+              timeout: 30,
+            }],
+          }],
+        },
+      }, null, 2)}\n`, "utf8");
+
+      const result = await installCodexHook(hooksPath);
+      const parsed = JSON.parse(await readFile(hooksPath, "utf8")) as {
+        hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+      };
+
+      expect(result.command).toBe(`${launcherPath} codex-post-tool-use`);
+      expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(
+        `${launcherPath} codex-post-tool-use`,
+      );
+    }
+  });
+
   it("can install a local codex hook without preferring PATH", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");
@@ -261,6 +351,75 @@ describe("doctorCodexHook", () => {
     expect(report.featureFlag.enabled).toBe(true);
   });
 
+  it("keeps a neutral hook healthy when the environment enables no omission", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await installCodexHook(hooksPath);
+
+    process.env.TOKENJUICE_NO_OMISSION = "1";
+    const report = await doctorCodexHook(hooksPath);
+
+    expect(report.status).toBe("ok");
+    expect(report.expectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(report.fixCommand).toBe("tokenjuice install codex");
+    expect(report.issues).toEqual([]);
+  });
+
+  it("reports installed omission flags as stale unless explicitly requested", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice");
+    const featureFlagConfigPath = join(home, "config.toml");
+
+    process.env.PATH = binDir;
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+    await writeFile(featureFlagConfigPath, "[features]\ncodex_hooks = true\n", "utf8");
+
+    for (const staleFlag of ["--allow-omit", "--no-omit"]) {
+      await writeFile(hooksPath, `${JSON.stringify({
+        hooks: {
+          PostToolUse: [{
+            matcher: "^Bash$",
+            hooks: [{
+              type: "command",
+              command: `${launcherPath} codex-post-tool-use ${staleFlag}`,
+              statusMessage: "compacting bash output with tokenjuice",
+              timeout: 10,
+            }],
+          }],
+        },
+      }, null, 2)}\n`, "utf8");
+
+      const report = await doctorCodexHook(hooksPath, { featureFlagConfigPath });
+
+      expect(report.status).toBe("warn");
+      expect(report.expectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+      expect(report.detectedCommand).toBe(`${launcherPath} codex-post-tool-use ${staleFlag}`);
+      expect(report.fixCommand).toBe("tokenjuice install codex");
+      expect(report.issues).toContain(
+        "configured Codex hook command does not match the current recommended command",
+      );
+    }
+
+    const explicitReport = await doctorCodexHook(hooksPath, {
+      featureFlagConfigPath,
+      noOmit: true,
+    });
+    expect(explicitReport.status).toBe("ok");
+    expect(explicitReport.expectedCommand).toBe(`${launcherPath} codex-post-tool-use --no-omit`);
+    expect(explicitReport.fixCommand).toBe("tokenjuice install codex --no-omit");
+    expect(explicitReport.issues).toEqual([]);
+  });
+
   it("warns when the stable launcher resolves to an older Homebrew tokenjuice version", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");
@@ -287,6 +446,20 @@ describe("doctorCodexHook", () => {
       `configured Codex hook launcher resolves to Homebrew tokenjuice 0.0.1, but this tokenjuice is ${PACKAGE_VERSION}`,
     );
     expect(report.issues).not.toContain("configured Codex hook command does not match the current recommended command");
+
+    const policyReport = await doctorCodexHook(hooksPath, {
+      featureFlagConfigPath,
+      noOmit: true,
+    });
+    expect(policyReport.status).toBe("warn");
+    expect(policyReport.expectedCommand).toBe(`${launcherPath} codex-post-tool-use --no-omit`);
+    expect(policyReport.detectedCommand).toBe(`${launcherPath} codex-post-tool-use`);
+    expect(policyReport.fixCommand).toBe(
+      "brew upgrade tokenjuice && tokenjuice install codex --no-omit",
+    );
+    expect(policyReport.issues).toContain(
+      "configured Codex hook command does not match the current recommended command",
+    );
   });
 
   it("treats absent hooks feature flag as enabled for current Codex", async () => {
@@ -626,6 +799,76 @@ describe("runCodexPostToolUseHook", () => {
     expect(response.hookSpecificOutput?.additionalContext).not.toContain("tokenjuice wrap --full -- <command>");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
+  });
+
+  it("keeps the original output when the installed hook explicitly enables no-omit", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "git log --oneline",
+      },
+      tool_response: Array.from(
+        { length: 40 },
+        (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
+      ).join("\n"),
+    });
+
+    const { code, stdout, stderr } = await captureStdio(
+      () => runCodexPostToolUseHook(payload, { noOmit: true }),
+    );
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      noOmit?: boolean;
+      rewrote: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+    expect(debug.noOmit).toBe(true);
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("no-compaction");
+  });
+
+  it("compacts output when the explicit test policy overrides the no-omit environment", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_NO_OMISSION = "1";
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "git log --oneline" },
+      tool_response: Array.from(
+        { length: 40 },
+        (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
+      ).join("\n"),
+    });
+
+    const { code, stdout, stderr } = await captureStdio(
+      () => runCodexPostToolUseHook(payload, { allowOmit: true }),
+    );
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      noOmit?: boolean;
+      rewrote: boolean;
+    };
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain("lines omitted");
+    expect(debug.noOmit).toBe(false);
+    expect(debug.rewrote).toBe(true);
+  });
+
+  it("rejects conflicting omission policies through the public runtime API", async () => {
+    await expect(runCodexPostToolUseHook("{}", {
+      noOmit: true,
+      allowOmit: true,
+    })).rejects.toThrow("noOmit and allowOmit policies cannot be enabled together");
   });
 
   it("skips rewriting generic fallback output for compound shell diagnostics", async () => {

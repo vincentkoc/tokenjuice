@@ -6,6 +6,7 @@ import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import { readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, stripAnsi } from "../../core/text.js";
@@ -100,6 +101,7 @@ export type CodexHookCommandOptions = {
   local?: boolean;
   binaryPath?: string;
   nodePath?: string;
+  noOmit?: boolean;
   /**
    * Override for the config.toml consulted when reporting the
    * `codex_hooks` feature-flag state. Defaults to `~/.codex/config.toml`.
@@ -108,6 +110,12 @@ export type CodexHookCommandOptions = {
    */
   featureFlagConfigPath?: string;
 };
+
+function validateCodexOmissionPolicy(options: { noOmit?: boolean; allowOmit?: boolean }): void {
+  if (options.noOmit && options.allowOmit) {
+    throw new Error("Codex noOmit and allowOmit policies cannot be enabled together");
+  }
+}
 
 export type CodexDoctorReport = {
   hooksPath: string;
@@ -370,22 +378,28 @@ async function buildCodexHookCommand(options: CodexHookCommandOptions = {}): Pro
     throw new Error("unable to resolve tokenjuice binary path for codex install");
   }
 
+  let command: string | undefined;
   if (!options.local) {
     const installedBinaryPath = await resolveInstalledTokenjuicePath();
     if (installedBinaryPath) {
-      return `${shellQuote(installedBinaryPath)} codex-post-tool-use`;
+      command = `${shellQuote(installedBinaryPath)} codex-post-tool-use`;
     }
   }
 
-  if (binaryPath.endsWith(".js")) {
-    return `${shellQuote(nodePath)} ${shellQuote(binaryPath)} codex-post-tool-use`;
+  if (!command) {
+    command = binaryPath.endsWith(".js")
+      ? `${shellQuote(nodePath)} ${shellQuote(binaryPath)} codex-post-tool-use`
+      : `${shellQuote(binaryPath)} codex-post-tool-use`;
   }
 
-  return `${shellQuote(binaryPath)} codex-post-tool-use`;
+  return options.noOmit ? `${command} --no-omit` : command;
 }
 
-function getCodexFixCommand(local = false): string {
-  return local ? "tokenjuice install codex --local" : TOKENJUICE_CODEX_FIX_COMMAND;
+function getCodexFixCommand(local = false, noOmit = false): string {
+  return [
+    local ? "tokenjuice install codex --local" : TOKENJUICE_CODEX_FIX_COMMAND,
+    ...(noOmit ? ["--no-omit"] : []),
+  ].join(" ");
 }
 
 async function pathExists(path: string): Promise<boolean> {
@@ -831,8 +845,9 @@ export async function doctorCodexHook(
   hooksPath = getDefaultHooksPath(),
   options: CodexHookCommandOptions = {},
 ): Promise<CodexDoctorReport> {
+  const noOmit = options.noOmit === true;
   const expectedCommand = await buildCodexHookCommand(options);
-  const installFixCommand = getCodexFixCommand(options.local);
+  const installFixCommand = getCodexFixCommand(options.local, noOmit);
   let fixCommand = installFixCommand;
   const { config, exists } = await readHooksConfig(hooksPath);
   const detectedCommand = findTokenjuiceCodexHookCommand(config);
@@ -876,7 +891,8 @@ export async function doctorCodexHook(
   }
 
   const issues: string[] = [];
-  if (detectedCommand !== expectedCommand) {
+  const commandMismatch = detectedCommand !== expectedCommand;
+  if (commandMismatch) {
     if (detectedCommand.includes("/Cellar/")) {
       issues.push("configured Codex hook is pinned to a versioned Homebrew Cellar path");
     } else {
@@ -891,11 +907,13 @@ export async function doctorCodexHook(
     issues.push(
       `configured Codex hook launcher resolves to Homebrew tokenjuice ${resolvedVersionMismatch.resolvedVersion}, but this tokenjuice is ${packageJson.version}`,
     );
-    fixCommand = "brew upgrade tokenjuice";
+    fixCommand = commandMismatch
+      ? `brew upgrade tokenjuice && ${installFixCommand}`
+      : "brew upgrade tokenjuice";
   }
   if (options.local && await detectStaleLocalBuild(checkedPaths)) {
     issues.push("local Codex hook target is older than the source tree");
-    fixCommand = "pnpm build && tokenjuice install codex --local";
+    fixCommand = `pnpm build && ${getCodexFixCommand(true, noOmit)}`;
   }
   if (!featureFlag.enabled) {
     issues.push(
@@ -1078,7 +1096,11 @@ async function recordImmediateHookStats(
   );
 }
 
-export async function runCodexPostToolUseHook(rawText: string): Promise<number> {
+export async function runCodexPostToolUseHook(
+  rawText: string,
+  options: { noOmit?: boolean; allowOmit?: boolean } = {},
+): Promise<number> {
+  validateCodexOmissionPolicy(options);
   let payload: CodexPostToolUsePayload;
   try {
     payload = JSON.parse(rawText) as CodexPostToolUsePayload;
@@ -1087,10 +1109,12 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
   }
 
   const command = payload.tool_input?.command;
+  const noOmit = !options.allowOmit && (options.noOmit || readNoOmissionFromEnv());
   const debug: Record<string, unknown> = {
     hookEvent: payload.hook_event_name,
     toolName: payload.tool_name,
     command,
+    noOmit,
     rewrote: false,
   };
 
@@ -1158,7 +1182,9 @@ export async function runCodexPostToolUseHook(rawText: string): Promise<number> 
       visibleText: combinedText,
       ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
       ...(typeof exitCode === "number" ? { exitCode } : {}),
+      ...(options.allowOmit ? { allowOmit: true } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
+      ...(noOmit ? { noOmit: true } : {}),
       storeRaw,
       metadata: {
         source: "codex-post-tool-use",

@@ -5,6 +5,7 @@
 ### Fixes
 
 - Preserve quoted commands and Windows paths when wrapping POSIX shell payloads.
+- Keep installed Codex hooks omission-policy neutral while honoring runtime environment policy.
 - Keep raw and full command output available when optional telemetry storage is unavailable.
 - Collapse oversized repeated-emoji banners in generic fallback summaries while preserving raw and no-omission output.
 - Render successful generic error and warning counters as neutral mentions.

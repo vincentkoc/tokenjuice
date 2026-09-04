@@ -22,9 +22,25 @@ afterEach(async () => {
 });
 
 describe("parseArgs", () => {
-  it("parses --no-omit for reduce and wrap", () => {
+  it("parses --no-omit for direct commands and explicit Codex hook policy", () => {
     expect(parseArgs(["reduce", "--no-omit"]).noOmit).toBe(true);
     expect(parseArgs(["wrap", "--no-omit", "--", "echo", "hi"]).noOmit).toBe(true);
+    expect(parseArgs(["codex-post-tool-use", "--no-omit"]).noOmit).toBe(true);
+    expect(parseArgs(["install", "codex", "--no-omit"]).noOmit).toBe(true);
+    expect(parseArgs(["doctor", "codex", "--no-omit"]).noOmit).toBe(true);
+  });
+
+  it("limits the explicit omission override to the hook runtime", () => {
+    expect(parseArgs(["codex-post-tool-use", "--allow-omit"]).allowOmit).toBe(true);
+    expect(() => parseArgs(["install", "codex", "--allow-omit"]))
+      .toThrow("Codex hooks honor the configured omission policy");
+    expect(() => parseArgs(["doctor", "codex", "--allow-omit"]))
+      .toThrow("Codex hooks honor the configured omission policy");
+  });
+
+  it("rejects conflicting omission policies", () => {
+    expect(() => parseArgs(["codex-post-tool-use", "--no-omit", "--allow-omit"]))
+      .toThrow("--no-omit and --allow-omit cannot be used together");
   });
 });
 

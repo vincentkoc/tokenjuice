@@ -383,4 +383,49 @@ describe("compactBashResult", () => {
     expect(rewritten.result.compaction?.authoritative).toBe(false);
   });
 
+  it("allows a host-specific policy to override the no-omit environment", async () => {
+    process.env.TOKENJUICE_NO_OMISSION = "1";
+
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "git log --oneline",
+      visibleText: Array.from(
+        { length: 40 },
+        (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
+      ).join("\n"),
+      allowOmit: true,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    const rewritten = expectRewrite(outcome);
+    expect(rewritten.result.inlineText).toContain("omitted");
+    expect(rewritten.result.compaction?.authoritative).toBe(true);
+  });
+
+  it("keeps explicit no-omit enabled when both input policies are set", async () => {
+    const outcome = await compactBashResult({
+      source: "codex",
+      command: "git status",
+      visibleText: [
+        "On branch main",
+        "Changes not staged for commit:",
+        ...Array.from({ length: 30 }, (_, index) => `  modified:   src/file-${index}.ts`),
+      ].join("\n"),
+      noOmit: true,
+      allowOmit: true,
+      maxInlineChars: 20_000,
+      minSavedCharsAny: 8,
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    const rewritten = expectRewrite(outcome);
+    expect(rewritten.result.inlineText).toContain("M: src/file-29.ts");
+    expect(rewritten.result.inlineText).not.toContain("omitted");
+  });
+
 });

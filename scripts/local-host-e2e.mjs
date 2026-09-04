@@ -198,10 +198,33 @@ async function runCodexE2E() {
     "expected authoritative Codex omissions to retain a factual recovery reference",
   );
 
+  // Exercise the packaged CLI at both fail-open thresholds: compaction itself
+  // is optional above 1 MiB, while stdin is drained above 16 MiB so Tokenjuice
+  // exits cleanly instead of failing on oversized hook input.
+  const oversizedResponse = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
+    env: { CODEX_HOME: codexHome },
+    input: postToolUsePayload("bin/rails test", "x".repeat(1024 * 1024 + 1)),
+  });
+  assert(oversizedResponse.code === 0, `expected oversized Codex hook exit 0, got ${oversizedResponse.code}`);
+  assert(oversizedResponse.stdout === "", "expected oversized Codex hook stdout to stay empty");
+  assert(oversizedResponse.stderr === "", `expected oversized Codex hook stderr to stay empty, got ${oversizedResponse.stderr}`);
+
+  const overInputLimit = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
+    env: { CODEX_HOME: codexHome },
+    input: postToolUsePayload("bin/rails test", "x".repeat(16 * 1024 * 1024)),
+  });
+  assert(overInputLimit.code === 0, `expected over-limit Codex hook exit 0, got ${overInputLimit.code}`);
+  assert(overInputLimit.stdout === "", "expected over-limit Codex hook stdout to stay empty");
+  assert(overInputLimit.stderr === "", `expected over-limit Codex hook stderr to stay empty, got ${overInputLimit.stderr}`);
+
   return {
     version: version.stdout.trim(),
     doctor: report.status,
-    exitCode: hook.code,
+    exitCodes: {
+      compacted: hook.code,
+      oversizedResponse: oversizedResponse.code,
+      overInputLimit: overInputLimit.code,
+    },
   };
 }
 

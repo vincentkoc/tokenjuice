@@ -182,7 +182,7 @@ describe("installCodexHook", () => {
     expect(parsed.hooks.PostToolUse[1]?.matcher).toBe("^Bash$");
     expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toContain("codex-post-tool-use");
     expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.statusMessage).toBe("compacting bash output with tokenjuice");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.timeout).toBe(10);
+    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.timeout).toBe(30);
   });
 
   it("prefers a stable tokenjuice launcher from PATH when installing the hook", async () => {
@@ -422,7 +422,7 @@ describe("doctorCodexHook", () => {
               type: "command",
               command: `${launcherPath} codex-post-tool-use ${staleFlag}`,
               statusMessage: "compacting bash output with tokenjuice",
-              timeout: 10,
+              timeout: 30,
             }],
           }],
         },
@@ -710,7 +710,7 @@ describe("doctorCodexHook", () => {
 
     expect(report.status).toBe("warn");
     expect(report.issues).toContain(
-      "configured Codex tokenjuice hook timeout is missing or stale; run tokenjuice install codex to add the 10s safety cap",
+      "configured Codex tokenjuice hook timeout is missing or stale; run tokenjuice install codex to add the 30s safety cap",
     );
   });
 
@@ -787,6 +787,125 @@ describe("doctorCodexHook", () => {
 });
 
 describe("runCodexPostToolUseHook", () => {
+  it("skips oversized Bash output without adding developer context", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "bin/rails test",
+      },
+      tool_response: "x".repeat(1024 * 1024 + 1),
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rawBytes?: number;
+      rewrote?: boolean;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+    expect(debug.rawBytes).toBe(1024 * 1024 + 1);
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("response-too-large");
+  });
+
+  it("measures the response safety limit in UTF-8 bytes", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+
+    const atLimitPayload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "printf output",
+      },
+      tool_response: "\u00e9".repeat((1024 * 1024) / 2),
+    });
+    const atLimit = await captureStdio(() => runCodexPostToolUseHook(atLimitPayload));
+    const atLimitDebug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      skipped?: string;
+    };
+
+    expect(atLimit.code).toBe(0);
+    expect(atLimit.stderr).toBe("");
+    expect(atLimitDebug.skipped).not.toBe("response-too-large");
+
+    const overLimitPayload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "printf output",
+      },
+      tool_response: "\u00e9".repeat((1024 * 1024) / 2 + 1),
+    });
+    const overLimit = await captureStdio(() => runCodexPostToolUseHook(overLimitPayload));
+    const overLimitDebug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rawBytes?: number;
+      skipped?: string;
+    };
+
+    expect(overLimit.code).toBe(0);
+    expect(overLimit.stdout).toBe("");
+    expect(overLimit.stderr).toBe("");
+    expect(overLimitDebug.rawBytes).toBe(1024 * 1024 + 2);
+    expect(overLimitDebug.skipped).toBe("response-too-large");
+  });
+
+  it("counts ANSI escape bytes toward the response safety limit", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+    const ansiSequence = "\u001b[31m";
+    const toolResponse = ansiSequence.repeat(Math.floor((1024 * 1024) / Buffer.byteLength(ansiSequence)) + 1);
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "printf colored-output",
+      },
+      tool_response: toolResponse,
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rawBytes?: number;
+      skipped?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+    expect(debug.rawBytes).toBe(Buffer.byteLength(toolResponse));
+    expect(debug.skipped).toBe("response-too-large");
+  });
+
+  it("does not fail the hook when its diagnostic directory is unavailable", async () => {
+    const home = await createTempDir();
+    const codexHomeFile = join(home, "codex-home-file");
+    await writeFile(codexHomeFile, "not a directory", "utf8");
+    process.env.CODEX_HOME = codexHomeFile;
+
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "git status --short",
+      },
+      tool_response: " M src/hosts/codex/index.ts\n",
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+  });
+
   it("returns post-tool feedback without a block decision when tokenjuice compacts output", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;

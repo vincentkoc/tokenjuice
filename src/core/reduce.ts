@@ -16,6 +16,7 @@ import type { CompactResult, CompiledRule, ReduceOptions, ToolExecutionInput } f
 const TINY_OUTPUT_MAX_CHARS = 240;
 const SMALL_OUTPUT_PASSTHROUGH_MIN_SAVED_CHARS = 120;
 const SMALL_OUTPUT_PASSTHROUGH_MAX_RATIO = 0.75;
+const FAILURE_SEVERITY_FACTS = new Set(["error", "warning"]);
 
 function buildRawText(input: ToolExecutionInput): string {
   if (input.combinedText) {
@@ -226,15 +227,20 @@ function isTerseDiscoveryCommand(classification: { family: string }, input: Tool
 }
 
 function formatInline(
-  classification: { family: string },
+  classification: { family: string; matchedReducer?: string },
   input: ToolExecutionInput,
   summary: string,
   facts: Record<string, number>,
   noOmit = false,
 ): string {
+  const neutralizeSeverityFacts = classification.matchedReducer === "generic/fallback"
+    && input.exitCode === 0;
   const factParts = Object.entries(facts)
     .filter(([, count]) => count > 0)
-    .map(([name, count]) => pluralize(count, name));
+    .map(([name, count]) => pluralize(
+      count,
+      neutralizeSeverityFacts && FAILURE_SEVERITY_FACTS.has(name) ? `${name} mention` : name,
+    ));
 
   const lines: string[] = [];
   if (input.exitCode && input.exitCode !== 0) {
@@ -594,7 +600,13 @@ export async function reduceExecutionWithRules(
   }
 
   const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit);
-  const compactText = formatInline(classification, reducerInput, summary || "(no output)", facts, opts.noOmit);
+  const compactText = formatInline(
+    classification,
+    reducerInput,
+    summary || "(no output)",
+    facts,
+    opts.noOmit,
+  );
   const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction, opts.noOmit);
   const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
   const inlineText = clamp(selectedText.text, maxInlineChars, opts.noOmit);

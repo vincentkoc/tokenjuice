@@ -906,6 +906,137 @@ describe("reduceExecution", () => {
     });
   });
 
+  it("keeps match facts for successful direct rg searches", async () => {
+    const rawText = Array.from(
+      { length: 30 },
+      (_, index) => `src/file-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n error src",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("search/rg");
+    expect(result.facts?.match).toBe(30);
+    expect(result.inlineText).toContain("30 matches");
+  });
+
+  it("labels successful framed search matches as neutral error mentions", async () => {
+    const rawText = Array.from(
+      { length: 30 },
+      (_, index) => `src/file-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "bash -lc 'printf \"matches:\\n\"; rg -n error src'",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.facts?.error).toBe(30);
+    expect(result.inlineText).toMatch(/^30 error mentions$/mu);
+    expect(result.inlineText).toContain("lines omitted");
+  });
+
+  it("labels successful compound search facts as neutral mentions", async () => {
+    const errorMatches = Array.from(
+      { length: 24 },
+      (_, index) => `src/error-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    );
+    const warningMatches = Array.from(
+      { length: 8 },
+      (_, index) => `src/warning-${index + 1}.ts:${index + 1}:console.warn("warning")`,
+    );
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n error src; rg -n warning src",
+      combinedText: [...errorMatches, ...warningMatches].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.facts).toMatchObject({
+      error: 24,
+      warning: 8,
+    });
+    expect(result.inlineText).toMatch(/^24 error mentions, 8 warning mentions$/mu);
+    expect(result.inlineText).toContain("lines omitted");
+  });
+
+  it("keeps generic error and warning facts when a compound search fails", async () => {
+    const errorMatches = Array.from(
+      { length: 24 },
+      (_, index) => `src/error-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    );
+    const warningMatches = Array.from(
+      { length: 10 },
+      (_, index) => `src/warning-${index + 1}.ts:${index + 1}:console.warn("warning")`,
+    );
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n error src; rg -n warning src",
+      combinedText: [...errorMatches, ...warningMatches].join("\n"),
+      exitCode: 1,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toMatch(/^exit 1\n24 errors, 10 warnings$/mu);
+  });
+
+  it("labels successful non-search warning facts as neutral mentions", async () => {
+    const rawText = Array.from(
+      { length: 30 },
+      (_, index) => `plugin-${index + 1}: warning: deprecated option`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "custom-linter inspect plugins",
+      combinedText: rawText,
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toMatch(/^30 warning mentions$/mu);
+  });
+
+  it("keeps mixed-chain severity facts as neutral mentions on success", async () => {
+    const errorMatches = Array.from(
+      { length: 24 },
+      (_, index) => `src/error-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    );
+    const warningLines = Array.from(
+      { length: 8 },
+      (_, index) => `plugin-${index + 1}: warning: deprecated option`,
+    );
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n error src; custom-linter inspect plugins",
+      combinedText: [...errorMatches, ...warningLines].join("\n"),
+      exitCode: 0,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toMatch(/^24 error mentions, 8 warning mentions$/mu);
+  });
+
+  it("keeps search severity facts when the exit status is unknown", async () => {
+    const rawText = Array.from(
+      { length: 30 },
+      (_, index) => `src/file-${index + 1}.ts:${index + 1}:throw new Error("boom")`,
+    ).join("\n");
+    const result = await reduceExecution({
+      toolName: "exec",
+      command: "rg -n error src; rg -n error test",
+      combinedText: rawText,
+    });
+
+    expect(result.classification.matchedReducer).toBe("generic/fallback");
+    expect(result.inlineText).toMatch(/^30 errors$/mu);
+  });
+
   it("does not summarize file inspection output from a multi-command sequence", async () => {
     const rawText = [
       "{",

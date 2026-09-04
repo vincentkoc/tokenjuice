@@ -7,6 +7,7 @@
 - Preserve quoted commands and Windows paths when wrapping POSIX shell payloads.
 - Keep raw and full command output available when optional telemetry storage is unavailable.
 - Collapse oversized repeated-emoji banners in generic fallback summaries while preserving raw and no-omission output.
+- Render successful generic error and warning counters as neutral mentions.
 - Harden ownership detection, restoration, and malformed marker handling for beta host integrations.
 - Build release artifacts from explicit tags and validate Homebrew tap release-tag input.
 - Make `pnpm build` portable across supported Node platforms.

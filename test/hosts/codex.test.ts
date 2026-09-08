@@ -2318,4 +2318,32 @@ describe("runCodexPostToolUseHook", () => {
     expect(history[0]?.commandFamily).toBe("sed");
     expect(history[0]?.skipped).toBe("file-content-inspection-command");
   });
+
+  it("redacts environment values and wrapper paths from hook history families", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+    const secret = "TOP_SECRET_VALUE";
+    const privatePath = "/private/worktree";
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: `cd ${privatePath} && API_TOKEN=${secret} sed -n '1p' README.md`,
+      },
+      tool_response: "README",
+    });
+
+    await runCodexPostToolUseHook(payload);
+
+    const history = await readHookHistory(home);
+    const historyDir = join(home, "tokenjuice-hook.history-v1");
+    const historyText = (
+      await Promise.all((await readdir(historyDir)).map((name) => readFile(join(historyDir, name), "utf8")))
+    ).join("\n");
+    expect(history).toHaveLength(1);
+    expect(history[0]?.commandFamily).toBe("sed");
+    expect(historyText).not.toContain(secret);
+    expect(historyText).not.toContain(privatePath);
+    expect(historyText).not.toContain("API_TOKEN");
+  });
 });

@@ -125,6 +125,44 @@ describe("artifacts", () => {
     expect(metadataMode).toBe(0o600);
   });
 
+  it("stores only parsed safe command families in telemetry segments", async () => {
+    const storeDir = await createTempDir();
+    const secret = "TOP_SECRET_VALUE";
+    const privatePath = "/private/worktree";
+    const refs = await Promise.all([
+      storeArtifactMetadata({
+        input: { toolName: "exec", command: `API_TOKEN=${secret} git status`, exitCode: 0 },
+        rawText: "clean",
+        classification: { family: "git", confidence: 1 },
+      }, storeDir),
+      storeArtifactMetadata({
+        input: { toolName: "exec", command: `cd ${privatePath} && pnpm test`, exitCode: 0 },
+        rawText: "passed",
+        classification: { family: "test-results", confidence: 1 },
+      }, storeDir),
+      storeArtifactMetadata({
+        input: { toolName: "exec", command: `$(cat ${privatePath}/token) --dump`, exitCode: 0 },
+        rawText: "opaque",
+        classification: { family: "generic", confidence: 1 },
+      }, storeDir),
+    ]);
+
+    const metadata = await listArtifactMetadata(storeDir);
+    const families = metadata
+      .map((entry) => entry.metadata.commandFamily)
+      .filter((family): family is string => typeof family === "string")
+      .sort();
+    const segmentText = (
+      await Promise.all([...new Set(refs.map((ref) => ref.metadataPath))].map((path) => readFile(path, "utf8")))
+    ).join("\n");
+
+    expect(families).toEqual(["git", "pnpm"]);
+    expect(segmentText).not.toContain(secret);
+    expect(segmentText).not.toContain(privatePath);
+    expect(segmentText).not.toContain("API_TOKEN");
+    expect(segmentText).not.toContain("$(cat");
+  });
+
   it("ignores corrupted metadata files when loading artifact metadata", async () => {
     const storeDir = await createTempDir();
     await writeFile(join(storeDir, "tj_1234567-abcd.json"), JSON.stringify(["bad"]), "utf8");

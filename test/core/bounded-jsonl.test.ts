@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { appendFile, mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,6 +24,16 @@ function isEvent(value: unknown): value is { id: string } {
     && value !== null
     && !Array.isArray(value)
     && typeof (value as Record<string, unknown>).id === "string";
+}
+
+function idForShard(targetShard: number, shardCount: number): string {
+  for (let index = 0; index < 10_000; index += 1) {
+    const id = `event-shard-${index}`;
+    if (createHash("sha256").update(id).digest()[0]! % shardCount === targetShard) {
+      return id;
+    }
+  }
+  throw new Error(`unable to find id for shard ${targetShard}`);
 }
 
 describe("bounded JSONL segments", () => {
@@ -181,5 +192,44 @@ describe("bounded JSONL segments", () => {
     expect(files).not.toContain("events-2026-08-01-00.jsonl");
     expect(files).toContain("events-2026-08-01-01.jsonl");
     expect(files).toContain("other-2026-08-01-00.jsonl");
+  });
+
+  it("does not create a segment when a locked expired segment exhausts the cap", async () => {
+    const dir = await createTempDir();
+    const expiredPath = join(dir, "events-2026-08-01-00.jsonl");
+    await writeFile(expiredPath, "{}\n", "utf8");
+    await mkdir(`${expiredPath}.lock`);
+
+    const result = await appendBoundedJsonl(dir, "events", "current", { id: "current" }, {
+      now: new Date("2026-09-08T12:00:00.000Z"),
+      retentionDays: 1,
+      shardCount: 1,
+    });
+
+    expect(result).toBeUndefined();
+    expect((await readdir(dir)).filter((name) => name.endsWith(".jsonl"))).toEqual([
+      "events-2026-08-01-00.jsonl",
+    ]);
+  });
+
+  it("serializes cross-shard admission when protected segments leave one slot", async () => {
+    const dir = await createTempDir();
+    const expiredPath = join(dir, "events-2026-08-01-00.jsonl");
+    await writeFile(expiredPath, "{}\n", "utf8");
+    await mkdir(`${expiredPath}.lock`);
+    const options = {
+      now: new Date("2026-09-08T12:00:00.000Z"),
+      retentionDays: 1,
+      shardCount: 2,
+    };
+
+    const results = await Promise.all([
+      appendBoundedJsonl(dir, "events", idForShard(0, 2), { id: "shard-0" }, options),
+      appendBoundedJsonl(dir, "events", idForShard(1, 2), { id: "shard-1" }, options),
+    ]);
+
+    expect(results.filter((path): path is string => typeof path === "string")).toHaveLength(1);
+    expect((await readdir(dir)).filter((name) => name.endsWith(".jsonl"))).toHaveLength(2);
+    expect((await stat(`${expiredPath}.lock`)).isDirectory()).toBe(true);
   });
 });

@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { appendBoundedJsonl, readBoundedJsonlPage } from "./bounded-jsonl.js";
+import { getCommandName, getEffectiveCommandArgv } from "./command.js";
 import { countTextChars, stripAnsi } from "./text.js";
 import { resolveArtifactSource } from "./source.js";
 
@@ -135,19 +136,24 @@ function metadataSegmentDir(storeDir?: string): string {
   return join(resolveArtifactBaseDir(storeDir), METADATA_SEGMENT_DIRECTORY);
 }
 
-function commandFamily(input: ToolExecutionInput): string | undefined {
-  const argv0 = input.argv?.[0]?.trim();
-  if (argv0) {
-    return argv0.split(/[\\/]/u).at(-1);
+const SAFE_COMMAND_FAMILY = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/u;
+
+export function getTelemetryCommandFamily(
+  input: Pick<ToolExecutionInput, "argv" | "command">,
+): string | undefined {
+  try {
+    const family = getCommandName(getEffectiveCommandArgv(input));
+    return family && SAFE_COMMAND_FAMILY.test(family) ? family : undefined;
+  } catch {
+    return undefined;
   }
-  return input.command?.trim().split(/\s+/u)[0]?.split(/[\\/]/u).at(-1);
 }
 
 function buildTelemetryMetadata(metadata: StoredArtifactMetadata, input: ToolExecutionInput): StoredArtifactMetadata {
   const retainedMetadata = { ...metadata };
   delete retainedMetadata.command;
   const command = input.command?.trim();
-  const family = commandFamily(input);
+  const family = getTelemetryCommandFamily(input);
   return {
     ...retainedMetadata,
     ...(family ? { commandFamily: family } : {}),

@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
-import { shouldRecordStats, tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import { getTelemetryCommandFamily, shouldRecordStats, tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
 import type { CompactionMetadata } from "../../core/compaction-metadata.js";
 import { readNoOmissionFromEnv } from "../../core/env.js";
@@ -1293,7 +1293,10 @@ async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
     if (typeof historyRecord.command === "string") {
       const command = historyRecord.command;
       delete historyRecord.command;
-      historyRecord.commandFamily = command.trim().split(/\s+/u)[0] ?? "unknown";
+      const commandFamily = getTelemetryCommandFamily({ command });
+      if (commandFamily) {
+        historyRecord.commandFamily = commandFamily;
+      }
       historyRecord.commandDigest = createHash("sha256").update(command).digest("hex");
     }
     await appendBoundedJsonl(

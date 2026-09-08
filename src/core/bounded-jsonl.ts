@@ -1,4 +1,4 @@
-import { appendFile, mkdir, open, opendir, readFile, rm, rmdir, stat, unlink, writeFile } from "node:fs/promises";
+import { appendFile, lstat, mkdir, open, opendir, readFile, rm, rmdir, stat, unlink, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { join } from "node:path";
 
@@ -193,6 +193,33 @@ async function pruneExpiredSegments(
   }
 }
 
+async function countOwnedSegments(
+  directory: string,
+  prefix: string,
+  maxFiles: number,
+): Promise<{ count: number; complete: boolean }> {
+  const directoryHandle = await opendir(directory);
+  let count = 0;
+  let inspected = 0;
+  try {
+    for await (const entry of directoryHandle) {
+      inspected += 1;
+      if (inspected > maxFiles * 2 + DIRECTORY_ENTRY_SLACK) {
+        return { count, complete: false };
+      }
+      if (entry.isFile() && parseSegmentDay(entry.name, prefix)) {
+        count += 1;
+        if (count >= maxFiles) {
+          return { count, complete: true };
+        }
+      }
+    }
+  } finally {
+    await directoryHandle.close().catch(() => {});
+  }
+  return { count, complete: true };
+}
+
 export async function appendBoundedJsonl(
   directory: string,
   prefix: string,
@@ -213,15 +240,67 @@ export async function appendBoundedJsonl(
   }
 
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  await pruneExpiredSegments(directory, prefix, retentionDays, retentionDays * shardCount, now);
-
+  const maxFiles = retentionDays * shardCount;
   const path = join(directory, segmentName(prefix, formatDay(now), shardFor(id, shardCount)));
   const lockPath = `${path}.lock`;
-  const owner = await acquireLock(lockPath);
-  if (!owner) {
+  const admissionLockPath = join(directory, `.${prefix}.admission.lock`);
+  const admissionOwner = await acquireLock(admissionLockPath);
+  if (!admissionOwner) {
     return undefined;
   }
 
+  let owner: string | undefined;
+  try {
+    await pruneExpiredSegments(directory, prefix, retentionDays, maxFiles, now);
+    let targetExists = false;
+    try {
+      targetExists = (await lstat(path)).isFile();
+      if (!targetExists) {
+        return undefined;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    if (!targetExists) {
+      const segmentCount = await countOwnedSegments(directory, prefix, maxFiles);
+      if (!segmentCount.complete || segmentCount.count >= maxFiles) {
+        return undefined;
+      }
+    }
+
+    owner = await acquireLock(lockPath);
+    if (!owner) {
+      return undefined;
+    }
+    if (!targetExists) {
+      try {
+        const file = await open(path, "wx", 0o600);
+        await file.close();
+      } catch (error) {
+        await releaseLock(lockPath, owner);
+        owner = undefined;
+        if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+          return undefined;
+        }
+        throw error;
+      }
+    }
+  } catch (error) {
+    if (owner) {
+      await releaseLock(lockPath, owner);
+      owner = undefined;
+    }
+    throw error;
+  } finally {
+    await releaseLock(admissionLockPath, admissionOwner);
+  }
+
+  if (!owner) {
+    return undefined;
+  }
   try {
     let currentBytes = 0;
     try {

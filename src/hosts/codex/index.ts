@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { mkdir, lstat, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { delimiter, dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
@@ -1297,7 +1297,6 @@ async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
       if (commandFamily) {
         historyRecord.commandFamily = commandFamily;
       }
-      historyRecord.commandDigest = createHash("sha256").update(command).digest("hex");
     }
     await appendBoundedJsonl(
       join(codexHome, CODEX_HOOK_HISTORY_DIRECTORY),

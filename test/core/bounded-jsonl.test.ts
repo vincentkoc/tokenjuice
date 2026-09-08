@@ -3,9 +3,22 @@ import { appendFile, mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeF
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appendBoundedJsonl, boundedJsonlCapacity, readBoundedJsonlPage } from "../../src/core/bounded-jsonl.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return {
+    ...actual,
+    open: async (...args: Parameters<typeof actual.open>) => {
+      if (String(args[0]).endsWith("raced-events-2026-09-08-00.jsonl") && args[1] === "r") {
+        throw Object.assign(new Error("raced segment was pruned"), { code: "ENOENT" });
+      }
+      return await actual.open(...args);
+    },
+  };
+});
 
 const tempDirs: string[] = [];
 
@@ -157,6 +170,41 @@ describe("bounded JSONL segments", () => {
     expect(first.records.map((record) => record.value.id)).toEqual(["newest"]);
     expect(second.records.map((record) => record.value.id)).toEqual(["older"]);
     expect(second.partial).toBe(true);
+  });
+
+  it.each([
+    ["malformed encoding", "not-a-cursor"],
+    [
+      "foreign segment prefix",
+      Buffer.from(JSON.stringify({ file: "other-2026-09-08-00.jsonl", line: 0 }), "utf8").toString("base64url"),
+    ],
+    [
+      "unsafe line offset",
+      Buffer.from(JSON.stringify({
+        file: "events-2026-09-08-00.jsonl",
+        line: Number.MAX_SAFE_INTEGER + 1,
+      }), "utf8").toString("base64url"),
+    ],
+  ])("rejects a cursor with %s", async (_, cursor) => {
+    const dir = await createTempDir();
+    await writeFile(join(dir, "events-2026-09-08-00.jsonl"), `${JSON.stringify({ id: "event-1" })}\n`, "utf8");
+
+    await expect(readBoundedJsonlPage(dir, "events", isEvent, { cursor }))
+      .rejects.toThrow(RangeError);
+  });
+
+  it("reports partial coverage when a segment disappears before open", async () => {
+    const dir = await createTempDir();
+    await writeFile(
+      join(dir, "raced-events-2026-09-08-00.jsonl"),
+      `${JSON.stringify({ id: "event-1" })}\n`,
+      "utf8",
+    );
+
+    const page = await readBoundedJsonlPage(dir, "raced-events", isEvent);
+
+    expect(page.records).toEqual([]);
+    expect(page.partial).toBe(true);
   });
 
   it("skips oversized segments and reports partial coverage", async () => {

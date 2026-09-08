@@ -1,5 +1,5 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -152,12 +152,10 @@ export function getTelemetryCommandFamily(
 function buildTelemetryMetadata(metadata: StoredArtifactMetadata, input: ToolExecutionInput): StoredArtifactMetadata {
   const retainedMetadata = { ...metadata };
   delete retainedMetadata.command;
-  const command = input.command?.trim();
   const family = getTelemetryCommandFamily(input);
   return {
     ...retainedMetadata,
     ...(family ? { commandFamily: family } : {}),
-    ...(command ? { commandDigest: createHash("sha256").update(command).digest("hex") } : {}),
   };
 }
 

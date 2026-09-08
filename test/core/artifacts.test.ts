@@ -231,7 +231,7 @@ describe("artifacts", () => {
     expect(metadata[0]?.path).toBeUndefined();
     expect(metadata[0]?.metadata.command).toBeUndefined();
     expect(metadata[0]?.metadata.commandFamily).toBe("pnpm");
-    expect(metadata[0]?.metadata.commandDigest).toMatch(/^[a-f0-9]{64}$/u);
+    expect(metadata[0]?.metadata.commandDigest).toBeUndefined();
     expect(metadata[0]?.metadataFormat).toBe("jsonl-segment");
     expect(metadata[0]?.metadataRecordId).toBe(metadataRef.id);
     expect(metadata[0]?.metadata.source).toBe("cli");

@@ -326,10 +326,7 @@ function encodeCursor(file: string, line: number): string {
   return Buffer.from(JSON.stringify({ file, line }), "utf8").toString("base64url");
 }
 
-function decodeCursor(cursor: string | undefined): { file: string; line: number } | undefined {
-  if (!cursor) {
-    return undefined;
-  }
+function decodeCursor(cursor: string, prefix: string): { file: string; line: number } {
   try {
     const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as unknown;
     if (
@@ -337,7 +334,9 @@ function decodeCursor(cursor: string | undefined): { file: string; line: number 
       && parsed !== null
       && !Array.isArray(parsed)
       && typeof (parsed as Record<string, unknown>).file === "string"
-      && Number.isInteger((parsed as Record<string, unknown>).line)
+      && ((parsed as Record<string, unknown>).file as string).length <= 255
+      && parseSegmentDay((parsed as Record<string, unknown>).file as string, prefix) !== undefined
+      && Number.isSafeInteger((parsed as Record<string, unknown>).line)
       && Number((parsed as Record<string, unknown>).line) >= 0
     ) {
       return {
@@ -346,9 +345,9 @@ function decodeCursor(cursor: string | undefined): { file: string; line: number 
       };
     }
   } catch {
-    // Invalid cursors restart from the newest retained segment.
+    // Fall through to the same public error for every malformed cursor.
   }
-  return undefined;
+  throw new RangeError("cursor must identify a valid retained segment position");
 }
 
 export async function readBoundedJsonlPage<T>(
@@ -396,7 +395,7 @@ export async function readBoundedJsonlPage<T>(
     throw error;
   }
 
-  const cursor = decodeCursor(options.cursor);
+  const cursor = options.cursor === undefined ? undefined : decodeCursor(options.cursor, prefix);
   let startFileIndex = 0;
   if (cursor) {
     const exactFileIndex = names.indexOf(cursor.file);
@@ -429,7 +428,16 @@ export async function readBoundedJsonlPage<T>(
       directoryTruncated = true;
       continue;
     }
-    const file = await open(path, "r");
+    let file;
+    try {
+      file = await open(path, "r");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        directoryTruncated = true;
+        continue;
+      }
+      throw error;
+    }
     let raw: string;
     try {
       const buffer = Buffer.allocUnsafe(maxSegmentBytes + 1);

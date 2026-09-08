@@ -110,7 +110,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
             raw: opts.raw ?? false,
             noOmit: opts.noOmit ?? false,
             trace: opts.trace ?? false,
-            recordStats: opts.recordStats ?? false,
+            ...(opts.recordStats !== undefined ? { recordStats: opts.recordStats } : {}),
             store: opts.store ?? false,
             ...(opts.storeDir ? { storeDir: opts.storeDir } : {}),
             ...(typeof opts.maxInlineChars === "number" ? { maxInlineChars: opts.maxInlineChars } : {}),

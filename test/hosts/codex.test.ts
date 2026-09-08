@@ -2183,7 +2183,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.skipped).toBe("explicit-raw-bypass");
     expect(matchingMetadata).toHaveLength(matchingBefore.length + 1);
     expect(newMetadata?.metadata.command).toBeUndefined();
-    expect(newMetadata?.metadata.commandDigest).toMatch(/^[a-f0-9]{64}$/u);
+    expect(newMetadata?.metadata.commandDigest).toBeUndefined();
     expect(newMetadata?.metadata.rawChars).toBeGreaterThan(0);
     expect(newMetadata?.metadata.reducedChars).toBe(newMetadata?.metadata.rawChars);
     expect(newMetadata?.metadata.ratio).toBe(1);
@@ -2269,7 +2269,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(last.hookCommandPath).not.toBe("");
     expect(history).toHaveLength(2);
     expect(history.map((entry) => entry.commandFamily).sort()).toEqual(["git", "sed"]);
-    expect(history.every((entry) => entry.commandDigest?.match(/^[a-f0-9]{64}$/u))).toBe(true);
+    expect(history.every((entry) => entry.commandDigest === undefined)).toBe(true);
     expect(sedEntry?.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(sedEntry?.skipped).toBe("file-content-inspection-command");
     expect(sedEntry?.tokenjuiceVersion).toBe(PACKAGE_VERSION);

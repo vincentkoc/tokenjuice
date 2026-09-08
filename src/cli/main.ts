@@ -6,7 +6,8 @@ import { stdin as inputStdin } from "node:process";
 import { fileURLToPath } from "node:url";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { getArtifact, listArtifactMetadata, listArtifacts } from "../core/artifacts.js";
+import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts } from "../core/artifacts.js";
+import { shouldRecordStats } from "../core/artifacts.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import type { StatsSourceReport } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
@@ -161,6 +162,7 @@ type ParsedArgs = {
   toolName: string | undefined;
   exitCode: number | undefined;
   store: boolean;
+  noStats: boolean;
   tee: boolean;
   raw: boolean;
   noOmit: boolean;
@@ -172,6 +174,8 @@ type ParsedArgs = {
   timeZone: string | undefined;
   source: string | undefined;
   bySource: boolean;
+  limit: number | undefined;
+  cursor: string | undefined;
   wrapLauncher: string | undefined;
   trace: boolean;
   printInstructions: boolean;
@@ -192,9 +196,9 @@ function printUsage(): void {
       "usage:",
       "  tokenjuice --help",
       "  tokenjuice --version",
-      "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit]",
+      "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit] [--no-stats]",
       "  tokenjuice reduce-json [file]",
-      "  tokenjuice wrap [--raw|--full] [--no-omit] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice wrap [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install adal",
       "  tokenjuice install aether",
@@ -402,7 +406,7 @@ function printUsage(): void {
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
       "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qodo|qoder|qwen-code|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice doctor codex [--local] [--no-omit]",
-      "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source]",
+      "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source] [--limit <n>] [--cursor <cursor>]",
     ].join("\n"),
   );
   process.stderr.write("\n");
@@ -420,6 +424,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let toolName: string | undefined;
   let exitCode: number | undefined;
   let store = false;
+  let noStats = false;
   let tee = false;
   let raw = false;
   let noOmit = false;
@@ -431,6 +436,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let timeZone: string | undefined;
   let source: string | undefined;
   let bySource = false;
+  let limit: number | undefined;
+  let cursor: string | undefined;
   let wrapLauncher: string | undefined;
   let trace = false;
   let printInstructions = false;
@@ -498,6 +505,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
         store = true;
         index += 1;
         break;
+      case "--no-stats":
+        noStats = true;
+        index += 1;
+        break;
       case "--raw":
       case "--full":
         raw = true;
@@ -561,6 +572,20 @@ export function parseArgs(argv: string[]): ParsedArgs {
         bySource = true;
         index += 1;
         break;
+      case "--limit":
+        if (!next || !Number.isInteger(Number(next)) || Number(next) <= 0) {
+          throw new Error("--limit requires a positive integer");
+        }
+        limit = Number(next);
+        index += 2;
+        break;
+      case "--cursor":
+        if (!next) {
+          throw new Error("--cursor requires a value");
+        }
+        cursor = next;
+        index += 2;
+        break;
       case "--wrap-launcher":
         if (!next) {
           throw new Error("--wrap-launcher requires a value");
@@ -598,6 +623,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     toolName,
     exitCode,
     store,
+    noStats,
     tee,
     raw,
     noOmit,
@@ -609,6 +635,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     timeZone,
     source,
     bySource,
+    limit,
+    cursor,
     wrapLauncher,
     trace,
     printInstructions,
@@ -695,7 +723,7 @@ async function runReduce(args: ParsedArgs): Promise<number> {
       ...(args.raw ? { raw: true } : {}),
       ...(noOmit ? { noOmit: true } : {}),
       ...(args.trace ? { trace: true } : {}),
-      recordStats: true,
+      recordStats: !args.noStats && shouldRecordStats(),
       ...(args.store ? { store: true } : {}),
       ...(args.storeDir ? { storeDir: args.storeDir } : {}),
       ...(typeof args.maxInlineChars === "number" ? { maxInlineChars: args.maxInlineChars } : {}),
@@ -729,7 +757,7 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
     ...(args.raw ? { raw: true } : {}),
     ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
-    recordStats: true,
+    recordStats: !args.noStats && shouldRecordStats(),
     ...(args.store ? { store: true } : {}),
     ...(args.storeDir ? { storeDir: args.storeDir } : {}),
     ...(typeof args.maxInlineChars === "number" ? { maxInlineChars: args.maxInlineChars } : {}),
@@ -745,7 +773,7 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(args.raw ? { raw: true } : {}),
     ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
-    recordStats: true,
+    recordStats: !args.noStats && shouldRecordStats(),
     ...(args.store ? { store: true } : {}),
     ...(args.storeDir ? { storeDir: args.storeDir } : {}),
     ...(typeof args.maxInlineChars === "number" ? { maxInlineChars: args.maxInlineChars } : {}),
@@ -1357,6 +1385,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     const details = [
       { label: "Hook", value: result.hooksPath },
       { label: "Command", value: result.command },
+      { label: "Writer", value: `${result.writer} (${result.fragmentId})` },
     ];
     if (result.featureFlag.enabled) {
       const source = result.featureFlag.key ? `[features].${result.featureFlag.key}` : "default-on";
@@ -3219,6 +3248,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
 
     process.stdout.write(`removed codex hook: ${result.hooksPath}\n`);
     process.stdout.write(`removed entries: ${result.removed}\n`);
+    process.stdout.write(`writer: ${result.writer} (${result.fragmentId})\n`);
     if (result.backupPath) {
       process.stdout.write(`backup: ${result.backupPath}\n`);
     }
@@ -7418,18 +7448,38 @@ async function runDoctor(args: ParsedArgs): Promise<number> {
 }
 
 async function runStats(args: ParsedArgs): Promise<number> {
-  const entries = await listArtifactMetadata(args.storeDir);
-  const report = statsArtifacts(entries, {
+  const page = await listArtifactMetadataPage(args.storeDir, {
+    ...(typeof args.limit === "number" ? { limit: args.limit } : {}),
+    ...(args.cursor ? { cursor: args.cursor } : {}),
+  });
+  const report = statsArtifacts(page.entries, {
     timeZone: args.timeZone ?? "local",
     ...(args.source ? { source: args.source } : {}),
     ...(args.bySource ? { bySource: true } : {}),
   });
 
   if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({
+      ...report,
+      coverage: {
+        source: "bounded-metadata-segments",
+        legacySidecarsIncluded: page.legacySidecarsIncluded,
+        partial: page.partial,
+        nextCursor: page.nextCursor ?? null,
+      },
+    }, null, 2)}\n`);
     return 0;
   }
 
+  process.stdout.write("coverage: bounded metadata segments; legacy sidecars excluded\n");
+  if (page.partial) {
+    process.stdout.write("partial: yes\n");
+    if (page.nextCursor) {
+      process.stdout.write(`next cursor: ${page.nextCursor}\n`);
+    }
+  } else {
+    process.stdout.write("partial: no\n");
+  }
   process.stdout.write(`entries: ${formatMetric(report.totals.entries)}\n`);
   process.stdout.write(`capture-truncated entries: ${formatMetric(report.totals.captureTruncatedEntries)}\n`);
   process.stdout.write(`observed entries: ${formatMetric(report.totals.observedEntries)}\n`);

@@ -1,15 +1,20 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
 
+import { appendBoundedJsonl, readBoundedJsonlPage } from "./bounded-jsonl.js";
 import { countTextChars, stripAnsi } from "./text.js";
 import { resolveArtifactSource } from "./source.js";
 
-import type { ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
+import type { ArtifactMetadataPage, ArtifactMetadataPageOptions, ArtifactMetadataRef, StoredArtifact, StoredArtifactInput, StoredArtifactMetadata, StoredArtifactRef, ToolExecutionInput } from "../types.js";
 
 const ARTIFACT_ID_PATTERN = /^tj_[0-9a-f-]{12}$/iu;
 export const ARTIFACT_DIR_ENV = "TOKENJUICE_ARTIFACT_DIR";
+export const STATS_ENABLED_ENV = "TOKENJUICE_STATS";
+const METADATA_SEGMENT_DIRECTORY = "metadata-v1";
+const METADATA_SEGMENT_PREFIX = "events";
+const DEFAULT_METADATA_LIST_LIMIT = 10_000;
 const OPTIONAL_METADATA_STORAGE_ERROR_CODES = new Set([
   "EACCES",
   "EDQUOT",
@@ -52,6 +57,12 @@ function isStoredArtifactMetadata(value: unknown): value is StoredArtifactMetada
     return false;
   }
   if ("command" in value && value.command !== undefined && typeof value.command !== "string") {
+    return false;
+  }
+  if ("commandFamily" in value && value.commandFamily !== undefined && typeof value.commandFamily !== "string") {
+    return false;
+  }
+  if ("commandDigest" in value && value.commandDigest !== undefined && typeof value.commandDigest !== "string") {
     return false;
   }
   if ("exitCode" in value && value.exitCode !== undefined && typeof value.exitCode !== "number") {
@@ -106,11 +117,66 @@ function buildArtifactPaths(id: string, storeDir?: string): StoredArtifactRef {
   };
 }
 
-function buildMetadataOnlyPath(id: string, storeDir?: string): string {
-  if (!isValidArtifactId(id)) {
-    throw new Error(`invalid artifact id: ${id}`);
+type StoredMetadataEvent = {
+  id: string;
+  hasRaw: boolean;
+  metadata: StoredArtifactMetadata;
+};
+
+function isStoredMetadataEvent(value: unknown): value is StoredMetadataEvent {
+  return isRecord(value)
+    && typeof value.id === "string"
+    && isValidArtifactId(value.id)
+    && typeof value.hasRaw === "boolean"
+    && isStoredArtifactMetadata(value.metadata);
+}
+
+function metadataSegmentDir(storeDir?: string): string {
+  return join(resolveArtifactBaseDir(storeDir), METADATA_SEGMENT_DIRECTORY);
+}
+
+function commandFamily(input: ToolExecutionInput): string | undefined {
+  const argv0 = input.argv?.[0]?.trim();
+  if (argv0) {
+    return argv0.split(/[\\/]/u).at(-1);
   }
-  return join(resolveArtifactBaseDir(storeDir), `${id}.meta.json`);
+  return input.command?.trim().split(/\s+/u)[0]?.split(/[\\/]/u).at(-1);
+}
+
+function buildTelemetryMetadata(metadata: StoredArtifactMetadata, input: ToolExecutionInput): StoredArtifactMetadata {
+  const retainedMetadata = { ...metadata };
+  delete retainedMetadata.command;
+  const command = input.command?.trim();
+  const family = commandFamily(input);
+  return {
+    ...retainedMetadata,
+    ...(family ? { commandFamily: family } : {}),
+    ...(command ? { commandDigest: createHash("sha256").update(command).digest("hex") } : {}),
+  };
+}
+
+async function appendMetadataEvent(
+  id: string,
+  metadata: StoredArtifactMetadata,
+  input: ToolExecutionInput,
+  hasRaw: boolean,
+  storeDir?: string,
+): Promise<string | undefined> {
+  return await appendBoundedJsonl(
+    metadataSegmentDir(storeDir),
+    METADATA_SEGMENT_PREFIX,
+    id,
+    {
+      id,
+      hasRaw,
+      metadata: buildTelemetryMetadata(metadata, input),
+    } satisfies StoredMetadataEvent,
+  );
+}
+
+export function shouldRecordStats(env: NodeJS.ProcessEnv = process.env): boolean {
+  const value = env[STATS_ENABLED_ENV]?.trim().toLowerCase();
+  return value !== "0" && value !== "false" && value !== "no" && value !== "off";
 }
 
 export async function storeArtifact(input: StoredArtifactInput, storeDir?: string): Promise<StoredArtifactRef> {
@@ -139,13 +205,15 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
     writeFile(ref.path, input.rawText, { encoding: "utf8", mode: 0o600 }),
     writeFile(ref.metadataPath, JSON.stringify(artifact.metadata, null, 2), { encoding: "utf8", mode: 0o600 }),
   ]);
+  if (shouldRecordStats()) {
+    await appendMetadataEvent(id, artifact.metadata, input.input, true, storeDir).catch(() => undefined);
+  }
 
   return ref;
 }
 
 export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir?: string): Promise<ArtifactMetadataRef> {
   const id = `tj_${randomUUID().slice(0, 12)}`;
-  const metadataPath = buildMetadataOnlyPath(id, storeDir);
   const captureTruncated = extractCaptureTruncatedFlag(input.input);
   const metadata: StoredArtifactMetadata = {
     createdAt: new Date().toISOString(),
@@ -159,14 +227,19 @@ export async function storeArtifactMetadata(input: StoredArtifactInput, storeDir
     ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
   };
 
-  await mkdir(resolveArtifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
-  await writeFile(metadataPath, JSON.stringify(metadata, null, 2), { encoding: "utf8", mode: 0o600 });
+  const telemetryMetadata = buildTelemetryMetadata(metadata, input.input);
+  const metadataPath = await appendMetadataEvent(id, telemetryMetadata, input.input, false, storeDir);
+  if (!metadataPath) {
+    throw Object.assign(new Error("metadata segment is full or busy"), { code: "EFBIG" });
+  }
 
   return {
     id,
     storage: "file",
     metadataPath,
-    metadata,
+    metadataFormat: "jsonl-segment",
+    metadataRecordId: id,
+    metadata: telemetryMetadata,
   };
 }
 
@@ -230,43 +303,45 @@ export async function listArtifacts(storeDir?: string): Promise<StoredArtifactRe
 }
 
 export async function listArtifactMetadata(storeDir?: string): Promise<ArtifactMetadataRef[]> {
+  const entries: ArtifactMetadataRef[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await listArtifactMetadataPage(storeDir, {
+      limit: DEFAULT_METADATA_LIST_LIMIT,
+      ...(cursor ? { cursor } : {}),
+    });
+    entries.push(...page.entries);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return entries.sort((left, right) => right.metadata.createdAt.localeCompare(left.metadata.createdAt));
+}
+
+export async function listArtifactMetadataPage(
+  storeDir?: string,
+  options: ArtifactMetadataPageOptions = {},
+): Promise<ArtifactMetadataPage> {
+  const page = await readBoundedJsonlPage(
+    metadataSegmentDir(storeDir),
+    METADATA_SEGMENT_PREFIX,
+    isStoredMetadataEvent,
+    options,
+  );
   const base = resolveArtifactBaseDir(storeDir);
-  try {
-    const files = await readdir(base);
-    const metadata = await Promise.all(
-      files
-        .filter((name) => name.endsWith(".json"))
-        .map(async (name) => {
-          const rawId = name.endsWith(".meta.json") ? name.replace(/\.meta\.json$/u, "") : name.replace(/\.json$/u, "");
-          if (!isValidArtifactId(rawId)) {
-            return null;
-          }
-
-          const metadataPath = join(base, name);
-          try {
-            const raw = await readFile(metadataPath, "utf8");
-            const parsed = JSON.parse(raw) as unknown;
-            if (!isStoredArtifactMetadata(parsed)) {
-              return null;
-            }
-            const path = name.endsWith(".meta.json") ? undefined : join(base, `${rawId}.txt`);
-            return {
-              id: rawId,
-              storage: "file" as const,
-              ...(path ? { path } : {}),
-              metadataPath,
-              metadata: parsed,
-            };
-          } catch {
-            return null;
-          }
-        }),
-    );
-
-    return metadata
-      .filter((entry): entry is ArtifactMetadataRef => entry !== null)
-      .sort((left, right) => right.metadata.createdAt.localeCompare(left.metadata.createdAt));
-  } catch {
-    return [];
-  }
+  const entries = page.records
+    .map(({ path: metadataPath, value }) => ({
+      id: value.id,
+      storage: "file" as const,
+      ...(value.hasRaw ? { path: join(base, `${value.id}.txt`) } : {}),
+      metadataPath,
+      metadataFormat: "jsonl-segment" as const,
+      metadataRecordId: value.id,
+      metadata: value.metadata,
+    }))
+    .sort((left, right) => right.metadata.createdAt.localeCompare(left.metadata.createdAt));
+  return {
+    entries,
+    partial: page.partial,
+    legacySidecarsIncluded: false,
+    ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+  };
 }

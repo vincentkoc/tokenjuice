@@ -166,6 +166,7 @@ tokenjuice --version
 tokenjuice reduce [file]
 tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
+tokenjuice wrap --no-stats -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
 tokenjuice install [adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qodo|qoder|qwen-code|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
@@ -181,6 +182,7 @@ tokenjuice doctor pi
 tokenjuice doctor opencode
 tokenjuice stats
 tokenjuice stats --timezone utc
+tokenjuice stats --limit 1000
 ```
 
 ## overview
@@ -195,6 +197,8 @@ when a reducer gets it wrong or the task needs untouched bytes, use the explicit
 tokenjuice wrap --raw -- pnpm --help
 tokenjuice wrap --full -- git status
 ```
+
+statistics use bounded metadata segments and exclude pre-existing JSON sidecars. page with `--limit` and the returned `--cursor`; output reports when coverage is partial. set `TOKENJUICE_STATS=off` or pass `--no-stats` to stop metadata and hook-debug telemetry writes. `--raw` and `--full` return untouched bytes; artifact retention remains opt-in through `--store`.
 
 useful maintenance commands:
 

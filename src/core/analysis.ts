@@ -165,7 +165,7 @@ function groupCandidates(
   const includeSource = options.bySource || Boolean(options.source);
 
   for (const entry of entries) {
-    const signature = normalizeCommandSignature(entry.metadata.command);
+    const signature = normalizeCommandSignature(entry.metadata.command ?? entry.metadata.commandFamily);
     if (!signature) {
       continue;
     }
@@ -185,7 +185,7 @@ function groupCandidates(
       totalRawChars: 0,
       ratioSum: 0,
       ratioCount: 0,
-      sampleCommand: entry.metadata.command ?? signature,
+      sampleCommand: entry.metadata.command ?? entry.metadata.commandFamily ?? signature,
       ...(entry.metadata.classification.matchedReducer
         ? { matchedReducer: entry.metadata.classification.matchedReducer }
         : {}),
@@ -345,7 +345,7 @@ function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, sourc
     }
 
     const reducer = entry.metadata.classification.matchedReducer ?? "generic/fallback";
-    const signature = normalizeCommandSignature(entry.metadata.command) ?? "(unknown)";
+    const signature = normalizeCommandSignature(entry.metadata.command ?? entry.metadata.commandFamily) ?? "(unknown)";
     const day = formatDay(entry.metadata.createdAt);
 
     rawChars += entry.metadata.rawChars;

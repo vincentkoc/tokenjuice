@@ -1,10 +1,10 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifacts, normalizeArtifactSource, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
+import { ARTIFACT_DIR_ENV, getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, normalizeArtifactSource, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 
@@ -140,6 +140,37 @@ describe("artifacts", () => {
     expect(artifact).toBeNull();
   });
 
+  it("excludes and preserves legacy sidecars while reporting bounded coverage", async () => {
+    const storeDir = await createTempDir();
+    const legacyPath = join(storeDir, "tj_1234567-abcd.json");
+    const legacyText = "{\"legacy\":true}\n";
+    await writeFile(legacyPath, legacyText, "utf8");
+    await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "pnpm test", exitCode: 0 },
+        rawText: "test output",
+        classification: { family: "test-results", confidence: 1, matchedReducer: "tests/pnpm-test" },
+      },
+      storeDir,
+    );
+    await storeArtifactMetadata(
+      {
+        input: { toolName: "exec", command: "git status", exitCode: 0 },
+        rawText: "clean",
+        classification: { family: "git-status", confidence: 1, matchedReducer: "git/status" },
+      },
+      storeDir,
+    );
+
+    const page = await listArtifactMetadataPage(storeDir, { limit: 1 });
+
+    expect(page.entries).toHaveLength(1);
+    expect(page.legacySidecarsIncluded).toBe(false);
+    expect(page.partial).toBe(true);
+    expect(page.nextCursor).toBeTruthy();
+    expect(await readFile(legacyPath, "utf8")).toBe(legacyText);
+  });
+
   it("tracks metadata-only entries without exposing them as raw artifacts", async () => {
     const storeDir = await createTempDir();
 
@@ -160,7 +191,11 @@ describe("artifacts", () => {
     expect(metadata).toHaveLength(1);
     expect(metadata[0]?.id).toBe(metadataRef.id);
     expect(metadata[0]?.path).toBeUndefined();
-    expect(metadata[0]?.metadata.command).toBe("pnpm test");
+    expect(metadata[0]?.metadata.command).toBeUndefined();
+    expect(metadata[0]?.metadata.commandFamily).toBe("pnpm");
+    expect(metadata[0]?.metadata.commandDigest).toMatch(/^[a-f0-9]{64}$/u);
+    expect(metadata[0]?.metadataFormat).toBe("jsonl-segment");
+    expect(metadata[0]?.metadataRecordId).toBe(metadataRef.id);
     expect(metadata[0]?.metadata.source).toBe("cli");
   });
 

@@ -262,7 +262,8 @@ describe("reduceExecution", () => {
 
     expect(metadata).toHaveLength(1);
     expect(metadata[0]?.path).toBeUndefined();
-    expect(metadata[0]?.metadata.command).toBe("git status");
+    expect(metadata[0]?.metadata.command).toBeUndefined();
+    expect(metadata[0]?.metadata.commandFamily).toBe("git");
     expect(stats.daily).toHaveLength(1);
     expect(stats.daily[0]?.count).toBe(1);
   });

@@ -120,6 +120,8 @@ export type StoredArtifactMetadata = {
   source?: string;
   toolName?: string;
   command?: string;
+  commandFamily?: string;
+  commandDigest?: string;
   exitCode?: number;
   captureTruncated?: boolean;
   classification: ClassificationResult;
@@ -133,7 +135,21 @@ export type ArtifactMetadataRef = {
   storage: "file";
   path?: string;
   metadataPath: string;
+  metadataFormat?: "json" | "jsonl-segment";
+  metadataRecordId?: string;
   metadata: StoredArtifactMetadata;
+};
+
+export type ArtifactMetadataPage = {
+  entries: ArtifactMetadataRef[];
+  nextCursor?: string;
+  partial: boolean;
+  legacySidecarsIncluded: false;
+};
+
+export type ArtifactMetadataPageOptions = {
+  cursor?: string;
+  limit?: number;
 };
 
 export type CompactResult = {

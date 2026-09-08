@@ -72,6 +72,11 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["codex-post-tool-use", "--no-omit", "--allow-omit"]))
       .toThrow("--no-omit and --allow-omit cannot be used together");
   });
+
+  it("parses the no-statistics path", () => {
+    expect(parseArgs(["wrap", "--no-stats", "--", "echo", "hi"]).noStats).toBe(true);
+    expect(parseArgs(["reduce", "--no-stats"]).noStats).toBe(true);
+  });
 });
 
 describe("formatStatsSources", () => {

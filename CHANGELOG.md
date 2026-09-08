@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixes
+
+- Bound metadata and Codex hook telemetry with retained, size-capped JSONL segments; support paged stats reads and a complete statistics opt-out without migrating or deleting legacy sidecars.
+- Preserve JSON, instruction files, database schemas, non-zero failures, combined stdout/stderr, and JSON-string exit status in the Codex hook contract.
+- Register Codex hooks through the shared `codex-hooks` renderer when available, with an explicit standalone fallback for unowned regular files.
+
 ## 0.8.3 - 2026-09-04
 
 ### Features

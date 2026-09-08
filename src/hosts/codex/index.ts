@@ -1,17 +1,20 @@
-import { appendFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { execFile } from "node:child_process";
+import { mkdir, lstat, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { delimiter, dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
-import { tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import { shouldRecordStats, tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
 import type { CompactionMetadata } from "../../core/compaction-metadata.js";
 import { readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
 import { isNodeExecutablePath, parseShellWords } from "../shared/hook-command.js";
-import { buildTokenjuiceHookCommand } from "../shared/host-command.js";
+import { buildTokenjuiceHookCommand, isExecutableFile } from "../shared/host-command.js";
 import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 
 import type { ToolExecutionInput } from "../../types.js";
@@ -46,6 +49,11 @@ type CodexPostToolUsePayload = {
     command?: unknown;
   };
   tool_response?: unknown;
+  session_id?: unknown;
+  thread_id?: unknown;
+  turn_id?: unknown;
+  tool_call_id?: unknown;
+  tool_use_id?: unknown;
 };
 
 const GENERIC_FALLBACK_MIN_SAVED_CHARS = 120;
@@ -53,20 +61,20 @@ const GENERIC_FALLBACK_MAX_RATIO = 0.75;
 const HOOK_REWRITE_MIN_SAVED_CHARS = 8;
 const CODEX_HOOK_MAX_COMPACTION_BYTES = 1 * 1024 * 1024;
 const CODEX_HOOK_LAST_LOG = "tokenjuice-hook.last.json";
-const CODEX_HOOK_HISTORY_LOG = "tokenjuice-hook.history.jsonl";
-const CODEX_HOOK_HISTORY_LIMIT = 200;
-const CODEX_HOOK_HISTORY_LOCK_STALE_MS = 30_000;
-const CODEX_HOOK_HISTORY_LOCK_RETRY_MS = 25;
-const CODEX_HOOK_HISTORY_LOCK_RETRIES = 8;
+const CODEX_HOOK_HISTORY_DIRECTORY = "tokenjuice-hook.history-v1";
+const CODEX_HOOK_HISTORY_PREFIX = "events";
 const LOW_NON_TOKENJUICE_TIMEOUT_SECONDS = 2;
 const RECOMMENDED_NON_TOKENJUICE_TIMEOUT_SECONDS = 6;
 const TOKENJUICE_CODEX_HOOK_TIMEOUT_SECONDS = 30;
+const CODEX_HOOK_INTEGRATION_ID = "tokenjuice.post-tool-use";
 
 export type InstallCodexHookResult = {
   hooksPath: string;
   backupPath?: string;
   command: string;
   featureFlag: CodexFeatureFlagStatus;
+  writer: "codex-hooks" | "standalone";
+  fragmentId: typeof CODEX_HOOK_INTEGRATION_ID;
 };
 
 export type CodexFeatureFlagStatus = {
@@ -156,6 +164,8 @@ export type UninstallCodexHookResult = {
   hooksPath: string;
   backupPath?: string;
   removed: number;
+  writer: "codex-hooks" | "standalone";
+  fragmentId: typeof CODEX_HOOK_INTEGRATION_ID;
 };
 
 const TOKENJUICE_CODEX_STATUS = "compacting bash output with tokenjuice";
@@ -422,6 +432,17 @@ function stringifyToolResponse(value: unknown): string {
     return "";
   }
   if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (
+        isRecord(parsed)
+        && ["output", "text", "stdout", "stderr", "combinedText"].some((key) => key in parsed)
+      ) {
+        return stringifyToolResponse(parsed);
+      }
+    } catch {
+      // Plain output is expected to be much more common than a JSON-string envelope.
+    }
     return value;
   }
   if (Array.isArray(value)) {
@@ -431,11 +452,21 @@ function stringifyToolResponse(value: unknown): string {
       .join("\n");
   }
   if (isRecord(value)) {
-    for (const key of ["output", "text", "stdout", "stderr", "combinedText"]) {
-      const text = value[key];
-      if (typeof text === "string" && text) {
-        return text;
-      }
+    const combinedText = value.combinedText;
+    if (typeof combinedText === "string" && combinedText) {
+      return combinedText;
+    }
+
+    const stdout = typeof value.stdout === "string" ? value.stdout : "";
+    const stderr = typeof value.stderr === "string" ? value.stderr : "";
+    const output = typeof value.output === "string" ? value.output : "";
+    const text = typeof value.text === "string" ? value.text : "";
+    const primary = stdout || output || text;
+    if (primary && stderr) {
+      return [`[stdout]`, primary, `[stderr]`, stderr].join("\n");
+    }
+    if (primary || stderr) {
+      return primary || stderr;
     }
     return JSON.stringify(value);
   }
@@ -589,19 +620,134 @@ function sanitizeHooksConfig(raw: unknown): CodexHooksConfig {
   return { hooks };
 }
 
-async function loadHooksConfig(hooksPath: string): Promise<{ config: CodexHooksConfig; backupPath?: string }> {
+async function loadHooksConfig(hooksPath: string): Promise<{
+  config: CodexHooksConfig;
+  backupPath?: string;
+  sourceText?: string;
+}> {
   try {
     const rawText = await readFile(hooksPath, "utf8");
     const parsed = JSON.parse(rawText) as unknown;
     const config = sanitizeHooksConfig(parsed);
     const backupPath = `${hooksPath}.bak`;
     await writeFile(backupPath, rawText, "utf8");
-    return { config, backupPath };
+    return { config, backupPath, sourceText: rawText };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { config: { hooks: {} } };
     }
     throw new Error(`failed to load codex hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function resolveCodexHooksRenderer(): Promise<string | undefined> {
+  const pathValue = process.env.PATH;
+  if (!pathValue) {
+    return undefined;
+  }
+  const names = process.platform === "win32"
+    ? ["codex-hooks.exe", "codex-hooks.cmd", "codex-hooks.bat", "codex-hooks"]
+    : ["codex-hooks"];
+  for (const segment of pathValue.split(delimiter)) {
+    if (!segment) {
+      continue;
+    }
+    for (const name of names) {
+      const candidate = join(segment, name);
+      if (await isExecutableFile(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return undefined;
+}
+
+async function runCodexHooksRenderer(
+  rendererPath: string,
+  action: "register" | "unregister",
+  hooksPath: string,
+  fragment?: CodexHooksConfig,
+  ownedSource?: CodexHooksConfig,
+): Promise<void> {
+  await mkdir(dirname(hooksPath), { recursive: true, mode: 0o700 });
+  const nonce = `${process.pid}-${randomUUID()}`;
+  const fragmentPath = join(dirname(hooksPath), `.tokenjuice-hooks-fragment-${nonce}.json`);
+  const ownedSourcePath = join(dirname(hooksPath), `.tokenjuice-hooks-owned-${nonce}.json`);
+  try {
+    const args = [
+      action,
+      "--integration-id",
+      CODEX_HOOK_INTEGRATION_ID,
+      "--target",
+      hooksPath,
+    ];
+    if (action === "register" && fragment) {
+      await writeFile(fragmentPath, `${JSON.stringify(fragment, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+      args.push("--fragment", fragmentPath);
+    }
+    if (ownedSource && Object.keys(ownedSource.hooks).length > 0) {
+      await writeFile(ownedSourcePath, `${JSON.stringify(ownedSource, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+      args.push("--owned-source", ownedSourcePath);
+    }
+    await new Promise<void>((resolvePromise, rejectPromise) => {
+      execFile(rendererPath, args, { encoding: "utf8" }, (error, _stdout, stderr) => {
+        if (!error) {
+          resolvePromise();
+          return;
+        }
+        const detail = stderr.trim() || error.message;
+        rejectPromise(new Error(`codex-hooks renderer failed: ${detail}`));
+      });
+    });
+  } finally {
+    await Promise.all([
+      rm(fragmentPath, { force: true }),
+      rm(ownedSourcePath, { force: true }),
+    ]);
+  }
+}
+
+async function assertStandaloneHooksTarget(hooksPath: string): Promise<void> {
+  try {
+    if ((await lstat(hooksPath)).isSymbolicLink()) {
+      throw new Error(
+        `cannot directly replace externally owned hooks symlink at ${hooksPath}; install codex-hooks or update its owner`,
+      );
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
+}
+
+async function assertHooksSourceUnchanged(hooksPath: string, sourceText: string | undefined): Promise<void> {
+  try {
+    const current = await readFile(hooksPath, "utf8");
+    if (current !== sourceText) {
+      throw new Error(`codex hooks changed during update at ${hooksPath}; no replacement`);
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT" && sourceText === undefined) {
+      return;
+    }
+    throw error;
+  }
+}
+
+async function writeStandaloneHooksConfig(
+  hooksPath: string,
+  config: CodexHooksConfig,
+  sourceText: string | undefined,
+): Promise<void> {
+  await mkdir(dirname(hooksPath), { recursive: true });
+  const tempPath = `${hooksPath}.tmp.${process.pid}-${randomUUID()}`;
+  try {
+    await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+    await assertHooksSourceUnchanged(hooksPath, sourceText);
+    await rename(tempPath, hooksPath);
+  } finally {
+    await rm(tempPath, { force: true });
   }
 }
 
@@ -677,7 +823,7 @@ function buildCodexFeedback(
 ): { text: string; truncated: boolean } | undefined {
   const recoveryReference = rawRefId
     ? `tokenjuice cat ${rawRefId}`
-    : "tokenjuice wrap --raw -- <command>";
+    : undefined;
   const serialize = (compactedOutput: string, authoritative: boolean): string => [
     "<tokenjuice_compacted_tool_observation>",
     JSON.stringify({
@@ -685,7 +831,7 @@ function buildCodexFeedback(
       exitCode: exitCode ?? null,
       authority: authoritative ? "authoritative-omission" : "non-authoritative-rewrite",
       compactedOutput,
-      ...(authoritative ? { recoveryReference } : {}),
+      ...(authoritative && recoveryReference ? { recoveryReference } : {}),
     }, null, 2),
     "</tokenjuice_compacted_tool_observation>",
   ].join("\n");
@@ -757,9 +903,18 @@ function extractCodexExitCode(payload: CodexPostToolUsePayload): number | undefi
     }
   }
 
-  if (isRecord(payload.tool_response)) {
-    for (const key of ["exitCode", "exit_code"]) {
-      const parsed = parseExitCodeValue(payload.tool_response[key]);
+  let response = payload.tool_response;
+  if (typeof response === "string") {
+    try {
+      response = JSON.parse(response) as unknown;
+    } catch {
+      response = undefined;
+    }
+  }
+
+  if (isRecord(response)) {
+    for (const key of ["exitCode", "exit_code", "status"]) {
+      const parsed = parseExitCodeValue(response[key]);
       if (typeof parsed === "number") {
         return parsed;
       }
@@ -769,21 +924,75 @@ function extractCodexExitCode(payload: CodexPostToolUsePayload): number | undefi
   return undefined;
 }
 
+function isJsonDocument(text: string): boolean {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCriticalCodexEvidenceReason(
+  command: string,
+  text: string,
+  exitCode: number | undefined,
+): string | undefined {
+  if (typeof exitCode === "number" && exitCode !== 0) {
+    return "nonzero-exit-evidence";
+  }
+  if (isJsonDocument(text)) {
+    return "machine-readable-output";
+  }
+  if (/(?:^|[/\s'"])(?:AGENTS|SOUL|SKILL)\.md(?:$|[/\s'"])/iu.test(command)) {
+    return "instruction-file-output";
+  }
+  if (
+    /(?:^|\s)['"]?(?:\.schema|\\d[+a-z]*)['"]?(?:\s|$)/iu.test(command)
+    || /\b(?:schema-only|show\s+create|describe|pragma)\b/iu.test(command)
+  ) {
+    return "schema-output";
+  }
+  return undefined;
+}
+
 export async function installCodexHook(
   hooksPath = getDefaultHooksPath(),
   options: CodexHookCommandOptions = {},
 ): Promise<InstallCodexHookResult> {
-  const { config, backupPath } = await loadHooksConfig(hooksPath);
   const command = await buildCodexHookCommand(options);
+  const rendererPath = await resolveCodexHooksRenderer();
+  if (rendererPath) {
+    const { config } = await readHooksConfig(hooksPath);
+    const existing = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook);
+    const ownedSource: CodexHooksConfig = {
+      hooks: existing.length > 0 ? { PostToolUse: existing } : {},
+    };
+    await runCodexHooksRenderer(
+      rendererPath,
+      "register",
+      hooksPath,
+      { hooks: { PostToolUse: [createTokenjuiceCodexHook(command)] } },
+      ownedSource,
+    );
+    const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
+    return {
+      hooksPath,
+      command,
+      featureFlag,
+      writer: "codex-hooks",
+      fragmentId: CODEX_HOOK_INTEGRATION_ID,
+    };
+  }
+
+  await assertStandaloneHooksTarget(hooksPath);
+  const { config, backupPath, sourceText } = await loadHooksConfig(hooksPath);
   const postToolUse = config.hooks.PostToolUse ?? [];
   const retained = postToolUse.filter((group) => !isTokenjuiceCodexHook(group));
   retained.push(createTokenjuiceCodexHook(command));
   config.hooks.PostToolUse = retained;
 
-  await mkdir(dirname(hooksPath), { recursive: true });
-  const tempPath = `${hooksPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, hooksPath);
+  await writeStandaloneHooksConfig(hooksPath, config, sourceText);
 
   const featureFlag = await inspectCodexHooksFeatureFlag(options.featureFlagConfigPath);
 
@@ -792,13 +1001,29 @@ export async function installCodexHook(
     ...(backupPath ? { backupPath } : {}),
     command,
     featureFlag,
+    writer: "standalone",
+    fragmentId: CODEX_HOOK_INTEGRATION_ID,
   };
 }
 
 export async function uninstallCodexHook(
   hooksPath = getDefaultHooksPath(),
 ): Promise<UninstallCodexHookResult> {
-  const { config, backupPath } = await loadHooksConfig(hooksPath);
+  const rendererPath = await resolveCodexHooksRenderer();
+  if (rendererPath) {
+    const { config } = await readHooksConfig(hooksPath);
+    const removed = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook).length;
+    await runCodexHooksRenderer(rendererPath, "unregister", hooksPath);
+    return {
+      hooksPath,
+      removed,
+      writer: "codex-hooks",
+      fragmentId: CODEX_HOOK_INTEGRATION_ID,
+    };
+  }
+
+  await assertStandaloneHooksTarget(hooksPath);
+  const { config, backupPath, sourceText } = await loadHooksConfig(hooksPath);
   const postToolUse = config.hooks.PostToolUse ?? [];
   const retained = postToolUse.filter((group) => !isTokenjuiceCodexHook(group));
   const removed = postToolUse.length - retained.length;
@@ -809,15 +1034,14 @@ export async function uninstallCodexHook(
     delete config.hooks.PostToolUse;
   }
 
-  await mkdir(dirname(hooksPath), { recursive: true });
-  const tempPath = `${hooksPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, hooksPath);
+  await writeStandaloneHooksConfig(hooksPath, config, sourceText);
 
   return {
     hooksPath,
     ...(backupPath ? { backupPath } : {}),
     removed,
+    writer: "standalone",
+    fragmentId: CODEX_HOOK_INTEGRATION_ID,
   };
 }
 
@@ -980,11 +1204,14 @@ function shouldStoreFromEnv(): boolean {
 }
 
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
+  if (!shouldRecordStats()) {
+    return;
+  }
   try {
     const codexHome = getCodexHome();
     const debugPath = join(codexHome, CODEX_HOOK_LAST_LOG);
-    const historyPath = join(codexHome, CODEX_HOOK_HISTORY_LOG);
-    const enrichedRecord = {
+    const enrichedRecord: Record<string, unknown> & { eventId: string } = {
+      eventId: randomUUID(),
       timestamp: new Date().toISOString(),
       tokenjuiceVersion: packageJson.version,
       hookCommandPath: process.argv[1],
@@ -992,99 +1219,21 @@ async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
     };
     await mkdir(dirname(debugPath), { recursive: true });
     await writeFile(debugPath, `${JSON.stringify(enrichedRecord, null, 2)}\n`, "utf8");
-
-    await writeHookHistoryEntry(historyPath, JSON.stringify(enrichedRecord));
+    const historyRecord = { ...enrichedRecord };
+    if (typeof historyRecord.command === "string") {
+      const command = historyRecord.command;
+      delete historyRecord.command;
+      historyRecord.commandFamily = command.trim().split(/\s+/u)[0] ?? "unknown";
+      historyRecord.commandDigest = createHash("sha256").update(command).digest("hex");
+    }
+    await appendBoundedJsonl(
+      join(codexHome, CODEX_HOOK_HISTORY_DIRECTORY),
+      CODEX_HOOK_HISTORY_PREFIX,
+      enrichedRecord.eventId,
+      historyRecord,
+    );
   } catch {
     // A diagnostic side effect must never turn an otherwise optional hook into a failed tool call.
-  }
-}
-
-function sanitizeHookHistoryLines(text: string): string[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => {
-      try {
-        JSON.parse(line);
-        return true;
-      } catch {
-        return false;
-      }
-    });
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolvePromise) => {
-    setTimeout(resolvePromise, ms);
-  });
-}
-
-async function acquireHistoryLock(lockPath: string): Promise<boolean> {
-  for (let attempt = 0; attempt <= CODEX_HOOK_HISTORY_LOCK_RETRIES; attempt += 1) {
-    try {
-      await mkdir(lockPath);
-      return true;
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== "EEXIST") {
-        throw error;
-      }
-
-      try {
-        const details = await stat(lockPath);
-        if (Date.now() - details.mtimeMs > CODEX_HOOK_HISTORY_LOCK_STALE_MS) {
-          await rm(lockPath, { recursive: true, force: true });
-          continue;
-        }
-      } catch (statError) {
-        const statCode = (statError as NodeJS.ErrnoException).code;
-        if (statCode !== "ENOENT") {
-          throw statError;
-        }
-        continue;
-      }
-
-      if (attempt < CODEX_HOOK_HISTORY_LOCK_RETRIES) {
-        await wait(CODEX_HOOK_HISTORY_LOCK_RETRY_MS);
-      }
-    }
-  }
-
-  return false;
-}
-
-async function writeHookHistoryEntry(historyPath: string, line: string): Promise<void> {
-  const lockPath = `${historyPath}.lock`;
-  const tempPath = `${historyPath}.${process.pid}.tmp`;
-  const hasLock = await acquireHistoryLock(lockPath);
-
-  if (!hasLock) {
-    await appendFile(historyPath, `${line}\n`, "utf8");
-    return;
-  }
-
-  try {
-    let historyLines: string[] = [];
-    try {
-      historyLines = sanitizeHookHistoryLines(await readFile(historyPath, "utf8"));
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") {
-        throw error;
-      }
-    }
-
-    historyLines.push(line);
-    if (historyLines.length > CODEX_HOOK_HISTORY_LIMIT) {
-      historyLines = historyLines.slice(-CODEX_HOOK_HISTORY_LIMIT);
-    }
-
-    await writeFile(tempPath, `${historyLines.join("\n")}\n`, "utf8");
-    await rename(tempPath, historyPath);
-  } finally {
-    await rm(tempPath, { force: true }).catch(() => {});
-    await rm(lockPath, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -1108,7 +1257,7 @@ async function recordImmediateHookStats(
   rawText: string,
   storeRaw: boolean,
 ): Promise<void> {
-  if (storeRaw) {
+  if (storeRaw || !shouldRecordStats()) {
     return;
   }
 
@@ -1132,6 +1281,7 @@ export async function runCodexPostToolUseHook(
   rawText: string,
   options: { noOmit?: boolean; allowOmit?: boolean } = {},
 ): Promise<number> {
+  const hookStartedAt = Date.now();
   validateCodexOmissionPolicy(options);
   let payload: CodexPostToolUsePayload;
   try {
@@ -1148,24 +1298,35 @@ export async function runCodexPostToolUseHook(
     command,
     noOmit,
     rewrote: false,
+    ...(typeof payload.session_id === "string" ? { threadId: payload.session_id } : {}),
+    ...(typeof payload.thread_id === "string" ? { threadId: payload.thread_id } : {}),
+    ...(typeof payload.turn_id === "string" ? { turnId: payload.turn_id } : {}),
+    ...(typeof payload.tool_call_id === "string" ? { callId: payload.tool_call_id } : {}),
+    ...(typeof payload.tool_use_id === "string" ? { callId: payload.tool_use_id } : {}),
+  };
+  const writeDebug = async (record: Record<string, unknown>): Promise<void> => {
+    await writeHookDebug({
+      ...record,
+      hookLatencyMs: Date.now() - hookStartedAt,
+    });
   };
 
   if (payload.hook_event_name !== "PostToolUse") {
-    await writeHookDebug({ ...debug, skipped: "non-post-tool-use" });
+    await writeDebug({ ...debug, skipped: "non-post-tool-use" });
     return 0;
   }
   if (payload.tool_name !== "Bash") {
-    await writeHookDebug({ ...debug, skipped: "non-bash" });
+    await writeDebug({ ...debug, skipped: "non-bash" });
     return 0;
   }
   if (typeof command !== "string" || !command.trim()) {
-    await writeHookDebug({ ...debug, skipped: "missing-command" });
+    await writeDebug({ ...debug, skipped: "missing-command" });
     return 0;
   }
 
   const combinedText = stringifyToolResponse(payload.tool_response);
   if (!combinedText.trim()) {
-    await writeHookDebug({ ...debug, skipped: "empty-tool-response" });
+    await writeDebug({ ...debug, skipped: "empty-tool-response" });
     return 0;
   }
 
@@ -1173,7 +1334,7 @@ export async function runCodexPostToolUseHook(
   if (rawBytes > CODEX_HOOK_MAX_COMPACTION_BYTES) {
     const plainText = stripAnsi(combinedText);
     const rawChars = countTextChars(plainText);
-    await writeHookDebug({
+    await writeDebug({
       ...debug,
       rawChars,
       rawBytes,
@@ -1197,11 +1358,24 @@ export async function runCodexPostToolUseHook(
     },
   };
   const storeRaw = shouldStoreFromEnv();
+  const criticalEvidenceReason = getCriticalCodexEvidenceReason(command, combinedText, exitCode);
+
+  if (criticalEvidenceReason) {
+    await recordImmediateHookStats(executionInput, combinedText, storeRaw);
+    await writeDebug({
+      ...debug,
+      ...buildImmediateSkipStats(combinedText),
+      exitCode,
+      deliveryMode: "original-only",
+      skipped: criticalEvidenceReason,
+    });
+    return 0;
+  }
 
   if (commandRequestsTokenjuiceRawBypass(command)) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);
     const stats = buildImmediateSkipStats(combinedText);
-    await writeHookDebug({
+    await writeDebug({
       ...debug,
       ...stats,
       skipped: "explicit-raw-bypass",
@@ -1213,7 +1387,7 @@ export async function runCodexPostToolUseHook(
   if (inspectionSkipReason) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);
     const stats = buildImmediateSkipStats(combinedText);
-    await writeHookDebug({
+    await writeDebug({
       ...debug,
       ...stats,
       skipped: inspectionSkipReason,
@@ -1234,6 +1408,7 @@ export async function runCodexPostToolUseHook(
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
       ...(noOmit ? { noOmit: true } : {}),
       storeRaw,
+      recordStats: shouldRecordStats(),
       metadata: {
         source: "codex-post-tool-use",
       },
@@ -1257,7 +1432,7 @@ export async function runCodexPostToolUseHook(
     }
 
     if (outcome.action === "keep") {
-      await writeHookDebug({ ...debug, skipped: outcome.reason });
+      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: outcome.reason });
       return 0;
     }
 
@@ -1270,20 +1445,23 @@ export async function runCodexPostToolUseHook(
       noOmit,
     );
     if (!replacement) {
-      await writeHookDebug({ ...debug, skipped: "observation-inline-limit" });
+      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: "observation-inline-limit" });
       return 0;
     }
 
     process.stdout.write(`${JSON.stringify(replacement.payload)}\n`);
-    await writeHookDebug({
+    await writeDebug({
       ...debug,
       rewrote: true,
+      deliveryMode: "original-plus-additional-context",
+      measurement: "pre-delivery-summary-characters",
       feedbackTruncated: replacement.truncated,
     });
     return 0;
   } catch (error) {
-    await writeHookDebug({
+    await writeDebug({
       ...debug,
+      deliveryMode: "original-only",
       skipped: "hook-error",
       error: error instanceof Error ? error.message : String(error),
     });

@@ -1,4 +1,4 @@
-export { ARTIFACT_DIR_ENV, getArtifact, isValidArtifactId, listArtifactMetadata, listArtifacts, resolveArtifactBaseDir, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
+export { ARTIFACT_DIR_ENV, STATS_ENABLED_ENV, getArtifact, isValidArtifactId, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, resolveArtifactBaseDir, shouldRecordStats, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";

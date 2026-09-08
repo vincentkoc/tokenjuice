@@ -1,5 +1,6 @@
 import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv } from "../inventory-safety.js";
 import { readNoOmissionFromEnv } from "../env.js";
+import { shouldRecordStats } from "../artifacts.js";
 import { buildInspectionSummary } from "../reduce-inspection-summary.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
@@ -18,6 +19,7 @@ export type CompactBashResultInput = {
   noOmit?: boolean;
   allowOmit?: boolean;
   storeRaw?: boolean;
+  recordStats?: boolean;
   metadata?: Record<string, unknown>;
   inspectionPolicy?: InspectionCommandPolicy;
   /** @deprecated use inspectionPolicy instead. */
@@ -118,7 +120,7 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     ...(typeof input.cwd === "string" && input.cwd.trim() ? { cwd: input.cwd } : {}),
     ...(typeof input.maxInlineChars === "number" ? { maxInlineChars: input.maxInlineChars } : {}),
     ...(input.noOmit || (!input.allowOmit && readNoOmissionFromEnv()) ? { noOmit: true } : {}),
-    recordStats: true,
+    recordStats: input.recordStats ?? shouldRecordStats(),
     ...(input.storeRaw ? { store: true } : {}),
   };
 

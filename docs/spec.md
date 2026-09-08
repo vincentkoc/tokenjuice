@@ -162,9 +162,11 @@ summarize stored artifact history:
 tokenjuice stats
 tokenjuice stats --format json
 tokenjuice stats --timezone utc
+tokenjuice stats --limit 1000
 ```
 
 daily stats are bucketed in the local timezone by default. pass `--timezone utc` for UTC buckets or an IANA timezone such as `America/New_York` for explicit reporting.
+stats read the bounded metadata-segment store only. output identifies legacy sidecars as excluded, reports partial coverage, and returns a cursor when another page is available. set `TOKENJUICE_STATS=off`, or pass `--no-stats` to `reduce` or `wrap`, to suppress metadata and hook-debug telemetry writes.
 
 ### install
 
@@ -480,16 +482,23 @@ this gives a sane default without forcing people to fork the package for one wei
 
 ## artifact model
 
-artifacts are file-backed in v1:
+raw artifacts are file-backed in v1:
 
 - one raw text file
-- one metadata JSON file
+- one metadata JSON sidecar
 
 default storage is `~/.tokenjuice/artifacts`. set `TOKENJUICE_ARTIFACT_DIR`
 to override that base directory, or pass `storeDir` through the library/cli
 surfaces that already support it.
 
-that is intentionally boring. boring is good here.
+raw retention is opt-in. statistics use daily, sharded JSONL segments under
+`metadata-v1/`, capped by default at 14 days, 8 shards per day, and 1 MiB per
+segment. readers are paged and bounded by file count and segment size. metadata
+references identify `metadataFormat: "jsonl-segment"` and `metadataRecordId`;
+the shared `metadataPath` is a segment container, not a standalone JSON object.
+
+legacy artifact sidecars remain readable through raw-artifact APIs. stats do not
+scan, migrate, rewrite, or delete them.
 
 ## reliability priorities
 

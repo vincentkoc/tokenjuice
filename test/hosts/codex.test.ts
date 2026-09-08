@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { countTextChars } from "../../src/core/text.js";
-import { doctorCodexHook, installCodexHook, listArtifactMetadata, runCodexPostToolUseHook, uninstallCodexHook } from "../../src/index.js";
+import { doctorCodexHook, installCodexHook, listArtifactMetadata, listArtifacts, runCodexPostToolUseHook, uninstallCodexHook } from "../../src/index.js";
 
 const tempDirs: string[] = [];
 const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version as string;
@@ -15,6 +15,8 @@ const originalPath = process.env.PATH;
 const originalNoOmission = process.env.TOKENJUICE_NO_OMISSION;
 const originalCodexMaxInlineChars = process.env.TOKENJUICE_CODEX_MAX_INLINE_CHARS;
 const originalStatsEnabled = process.env.TOKENJUICE_STATS;
+const originalCodexStore = process.env.TOKENJUICE_CODEX_STORE;
+const originalArtifactDir = process.env.TOKENJUICE_ARTIFACT_DIR;
 const originalComSpec = process.env.ComSpec;
 const originalPlatform = process.platform;
 
@@ -23,6 +25,7 @@ beforeEach(() => {
   delete process.env.TOKENJUICE_NO_OMISSION;
   delete process.env.TOKENJUICE_CODEX_MAX_INLINE_CHARS;
   delete process.env.TOKENJUICE_STATS;
+  delete process.env.TOKENJUICE_CODEX_STORE;
 });
 
 afterEach(async () => {
@@ -49,6 +52,16 @@ afterEach(async () => {
     delete process.env.TOKENJUICE_STATS;
   } else {
     process.env.TOKENJUICE_STATS = originalStatsEnabled;
+  }
+  if (originalCodexStore === undefined) {
+    delete process.env.TOKENJUICE_CODEX_STORE;
+  } else {
+    process.env.TOKENJUICE_CODEX_STORE = originalCodexStore;
+  }
+  if (originalArtifactDir === undefined) {
+    delete process.env.TOKENJUICE_ARTIFACT_DIR;
+  } else {
+    process.env.TOKENJUICE_ARTIFACT_DIR = originalArtifactDir;
   }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -2020,6 +2033,9 @@ describe("runCodexPostToolUseHook", () => {
 
   it.each([
     ["instruction-file-output", "cat AGENTS.md", "# rule\ncritical instruction\n"],
+    ["instruction-file-output", "type C:\\repo\\AGENTS.md", "# rule\ncritical instruction\n"],
+    ["instruction-file-output", "type \"C:\\repo\\AGENTS.md\"", "# rule\ncritical instruction\n"],
+    ["instruction-file-output", "Get-Content .\\SKILL.md", "# skill\ncritical instruction\n"],
     [
       "schema-output",
       "sqlite3 -readonly example.sqlite '.schema'",
@@ -2043,6 +2059,54 @@ describe("runCodexPostToolUseHook", () => {
 
     expect(stdout).toBe("");
     expect(debug.skipped).toBe(reason);
+  });
+
+  it("stores critical evidence unchanged when raw retention is enabled", async () => {
+    const home = await createTempDir();
+    const artifactDir = await createTempDir();
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_ARTIFACT_DIR = artifactDir;
+    process.env.TOKENJUICE_CODEX_STORE = "1";
+    process.env.TOKENJUICE_STATS = "off";
+    const toolResponse = "{\"status\":\"failed\",\"detail\":\"critical evidence\"}";
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "custom-tool status --json" },
+      tool_response: toolResponse,
+    });
+
+    const { code, stdout } = await captureStdio(() => runCodexPostToolUseHook(payload));
+    const artifacts = await listArtifacts(artifactDir);
+    const metadata = await listArtifactMetadata(artifactDir);
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(artifacts).toHaveLength(1);
+    expect(metadata).toEqual([]);
+    const stored = await readFile(artifacts[0]!.path, "utf8");
+    expect(stored).toBe(toolResponse);
+  });
+
+  it("fails open when critical-evidence raw retention cannot be written", async () => {
+    const home = await createTempDir();
+    const blockedArtifactDir = join(await createTempDir(), "artifact-dir-is-a-file");
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_ARTIFACT_DIR = blockedArtifactDir;
+    process.env.TOKENJUICE_CODEX_STORE = "1";
+    await writeFile(blockedArtifactDir, "not a directory", "utf8");
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: { command: "custom-tool status --json" },
+      tool_response: "{\"status\":\"failed\"}",
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
   });
 
   it("honors tokenjuice raw bypass commands without re-compacting them", async () => {

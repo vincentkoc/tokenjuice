@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
-import { getTelemetryCommandFamily, shouldRecordStats, tryStoreArtifactMetadata } from "../../core/artifacts.js";
+import { getTelemetryCommandFamily, shouldRecordStats, storeArtifact, tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
 import type { CompactionMetadata } from "../../core/compaction-metadata.js";
 import { readNoOmissionFromEnv } from "../../core/env.js";
@@ -1026,7 +1026,7 @@ function getCriticalCodexEvidenceReason(
   if (isJsonDocument(text)) {
     return "machine-readable-output";
   }
-  if (/(?:^|[/\s'"])(?:AGENTS|SOUL|SKILL)\.md(?:$|[/\s'"])/iu.test(command)) {
+  if (/(?:^|[/\\\s'"])(?:AGENTS|SOUL|SKILL)\.md(?:$|[/\\\s'"])/iu.test(command)) {
     return "instruction-file-output";
   }
   if (
@@ -1345,14 +1345,15 @@ async function recordImmediateHookStats(
   rawText: string,
   storeRaw: boolean,
 ): Promise<void> {
-  if (storeRaw || !shouldRecordStats()) {
+  const recordStats = shouldRecordStats();
+  if (!storeRaw && !recordStats) {
     return;
   }
 
   const stats = buildImmediateSkipStats(rawText);
-  const classification = await classifyOnly(input);
-  await tryStoreArtifactMetadata(
-    {
+  try {
+    const classification = await classifyOnly(input);
+    const artifact = {
       input,
       rawText,
       classification,
@@ -1361,8 +1362,15 @@ async function recordImmediateHookStats(
         reducedChars: stats.reducedChars,
         ratio: stats.ratio,
       },
-    },
-  );
+    };
+    if (storeRaw) {
+      await storeArtifact({ ...artifact, recordStats });
+    } else {
+      await tryStoreArtifactMetadata(artifact);
+    }
+  } catch {
+    // Optional retention and telemetry must not fail the host tool call.
+  }
 }
 
 export async function runCodexPostToolUseHook(

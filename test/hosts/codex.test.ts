@@ -194,6 +194,8 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
       "tokenjuice.post-tool-use",
       "--target",
       hooksPath,
+      "--owned-source",
+      expect.stringContaining(".tokenjuice-hooks-owned-"),
     ]));
   });
 

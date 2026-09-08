@@ -1012,11 +1012,14 @@ export async function uninstallCodexHook(
   const rendererPath = await resolveCodexHooksRenderer();
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
-    const removed = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook).length;
-    await runCodexHooksRenderer(rendererPath, "unregister", hooksPath);
+    const existing = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook);
+    const ownedSource: CodexHooksConfig = {
+      hooks: existing.length > 0 ? { PostToolUse: existing } : {},
+    };
+    await runCodexHooksRenderer(rendererPath, "unregister", hooksPath, undefined, ownedSource);
     return {
       hooksPath,
-      removed,
+      removed: existing.length,
       writer: "codex-hooks",
       fragmentId: CODEX_HOOK_INTEGRATION_ID,
     };

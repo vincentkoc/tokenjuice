@@ -1,4 +1,4 @@
-import { appendFile, mkdir, open, opendir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, open, opendir, readFile, rm, rmdir, stat, unlink, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { join } from "node:path";
 
@@ -130,8 +130,10 @@ async function tryCreateLock(lockPath: string): Promise<string | undefined> {
 
 async function releaseLock(lockPath: string, owner: string): Promise<void> {
   try {
-    if (await readFile(join(lockPath, "owner"), "utf8") === owner) {
-      await rm(lockPath, { recursive: true, force: true });
+    const ownerPath = join(lockPath, "owner");
+    if (await readFile(ownerPath, "utf8") === owner) {
+      await unlink(ownerPath);
+      await rmdir(lockPath);
     }
   } catch {
     // A missing or replaced lock no longer belongs to this writer.
@@ -316,12 +318,23 @@ export async function readBoundedJsonlPage<T>(
   }
 
   const cursor = decodeCursor(options.cursor);
-  const startFileIndex = cursor ? names.indexOf(cursor.file) : 0;
-  const effectiveStartFileIndex = startFileIndex >= 0 ? startFileIndex : 0;
+  let startFileIndex = 0;
+  if (cursor) {
+    const exactFileIndex = names.indexOf(cursor.file);
+    if (exactFileIndex >= 0) {
+      startFileIndex = exactFileIndex;
+    } else {
+      directoryTruncated = true;
+      startFileIndex = names.findIndex((name) => name < cursor.file);
+      if (startFileIndex < 0) {
+        return { records: [], partial: true };
+      }
+    }
+  }
   const records: Array<{ path: string; value: T }> = [];
   let rejectedRecords = false;
 
-  for (let fileIndex = effectiveStartFileIndex; fileIndex < names.length; fileIndex += 1) {
+  for (let fileIndex = startFileIndex; fileIndex < names.length; fileIndex += 1) {
     const name = names[fileIndex]!;
     const path = join(directory, name);
     let details;

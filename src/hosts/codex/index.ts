@@ -973,6 +973,32 @@ function isJsonDocument(text: string): boolean {
   }
 }
 
+function hasStructuredJsonOutput(value: unknown): boolean {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (
+        isRecord(parsed)
+        && ["output", "text", "stdout", "stderr", "combinedText"].some((key) => key in parsed)
+      ) {
+        return hasStructuredJsonOutput(parsed);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.some((entry) => hasStructuredJsonOutput(entry));
+  }
+  if (!isRecord(value)) {
+    return false;
+  }
+  return ["combinedText", "stdout", "output", "text"].some((key) =>
+    typeof value[key] === "string" && isJsonDocument(value[key])
+  );
+}
+
 function getCriticalCodexEvidenceReason(
   command: string,
   text: string,
@@ -1402,7 +1428,9 @@ export async function runCodexPostToolUseHook(
     },
   };
   const storeRaw = shouldStoreFromEnv();
-  const criticalEvidenceReason = getCriticalCodexEvidenceReason(command, combinedText, exitCode);
+  const criticalEvidenceReason = hasStructuredJsonOutput(payload.tool_response)
+    ? "machine-readable-output"
+    : getCriticalCodexEvidenceReason(command, combinedText, exitCode);
 
   if (criticalEvidenceReason) {
     await recordImmediateHookStats(executionInput, combinedText, storeRaw);

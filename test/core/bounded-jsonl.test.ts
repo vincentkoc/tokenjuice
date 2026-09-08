@@ -127,6 +127,27 @@ describe("bounded JSONL segments", () => {
     expect(page.partial).toBe(true);
   });
 
+  it("resumes from an older segment when the cursor segment was removed", async () => {
+    const dir = await createTempDir();
+    const newestPath = join(dir, "events-2026-09-08-00.jsonl");
+    const cursorPath = join(dir, "events-2026-09-07-00.jsonl");
+    const olderPath = join(dir, "events-2026-09-06-00.jsonl");
+    await writeFile(newestPath, `${JSON.stringify({ id: "newest" })}\n`, "utf8");
+    await writeFile(cursorPath, `${JSON.stringify({ id: "removed" })}\n`, "utf8");
+    await writeFile(olderPath, `${JSON.stringify({ id: "older" })}\n`, "utf8");
+
+    const first = await readBoundedJsonlPage(dir, "events", isEvent, { limit: 1 });
+    await rm(cursorPath);
+    const second = await readBoundedJsonlPage(dir, "events", isEvent, {
+      limit: 10,
+      cursor: first.nextCursor,
+    });
+
+    expect(first.records.map((record) => record.value.id)).toEqual(["newest"]);
+    expect(second.records.map((record) => record.value.id)).toEqual(["older"]);
+    expect(second.partial).toBe(true);
+  });
+
   it("skips oversized segments and reports partial coverage", async () => {
     const dir = await createTempDir();
     await writeFile(

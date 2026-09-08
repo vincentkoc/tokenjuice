@@ -1451,6 +1451,39 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.deliveryMode).toBe("original-only");
   });
 
+  it("leaves structured JSON stdout with stderr in the original tool result only", async () => {
+    const home = await createTempDir();
+    process.env.CODEX_HOME = home;
+    const payload = JSON.stringify({
+      hook_event_name: "PostToolUse",
+      tool_name: "Bash",
+      tool_input: {
+        command: "custom-tool --emit-json",
+      },
+      tool_response: {
+        stdout: JSON.stringify({
+          files: Array.from({ length: 40 }, (_, index) => ({ path: `src/file-${index}.ts` })),
+        }),
+        stderr: "warning: using cached data",
+        exit_code: 0,
+      },
+    });
+
+    const { code, stdout, stderr } = await captureStdio(() => runCodexPostToolUseHook(payload));
+    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
+      rewrote: boolean;
+      skipped?: string;
+      deliveryMode?: string;
+    };
+
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+    expect(debug.rewrote).toBe(false);
+    expect(debug.skipped).toBe("machine-readable-output");
+    expect(debug.deliveryMode).toBe("original-only");
+  });
+
   it("includes a factual recovery reference for authoritative omissions", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;

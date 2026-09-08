@@ -199,6 +199,47 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
     ]));
   });
 
+  it.each(["install", "uninstall"] as const)(
+    "refuses renderer-backed %s before mutating a mixed Tokenjuice/custom group",
+    async (operation) => {
+      const home = await createTempDir();
+      const hooksPath = join(home, "hooks.json");
+      const binDir = join(home, "bin");
+      const rendererMarker = join(home, "renderer-called");
+      process.env.PATH = binDir;
+      await mkdir(binDir, { recursive: true });
+      await writeFile(join(binDir, "tokenjuice"), "#!/bin/sh\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+      await writeFile(
+        join(binDir, "codex-hooks"),
+        `#!/bin/sh\nprintf called > ${rendererMarker}\n`,
+        { encoding: "utf8", mode: 0o755 },
+      );
+      const original = `${JSON.stringify({
+        hooks: {
+          PostToolUse: [{
+            matcher: "^Bash$",
+            hooks: [
+              {
+                type: "command",
+                command: "tokenjuice codex-post-tool-use",
+                statusMessage: "compacting bash output with tokenjuice",
+              },
+              { type: "command", command: "custom nested hook" },
+            ],
+          }],
+        },
+      }, null, 2)}\n`;
+      await writeFile(hooksPath, original, "utf8");
+
+      const run = operation === "install"
+        ? installCodexHook(hooksPath)
+        : uninstallCodexHook(hooksPath);
+      await expect(run).rejects.toThrow("mixed Tokenjuice/custom matcher group");
+      expect(await readFile(hooksPath, "utf8")).toBe(original);
+      expect(existsSync(rendererMarker)).toBe(false);
+    },
+  );
+
   it("installs a single tokenjuice PostToolUse hook and preserves unrelated hooks", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, "hooks.json");
@@ -229,7 +270,10 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
           PostToolUse: [
             {
               matcher: "^Bash$",
-              hooks: [{ type: "command", command: "python3 /tmp/post_tool_use_tokenjuice.py" }],
+              hooks: [
+                { type: "command", command: "python3 /tmp/post_tool_use_tokenjuice.py" },
+                { type: "command", command: "echo nested-keep", timeout: 9 },
+              ],
             },
             {
               matcher: "^Bash$",
@@ -258,12 +302,15 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
       { type: "agent" },
     ]);
     expect(parsed.hooks.SessionStart).toHaveLength(1);
-    expect(parsed.hooks.PostToolUse).toHaveLength(2);
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.command).toBe("echo keep-me");
-    expect(parsed.hooks.PostToolUse[1]?.matcher).toBe("^Bash$");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toContain("codex-post-tool-use");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.statusMessage).toBe("compacting bash output with tokenjuice");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.timeout).toBe(30);
+    expect(parsed.hooks.PostToolUse).toHaveLength(3);
+    expect(parsed.hooks.PostToolUse[0]?.hooks).toEqual([
+      { type: "command", command: "echo nested-keep", timeout: 9 },
+    ]);
+    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toBe("echo keep-me");
+    expect(parsed.hooks.PostToolUse[2]?.matcher).toBe("^Bash$");
+    expect(parsed.hooks.PostToolUse[2]?.hooks[0]?.command).toContain("codex-post-tool-use");
+    expect(parsed.hooks.PostToolUse[2]?.hooks[0]?.statusMessage).toBe("compacting bash output with tokenjuice");
+    expect(parsed.hooks.PostToolUse[2]?.hooks[0]?.timeout).toBe(30);
   });
 
   it("prefers a stable tokenjuice launcher from PATH when installing the hook", async () => {
@@ -445,7 +492,10 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
             },
             {
               matcher: "^Bash$",
-              hooks: [{ type: "command", command: "python3 /tmp/post_tool_use_tokenjuice.py", statusMessage: "compacting bash output with tokenjuice" }],
+              hooks: [
+                { type: "command", command: "python3 /tmp/post_tool_use_tokenjuice.py", statusMessage: "compacting bash output with tokenjuice" },
+                { type: "command", command: "echo nested-keep", timeout: 9 },
+              ],
             },
           ],
         },
@@ -462,8 +512,11 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
     expect(result.backupPath).toBe(`${hooksPath}.bak`);
     expect(result.removed).toBe(1);
     expect(parsed.hooks.SessionStart).toHaveLength(1);
-    expect(parsed.hooks.PostToolUse).toHaveLength(1);
+    expect(parsed.hooks.PostToolUse).toHaveLength(2);
     expect(parsed.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe("echo keep-me");
+    expect(parsed.hooks.PostToolUse?.[1]?.hooks).toEqual([
+      { type: "command", command: "echo nested-keep", timeout: 9 },
+    ]);
   });
 });
 

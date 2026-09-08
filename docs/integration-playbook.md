@@ -93,6 +93,11 @@ remove pre-fragment standalone state. without the renderer, Tokenjuice can updat
 standalone hooks file with a source-content check; it refuses to replace an
 externally owned symlink.
 
+standalone install and uninstall remove only Tokenjuice commands from a matcher
+group and preserve nested custom commands. the shared renderer currently owns
+whole groups, so Tokenjuice rejects a mixed Tokenjuice/custom group before
+invoking it; split those commands into distinct matcher groups and retry.
+
 ## regression gates before merge
 
 minimum gate for a new host adapter:

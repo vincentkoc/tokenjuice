@@ -494,8 +494,45 @@ function isTokenjuiceCodexHookCommand(hook: CodexHookCommand): boolean {
     || command.includes("post_tool_use_tokenjuice.py");
 }
 
-function isTokenjuiceCodexHook(group: CodexHookMatcherGroup): boolean {
-  return group.hooks.some((hook) => isTokenjuiceCodexHookCommand(hook));
+function splitTokenjuiceCodexHooks(groups: CodexHookMatcherGroup[]): {
+  retained: CodexHookMatcherGroup[];
+  owned: CodexHookMatcherGroup[];
+  removed: number;
+  hasMixedGroup: boolean;
+} {
+  const retained: CodexHookMatcherGroup[] = [];
+  const owned: CodexHookMatcherGroup[] = [];
+  let removed = 0;
+  let hasMixedGroup = false;
+
+  for (const group of groups) {
+    const tokenjuiceHooks = group.hooks.filter(isTokenjuiceCodexHookCommand);
+    if (tokenjuiceHooks.length === 0) {
+      retained.push(group);
+      continue;
+    }
+
+    const otherHooks = group.hooks.filter((hook) => !isTokenjuiceCodexHookCommand(hook));
+    removed += tokenjuiceHooks.length;
+    owned.push({ ...group, hooks: tokenjuiceHooks });
+    if (otherHooks.length > 0) {
+      hasMixedGroup = true;
+      retained.push({ ...group, hooks: otherHooks });
+    }
+  }
+
+  return { retained, owned, removed, hasMixedGroup };
+}
+
+function assertRendererCanOwnTokenjuiceGroups(
+  hooksPath: string,
+  split: ReturnType<typeof splitTokenjuiceCodexHooks>,
+): void {
+  if (split.hasMixedGroup) {
+    throw new Error(
+      `cannot safely migrate a mixed Tokenjuice/custom matcher group at ${hooksPath}; separate the commands into distinct groups before retrying with the codex-hooks renderer`,
+    );
+  }
 }
 
 function collectTokenjuiceCodexHookCommands(
@@ -532,12 +569,10 @@ function collectLowTimeoutWarnings(config: CodexHooksConfig): string[] {
 
   for (const [eventName, groups] of Object.entries(config.hooks)) {
     groups.forEach((group, groupIndex) => {
-      const tokenjuiceGroup = eventName === "PostToolUse" && isTokenjuiceCodexHook(group);
-      if (tokenjuiceGroup) {
-        return;
-      }
-
       group.hooks.forEach((hook, hookIndex) => {
+        if (eventName === "PostToolUse" && isTokenjuiceCodexHookCommand(hook)) {
+          return;
+        }
         if (typeof hook.command !== "string") {
           return;
         }
@@ -964,9 +999,10 @@ export async function installCodexHook(
   const rendererPath = await resolveCodexHooksRenderer();
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
-    const existing = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook);
+    const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);
+    assertRendererCanOwnTokenjuiceGroups(hooksPath, split);
     const ownedSource: CodexHooksConfig = {
-      hooks: existing.length > 0 ? { PostToolUse: existing } : {},
+      hooks: split.owned.length > 0 ? { PostToolUse: split.owned } : {},
     };
     await runCodexHooksRenderer(
       rendererPath,
@@ -988,7 +1024,7 @@ export async function installCodexHook(
   await assertStandaloneHooksTarget(hooksPath);
   const { config, backupPath, sourceText } = await loadHooksConfig(hooksPath);
   const postToolUse = config.hooks.PostToolUse ?? [];
-  const retained = postToolUse.filter((group) => !isTokenjuiceCodexHook(group));
+  const { retained } = splitTokenjuiceCodexHooks(postToolUse);
   retained.push(createTokenjuiceCodexHook(command));
   config.hooks.PostToolUse = retained;
 
@@ -1012,14 +1048,15 @@ export async function uninstallCodexHook(
   const rendererPath = await resolveCodexHooksRenderer();
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
-    const existing = (config.hooks.PostToolUse ?? []).filter(isTokenjuiceCodexHook);
+    const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);
+    assertRendererCanOwnTokenjuiceGroups(hooksPath, split);
     const ownedSource: CodexHooksConfig = {
-      hooks: existing.length > 0 ? { PostToolUse: existing } : {},
+      hooks: split.owned.length > 0 ? { PostToolUse: split.owned } : {},
     };
     await runCodexHooksRenderer(rendererPath, "unregister", hooksPath, undefined, ownedSource);
     return {
       hooksPath,
-      removed: existing.length,
+      removed: split.removed,
       writer: "codex-hooks",
       fragmentId: CODEX_HOOK_INTEGRATION_ID,
     };
@@ -1028,8 +1065,7 @@ export async function uninstallCodexHook(
   await assertStandaloneHooksTarget(hooksPath);
   const { config, backupPath, sourceText } = await loadHooksConfig(hooksPath);
   const postToolUse = config.hooks.PostToolUse ?? [];
-  const retained = postToolUse.filter((group) => !isTokenjuiceCodexHook(group));
-  const removed = postToolUse.length - retained.length;
+  const { retained, removed } = splitTokenjuiceCodexHooks(postToolUse);
 
   if (retained.length > 0) {
     config.hooks.PostToolUse = retained;

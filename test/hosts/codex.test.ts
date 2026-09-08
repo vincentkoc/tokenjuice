@@ -15,6 +15,8 @@ const originalPath = process.env.PATH;
 const originalNoOmission = process.env.TOKENJUICE_NO_OMISSION;
 const originalCodexMaxInlineChars = process.env.TOKENJUICE_CODEX_MAX_INLINE_CHARS;
 const originalStatsEnabled = process.env.TOKENJUICE_STATS;
+const originalComSpec = process.env.ComSpec;
+const originalPlatform = process.platform;
 
 beforeEach(() => {
   // These assertions describe the default reducer policy, not a caller's opt-out environment.
@@ -27,6 +29,12 @@ afterEach(async () => {
   delete process.env.CODEX_HOME;
   process.env.HOME = originalHome;
   process.env.PATH = originalPath;
+  Object.defineProperty(process, "platform", { value: originalPlatform });
+  if (originalComSpec === undefined) {
+    delete process.env.ComSpec;
+  } else {
+    process.env.ComSpec = originalComSpec;
+  }
   if (originalNoOmission === undefined) {
     delete process.env.TOKENJUICE_NO_OMISSION;
   } else {
@@ -197,6 +205,52 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
       "--owned-source",
       expect.stringContaining(".tokenjuice-hooks-owned-"),
     ]));
+  });
+
+  it("launches a Windows batch renderer through ComSpec", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks.json");
+    const binDir = join(home, "bin");
+    const launcherPath = join(binDir, "tokenjuice.exe");
+    const rendererPath = join(binDir, "codex-hooks.cmd");
+    const commandPath = join(binDir, "cmd.exe");
+    const commandArgsPath = join(home, "cmd-args.json");
+
+    process.env.PATH = binDir;
+    process.env.ComSpec = commandPath;
+    Object.defineProperty(process, "platform", { value: "win32" });
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "", { mode: 0o755 });
+    await writeFile(rendererPath, "@echo off\r\n", { mode: 0o755 });
+    await writeFile(
+      commandPath,
+      `#!${process.execPath}
+const fs = require("node:fs");
+fs.writeFileSync(${JSON.stringify(commandArgsPath)}, JSON.stringify(process.argv.slice(2)));
+`,
+      { encoding: "utf8", mode: 0o755 },
+    );
+
+    const installed = await installCodexHook(hooksPath, {
+      binaryPath: launcherPath,
+      featureFlagConfigPath: join(home, "config.toml"),
+    });
+
+    expect(installed.writer).toBe("codex-hooks");
+    expect(JSON.parse(await readFile(commandArgsPath, "utf8"))).toEqual([
+      "/d",
+      "/s",
+      "/c",
+      "call",
+      rendererPath,
+      "register",
+      "--integration-id",
+      "tokenjuice.post-tool-use",
+      "--target",
+      hooksPath,
+      "--fragment",
+      expect.stringContaining(".tokenjuice-hooks-fragment-"),
+    ]);
   });
 
   it.each(["install", "uninstall"] as const)(

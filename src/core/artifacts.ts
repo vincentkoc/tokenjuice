@@ -205,7 +205,7 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
     writeFile(ref.path, input.rawText, { encoding: "utf8", mode: 0o600 }),
     writeFile(ref.metadataPath, JSON.stringify(artifact.metadata, null, 2), { encoding: "utf8", mode: 0o600 }),
   ]);
-  if (shouldRecordStats()) {
+  if (input.recordStats ?? shouldRecordStats()) {
     await appendMetadataEvent(id, artifact.metadata, input.input, true, storeDir).catch(() => undefined);
   }
 

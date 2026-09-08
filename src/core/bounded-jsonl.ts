@@ -112,6 +112,7 @@ async function tryCreateLock(lockPath: string): Promise<string | undefined> {
     await mkdir(lockPath, { mode: 0o700 });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      // Age alone cannot prove ownership; reclaiming here can displace a live or replacement writer.
       return undefined;
     }
     throw error;
@@ -318,6 +319,7 @@ export async function readBoundedJsonlPage<T>(
   const startFileIndex = cursor ? names.indexOf(cursor.file) : 0;
   const effectiveStartFileIndex = startFileIndex >= 0 ? startFileIndex : 0;
   const records: Array<{ path: string; value: T }> = [];
+  let rejectedRecords = false;
 
   for (let fileIndex = effectiveStartFileIndex; fileIndex < names.length; fileIndex += 1) {
     const name = names[fileIndex]!;
@@ -367,14 +369,17 @@ export async function readBoundedJsonlPage<T>(
             };
           }
           records.push({ path, value: parsed });
+        } else {
+          rejectedRecords = true;
         }
       } catch {
+        rejectedRecords = true;
         // One interrupted or malformed record must not hide the rest of the page.
       }
     }
   }
 
-  return { records, partial: directoryTruncated };
+  return { records, partial: directoryTruncated || rejectedRecords };
 }
 
 export function boundedJsonlCapacity(options: BoundedJsonlOptions = {}): {

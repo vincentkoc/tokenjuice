@@ -237,6 +237,27 @@ describe("reduceExecution", () => {
     expect(artifact?.rawText).toContain("TODO one");
   });
 
+  it("stores raw artifacts without telemetry when stats are disabled", async () => {
+    const storeDir = await createTempDir();
+    const result = await reduceExecution(
+      {
+        toolName: "exec",
+        command: "rg TODO src",
+        argv: ["rg", "TODO", "src"],
+        combinedText: "src/a.ts:1:// TODO one\n",
+        exitCode: 0,
+      },
+      {
+        store: true,
+        recordStats: false,
+        storeDir,
+      },
+    );
+
+    expect(await getArtifact(result.rawRef!.id, storeDir)).not.toBeNull();
+    expect(await listArtifactMetadata(storeDir)).toEqual([]);
+  });
+
   it("records stats metadata without storing raw output when requested", async () => {
     const storeDir = await createTempDir();
     await reduceExecution(

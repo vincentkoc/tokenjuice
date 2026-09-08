@@ -108,6 +108,23 @@ describe("bounded JSONL segments", () => {
 
     expect(first.records.map((record) => record.value.id)).toEqual(["event-1"]);
     expect(second.records.map((record) => record.value.id)).toEqual(["event-2"]);
+
+    const complete = await readBoundedJsonlPage(dir, "events", isEvent, { limit: 10 });
+    expect(complete.records.map((record) => record.value.id)).toEqual(["event-1", "event-2"]);
+    expect(complete.partial).toBe(true);
+  });
+
+  it("reports partial coverage when a parsed record fails validation", async () => {
+    const dir = await createTempDir();
+    const path = await appendBoundedJsonl(dir, "events", "event-1", { id: "event-1" }, {
+      shardCount: 1,
+    });
+    await appendFile(path!, "{}\n", "utf8");
+
+    const page = await readBoundedJsonlPage(dir, "events", isEvent);
+
+    expect(page.records.map((record) => record.value.id)).toEqual(["event-1"]);
+    expect(page.partial).toBe(true);
   });
 
   it("skips oversized segments and reports partial coverage", async () => {

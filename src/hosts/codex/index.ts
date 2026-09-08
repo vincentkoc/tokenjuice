@@ -724,8 +724,13 @@ async function runCodexHooksRenderer(
       await writeFile(ownedSourcePath, `${JSON.stringify(ownedSource, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
       args.push("--owned-source", ownedSourcePath);
     }
+    const isWindowsBatch = process.platform === "win32" && /\.(?:cmd|bat)$/iu.test(rendererPath);
+    const executable = isWindowsBatch ? process.env.ComSpec?.trim() || "cmd.exe" : rendererPath;
+    const executableArgs = isWindowsBatch
+      ? ["/d", "/s", "/c", "call", rendererPath, ...args]
+      : args;
     await new Promise<void>((resolvePromise, rejectPromise) => {
-      execFile(rendererPath, args, { encoding: "utf8" }, (error, _stdout, stderr) => {
+      execFile(executable, executableArgs, { encoding: "utf8" }, (error, _stdout, stderr) => {
         if (!error) {
           resolvePromise();
           return;

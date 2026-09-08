@@ -697,6 +697,14 @@ async function resolveCodexHooksRenderer(): Promise<string | undefined> {
   return undefined;
 }
 
+const UNSAFE_WINDOWS_BATCH_ARGUMENT = /["&|<>()^%!\u0000-\u001F\u007F]/u;
+
+function assertSafeWindowsBatchArguments(args: string[]): void {
+  if (args.some((arg) => !arg || arg.trim() !== arg || UNSAFE_WINDOWS_BATCH_ARGUMENT.test(arg))) {
+    throw new Error("unsafe Windows batch renderer argument");
+  }
+}
+
 async function runCodexHooksRenderer(
   rendererPath: string,
   action: "register" | "unregister",
@@ -704,31 +712,39 @@ async function runCodexHooksRenderer(
   fragment?: CodexHooksConfig,
   ownedSource?: CodexHooksConfig,
 ): Promise<void> {
-  await mkdir(dirname(hooksPath), { recursive: true, mode: 0o700 });
   const nonce = `${process.pid}-${randomUUID()}`;
   const fragmentPath = join(dirname(hooksPath), `.tokenjuice-hooks-fragment-${nonce}.json`);
   const ownedSourcePath = join(dirname(hooksPath), `.tokenjuice-hooks-owned-${nonce}.json`);
+  const args = [
+    action,
+    "--integration-id",
+    CODEX_HOOK_INTEGRATION_ID,
+    "--target",
+    hooksPath,
+  ];
+  if (action === "register" && fragment) {
+    args.push("--fragment", fragmentPath);
+  }
+  if (ownedSource && Object.keys(ownedSource.hooks).length > 0) {
+    args.push("--owned-source", ownedSourcePath);
+  }
+  const isWindowsBatch = process.platform === "win32" && /\.(?:cmd|bat)$/iu.test(rendererPath);
+  const executable = isWindowsBatch ? process.env.ComSpec?.trim() || "cmd.exe" : rendererPath;
+  const executableArgs = isWindowsBatch
+    ? ["/d", "/s", "/c", "call", rendererPath, ...args]
+    : args;
+  if (isWindowsBatch) {
+    assertSafeWindowsBatchArguments([...executableArgs, fragmentPath, ownedSourcePath]);
+  }
+
+  await mkdir(dirname(hooksPath), { recursive: true, mode: 0o700 });
   try {
-    const args = [
-      action,
-      "--integration-id",
-      CODEX_HOOK_INTEGRATION_ID,
-      "--target",
-      hooksPath,
-    ];
     if (action === "register" && fragment) {
       await writeFile(fragmentPath, `${JSON.stringify(fragment, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-      args.push("--fragment", fragmentPath);
     }
     if (ownedSource && Object.keys(ownedSource.hooks).length > 0) {
       await writeFile(ownedSourcePath, `${JSON.stringify(ownedSource, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-      args.push("--owned-source", ownedSourcePath);
     }
-    const isWindowsBatch = process.platform === "win32" && /\.(?:cmd|bat)$/iu.test(rendererPath);
-    const executable = isWindowsBatch ? process.env.ComSpec?.trim() || "cmd.exe" : rendererPath;
-    const executableArgs = isWindowsBatch
-      ? ["/d", "/s", "/c", "call", rendererPath, ...args]
-      : args;
     await new Promise<void>((resolvePromise, rejectPromise) => {
       execFile(executable, executableArgs, { encoding: "utf8" }, (error, _stdout, stderr) => {
         if (!error) {

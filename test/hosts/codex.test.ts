@@ -209,8 +209,8 @@ fs.writeFileSync(${JSON.stringify(rendererArgsPath)}, JSON.stringify(args));
 
   it("launches a Windows batch renderer through ComSpec", async () => {
     const home = await createTempDir();
-    const hooksPath = join(home, "hooks.json");
-    const binDir = join(home, "bin");
+    const hooksPath = join(home, "hooks with spaces.json");
+    const binDir = join(home, "bin with spaces");
     const launcherPath = join(binDir, "tokenjuice.exe");
     const rendererPath = join(binDir, "codex-hooks.cmd");
     const commandPath = join(binDir, "cmd.exe");
@@ -251,6 +251,48 @@ fs.writeFileSync(${JSON.stringify(commandArgsPath)}, JSON.stringify(process.argv
       "--fragment",
       expect.stringContaining(".tokenjuice-hooks-fragment-"),
     ]);
+  });
+
+  it.each([
+    ["renderer", "&"],
+    ["renderer", "%"],
+    ["renderer", "\""],
+    ["renderer", "\n"],
+    ["hooks", "&"],
+    ["hooks", "%"],
+    ["hooks", "\""],
+    ["hooks", "\n"],
+  ] as const)("rejects unsafe Windows batch %s paths containing %j before mutation", async (location, unsafe) => {
+    const home = await createTempDir();
+    const binDir = join(home, location === "renderer" ? `bin${unsafe}unsafe` : "bin");
+    const hooksDir = join(home, location === "hooks" ? `hooks${unsafe}unsafe` : "hooks-target");
+    const hooksPath = join(hooksDir, "hooks.json");
+    const launcherPath = join(binDir, "tokenjuice.exe");
+    const rendererPath = join(binDir, "codex-hooks.cmd");
+    const commandPath = join(home, "cmd.exe");
+    const commandMarker = join(home, "cmd-called");
+
+    process.env.PATH = binDir;
+    process.env.ComSpec = commandPath;
+    Object.defineProperty(process, "platform", { value: "win32" });
+    await mkdir(binDir, { recursive: true });
+    await writeFile(launcherPath, "", { mode: 0o755 });
+    await writeFile(rendererPath, "@echo off\r\n", { mode: 0o755 });
+    await writeFile(
+      commandPath,
+      `#!${process.execPath}
+require("node:fs").writeFileSync(${JSON.stringify(commandMarker)}, "called");
+`,
+      { encoding: "utf8", mode: 0o755 },
+    );
+
+    await expect(installCodexHook(hooksPath, {
+      binaryPath: launcherPath,
+      featureFlagConfigPath: join(home, "config.toml"),
+    })).rejects.toThrow("unsafe Windows batch renderer argument");
+
+    expect(existsSync(commandMarker)).toBe(false);
+    expect(existsSync(hooksDir)).toBe(false);
   });
 
   it.each(["install", "uninstall"] as const)(

@@ -93,12 +93,10 @@ describe("droid hooks", () => {
       ...overrides,
     })));
 
+    const response = JSON.parse(output);
     expect(code).toBe(0);
-    if (path === "rewrite") {
-      expect(JSON.parse(output).suppressOutput).toBe(true);
-    } else {
-      expect(output).toBe("{}\n");
-    }
+    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
+    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
     expect(await readdir(home)).toEqual([]);
   });
 
@@ -136,12 +134,10 @@ describe("droid hooks", () => {
       ...(path === "early-skip" ? { tool_name: "Read" } : {}),
     })));
 
+    const response = JSON.parse(output);
     expect(code).toBe(0);
-    if (path === "rewrite") {
-      expect(JSON.parse(output).suppressOutput).toBe(true);
-    } else {
-      expect(output).toBe("{}\n");
-    }
+    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
+    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
   });
 
   it("preserves explicitly requested raw artifacts with statistics disabled", async () => {

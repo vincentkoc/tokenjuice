@@ -2,12 +2,18 @@
 
 ## Unreleased
 
+## 0.8.4 - 2026-09-13
+
 ### Fixes
 
-- Honor the statistics opt-out for Droid hook diagnostics and keep diagnostic write failures from failing hooks or duplicating their responses.
-- Bound metadata and Codex hook telemetry with retained, size-capped JSONL segments; support paged stats reads and a complete statistics opt-out without migrating or deleting legacy sidecars.
-- Preserve JSON, instruction files, database schemas, non-zero failures, combined stdout/stderr, and JSON-string exit status in the Codex hook contract.
-- Register Codex hooks through the shared `codex-hooks` renderer when available, preserve unrelated commands in standalone matcher groups, and reject mixed-group renderer migration before mutation.
+- Honor the statistics opt-out for Droid hook diagnostics and keep diagnostic write failures from failing hooks or duplicating their responses. (#230)
+- Bound metadata and Codex hook telemetry with retained, size-capped JSONL segments; support paged stats reads and a complete statistics opt-out without migrating or deleting legacy sidecars. (#228)
+- Preserve JSON, instruction files, database schemas, non-zero failures, combined stdout/stderr, and JSON-string exit status in the Codex hook contract. (#228)
+- Register Codex hooks through the shared `codex-hooks` renderer when available, preserve unrelated commands in standalone matcher groups, and reject mixed-group renderer migration before mutation. (#228)
+
+### Maintenance
+
+- Update Vitest from 4.1.9 to 4.1.11. (#229)
 
 ## 0.8.3 - 2026-09-04
 

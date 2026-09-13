@@ -1,8 +1,8 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   doctorDroidHook,
@@ -12,13 +12,30 @@ import {
 } from "../../src/index.js";
 
 const tempDirs: string[] = [];
-const originalFactoryHome = process.env.FACTORY_HOME;
+const originalEnv = {
+  FACTORY_HOME: process.env.FACTORY_HOME,
+  TOKENJUICE_ARTIFACT_DIR: process.env.TOKENJUICE_ARTIFACT_DIR,
+  TOKENJUICE_STATS: process.env.TOKENJUICE_STATS,
+  TOKENJUICE_DROID_STORE: process.env.TOKENJUICE_DROID_STORE,
+  TOKENJUICE_DROID_MAX_INLINE_CHARS: process.env.TOKENJUICE_DROID_MAX_INLINE_CHARS,
+};
+
+beforeEach(async () => {
+  const home = await createTempDir();
+  process.env.FACTORY_HOME = home;
+  process.env.TOKENJUICE_ARTIFACT_DIR = join(home, "artifacts");
+  delete process.env.TOKENJUICE_STATS;
+  delete process.env.TOKENJUICE_DROID_STORE;
+  delete process.env.TOKENJUICE_DROID_MAX_INLINE_CHARS;
+});
 
 afterEach(async () => {
-  if (originalFactoryHome === undefined) {
-    delete process.env.FACTORY_HOME;
-  } else {
-    process.env.FACTORY_HOME = originalFactoryHome;
+  for (const [name, value] of Object.entries(originalEnv)) {
+    if (value === undefined) {
+      delete process.env[name];
+    } else {
+      process.env[name] = value;
+    }
   }
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -45,7 +62,118 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   }
 }
 
+const noisyPayload = {
+  hook_event_name: "PostToolUse",
+  tool_name: "Execute",
+  tool_input: { command: "git status" },
+  tool_response: [
+    "On branch main",
+    "Changes not staged for commit:",
+    ...Array.from({ length: 20 }, (_, index) => `\tmodified:   src/file-${index}.ts`),
+    "no changes added to commit",
+  ].join("\n"),
+};
+
 describe("droid hooks", () => {
+  it.each([
+    ["rewrite", {}],
+    ["non-post-tool-use", { hook_event_name: "PreToolUse" }],
+    ["non-execute", { tool_name: "Read" }],
+    ["missing-command", { tool_input: {} }],
+    ["empty-tool-response", { tool_response: "" }],
+    ["explicit-raw-bypass", { tool_input: { command: "tokenjuice wrap --raw -- git status" } }],
+    ["unsupported-command", { tool_input: { command: "unknown-command" }, tool_response: "short output" }],
+  ])("does not create diagnostic or metadata files with stats off: %s", async (path, overrides) => {
+    const home = process.env.FACTORY_HOME!;
+    process.env.FACTORY_HOME = join(home, "unused-factory-home");
+    process.env.TOKENJUICE_STATS = "off";
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({
+      ...noisyPayload,
+      ...overrides,
+    })));
+
+    const response = JSON.parse(output);
+    expect(code).toBe(0);
+    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
+    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
+    expect(await readdir(home)).toEqual([]);
+  });
+
+  it("leaves existing diagnostics unchanged when stats are disabled", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const debugPath = join(home, "tokenjuice-hook.last.json");
+    const previous = '{"previous":"diagnostic"}\n';
+    await writeFile(debugPath, previous);
+    process.env.TOKENJUICE_STATS = "off";
+
+    await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
+    await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({ ...noisyPayload, tool_name: "Read" })));
+
+    expect(await readFile(debugPath, "utf8")).toBe(previous);
+    expect(await readdir(home)).toEqual(["tokenjuice-hook.last.json"]);
+  });
+
+  it.each([
+    ["mkdir", "rewrite"],
+    ["mkdir", "early-skip"],
+    ["write", "rewrite"],
+    ["write", "early-skip"],
+  ])("keeps exactly one hook response when diagnostic %s fails on %s", async (operation, path) => {
+    const home = process.env.FACTORY_HOME!;
+    if (operation === "mkdir") {
+      const blockedHome = join(home, "blocked-home");
+      await writeFile(blockedHome, "occupied");
+      process.env.FACTORY_HOME = blockedHome;
+    } else {
+      await mkdir(join(home, "tokenjuice-hook.last.json"));
+    }
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({
+      ...noisyPayload,
+      ...(path === "early-skip" ? { tool_name: "Read" } : {}),
+    })));
+
+    const response = JSON.parse(output);
+    expect(code).toBe(0);
+    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
+    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
+  });
+
+  it("preserves explicitly requested raw artifacts with statistics disabled", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR!;
+    process.env.TOKENJUICE_STATS = "off";
+    process.env.TOKENJUICE_DROID_STORE = "true";
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
+    const files = await readdir(artifactDir);
+    const rawFile = files.find((file) => file.endsWith(".txt"));
+
+    expect(code).toBe(0);
+    expect(JSON.parse(output).suppressOutput).toBe(true);
+    expect(files).toHaveLength(2);
+    expect(rawFile).toBeDefined();
+    expect(files).toContain(rawFile!.replace(/\.txt$/, ".json"));
+    expect(await readFile(join(artifactDir, rawFile!), "utf8")).toBe(noisyPayload.tool_response);
+    expect(await readdir(home)).toEqual(["artifacts"]);
+  });
+
+  it("keeps the error response free of diagnostics when statistics are disabled", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR!;
+    await writeFile(artifactDir, "occupied");
+    process.env.TOKENJUICE_STATS = "off";
+    process.env.TOKENJUICE_DROID_STORE = "true";
+
+    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
+
+    expect(code).toBe(0);
+    expect(output).toBe("{}\n");
+    expect(await readdir(home)).toEqual(["artifacts"]);
+    expect(await readFile(artifactDir, "utf8")).toBe("occupied");
+  });
+
   it("installs a PostToolUse hook into Factory settings.json", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");

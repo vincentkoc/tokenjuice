@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { shouldRecordStats } from "../../core/artifacts.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
@@ -292,9 +293,16 @@ function stringifyToolResponse(value: unknown): string {
 }
 
 async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
-  const debugPath = join(getFactoryHome(), "tokenjuice-hook.last.json");
-  await mkdir(dirname(debugPath), { recursive: true });
-  await writeFile(debugPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+  if (!shouldRecordStats()) {
+    return;
+  }
+  try {
+    const debugPath = join(getFactoryHome(), "tokenjuice-hook.last.json");
+    await mkdir(dirname(debugPath), { recursive: true });
+    await writeFile(debugPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+  } catch {
+    // Optional diagnostics must not fail a hook or duplicate an already-written response.
+  }
 }
 
 export async function runDroidPostToolUseHook(rawText: string): Promise<number> {

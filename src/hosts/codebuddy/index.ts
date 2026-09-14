@@ -1,8 +1,9 @@
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { homedir } from "node:os";
 
 import { extractHookCommandPaths } from "../shared/hook-command.js";
+import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
   buildWrapLauncherHookCommand,
   buildWrappedCommand,
@@ -176,22 +177,6 @@ function sanitizeCodeBuddySettings(raw: unknown): CodeBuddySettings {
   };
 }
 
-async function loadCodeBuddySettings(settingsPath: string): Promise<{ config: CodeBuddySettings; backupPath?: string }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    const config = sanitizeCodeBuddySettings(parsed);
-    const backupPath = `${settingsPath}.bak`;
-    await writeFile(backupPath, rawText, "utf8");
-    return { config, backupPath };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} } };
-    }
-    throw new Error(`failed to load codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 async function readCodeBuddySettings(settingsPath: string): Promise<{ config: CodeBuddySettings; exists: boolean }> {
   try {
     const rawText = await readFile(settingsPath, "utf8");
@@ -208,20 +193,6 @@ async function readCodeBuddySettings(settingsPath: string): Promise<{ config: Co
       };
     }
     throw new Error(`failed to read codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-async function chooseBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    try {
-      await access(candidate);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
   }
 }
 
@@ -292,7 +263,8 @@ export async function installCodeBuddyHook(
     throw new Error(TOKENJUICE_CODEBUDDY_WINDOWS_ISSUE);
   }
 
-  const { config, backupPath } = await loadCodeBuddySettings(settingsPath);
+  const settings = await readSettingsFile(settingsPath);
+  const config = sanitizeCodeBuddySettings(settings.data ? JSON.parse(settings.data.toString("utf8")) as unknown : undefined);
   const command = await buildCodeBuddyHookCommand(options);
 
   // Drop any legacy PostToolUse tokenjuice entries left behind by a prior
@@ -312,10 +284,7 @@ export async function installCodeBuddyHook(
   retained.push(createTokenjuiceCodeBuddyHook(command));
   config.hooks.PreToolUse = retained;
 
-  await mkdir(dirname(settingsPath), { recursive: true });
-  const tempPath = `${settingsPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, settingsPath);
+  const backupPath = await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`, "replace");
 
   return {
     settingsPath,
@@ -327,24 +296,11 @@ export async function installCodeBuddyHook(
 export async function uninstallCodeBuddyHook(
   settingsPath = getDefaultSettingsPath(),
 ): Promise<UninstallCodeBuddyHookResult> {
-  let rawText: string;
-  try {
-    rawText = await readFile(settingsPath, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { settingsPath, removed: false };
-    }
-    throw new Error(`failed to read codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
+  const settings = await readSettingsFile(settingsPath);
+  if (!settings.data) {
+    return { settingsPath, removed: false };
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawText) as unknown;
-  } catch (error) {
-    throw new Error(`failed to read codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  const config = sanitizeCodeBuddySettings(parsed);
+  const config = sanitizeCodeBuddySettings(JSON.parse(settings.data.toString("utf8")) as unknown);
   const removedPreToolUse = removeTokenjuiceHookEvent(config, "PreToolUse");
   const removedPostToolUse = removeTokenjuiceHookEvent(config, "PostToolUse");
   const removed = removedPreToolUse || removedPostToolUse;
@@ -353,16 +309,11 @@ export async function uninstallCodeBuddyHook(
     return { settingsPath, removed: false };
   }
 
-  const backupPath = await chooseBackupPath(settingsPath);
-  await writeFile(backupPath, rawText, "utf8");
-  await mkdir(dirname(settingsPath), { recursive: true });
-  const tempPath = `${settingsPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, settingsPath);
+  const backupPath = await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`, "preserve");
 
   return {
     settingsPath,
-    backupPath,
+    ...(backupPath ? { backupPath } : {}),
     removed: true,
   };
 }

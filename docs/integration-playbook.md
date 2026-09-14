@@ -54,6 +54,15 @@ then wire CLI + exports:
 - `src/hosts/shared/hook-doctor.ts`
   - add the host to aggregate doctor report
 
+### symlinked settings
+
+Claude Code, CodeBuddy, and Droid update the resolved settings file while preserving
+its symlink and permissions. Broken links must have their target restored before
+installing. The writer checks for changed contents or a retargeted link before
+replacing the file and asks you to retry when it detects another edit. Avoid editing
+settings concurrently with install or uninstall: portable filesystem rename cannot
+make that check and replacement atomic against another writer.
+
 ## test strategy (required)
 
 add host-specific tests and aggregate tests:

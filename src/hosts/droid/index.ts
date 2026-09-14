@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -13,6 +13,7 @@ import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
+import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 
 export type DroidHookCommandOptions = TokenjuiceHookCommandOptions;
 
@@ -88,27 +89,6 @@ async function readFactorySettings(settingsPath: string): Promise<{ config: Fact
   }
 }
 
-async function loadFactorySettingsWithBackup(settingsPath: string): Promise<{ config: FactorySettings; backupPath?: string }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const backupPath = `${settingsPath}.bak`;
-    await writeFile(backupPath, rawText, "utf8");
-    return { config: sanitizeFactorySettings(JSON.parse(rawText) as unknown), backupPath };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} } };
-    }
-    throw error;
-  }
-}
-
-async function writeFactorySettings(settingsPath: string, config: FactorySettings): Promise<void> {
-  await mkdir(dirname(settingsPath), { recursive: true });
-  const tempPath = `${settingsPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, settingsPath);
-}
-
 function isTokenjuiceDroidHook(entry: unknown): boolean {
   return isRecord(entry)
     && typeof entry.command === "string"
@@ -178,12 +158,13 @@ export async function installDroidHook(
   settingsPath = getDefaultSettingsPath(),
   options: DroidHookCommandOptions = {},
 ): Promise<InstallDroidHookResult> {
-  const { config, backupPath } = await loadFactorySettingsWithBackup(settingsPath);
+  const settings = await readSettingsFile(settingsPath);
+  const config = sanitizeFactorySettings(settings.data ? JSON.parse(settings.data.toString("utf8")) as unknown : undefined);
   const command = await buildTokenjuiceHookCommand(TOKENJUICE_DROID_SUBCOMMAND, "droid", options);
   removeTokenjuiceDroidHooks(config);
   const postToolUse = getPostToolUseGroups(config);
   config.hooks.PostToolUse = [...postToolUse, createDroidPostToolUseHook(command)];
-  await writeFactorySettings(settingsPath, config);
+  const backupPath = await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`, "replace");
   return {
     settingsPath,
     ...(backupPath ? { backupPath } : {}),
@@ -194,13 +175,14 @@ export async function installDroidHook(
 export async function uninstallDroidHook(
   settingsPath = getDefaultSettingsPath(),
 ): Promise<UninstallDroidHookResult> {
-  const { config, exists } = await readFactorySettings(settingsPath);
-  if (!exists) {
+  const settings = await readSettingsFile(settingsPath);
+  if (!settings.data) {
     return { settingsPath, removed: 0 };
   }
+  const config = sanitizeFactorySettings(JSON.parse(settings.data.toString("utf8")) as unknown);
   const removed = removeTokenjuiceDroidHooks(config);
   if (removed > 0) {
-    await writeFactorySettings(settingsPath, config);
+    await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`);
   }
   return { settingsPath, removed };
 }

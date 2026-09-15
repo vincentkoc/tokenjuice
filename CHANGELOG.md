@@ -2,11 +2,15 @@
 
 ## Unreleased
 
-## 0.8.4 - 2026-09-13
+## 0.8.5 - 2026-09-15
 
 ### Fixes
 
-- Preserve symlinked Claude Code, CodeBuddy, and Droid settings targets and file permissions when installing or removing hooks.
+- Preserve symlinked Claude Code, CodeBuddy, and Droid settings targets and file permissions when installing or removing hooks. (#232)
+
+## 0.8.4 - 2026-09-13
+
+### Fixes
 
 - Honor the statistics opt-out for Droid hook diagnostics and keep diagnostic write failures from failing hooks or duplicating their responses. (#230)
 - Bound metadata and Codex hook telemetry with retained, size-capped JSONL segments; support paged stats reads and a complete statistics opt-out without migrating or deleting legacy sidecars. (#228)

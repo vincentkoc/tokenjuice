@@ -11,6 +11,19 @@ const MAX_STORE_FILES = 10_000;
 const MAX_SEGMENT_BYTES = 64 * 1024 * 1024;
 const DIRECTORY_ENTRY_SLACK = 256;
 
+
+async function closeDirectoryHandle(directoryHandle: { close?: () => void | Promise<void> }): Promise<void> {
+  const close = directoryHandle.close;
+  if (typeof close !== "function") {
+    return;
+  }
+  try {
+    await close.call(directoryHandle);
+  } catch {
+    // Best-effort close; some runtimes (e.g. Bun) omit Dir.close.
+  }
+}
+
 export type BoundedJsonlOptions = {
   retentionDays?: number;
   shardCount?: number;
@@ -189,7 +202,7 @@ async function pruneExpiredSegments(
       }
     }
   } finally {
-    await directoryHandle.close().catch(() => {});
+    await closeDirectoryHandle(directoryHandle);
   }
 }
 
@@ -215,7 +228,7 @@ async function countOwnedSegments(
       }
     }
   } finally {
-    await directoryHandle.close().catch(() => {});
+    await closeDirectoryHandle(directoryHandle);
   }
   return { count, complete: true };
 }
@@ -385,7 +398,7 @@ export async function readBoundedJsonlPage<T>(
         }
       }
     } finally {
-      await directoryHandle.close().catch(() => {});
+      await closeDirectoryHandle(directoryHandle);
     }
     names.sort().reverse();
   } catch (error) {

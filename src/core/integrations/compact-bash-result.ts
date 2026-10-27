@@ -162,6 +162,20 @@ function getWrappedCommandArgv(argv: string[]): string[] | null {
   return null;
 }
 
+
+const WINDOWS_EXECUTABLE_SUFFIXES = [".exe", ".cmd", ".bat", ".com"];
+
+function normalizeSkipCommandName(name: string): string {
+  let normalized = name.trim().toLowerCase();
+  for (const suffix of WINDOWS_EXECUTABLE_SUFFIXES) {
+    if (normalized.endsWith(suffix)) {
+      normalized = normalized.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return normalized;
+}
+
 export function shouldSkipCommand(command: string, skipCommandNames?: readonly string[]): boolean {
   if (!skipCommandNames?.length) {
     return false;
@@ -184,7 +198,12 @@ export function shouldSkipCommand(command: string, skipCommandNames?: readonly s
       continue;
     }
     const commandName = getCommandName(argv);
-    if (commandName && skipCommandNames.includes(commandName)) {
+    if (
+      commandName
+      && skipCommandNames.some(
+        (skipName) => normalizeSkipCommandName(skipName) === normalizeSkipCommandName(commandName),
+      )
+    ) {
       return true;
     }
     const wrappedArgv = getWrappedCommandArgv(argv);

@@ -81,67 +81,70 @@ async function loadFullOutputText(fullOutputPath: string): Promise<string | null
 }
 
 export function createTokenjuiceOpenCodeExtension(_config: OpenCodeExtensionRuntimeConfig = {}) {
-  return async function tokenjuiceOpenCodeExtension(_context?: unknown): Promise<OpenCodeHooks> {
-    return {
-      "tool.execute.after": async (input, output) => {
-        if (input.tool !== "bash") {
-          return;
-        }
+  return {
+    id: "tokenjuice",
+    async setup(_context?: unknown): Promise<OpenCodeHooks> {
+      return {
+        "tool.execute.after": async (input, output) => {
+          if (input.tool !== "bash") {
+            return;
+          }
 
-        const command = readCommand(input.args);
-        if (!command) {
-          return;
-        }
+          const command = readCommand(input.args);
+          if (!command) {
+            return;
+          }
 
-        const outputText = typeof output.output === "string" ? output.output : "";
-        if (!outputText.trim()) {
-          return;
-        }
+          const outputText = typeof output.output === "string" ? output.output : "";
+          if (!outputText.trim()) {
+            return;
+          }
 
-        const cwd = readCwd(input.args);
-        const fullOutputPath = extractFullOutputPath(output.metadata);
-        const trustedFullOutputText = fullOutputPath
-          ? await loadFullOutputText(fullOutputPath)
-          : undefined;
-        if (fullOutputPath && trustedFullOutputText === null) {
-          return;
-        }
+          const cwd = readCwd(input.args);
+          const fullOutputPath = extractFullOutputPath(output.metadata);
+          const trustedFullOutputText = fullOutputPath
+            ? await loadFullOutputText(fullOutputPath)
+            : undefined;
+          if (fullOutputPath && trustedFullOutputText === null) {
+            return;
+          }
 
-        let outcome;
-        try {
-          outcome = await compactBashResult({
-            source: "opencode",
-            command,
-            ...(cwd ? { cwd } : {}),
-            visibleText: outputText,
-            ...(typeof trustedFullOutputText === "string"
-              ? { trustedFullText: trustedFullOutputText }
-              : {}),
-            maxInlineChars: DEFAULT_MAX_INLINE_CHARS,
-            inspectionPolicy: "allow-safe-inventory",
-            minSavedCharsAny: 8,
-            genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
-            genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
-            skipGenericFallbackForCompoundCommands: true,
-            metadata: { source: "opencode-tool-result" },
-          });
-        } catch (error) {
-          throw new Error(`tokenjuice failed to compact OpenCode bash output: ${formatErrorMessage(error)}`);
-        }
+          let outcome;
+          try {
+            outcome = await compactBashResult({
+              source: "opencode",
+              command,
+              ...(cwd ? { cwd } : {}),
+              visibleText: outputText,
+              ...(typeof trustedFullOutputText === "string"
+                ? { trustedFullText: trustedFullOutputText }
+                : {}),
+              maxInlineChars: DEFAULT_MAX_INLINE_CHARS,
+              inspectionPolicy: "allow-safe-inventory",
+              minSavedCharsAny: 8,
+              genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
+              genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
+              skipGenericFallbackForCompoundCommands: true,
+              metadata: { source: "opencode-tool-result" },
+            });
+          } catch (error) {
+            throw new Error(`tokenjuice failed to compact OpenCode bash output: ${formatErrorMessage(error)}`);
+          }
 
-        if (outcome.action === "keep") {
-          return;
-        }
+          if (outcome.action === "keep") {
+            return;
+          }
 
-        output.output = `${outcome.result.inlineText}\n\n[${buildCompactionNotice(outcome.result, fullOutputPath)}]`;
+          output.output = `${outcome.result.inlineText}\n\n[${buildCompactionNotice(outcome.result, fullOutputPath)}]`;
 
-        const tokenjuiceDetails = buildTokenjuiceDetails(outcome.result);
-        if (isRecord(output.metadata)) {
-          (output.metadata as Record<string, unknown>).tokenjuice = tokenjuiceDetails;
-        } else {
-          (output as { metadata: unknown }).metadata = { tokenjuice: tokenjuiceDetails };
-        }
-      },
-    };
+          const tokenjuiceDetails = buildTokenjuiceDetails(outcome.result);
+          if (isRecord(output.metadata)) {
+            (output.metadata as Record<string, unknown>).tokenjuice = tokenjuiceDetails;
+          } else {
+            (output as { metadata: unknown }).metadata = { tokenjuice: tokenjuiceDetails };
+          }
+        },
+      };
+    },
   };
 }

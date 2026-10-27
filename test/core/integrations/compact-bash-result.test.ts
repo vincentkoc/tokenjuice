@@ -64,6 +64,82 @@ describe("compactBashResult", () => {
     expect(rewritten.result.inlineText).not.toContain("truncated output");
   });
 
+  it.each([
+    "rtk git status",
+    "/usr/local/bin/rtk git status",
+    "cd /repo && env DEBUG=1 rtk git status",
+    "rtk git status | tee output.txt",
+    "bash -lc 'rtk git status'",
+    "env DEBUG=1 bash -lc 'rtk git status'",
+    "cd /repo && bash -lc 'rtk git status'",
+    "timeout 30 rtk git status",
+    "timeout -- 30 rtk git status",
+    "nice -n 10 rtk rg foo",
+    "time -p rtk git status",
+    "nohup rtk git status",
+    "command rtk git status",
+    "command -p -- rtk git status",
+    "command rtk -v",
+  ])("keeps configured commands raw: %s", async (command) => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command,
+      visibleText: Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${"x".repeat(80)}`).join("\n"),
+      skipCommandNames: ["rtk"],
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "keep",
+      reason: "configured-command",
+    });
+  });
+
+  it.each([
+    "RTK git status",
+    "rtk.exe git status",
+    "/usr/local/bin/RTK.exe git status",
+    "cd /repo && env DEBUG=1 RTK git status",
+  ])("matches configured commands case-insensitively and with executable suffixes: %s", async (command) => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command,
+      visibleText: Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${"x".repeat(80)}`).join("\n"),
+      skipCommandNames: ["rtk"],
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "keep",
+      reason: "configured-command",
+    });
+  });
+
+  it.each([
+    "rtk-helper git status",
+    "echo rtk",
+    "timeout 30 cat rtk",
+    "nice -n 10 grep x rtk",
+    "command -v rtk",
+    "command -V rtk",
+  ])("does not match non-command arguments: %s", async (command) => {
+    const outcome = await compactBashResult({
+      source: "pi",
+      command,
+      visibleText: Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${"x".repeat(80)}`).join("\n"),
+      skipCommandNames: ["rtk"],
+      genericFallbackMinSavedChars: 120,
+      genericFallbackMaxRatio: 0.75,
+      skipGenericFallbackForCompoundCommands: true,
+    });
+
+    expect(outcome).not.toMatchObject({ reason: "configured-command" });
+  });
+
   it("skips repository inspection commands before compaction when requested", async () => {
     const outcome = await compactBashResult({
       source: "pi",

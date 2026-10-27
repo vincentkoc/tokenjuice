@@ -8,6 +8,7 @@ export type PiExtensionCommandOptions = {
   local?: boolean;
   binaryPath?: string;
   nodePath?: string;
+  skipCommandNames?: string[];
 };
 
 export type InstallPiExtensionResult = {
@@ -33,6 +34,7 @@ export type PiDoctorReport = {
 
 type PiExtensionRuntimeConfig = {
   extensionCommand: string;
+  skipCommandNames?: string[];
 };
 
 const TOKENJUICE_PI_EXTENSION_COMMAND = "tj";
@@ -182,6 +184,9 @@ export async function installPiExtension(
 ): Promise<InstallPiExtensionResult> {
   const runtimeConfig: PiExtensionRuntimeConfig = {
     extensionCommand: TOKENJUICE_PI_EXTENSION_COMMAND,
+    ...(options.skipCommandNames?.length
+      ? { skipCommandNames: [...new Set(options.skipCommandNames)] }
+      : {}),
   };
   const runtimeSource = await loadPiExtensionRuntimeSource(Boolean(options.local));
   const extensionSource = buildPiExtensionSource(runtimeSource, runtimeConfig);

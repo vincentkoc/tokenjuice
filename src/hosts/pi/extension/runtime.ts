@@ -1,6 +1,10 @@
 import { readFile, stat } from "node:fs/promises";
 
-import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../../core/integrations/compact-bash-result.js";
+import {
+  compactBashResult,
+  getOutputAwareInspectionSkipReason,
+  shouldSkipCommand,
+} from "../../../core/integrations/compact-bash-result.js";
 
 import type { Pi, PiContext, PiToolResultEvent } from "./pi-types.js";
 import { isRecord } from "./pi-types.js";
@@ -21,6 +25,7 @@ import { formatErrorMessage } from "./utils.js";
 
 export type PiExtensionRuntimeConfig = {
   extensionCommand: string;
+  skipCommandNames?: string[];
 };
 
 const DEFAULT_MAX_INLINE_CHARS = 1200;
@@ -155,6 +160,9 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
       if (!enabled || !autoCompactEnabled || !command) {
         return undefined;
       }
+      if (shouldSkipCommand(command, config.skipCommandNames)) {
+        return undefined;
+      }
 
       const outputText = extractTextContent(event.content);
       if (!outputText.trim()) {
@@ -204,6 +212,7 @@ export function createTokenjuicePiExtension(config: PiExtensionRuntimeConfig) {
           skipGenericFallbackForCompoundCommands: true,
           storeRaw: true,
           ...(artifactDir ? { storeDir: artifactDir } : {}),
+          ...(config.skipCommandNames ? { skipCommandNames: config.skipCommandNames } : {}),
           metadata: {
             source: "pi-tool-result",
           },

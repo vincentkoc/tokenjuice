@@ -41,7 +41,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isExecLikeToolName(toolName: string | undefined): boolean {
-  return toolName === "exec" || toolName === "bash";
+  return (
+    toolName === "exec"
+    || toolName === "bash"
+    || toolName === "gateway_exec"
+    || toolName === "node_exec"
+  );
 }
 
 function readCommand(input: unknown): string {

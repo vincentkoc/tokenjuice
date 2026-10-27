@@ -52,6 +52,7 @@ async function installLocalTestExtension(
   options: {
     agentSettings?: unknown;
     projectSettings?: unknown;
+    skipCommandNames?: string[];
   } = {},
 ) {
   const extensionPath = join(home, "tokenjuice.js");
@@ -81,6 +82,7 @@ async function installLocalTestExtension(
     local: true,
     binaryPath: localCliPath,
     nodePath: process.execPath,
+    skipCommandNames: options.skipCommandNames,
   });
 
   const imported = await import(pathToFileURL(extensionPath).href + `?t=${Date.now()}-${Math.random()}`);
@@ -154,6 +156,18 @@ describe("installPiExtension", () => {
     expect(extensionSource).not.toContain("reduceJsonCommand");
     expect(extensionSource).not.toContain("tokenjuice-runtime.js");
     expect(await readOptional(join(agentDir, "extensions", "tokenjuice-runtime.js"))).toBeUndefined();
+  });
+
+  it("embeds deduplicated skipped command names", async () => {
+    const home = await createTempDir();
+    const extensionPath = join(home, "tokenjuice.js");
+
+    await installPiExtension(extensionPath, {
+      skipCommandNames: ["rtk", "other", "rtk"],
+    });
+
+    const extensionSource = await readFile(extensionPath, "utf8");
+    expect(extensionSource).toContain(`"skipCommandNames": [\n    "rtk",\n    "other"\n  ]`);
   });
 
   it("removes the legacy sibling runtime file during install", async () => {
@@ -939,6 +953,30 @@ describe("installPiExtension", () => {
       ),
     ).rejects.toThrow(`tokenjuice failed to stat bash full output file ${missingOutputPath}`);
     expect(await readOptional(markerPath)).toBeUndefined();
+  });
+
+  it("keeps configured commands raw", async () => {
+    const home = await createTempDir();
+    const { handlers, fakeCtx } = await installLocalTestExtension(
+      home,
+      "process.exit(7);",
+      { skipCommandNames: ["rtk"] },
+    );
+
+    const result = await handlers.get("tool_result")?.(
+      {
+        toolName: "bash",
+        input: { command: "cd /repo && env DEBUG=1 bash -lc 'rtk git status'" },
+        content: [{
+          type: "text",
+          text: Array.from({ length: 40 }, (_, index) => `line ${index + 1} ${"x".repeat(80)}`).join("\n"),
+        }],
+        details: { fullOutputPath: join(home, "missing-output.txt") },
+      },
+      fakeCtx,
+    );
+
+    expect(result).toBeUndefined();
   });
 
   it("skips file-content inspection commands before reading fullOutputPath", async () => {

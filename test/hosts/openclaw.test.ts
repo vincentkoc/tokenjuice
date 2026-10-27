@@ -45,6 +45,52 @@ describe("OpenClaw adapter", () => {
     expect(result?.details?.tokenjuice?.compacted).toBe(true);
   });
 
+
+  it.each(["gateway_exec", "node_exec"] as const)(
+    "compacts OpenClaw %s projection tool results like exec",
+    async (toolName) => {
+      const embeddedExtension = createTokenjuiceOpenClawEmbeddedExtension();
+
+      const handlers = new Map<string, Function>();
+      embeddedExtension({
+        on(event: string, handler: Function) {
+          handlers.set(event, handler);
+        },
+      });
+
+      const result = await handlers.get("tool_result")?.(
+        {
+          toolName,
+          input: {
+            command: "git status",
+            workdir: "/tmp/openclaw",
+          },
+          details: {
+            status: "completed",
+            exitCode: 0,
+            durationMs: 42,
+            cwd: "/tmp/openclaw",
+            aggregated: [
+              "On branch feat/openclaw-plugin",
+              "",
+              "Changes not staged for commit:",
+              "\tmodified:   src/hosts/openclaw/index.ts",
+              "\tmodified:   src/hosts/openclaw/extension.ts",
+              "",
+              "no changes added to commit",
+            ].join("\n"),
+          },
+          isError: false,
+        },
+        { cwd: "/tmp/openclaw" },
+      );
+
+      expect(result?.content[0].text).toContain("M: src/hosts/openclaw/index.ts");
+      expect(result?.content[0].text).toContain("tokenjuice compacted bash output");
+      expect(result?.details?.tokenjuice?.compacted).toBe(true);
+    },
+  );
+
   it("ignores non-exec tool results", async () => {
     const embeddedExtension = createTokenjuiceOpenClawEmbeddedExtension();
 

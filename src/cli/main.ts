@@ -179,6 +179,7 @@ type ParsedArgs = {
   wrapLauncher: string | undefined;
   trace: boolean;
   printInstructions: boolean;
+  skipCommandNames: string[];
   positionals: string[];
   passthrough: string[];
 };
@@ -279,7 +280,7 @@ function printUsage(): void {
       "  tokenjuice install openhands [--local]",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
-      "  tokenjuice install pi [--local]",
+      "  tokenjuice install pi [--local] [--skip-command <name>]",
       "  tokenjuice install pi-go",
       "  tokenjuice install plandex",
       "  tokenjuice install qodo",
@@ -441,6 +442,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let wrapLauncher: string | undefined;
   let trace = false;
   let printInstructions = false;
+  const skipCommandNames: string[] = [];
 
   let index = 1;
   while (index < argv.length) {
@@ -601,6 +603,13 @@ export function parseArgs(argv: string[]): ParsedArgs {
         printInstructions = true;
         index += 1;
         break;
+      case "--skip-command":
+        if (!next?.trim() || /\s/u.test(next)) {
+          throw new Error("--skip-command requires one command name");
+        }
+        skipCommandNames.push(next);
+        index += 2;
+        break;
       default:
         throw new Error(`unknown flag: ${current}`);
     }
@@ -640,6 +649,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     wrapLauncher,
     trace,
     printInstructions,
+    skipCommandNames,
     positionals,
     passthrough,
   };
@@ -2542,7 +2552,10 @@ async function runInstall(args: ParsedArgs): Promise<number> {
   }
 
   if (target === "pi") {
-    const result = await installPiExtension(undefined, { local: args.local });
+    const result = await installPiExtension(undefined, {
+      local: args.local,
+      skipCommandNames: args.skipCommandNames,
+    });
     if (args.format === "json") {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return 0;
@@ -2553,6 +2566,9 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     ];
     if (result.backupPath) {
       details.push({ label: "Backup", value: result.backupPath });
+    }
+    if (args.skipCommandNames.length > 0) {
+      details.push({ label: "Skipped commands", value: [...new Set(args.skipCommandNames)].join(", ") });
     }
     details.push({ label: "Reload", value: "/reload" });
     details.push({ label: "Usage in pi", value: "/tj status | /tj on | /tj off | /tj raw-next" });

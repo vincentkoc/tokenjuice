@@ -77,6 +77,13 @@ describe("parseArgs", () => {
     expect(parseArgs(["wrap", "--no-stats", "--", "echo", "hi"]).noStats).toBe(true);
     expect(parseArgs(["reduce", "--no-stats"]).noStats).toBe(true);
   });
+
+  it("parses repeatable skipped command names", () => {
+    expect(parseArgs(["install", "pi", "--skip-command", "rtk", "--skip-command", "other"]).skipCommandNames)
+      .toEqual(["rtk", "other"]);
+    expect(() => parseArgs(["install", "pi", "--skip-command", "rtk helper"]))
+      .toThrow("--skip-command requires one command name");
+  });
 });
 
 describe("formatStatsSources", () => {

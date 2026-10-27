@@ -68,8 +68,13 @@ type FakeToolOutput = {
 async function loadInstalledHook(extensionPath: string) {
   const importUrl = `${pathToFileURL(extensionPath).href}?t=${Date.now()}-${Math.random()}`;
   const imported = await import(importUrl);
-  expect(typeof imported.default).toBe("function");
-  const hooks = await imported.default({});
+  expect(imported.default).toEqual(
+    expect.objectContaining({
+      id: "tokenjuice",
+      setup: expect.any(Function),
+    }),
+  );
+  const hooks = await imported.default.setup({});
   expect(typeof hooks?.["tool.execute.after"]).toBe("function");
   return hooks["tool.execute.after"] as (input: FakeToolInput, output: FakeToolOutput) => Promise<void>;
 }

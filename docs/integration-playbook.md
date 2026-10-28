@@ -43,11 +43,15 @@ for a new host adapter in `src/hosts/<host>/index.ts`:
 
 then wire CLI + exports:
 
+- `src/cli/install-commands.ts`, `src/cli/uninstall-commands.ts`, `src/cli/doctor-commands.ts`
+  - add a handler for `install <host>`, `uninstall <host>`, and `doctor <host>`
+  - register it (and any alias) in `installCommands`, `uninstallCommands`, and `doctorCommands`
 - `src/cli/main.ts`
-  - `install <host>`
-  - `doctor <host>`
+  - the "currently supports" host lists in `runInstall` / `runUninstall`
   - usage text
   - runtime hook entry command if needed
+- `test/cli/host-commands.test.ts`
+  - add the host (and aliases) to `HOST_TARGETS` and record its transcript with `pnpm exec vitest run test/cli/host-commands.test.ts -u`
 - `src/index.ts`
   - runtime/install/doctor exports
   - result/report type exports

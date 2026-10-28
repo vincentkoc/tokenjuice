@@ -35,7 +35,7 @@ export type CompactBashResultInput = {
   skipCommandNames?: readonly string[];
 } & RewritePolicyOptions;
 
-export type CompactBashResultKeepReason =
+type CompactBashResultKeepReason =
   | "empty-output"
   | InspectionCommandSkipReason
   | "configured-command"

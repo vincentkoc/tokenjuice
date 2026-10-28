@@ -4,7 +4,6 @@ export {
   buildTokenjuiceDetails,
   extractTextContent,
   mergeDetails,
-  type TokenjuiceDetails,
 } from "../../shared/tool-result.js";
 import { isRecord } from "./pi-types.js";
 

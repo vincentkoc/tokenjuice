@@ -1,4 +1,4 @@
-export type PiEntry = {
+type PiEntry = {
   type?: string;
   customType?: string;
   data?: unknown;
@@ -19,7 +19,7 @@ export type PiTheme = {
   fg(name: string, text: string): string;
 };
 
-export type PiSessionHeader = {
+type PiSessionHeader = {
   cwd: string;
 };
 

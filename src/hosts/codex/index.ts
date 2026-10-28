@@ -101,7 +101,7 @@ export type CodexFeatureFlagStatus = {
   fixHint: string;
 };
 
-export type CodexRuntimeConfigStatus = {
+type CodexRuntimeConfigStatus = {
   /** Absolute path we scanned (`~/.codex/config.toml` by default). */
   configPath: string;
   /** Whether the config file exists on disk. */
@@ -131,7 +131,7 @@ function validateCodexOmissionPolicy(options: { noOmit?: boolean; allowOmit?: bo
   }
 }
 
-export type CodexHookCommandDiagnostic = {
+type CodexHookCommandDiagnostic = {
   location: string;
   command: string;
   checkedPaths: string[];

@@ -198,7 +198,7 @@ import type { WindsurfDoctorReport } from "../windsurf/index.js";
 import type { ZedDoctorReport } from "../zed/index.js";
 import type { ZencoderDoctorReport, ZencoderRuleOptions } from "../zencoder/index.js";
 
-export type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
+type HookHealthStatus = "ok" | "warn" | "broken" | "disabled";
 
 export type HookIntegrationDoctorReport = {
   adal: AdalDoctorReport;

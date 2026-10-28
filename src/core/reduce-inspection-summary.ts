@@ -5,7 +5,7 @@ import type { ToolExecutionInput } from "../types.js";
 
 const PACKAGE_LOCK_RE = /\bpackage-lock\.json\b/u;
 
-export type InspectionSummaryReducerId = "generic/package-lock-summary";
+type InspectionSummaryReducerId = "generic/package-lock-summary";
 
 export type InspectionSummary = {
   lines: string[];

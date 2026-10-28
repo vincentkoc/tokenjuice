@@ -27,7 +27,7 @@ import {
   shellQuote,
 } from "./hook-command.js";
 
-export type WrapLauncherOptions = {
+type WrapLauncherOptions = {
   /** When true, bypass the `PATH` lookup for an installed tokenjuice binary and route through the caller's build. */
   local?: boolean;
   /** Override the binary/entrypoint path. Defaults to `process.argv[1]`. */

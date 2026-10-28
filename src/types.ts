@@ -17,19 +17,19 @@ export type ToolExecutionInput = {
   metadata?: Record<string, unknown>;
 };
 
-export type RuleCounter = {
+type RuleCounter = {
   name: string;
   pattern: string;
   flags?: string;
 };
 
-export type RuleOutputMatch = {
+type RuleOutputMatch = {
   pattern: string;
   message: string;
   flags?: string;
 };
 
-export type RuleMatch = {
+type RuleMatch = {
   toolNames?: string[];
   argv0?: string[];
   gitSubcommands?: string[];
@@ -39,24 +39,24 @@ export type RuleMatch = {
   commandIncludesAny?: string[];
 };
 
-export type RuleFilters = {
+type RuleFilters = {
   skipPatterns?: string[];
   keepPatterns?: string[];
 };
 
-export type RuleTransforms = {
+type RuleTransforms = {
   stripAnsi?: boolean;
   prettyPrintJson?: boolean;
   dedupeAdjacent?: boolean;
   trimEmptyEdges?: boolean;
 };
 
-export type RuleSummarize = {
+type RuleSummarize = {
   head?: number;
   tail?: number;
 };
 
-export type RuleFailure = {
+type RuleFailure = {
   preserveOnFailure?: boolean;
   head?: number;
   tail?: number;
@@ -201,8 +201,6 @@ export type ReduceOptions = {
   storeDir?: string;
   cwd?: string;
 };
-
-export type ReduceExecutionResult = CompactResult;
 
 export type ReduceJsonRequest = {
   input: ToolExecutionInput;

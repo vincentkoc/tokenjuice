@@ -1,4 +1,4 @@
-import type { JsonRule, RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleOutputMatch, RuleSummarize, RuleTransforms } from "../types.js";
+import type { JsonRule } from "../types.js";
 
 type ValidationResult = {
   ok: true;
@@ -230,4 +230,3 @@ export function assertValidRule(raw: unknown): asserts raw is JsonRule {
   }
 }
 
-export type { RuleCounter, RuleFailure, RuleFilters, RuleMatch, RuleOutputMatch, RuleSummarize, RuleTransforms };

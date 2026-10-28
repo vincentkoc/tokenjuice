@@ -16,12 +16,12 @@ export type RemoveInstructionFileResult = {
   removed: boolean;
 };
 
-export type GuidanceIssueCheck = {
+type GuidanceIssueCheck = {
   requiredText: string;
   missingIssue: string;
 };
 
-export type ForbiddenGuidanceCheck = {
+type ForbiddenGuidanceCheck = {
   forbiddenText: string;
   presentIssue: string;
 };

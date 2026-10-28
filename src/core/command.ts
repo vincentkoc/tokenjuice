@@ -6,7 +6,6 @@ export {
   tokenizeCommand,
 } from "./command-shell.js";
 
-export type { CommandMatchCandidate } from "./command-match.js";
 export {
   deriveCommandMatchCandidates,
   getEffectiveCommandArgv,

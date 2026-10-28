@@ -29,7 +29,7 @@ export type HookCommandInspection = {
   packageVersionMismatch?: HookCommandPackageVersionMismatch;
 };
 
-export type HookCommandDoctorStatus = "ok" | "broken" | "disabled";
+type HookCommandDoctorStatus = "ok" | "broken" | "disabled";
 
 export type HookCommandDoctorFields = {
   status: HookCommandDoctorStatus;

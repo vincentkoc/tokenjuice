@@ -233,10 +233,6 @@ export function clampTextWithMetadata(text: string, maxChars: number, noOmit = f
   };
 }
 
-export function clampTextMiddle(text: string, maxChars: number): string {
-  return clampTextMiddleWithMetadata(text, maxChars).text;
-}
-
 export function clampTextMiddleWithMetadata(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
   if (countTextChars(text) <= maxChars) {
     return { text };

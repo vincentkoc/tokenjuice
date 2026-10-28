@@ -46,7 +46,7 @@ export async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-export async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
+async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
   const pathValue = process.env.PATH;
   if (!pathValue) {
     return undefined;

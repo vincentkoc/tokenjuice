@@ -1,4 +1,4 @@
-export function buildCompactionHint(rawRefId?: string): string {
+function buildCompactionHint(rawRefId?: string): string {
   if (rawRefId) {
     return `raw saved: \`tokenjuice cat ${rawRefId}\`.`;
   }

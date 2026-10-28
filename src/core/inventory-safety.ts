@@ -368,7 +368,7 @@ export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "a
   return false;
 }
 
-export function hasCommandOnlyFileContentSummary(command: string): boolean {
+function hasCommandOnlyFileContentSummary(command: string): boolean {
   const effectiveCommand = stripLeadingCdPrefix(command);
   return /\bpackage-lock\.json\b/u.test(effectiveCommand);
 }

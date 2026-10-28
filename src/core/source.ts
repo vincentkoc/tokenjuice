@@ -1,7 +1,7 @@
 import type { ToolExecutionInput } from "../types.js";
 
 export const UNKNOWN_ARTIFACT_SOURCE = "unknown";
-export const DEFAULT_CLI_ARTIFACT_SOURCE = "cli";
+const DEFAULT_CLI_ARTIFACT_SOURCE = "cli";
 
 export function normalizeArtifactSource(value: unknown): string | null {
   if (typeof value !== "string") {

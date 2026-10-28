@@ -286,7 +286,7 @@ export function parseCodexFeatureFlag(
   return { keyPresent: false, value: null };
 }
 
-export async function inspectCodexRuntimeConfig(
+async function inspectCodexRuntimeConfig(
   configPath: string = getDefaultCodexConfigPath(),
 ): Promise<CodexRuntimeConfigStatus> {
   let source: string;

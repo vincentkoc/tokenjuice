@@ -182,7 +182,7 @@ function getSshRemoteCommand(argv: string[]): string | null {
   return null;
 }
 
-export function isFileContentInspectionArgv(argv: string[]): boolean {
+function isFileContentInspectionArgv(argv: string[]): boolean {
   const argv0 = getCommandName(argv);
   if (!argv0) {
     return false;
@@ -200,7 +200,7 @@ function isGhApiContentsDecodeCommand(command: string | undefined): boolean {
     && /\|\s*base64\s+(?:-[dD]\b|--decode\b)/u.test(command);
 }
 
-export function isRepositoryInspectionArgv(argv: string[]): boolean {
+function isRepositoryInspectionArgv(argv: string[]): boolean {
   const argv0 = getCommandName(argv);
   if (!argv0) {
     return false;

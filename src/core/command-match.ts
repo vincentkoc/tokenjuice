@@ -174,7 +174,7 @@ export function getSourcePriority(source: CommandMatchSource): number {
   }
 }
 
-export function getCandidateArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
+function getCandidateArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
   if (input.argv?.length) {
     return input.argv;
   }
@@ -200,7 +200,7 @@ function buildCandidate(
   };
 }
 
-export function dedupeCandidates(candidates: CommandMatchCandidate[]): CommandMatchCandidate[] {
+function dedupeCandidates(candidates: CommandMatchCandidate[]): CommandMatchCandidate[] {
   const deduped: CommandMatchCandidate[] = [];
   const indexes = new Map<string, number>();
 
@@ -457,7 +457,7 @@ function stripLeadingSetupSegment(command: string): string | null {
   return trimmed.slice(index).trim() || null;
 }
 
-export function buildEffectiveCandidate(
+function buildEffectiveCandidate(
   argv: string[],
   transformed: boolean,
   command?: string,

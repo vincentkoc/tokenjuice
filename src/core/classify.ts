@@ -154,7 +154,7 @@ function compareSelections(left: RuleMatchSelection<RuleLike>, right: RuleMatchS
   return getJsonRule(left.rule).id.localeCompare(getJsonRule(right.rule).id);
 }
 
-export function findBestRuleMatch<T extends RuleLike>(
+function findBestRuleMatch<T extends RuleLike>(
   input: ToolExecutionInput,
   rules: T[],
 ): RuleMatchSelection<T> | undefined {

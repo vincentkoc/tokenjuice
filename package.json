@@ -57,7 +57,7 @@
     "repair:pnpm-bin-shims": "node scripts/repair-pnpm-bin-shims.mjs",
     "build": "node scripts/clean-dist.mjs && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && node scripts/build-opencode-runtime.mjs && node scripts/copy-rules.mjs",
     "lint": "oxlint --deny-warnings src test scripts",
-    "lint:circular": "madge --circular --extensions ts,mjs --ts-config tsconfig.json src",
+    "lint:circular": "madge --circular --extensions ts,mjs src",
     "release:artifacts": "node scripts/build-release.mjs",
     "release:checksums": "node scripts/write-checksums.mjs",
     "release:formula": "node scripts/generate-homebrew-formula.mjs",
@@ -74,7 +74,7 @@
     "madge": "^8.0.0",
     "oxlint": "^1.90.0",
     "publint": "^0.3.25",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "5.0.5",
     "vite": "8.3.5"
   },

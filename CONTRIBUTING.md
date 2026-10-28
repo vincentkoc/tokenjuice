@@ -4,7 +4,7 @@ Thanks for helping. This file covers the local workflow; [AGENTS.md](AGENTS.md) 
 
 ## Setup
 
-- Node.js 20 or newer (CI uses Node 22).
+- Node.js 22 or newer.
 - pnpm, at the version pinned in `package.json` (`packageManager`). With Corepack: `corepack enable`.
 
 ```bash

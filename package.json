@@ -44,7 +44,7 @@
     "SECURITY.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "analyze:codex-logs": "node scripts/analyze-codex-logs.mjs",
@@ -69,7 +69,7 @@
     "verify:package": "pnpm build && pnpm contracts && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula"
   },
   "devDependencies": {
-    "@types/node": "^24.7.0",
+    "@types/node": "^22.20.5",
     "esbuild": "^0.28.1",
     "madge": "^8.0.0",
     "oxlint": "^1.90.0",

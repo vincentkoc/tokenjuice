@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking changes
+
+- Require Node.js 22 or newer (`engines.node` is now `>=22`). Node.js 20 reached end of life in April 2026.
+
 ## 0.8.5 - 2026-09-15
 
 ### Fixes

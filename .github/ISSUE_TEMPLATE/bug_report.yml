@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in tokenjuice is not working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the command you ran and the output you got.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tokenjuice version
+      description: Output of `tokenjuice --version`
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host integration
+      description: For example codex, claude-code, cursor, or "none" for the CLI.
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor output
+      description: Output of `tokenjuice doctor <host>` or `tokenjuice doctor hooks`, if relevant.
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and Node.js version.

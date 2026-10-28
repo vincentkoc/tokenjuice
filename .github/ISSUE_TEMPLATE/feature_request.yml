@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a new reducer, host integration, or CLI improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+  - type: textarea
+    id: example
+    attributes:
+      label: Example command output
+      description: For a new reducer, paste a representative raw output.
+      render: text

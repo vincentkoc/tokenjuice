@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -113,24 +115,6 @@ async function resolveProjectDir(options: McpAgentDefinitionOptions = {}): Promi
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);
   return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function rejectDefinitionSymlink(filePath: string): Promise<void> {

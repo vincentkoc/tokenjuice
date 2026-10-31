@@ -1,5 +1,6 @@
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
+import { doctorQoderWorkSkill } from "../qoderwork/index.js";
 import { doctorAdalInstructions } from "../adal/index.js";
 import { doctorAetherPrompt } from "../aether/index.js";
 import { doctorAiderConvention } from "../aider/index.js";
@@ -291,6 +292,7 @@ export type HookIntegrationDoctorReport = {
   ante: AnteDoctorReport;
   qoder: QoderDoctorReport;
   "qoder-cli": Awaited<ReturnType<typeof doctorQoderHook>>;
+  qoderwork: Awaited<ReturnType<typeof doctorQoderWorkSkill>>;
   "qwen-code": QwenCodeDoctorReport;
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
   replit: ReplitDoctorReport;
@@ -412,6 +414,7 @@ const hookDoctorIntegrationDoctors = {
   qodo: (options) => doctorQodoReviewConfig(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
   "qoder-cli": (options) => doctorQoderHook(undefined, getHookCommandOptions(options)),
+  qoderwork: () => doctorQoderWorkSkill(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   qwenwork: () => doctorQwenWorkSkill(),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),

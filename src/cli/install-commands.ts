@@ -1,5 +1,6 @@
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
 import { installQwenWorkSkill } from "../hosts/qwenwork/index.js";
+import { installQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice install <target>`.
 // Each handler is keyed by the target name and its aliases in installCommands.
 
@@ -1276,6 +1277,15 @@ const installQoderCliCommand = createHostCommand((args) => installQoderHook(unde
   process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
 });
 
+const installQoderWorkCommand = createHostCommand(() => installQoderWorkSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("qoderwork", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside QoderWork" },
+    { label: "Verify", value: "tokenjuice doctor qoderwork" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qwenwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1622,6 +1632,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
+  ["qoderwork", installQoderWorkCommand],
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],

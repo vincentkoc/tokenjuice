@@ -1,5 +1,6 @@
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
+import { doctorQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice doctor <target>` (hosts plus `doctor hooks`).
 // Each handler is keyed by the target name and its aliases in doctorCommands.
 
@@ -453,6 +454,14 @@ const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(unde
   }
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorQoderWorkCommand = createDoctorCommand(() => doctorQoderWorkSkill(), (report) => {
+  process.stdout.write(`skill path: ${report.skillPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
@@ -1161,6 +1170,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
   ["qwenwork", doctorQwenWorkCommand],
+  ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],
   ["crush", doctorCrushCommand],

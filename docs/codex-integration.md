@@ -38,8 +38,11 @@ pnpm build
 node scripts/codex-e2e.mjs /path/to/codex
 ```
 
-On Linux, install the distribution's `bubblewrap` package first. Codex uses the
-first `bwrap` on `PATH`; see its [sandbox setup guide](https://learn.chatgpt.com/docs/sandboxing).
+CI runs this fixture on macOS with the native read-only sandbox. The hosted
+Ubuntu runner cannot configure sandbox loopback (`RTM_NEWADDR: Operation not
+permitted`), including with the distribution's `bubblewrap` package. Linux native
+acceptance remains unqualified; see Codex's [sandbox setup guide](https://learn.chatgpt.com/docs/sandboxing)
+for its host requirements.
 
 The fixture runs pinned Codex CLI 0.166.0 against a loopback Responses API endpoint
 in a disposable home and project. It captures the next model request after each
@@ -56,6 +59,6 @@ limited to the freshly installed hook after checking its exact executable,
 arguments, matcher, and sole hook entry. The native read-only sandbox remains
 enabled. Real user hook trust and configuration are untouched.
 
-This qualifies the pinned foreground shell path and explicit wrapping. Remote
+This qualifies the pinned macOS foreground shell path and explicit wrapping. Remote
 provider availability, reasoning quality, and code-mode execution are outside
 this test.

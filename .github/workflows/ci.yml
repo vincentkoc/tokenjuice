@@ -107,3 +107,9 @@ jobs:
 
       - name: Verify Pi model-visible tool results
         run: node scripts/pi-e2e.mjs "$RUNNER_TEMP/tokenjuice-pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"
+
+      - name: Install pinned Claude Code host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-claude" --ignore-scripts --no-audit --no-fund @anthropic-ai/claude-code-linux-x64@2.1.316
+
+      - name: Verify Claude Code model-visible tool results
+        run: node scripts/claude-e2e.mjs "$RUNNER_TEMP/tokenjuice-claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude"

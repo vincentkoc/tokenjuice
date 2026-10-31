@@ -223,3 +223,24 @@ offline with a local model endpoint and isolated settings; no model credentials
 are passed through. This validates host loading and model-visible delivery,
 including Pi's failure flag, rather than remote provider availability or model
 reasoning quality.
+
+### Claude Code session acceptance
+
+`node scripts/claude-e2e.mjs /path/to/claude` runs the native CLI with a disposable
+home/workspace and a loopback Anthropic-compatible endpoint. CI pins Claude Code
+2.1.316 through `@anthropic-ai/claude-code-linux-x64`. No account credentials are
+passed through; nonessential host traffic and automatic updates are disabled.
+
+The test runs a native session before installing tokenjuice, then installs the
+pre-tool hook and starts a second session. Both sessions execute real Bash tools.
+The endpoint checks results in subsequent model requests: the installed hook
+must compact a listing, preserve the host's native exact-read and raw-bypass
+results, and retain failing-command stdout, stderr, exit status, and error flag.
+Claude trims edge whitespace and can add context reminders to its Bash results,
+so exact reads are compared with the unhooked baseline rather than file bytes.
+`wrap` adds its own exit marker on failures; the test checks the host's failure
+status and command output instead of requiring identical error formatting.
+
+This validates settings discovery, hook execution, command rewriting, and
+model-visible delivery. It does not validate remote provider availability or
+model reasoning quality.

@@ -25,7 +25,7 @@ function fixture() {
 
 describe("DeepSeek Harness native post-execute plugin", () => {
   it("registers a tools-dependent Cordis waterfall", () => {
-    const on = vi.fn();
+    const on = vi.fn<Parameters<typeof apply>[0]["on"]>();
     apply({ on });
     expect(name).toBe("tokenjuice");
     expect(inject).toEqual(["tools"]);
@@ -36,7 +36,7 @@ describe("DeepSeek Harness native post-execute plugin", () => {
     const { execution, result } = fixture();
     const original = structuredClone(result);
     const decision = { kind: "accept", additionalContexts: [{ role: "user", content: [] }] };
-    const next = vi.fn(async () => decision);
+    const next = vi.fn<() => Promise<typeof decision>>(async () => decision);
     const replacement = await onDeepSeekPostExecute(execution, result, next) as { content: Array<{ text: string; extra: number }>; additionalContexts: unknown };
     expect(next).toHaveBeenCalledOnce();
     expect(replacement.additionalContexts).toBe(decision.additionalContexts);

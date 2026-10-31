@@ -22,7 +22,7 @@ supported integrations:
 | <img width="48px" src="docs/client-cursor.jpg" alt="Cursor" /> | [Cursor](https://cursor.com/docs/hooks) | `tokenjuice install cursor` | `~/.cursor/hooks.json` |
 | <img width="48px" src="docs/client-droid.png" alt="Droid" /> | [Droid (Factory CLI)](docs/droid-integration.md) | `tokenjuice install droid` | `~/.factory/hooks.json` or legacy settings |
 | <img width="48px" src="docs/client-copilot.png" alt="GitHub Copilot CLI" /> | [GitHub Copilot CLI](https://github.com/github/copilot-cli) | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` |
-| <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw config set plugins.entries.tokenjuice.enabled true` | `~/.openclaw/openclaw.json` |
+| <img width="48px" src="docs/client-openclaw.jpg" alt="OpenClaw" /> | [OpenClaw](https://openclaw.ai/) | `openclaw plugins install @openclaw/tokenjuice` | `~/.openclaw/openclaw.json` |
 | <img width="48px" src="docs/client-opencode.png" alt="OpenCode" /> | [OpenCode](https://opencode.ai/) | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` |
 | <img width="48px" src="docs/client-pi.png" alt="pi" /> | [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` |
 | <img width="48px" src="docs/client-copilot.png" alt="VS Code Copilot" /> | [VS Code Copilot Chat](https://code.visualstudio.com/docs/copilot/overview) | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` |
@@ -155,14 +155,18 @@ Pi can leave output from selected commands untouched. Repeat `--skip-command` fo
 tokenjuice install pi --skip-command rtk
 ```
 
-OpenClaw support is bundled on the OpenClaw side. Do not run
-`tokenjuice install openclaw`; enable the bundled plugin instead:
+OpenClaw loads the external `@openclaw/tokenjuice` plugin. Install and enable it
+with the OpenClaw CLI:
 
 ```bash
+openclaw plugins install @openclaw/tokenjuice
 openclaw config set plugins.entries.tokenjuice.enabled true
+openclaw gateway restart
 ```
 
-this requires OpenClaw `2026.4.22` or newer.
+Do not run `tokenjuice install openclaw`. Match the plugin release to your
+OpenClaw version; the plugin declares its host compatibility requirements.
+See the [OpenClaw Tokenjuice guide](https://docs.openclaw.ai/tools/tokenjuice).
 
 ## commands
 

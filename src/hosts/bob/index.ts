@@ -3,12 +3,11 @@ import { join } from "node:path";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -73,24 +72,14 @@ const TOKENJUICE_BOB_BLOCK_CONFIG = {
   block: TOKENJUICE_BOB_BLOCK,
 };
 
+const markerInstructions = createMarkerInstructionCommands("bob", TOKENJUICE_BOB_BLOCK_CONFIG);
+
 export async function installBobInstructions(
   instructionsPath?: string,
   options: BobInstructionsOptions = {},
 ): Promise<InstallBobInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_BOB_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_BOB_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install bob`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_BOB_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallBobInstructions(
@@ -98,16 +87,7 @@ export async function uninstallBobInstructions(
   options: BobInstructionsOptions = {},
 ): Promise<UninstallBobInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_BOB_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_BOB_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall bob`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_BOB_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorBobInstructions(

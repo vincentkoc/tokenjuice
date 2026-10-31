@@ -3,12 +3,11 @@ import { join } from "node:path";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -73,24 +72,14 @@ const TOKENJUICE_REPLIT_BLOCK_CONFIG = {
   block: TOKENJUICE_REPLIT_BLOCK,
 };
 
+const markerInstructions = createMarkerInstructionCommands("replit", TOKENJUICE_REPLIT_BLOCK_CONFIG);
+
 export async function installReplitInstructions(
   instructionsPath?: string,
   options: ReplitInstructionsOptions = {},
 ): Promise<InstallReplitInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_REPLIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_REPLIT_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install replit`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_REPLIT_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallReplitInstructions(
@@ -98,16 +87,7 @@ export async function uninstallReplitInstructions(
   options: ReplitInstructionsOptions = {},
 ): Promise<UninstallReplitInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_REPLIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_REPLIT_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall replit`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_REPLIT_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorReplitInstructions(

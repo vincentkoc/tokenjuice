@@ -162,3 +162,31 @@ export async function uninstallMarkerDelimitedBlock(filePath: string, config: Ma
   }
   return { filePath, removed: true };
 }
+
+export function createMarkerInstructionCommands(host: string, config: MarkerDelimitedBlockConfig) {
+  async function rejectMalformedMarkers(instructionsPath: string, action: "install" | "uninstall"): Promise<void> {
+    const existing = await readInstructionFile(instructionsPath);
+    const markerState = inspectMarkerDelimitedBlock(existing.text, config);
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, config)) {
+      throw new Error(
+        `cannot safely ${action === "install" ? "repair" : "uninstall"} malformed tokenjuice markers in ${instructionsPath}; remove the dangling marker manually, then rerun tokenjuice ${action} ${host}`,
+      );
+    }
+  }
+
+  return {
+    async install(instructionsPath: string) {
+      await rejectMalformedMarkers(instructionsPath, "install");
+      const result = await installMarkerDelimitedBlock(instructionsPath, config);
+      return {
+        instructionsPath: result.filePath,
+        ...(result.backupPath ? { backupPath: result.backupPath } : {}),
+      };
+    },
+    async uninstall(instructionsPath: string) {
+      await rejectMalformedMarkers(instructionsPath, "uninstall");
+      const result = await uninstallMarkerDelimitedBlock(instructionsPath, config);
+      return { instructionsPath: result.filePath, removed: result.removed };
+    },
+  };
+}

@@ -9,6 +9,11 @@ export type InstructionDoctorReportFields = {
   missingPaths: string[];
 };
 
+export type InstructionsDoctorReport = Omit<InstructionDoctorReportFields, "status"> & {
+  instructionsPath: string;
+  status: InstructionDoctorStatus | "warn";
+};
+
 export function instructionDoctorStatusFromIssues(issues: readonly unknown[]): "ok" | "broken" {
   return issues.length > 0 ? "broken" : "ok";
 }

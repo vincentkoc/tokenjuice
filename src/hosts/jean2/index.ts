@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
@@ -20,15 +21,7 @@ export type UninstallJean2InstructionsResult = {
   removed: boolean;
 };
 
-export type Jean2DoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type Jean2DoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_JEAN2_FIX_COMMAND = "tokenjuice install jean2";
 const TOKENJUICE_JEAN2_BEGIN = "<!-- tokenjuice:jean2 begin -->";

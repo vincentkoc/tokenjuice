@@ -8,6 +8,7 @@ import {
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -27,15 +28,7 @@ export type UninstallAvanteInstructionsResult = {
   removed: boolean;
 };
 
-export type AvanteDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AvanteDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_AVANTE_FIX_COMMAND = "tokenjuice install avante";
 const TOKENJUICE_AVANTE_BEGIN = "<!-- tokenjuice:begin -->";

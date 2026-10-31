@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
@@ -20,15 +21,7 @@ export type UninstallJulesInstructionsResult = {
   removed: boolean;
 };
 
-export type JulesDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type JulesDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_JULES_FIX_COMMAND = "tokenjuice install jules";
 const TOKENJUICE_JULES_BEGIN = "<!-- tokenjuice:jules begin -->";

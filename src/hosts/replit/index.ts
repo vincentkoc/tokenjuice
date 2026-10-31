@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
@@ -20,15 +21,7 @@ export type UninstallReplitInstructionsResult = {
   removed: boolean;
 };
 
-export type ReplitDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type ReplitDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_REPLIT_FIX_COMMAND = "tokenjuice install replit";
 const TOKENJUICE_REPLIT_BEGIN = "<!-- tokenjuice:replit begin -->";

@@ -16,6 +16,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -37,15 +38,8 @@ export type UninstallAgentsCliMemoryResult = {
   syncCommand: string;
 };
 
-export type AgentsCliDoctorReport = {
-  instructionsPath: string;
+export type AgentsCliDoctorReport = InstructionsDoctorReport & {
   syncCommand: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AGENTS_CLI_FIX_COMMAND = "tokenjuice install agents-cli";

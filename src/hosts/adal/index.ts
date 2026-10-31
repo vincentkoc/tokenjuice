@@ -16,6 +16,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -35,15 +36,7 @@ export type UninstallAdalInstructionsResult = {
   removed: boolean;
 };
 
-export type AdalDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AdalDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ADAL_FIX_COMMAND = "tokenjuice install adal";
 const TOKENJUICE_ADAL_BEGIN = "<!-- tokenjuice:adal begin -->";

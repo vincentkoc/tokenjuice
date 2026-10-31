@@ -8,6 +8,7 @@ import {
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -27,15 +28,7 @@ export type UninstallJunieInstructionsResult = {
   removed: boolean;
 };
 
-export type JunieDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type JunieDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_JUNIE_FIX_COMMAND = "tokenjuice install junie";
 const TOKENJUICE_JUNIE_BEGIN = "<!-- tokenjuice:begin -->";

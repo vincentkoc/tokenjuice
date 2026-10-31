@@ -20,6 +20,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -41,16 +42,9 @@ export type UninstallAgentInitInstructionsResult = {
   syncCommand: string;
 };
 
-export type AgentInitDoctorReport = {
-  instructionsPath: string;
+export type AgentInitDoctorReport = InstructionsDoctorReport & {
   syncCommand: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AGENTINIT_FIX_COMMAND = "tokenjuice install agentinit";

@@ -17,6 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -36,15 +37,7 @@ export type UninstallAnteInstructionsResult = {
   removed: boolean;
 };
 
-export type AnteDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AnteDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ANTE_FIX_COMMAND = "tokenjuice install ante";
 const TOKENJUICE_ANTE_BEGIN = "<!-- tokenjuice:ante begin -->";

@@ -8,6 +8,7 @@ import {
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -27,15 +28,7 @@ export type UninstallZedInstructionsResult = {
   removed: boolean;
 };
 
-export type ZedDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type ZedDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ZED_FIX_COMMAND = "tokenjuice install zed";
 const TOKENJUICE_ZED_BEGIN = "<!-- tokenjuice:begin -->";

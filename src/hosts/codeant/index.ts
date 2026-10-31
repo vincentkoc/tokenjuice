@@ -12,6 +12,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -36,16 +37,9 @@ export type UninstallCodeAntInstructionsResult = {
   removed: boolean;
 };
 
-export type CodeAntDoctorReport = {
-  instructionsPath: string;
+export type CodeAntDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type CodeAntInstruction = {

@@ -19,6 +19,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -38,15 +39,8 @@ export type UninstallKnownsInstructionsResult = {
   removed: boolean;
 };
 
-export type KnownsDoctorReport = {
-  instructionsPath: string;
+export type KnownsDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_KNOWNS_FIX_COMMAND = "tokenjuice install knowns";

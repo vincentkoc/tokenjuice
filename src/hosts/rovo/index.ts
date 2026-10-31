@@ -1,5 +1,6 @@
 import { join } from "node:path";
 
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
@@ -20,15 +21,7 @@ export type UninstallRovoInstructionsResult = {
   removed: boolean;
 };
 
-export type RovoDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type RovoDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ROVO_FIX_COMMAND = "tokenjuice install rovo";
 const TOKENJUICE_ROVO_BEGIN = "<!-- tokenjuice:rovo begin -->";

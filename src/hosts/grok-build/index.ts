@@ -16,6 +16,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -35,15 +36,7 @@ export type UninstallGrokBuildInstructionsResult = {
   removed: boolean;
 };
 
-export type GrokBuildDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type GrokBuildDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_GROK_BUILD_FIX_COMMAND = "tokenjuice install grok-build";
 const TOKENJUICE_GROK_BUILD_BEGIN = "<!-- tokenjuice:grok-build begin -->";

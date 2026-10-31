@@ -108,14 +108,10 @@ import { uninstallWindsurfRule } from "../hosts/windsurf/index.js";
 import { uninstallZedInstructions } from "../hosts/zed/index.js";
 import { uninstallZencoderRule } from "../hosts/zencoder/index.js";
 import { shellQuote } from "../hosts/shared/hook-command.js";
-import { createHostCommand } from "./host-command.js";
+import { createFileUninstallCommand, createHostCommand } from "./host-command.js";
 import type { HostCommandHandler } from "./command-types.js";
 
-const uninstallAdalCommand = createHostCommand(() => uninstallAdalInstructions(), (result) => {
-  process.stdout.write(`removed adal instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install adal\n");
-});
+const uninstallAdalCommand = createFileUninstallCommand("adal", "instructions", "instructionsPath", () => uninstallAdalInstructions());
 
 const uninstallAetherCommand = createHostCommand(() => uninstallAetherPrompt(), (result) => {
   process.stdout.write(`removed aether prompt: ${result.removed ? "yes" : "no"}\n`);
@@ -131,11 +127,7 @@ const uninstallAiderCommand = createHostCommand(() => uninstallAiderConvention()
   process.stdout.write("enable: tokenjuice install aider\n");
 });
 
-const uninstallAictlCommand = createHostCommand(() => uninstallAictlInstructions(), (result) => {
-  process.stdout.write(`removed aictl instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install aictl\n");
-});
+const uninstallAictlCommand = createFileUninstallCommand("aictl", "instructions", "instructionsPath", () => uninstallAictlInstructions());
 
 const uninstallAiMemoryProtocolCommand = createHostCommand(() => uninstallAiMemoryProtocolMemory(), (result) => {
   process.stdout.write(`removed ai-memory-protocol memory: ${result.removed ? "yes" : "no"}\n`);
@@ -179,11 +171,7 @@ const uninstallAgentsCliCommand = createHostCommand(() => uninstallAgentsCliMemo
   process.stdout.write("enable: tokenjuice install agents-cli\n");
 });
 
-const uninstallAgentsMdCommand = createHostCommand(() => uninstallAgentsMdInstructions(), (result) => {
-  process.stdout.write(`removed agents-md instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install agents-md\n");
-});
+const uninstallAgentsMdCommand = createFileUninstallCommand("agents-md", "instructions", "instructionsPath", () => uninstallAgentsMdInstructions());
 
 const uninstallAgentsgeCommand = createHostCommand(() => uninstallAgentsGeRule(), (result) => {
   process.stdout.write(`removed agentsge rule: ${result.removed ? "yes" : "no"}\n`);
@@ -235,11 +223,7 @@ const uninstallAugmentCommand = createHostCommand(() => uninstallAugmentRule(), 
   process.stdout.write("enable: tokenjuice install augment\n");
 });
 
-const uninstallAvanteCommand = createHostCommand(() => uninstallAvanteInstructions(), (result) => {
-  process.stdout.write(`removed avante instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install avante\n");
-});
+const uninstallAvanteCommand = createFileUninstallCommand("avante", "instructions", "instructionsPath", () => uninstallAvanteInstructions());
 
 const uninstallBazCommand = createHostCommand(() => uninstallBazSkill(), (result) => {
   process.stdout.write(`removed baz skill: ${result.removed ? "yes" : "no"}\n`);
@@ -272,11 +256,7 @@ const uninstallClawdbotCommand = createHostCommand(() => uninstallClawdbotSkill(
   process.stdout.write("enable: tokenjuice install clawdbot\n");
 });
 
-const uninstallBobCommand = createHostCommand(() => uninstallBobInstructions(), (result) => {
-  process.stdout.write(`removed bob instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install bob\n");
-});
+const uninstallBobCommand = createFileUninstallCommand("bob", "instructions", "instructionsPath", () => uninstallBobInstructions());
 
 const uninstallBuilderCommand = createHostCommand(() => uninstallBuilderRule(), (result) => {
   process.stdout.write(`removed builder rule: ${result.removed ? "yes" : "no"}\n`);
@@ -284,11 +264,7 @@ const uninstallBuilderCommand = createHostCommand(() => uninstallBuilderRule(), 
   process.stdout.write("enable: tokenjuice install builder\n");
 });
 
-const uninstallCharlieCommand = createHostCommand(() => uninstallCharlieInstructions(), (result) => {
-  process.stdout.write(`removed charlie instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install charlie\n");
-});
+const uninstallCharlieCommand = createFileUninstallCommand("charlie", "instructions", "instructionsPath", () => uninstallCharlieInstructions());
 
 const uninstallCodexCommand = createHostCommand(() => uninstallCodexHook(), (result) => {
   process.stdout.write(`removed codex hook: ${result.hooksPath}\n`);
@@ -315,23 +291,11 @@ const uninstallClineCommand = createHostCommand(() => uninstallClineHook(), (res
   process.stdout.write("enable: tokenjuice install cline\n");
 });
 
-const uninstallCodeantCommand = createHostCommand(() => uninstallCodeAntInstructions(), (result) => {
-  process.stdout.write(`removed codeant instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install codeant\n");
-});
+const uninstallCodeantCommand = createFileUninstallCommand("codeant", "instructions", "instructionsPath", () => uninstallCodeAntInstructions());
 
-const uninstallCodebuffCommand = createHostCommand(() => uninstallCodebuffInstructions(), (result) => {
-  process.stdout.write(`removed codebuff instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install codebuff\n");
-});
+const uninstallCodebuffCommand = createFileUninstallCommand("codebuff", "instructions", "instructionsPath", () => uninstallCodebuffInstructions());
 
-const uninstallCodegenCommand = createHostCommand(() => uninstallCodegenInstructions(), (result) => {
-  process.stdout.write(`removed codegen instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install codegen\n");
-});
+const uninstallCodegenCommand = createFileUninstallCommand("codegen", "instructions", "instructionsPath", () => uninstallCodegenInstructions());
 
 const uninstallCoderAgentsCommand = createHostCommand(() => uninstallCoderAgentsSkill(), (result) => {
   process.stdout.write(`removed coder-agents skill: ${result.removed ? "yes" : "no"}\n`);
@@ -396,11 +360,7 @@ const uninstallFirebaseStudioCommand = createHostCommand(() => uninstallFirebase
   process.stdout.write("enable: tokenjuice install firebase-studio\n");
 });
 
-const uninstallForgecodeCommand = createHostCommand(() => uninstallForgeCodeInstructions(), (result) => {
-  process.stdout.write(`removed forgecode instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install forgecode\n");
-});
+const uninstallForgecodeCommand = createFileUninstallCommand("forgecode", "instructions", "instructionsPath", () => uninstallForgeCodeInstructions());
 
 const uninstallGeminiCliCommand = createHostCommand(() => uninstallGeminiCliHook(), (result) => {
   process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
@@ -420,23 +380,11 @@ const uninstallGrokCliCommand = createHostCommand(() => uninstallGrokCliHook(), 
   process.stdout.write("enable: tokenjuice install grok-cli\n");
 });
 
-const uninstallGptmeCommand = createHostCommand(() => uninstallGptmeInstructions(), (result) => {
-  process.stdout.write(`removed gptme instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install gptme\n");
-});
+const uninstallGptmeCommand = createFileUninstallCommand("gptme", "instructions", "instructionsPath", () => uninstallGptmeInstructions());
 
-const uninstallJean2Command = createHostCommand(() => uninstallJean2Instructions(), (result) => {
-  process.stdout.write(`removed jean2 instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install jean2\n");
-});
+const uninstallJean2Command = createFileUninstallCommand("jean2", "instructions", "instructionsPath", () => uninstallJean2Instructions());
 
-const uninstallGrokBuildCommand = createHostCommand(() => uninstallGrokBuildInstructions(), (result) => {
-  process.stdout.write(`removed grok-build instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install grok-build\n");
-});
+const uninstallGrokBuildCommand = createFileUninstallCommand("grok-build", "instructions", "instructionsPath", () => uninstallGrokBuildInstructions());
 
 const uninstallGrokBotCommand = createHostCommand(() => uninstallGrokBotRule(), (result) => {
   process.stdout.write(`removed grok-bot rule: ${result.removed ? "yes" : "no"}\n`);
@@ -475,23 +423,11 @@ const uninstallJetbrainsAiCommand = createHostCommand(() => uninstallJetBrainsAi
   process.stdout.write("enable: tokenjuice install jetbrains-ai\n");
 });
 
-const uninstallJunieCommand = createHostCommand(() => uninstallJunieInstructions(), (result) => {
-  process.stdout.write(`removed junie instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install junie\n");
-});
+const uninstallJunieCommand = createFileUninstallCommand("junie", "instructions", "instructionsPath", () => uninstallJunieInstructions());
 
-const uninstallJulesCommand = createHostCommand(() => uninstallJulesInstructions(), (result) => {
-  process.stdout.write(`removed jules instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install jules\n");
-});
+const uninstallJulesCommand = createFileUninstallCommand("jules", "instructions", "instructionsPath", () => uninstallJulesInstructions());
 
-const uninstallLeanctlCommand = createHostCommand(() => uninstallLeanCtlInstructions(), (result) => {
-  process.stdout.write(`removed leanctl instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install leanctl\n");
-});
+const uninstallLeanctlCommand = createFileUninstallCommand("leanctl", "instructions", "instructionsPath", () => uninstallLeanCtlInstructions());
 
 const uninstallKimiCommand = createHostCommand(() => uninstallKimiHook(), (result) => {
   process.stdout.write(`removed kimi entries: ${result.removed}\n`);
@@ -521,11 +457,7 @@ const uninstallKiloCommand = createHostCommand(() => uninstallKiloRule(), (resul
   process.stdout.write("enable: tokenjuice install kilo\n");
 });
 
-const uninstallMistralVibeCommand = createHostCommand(() => uninstallMistralVibeInstructions(), (result) => {
-  process.stdout.write(`removed mistral-vibe instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install mistral-vibe\n");
-});
+const uninstallMistralVibeCommand = createFileUninstallCommand("mistral-vibe", "instructions", "instructionsPath", () => uninstallMistralVibeInstructions());
 
 const uninstallMcpAgentCommand = createHostCommand(() => uninstallMcpAgentDefinition(), (result) => {
   process.stdout.write(`removed mcp-agent definition: ${result.removed ? "yes" : "no"}\n`);
@@ -557,17 +489,9 @@ const uninstallMuxCommand = createHostCommand(() => uninstallMuxHook(), (result)
   process.stdout.write("enable: tokenjuice install mux\n");
 });
 
-const uninstallNovakitCommand = createHostCommand(() => uninstallNovaKitInstructions(), (result) => {
-  process.stdout.write(`removed novakit instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install novakit\n");
-});
+const uninstallNovakitCommand = createFileUninstallCommand("novakit", "instructions", "instructionsPath", () => uninstallNovaKitInstructions());
 
-const uninstallKnownsCommand = createHostCommand(() => uninstallKnownsInstructions(), (result) => {
-  process.stdout.write(`removed knowns instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install knowns\n");
-});
+const uninstallKnownsCommand = createFileUninstallCommand("knowns", "instructions", "instructionsPath", () => uninstallKnownsInstructions());
 
 const uninstallOnaCommand = createHostCommand(() => uninstallOnaSkill(), (result) => {
   process.stdout.write(`removed ona skill: ${result.removed ? "yes" : "no"}\n`);
@@ -575,11 +499,7 @@ const uninstallOnaCommand = createHostCommand(() => uninstallOnaSkill(), (result
   process.stdout.write("enable: tokenjuice install ona\n");
 });
 
-const uninstallWarpCommand = createHostCommand(() => uninstallWarpInstructions(), (result) => {
-  process.stdout.write(`removed warp instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install warp\n");
-});
+const uninstallWarpCommand = createFileUninstallCommand("warp", "instructions", "instructionsPath", () => uninstallWarpInstructions());
 
 const uninstallOpenhandsCommand = createHostCommand(() => uninstallOpenHandsHook(), (result) => {
   process.stdout.write(`removed openhands entries: ${result.removed}\n`);
@@ -587,11 +507,7 @@ const uninstallOpenhandsCommand = createHostCommand(() => uninstallOpenHandsHook
   process.stdout.write("enable: tokenjuice install openhands\n");
 });
 
-const uninstallOpenInterpreterCommand = createHostCommand(() => uninstallOpenInterpreterInstructions(), (result) => {
-  process.stdout.write(`removed open-interpreter instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install open-interpreter\n");
-});
+const uninstallOpenInterpreterCommand = createFileUninstallCommand("open-interpreter", "instructions", "instructionsPath", () => uninstallOpenInterpreterInstructions());
 
 const uninstallOpenwebuiCommand = createHostCommand(() => uninstallOpenWebUITool(), (result) => {
   process.stdout.write(`removed openwebui tool source: ${result.removed ? "yes" : "no"}\n`);
@@ -628,23 +544,11 @@ const uninstallPlandexCommand = createHostCommand(() => uninstallPlandexConventi
   process.stdout.write("enable: tokenjuice install plandex\n");
 });
 
-const uninstallAnteCommand = createHostCommand(() => uninstallAnteInstructions(), (result) => {
-  process.stdout.write(`removed ante instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install ante\n");
-});
+const uninstallAnteCommand = createFileUninstallCommand("ante", "instructions", "instructionsPath", () => uninstallAnteInstructions());
 
-const uninstallQoderCommand = createHostCommand(() => uninstallQoderInstructions(), (result) => {
-  process.stdout.write(`removed qoder instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install qoder\n");
-});
+const uninstallQoderCommand = createFileUninstallCommand("qoder", "instructions", "instructionsPath", () => uninstallQoderInstructions());
 
-const uninstallReplitCommand = createHostCommand(() => uninstallReplitInstructions(), (result) => {
-  process.stdout.write(`removed replit instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install replit\n");
-});
+const uninstallReplitCommand = createFileUninstallCommand("replit", "instructions", "instructionsPath", () => uninstallReplitInstructions());
 
 const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (result) => {
   process.stdout.write(`removed qoder-cli entries: ${result.removed}\n`);
@@ -674,11 +578,7 @@ const uninstallRooCommand = createHostCommand(() => uninstallRooInstructions(), 
   process.stdout.write("enable: tokenjuice install roo\n");
 });
 
-const uninstallRovoCommand = createHostCommand(() => uninstallRovoInstructions(), (result) => {
-  process.stdout.write(`removed rovo instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install rovo\n");
-});
+const uninstallRovoCommand = createFileUninstallCommand("rovo", "instructions", "instructionsPath", () => uninstallRovoInstructions());
 
 const uninstallRulerCommand = createHostCommand(() => uninstallRulerRule(), (result) => {
   process.stdout.write(`removed ruler rule: ${result.removed ? "yes" : "no"}\n`);
@@ -686,11 +586,7 @@ const uninstallRulerCommand = createHostCommand(() => uninstallRulerRule(), (res
   process.stdout.write("enable: tokenjuice install ruler\n");
 });
 
-const uninstallTabnineCommand = createHostCommand(() => uninstallTabnineInstructions(), (result) => {
-  process.stdout.write(`removed tabnine instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install tabnine\n");
-});
+const uninstallTabnineCommand = createFileUninstallCommand("tabnine", "instructions", "instructionsPath", () => uninstallTabnineInstructions());
 
 const uninstallTabbyCommand = createHostCommand(() => uninstallTabbySystemPrompt(), (result) => {
   process.stdout.write(`removed tabby system prompt: ${result.removed ? "yes" : "no"}\n`);
@@ -704,11 +600,7 @@ const uninstallTraeCommand = createHostCommand(() => uninstallTraeRule(), (resul
   process.stdout.write("enable: tokenjuice install trae\n");
 });
 
-const uninstallUipathCommand = createHostCommand(() => uninstallUiPathInstructions(), (result) => {
-  process.stdout.write(`removed uipath instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install uipath\n");
-});
+const uninstallUipathCommand = createFileUninstallCommand("uipath", "instructions", "instructionsPath", () => uninstallUiPathInstructions());
 
 const uninstallVscodeCopilotCommand = createHostCommand(() => uninstallVscodeCopilotHook(), (result) => {
   process.stdout.write(`removed vscode-copilot entries: ${result.removed}\n`);
@@ -728,11 +620,7 @@ const uninstallCopilotCliCommand = createHostCommand(() => uninstallCopilotCliHo
   process.stdout.write("enable: tokenjuice install copilot-cli\n");
 });
 
-const uninstallDeepagentsCommand = createHostCommand(() => uninstallDeepAgentsInstructions(), (result) => {
-  process.stdout.write(`removed deepagents instructions: ${result.removed ? "yes" : "no"}\n`);
-  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
-  process.stdout.write("enable: tokenjuice install deepagents\n");
-});
+const uninstallDeepagentsCommand = createFileUninstallCommand("deepagents", "instructions", "instructionsPath", () => uninstallDeepAgentsInstructions());
 
 const uninstallDevinCommand = createHostCommand(() => uninstallDevinHook(), (result) => {
   process.stdout.write(`removed devin entries: ${result.removed}\n`);

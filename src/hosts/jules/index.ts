@@ -2,24 +2,9 @@ import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  createMarkerInstructionCommands,
-  getMarkerDelimitedBlockText,
-  hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
-} from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 
 export type JulesInstructionsOptions = {
   projectDir?: string;
@@ -95,57 +80,10 @@ export async function doctorJulesInstructions(
   options: JulesInstructionsOptions = {},
 ): Promise<JulesDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_JULES_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Jules instructions are not installed"],
-        advisory: TOKENJUICE_JULES_ADVISORY,
-        fixCommand: TOKENJUICE_JULES_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerInstructions(resolvedInstructionsPath, TOKENJUICE_JULES_BLOCK_CONFIG, {
     configuredLabel: "Jules instructions",
-    repairCommand: TOKENJUICE_JULES_FIX_COMMAND,
+    advisory: TOKENJUICE_JULES_ADVISORY,
+    fixCommand: TOKENJUICE_JULES_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install jules",
   });
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_JULES_BLOCK_CONFIG);
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers ? ["configured Jules instructions have malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_JULES_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Jules instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Jules instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Jules instructions still suggest the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_JULES_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install jules"
-        : TOKENJUICE_JULES_FIX_COMMAND,
-    }),
-  };
 }

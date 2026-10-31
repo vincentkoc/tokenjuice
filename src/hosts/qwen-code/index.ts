@@ -7,7 +7,7 @@ import { compactBashResult } from "../../core/integrations/compact-bash-result.j
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { type HooksSettings as QwenCodeSettings, isRecord, sanitizeHooksSettings as sanitizeQwenCodeSettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 
 export type QwenCodeHookCommandOptions = TokenjuiceHookCommandOptions & {
@@ -26,10 +26,6 @@ export type UninstallQwenCodeHookResult = {
 };
 
 export type QwenCodeDoctorReport = HookCommandDoctorReport<"settingsPath">;
-
-type QwenCodeSettings = Record<string, unknown> & {
-  hooks: Record<string, unknown>;
-};
 
 type QwenCodePostToolUsePayload = {
   hook_event_name?: unknown;
@@ -55,16 +51,6 @@ function getProjectDir(options: QwenCodeHookCommandOptions = {}): string {
 
 function getDefaultSettingsPath(options: QwenCodeHookCommandOptions = {}): string {
   return join(getProjectDir(options), ".qwen", "settings.json");
-}
-
-function sanitizeQwenCodeSettings(raw: unknown): QwenCodeSettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-  return {
-    ...raw,
-    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
-  };
 }
 
 async function readQwenCodeSettings(settingsPath: string): Promise<{ config: QwenCodeSettings; exists: boolean }> {

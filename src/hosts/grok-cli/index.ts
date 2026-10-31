@@ -14,7 +14,7 @@ import {
 import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { type HooksSettings as GrokCliUserSettings, isRecord, sanitizeHooksSettings as sanitizeGrokCliSettings } from "../shared/hooks-json-file.js";
 
 export type GrokCliHookCommandOptions = TokenjuiceHookCommandOptions;
 
@@ -31,10 +31,6 @@ export type UninstallGrokCliHookResult = {
 
 export type GrokCliDoctorReport = HookCommandDoctorReport<"settingsPath">;
 
-type GrokCliUserSettings = Record<string, unknown> & {
-  hooks: Record<string, unknown>;
-};
-
 type GrokCliPostToolUsePayload = {
   hook_event_name?: unknown;
   tool_name?: unknown;
@@ -50,16 +46,6 @@ const TOKENJUICE_GROK_CLI_DISABLED_ADVISORY = "Grok CLI support is beta; verify 
 
 function getDefaultSettingsPath(): string {
   return join(homedir(), ".grok", "user-settings.json");
-}
-
-function sanitizeGrokCliSettings(raw: unknown): GrokCliUserSettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-  return {
-    ...raw,
-    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
-  };
 }
 
 async function readGrokCliSettings(settingsPath: string): Promise<{ config: GrokCliUserSettings; exists: boolean }> {

@@ -10,7 +10,7 @@ import { type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { type HooksSettings as FactorySettings, isRecord, sanitizeHooksSettings as sanitizeFactorySettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 
@@ -28,10 +28,6 @@ export type UninstallDroidHookResult = {
 };
 
 export type DroidDoctorReport = HookCommandDoctorReport<"settingsPath">;
-
-type FactorySettings = Record<string, unknown> & {
-  hooks: Record<string, unknown>;
-};
 
 type DroidPostToolUsePayload = {
   hook_event_name?: unknown;
@@ -76,16 +72,6 @@ function parseFactorySettings(text: string | undefined, settingsPath: string): F
 
 function serializeFactorySettings(config: FactorySettings, settingsPath: string): string {
   return `${JSON.stringify(basename(settingsPath) === "hooks.json" ? config.hooks : config, null, 2)}\n`;
-}
-
-function sanitizeFactorySettings(raw: unknown): FactorySettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-  return {
-    ...raw,
-    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
-  };
 }
 
 async function readFactorySettings(settingsPath: string): Promise<{ config: FactorySettings; exists: boolean }> {

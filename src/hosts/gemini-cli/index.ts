@@ -9,7 +9,7 @@ import { compactBashResult } from "../../core/integrations/compact-bash-result.j
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { type HooksSettings as GeminiSettings, isRecord, sanitizeHooksSettings as sanitizeGeminiSettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 
 export type GeminiCliHookCommandOptions = TokenjuiceHookCommandOptions;
@@ -26,10 +26,6 @@ export type UninstallGeminiCliHookResult = {
 };
 
 export type GeminiCliDoctorReport = HookCommandDoctorReport<"settingsPath">;
-
-type GeminiSettings = Record<string, unknown> & {
-  hooks: Record<string, unknown>;
-};
 
 type GeminiCliAfterToolPayload = {
   hook_event_name?: unknown;
@@ -53,16 +49,6 @@ function getGeminiCliHome(): string {
 
 function getDefaultSettingsPath(): string {
   return join(getGeminiCliHome(), "settings.json");
-}
-
-function sanitizeGeminiSettings(raw: unknown): GeminiSettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-  return {
-    ...raw,
-    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
-  };
 }
 
 async function readGeminiSettings(settingsPath: string): Promise<{ config: GeminiSettings; exists: boolean }> {

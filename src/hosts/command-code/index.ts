@@ -12,7 +12,7 @@ import {
 } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { type HooksSettings as CommandCodeSettings, isRecord, sanitizeHooksSettings as sanitizeCommandCodeSettings } from "../shared/hooks-json-file.js";
 
 export type CommandCodeHookCommandOptions = TokenjuiceHookCommandOptions & {
   homeDir?: string;
@@ -31,10 +31,6 @@ export type UninstallCommandCodeHookResult = {
 };
 
 export type CommandCodeDoctorReport = HookCommandDoctorReport<"settingsPath">;
-
-type CommandCodeSettings = Record<string, unknown> & {
-  hooks: Record<string, unknown>;
-};
 
 type CommandCodePostToolUsePayload = {
   hook_event_name?: unknown;
@@ -165,16 +161,6 @@ async function chooseCommandCodeBackupPath(settingsPath: string): Promise<string
       throw error;
     }
   }
-}
-
-function sanitizeCommandCodeSettings(raw: unknown): CommandCodeSettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-  return {
-    ...raw,
-    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
-  };
 }
 
 async function readCommandCodeSettings(settingsPath: string): Promise<{ config: CommandCodeSettings; exists: boolean }> {

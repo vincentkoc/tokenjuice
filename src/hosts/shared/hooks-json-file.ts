@@ -1,15 +1,11 @@
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// Shared helpers for claude-code-style PostToolUse/PreToolUse hook JSON
-// files under `~/.copilot/hooks/`. Used by both the Copilot CLI and
-// VS Code Copilot Chat adapters; each adapter supplies its own filename
-// and its own command-marker substring so the two installs coexist in
-// the same directory without clobbering each other.
-//
-// The codex/claude-code adapters predate this helper and retain their
-// own serializers for historical reasons; migrating them belongs in a
-// separate refactor PR.
+export type HooksSettings = Record<string, unknown> & {
+  hooks: Record<string, unknown>;
+};
+
+// Copilot hook files share ~/.copilot/hooks; callers choose distinct filenames.
 
 export type CopilotHooksConfig = Record<string, unknown> & {
   version?: number;
@@ -19,6 +15,16 @@ export type CopilotHooksConfig = Record<string, unknown> & {
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function sanitizeHooksSettings(raw: unknown): HooksSettings {
+  if (!isRecord(raw)) {
+    return { hooks: {} };
+  }
+  return {
+    ...raw,
+    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
+  };
 }
 
 export function sanitizeCopilotHooksConfig(raw: unknown): CopilotHooksConfig {

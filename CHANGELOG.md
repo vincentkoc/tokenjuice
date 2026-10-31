@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Require proven shell exit 0 before Copilot coding-agent compaction, share the CLI result compactor, preserve completion metadata and validate the repository hook through real local CLI sessions without claiming cloud acceptance.
+
 - Replace the undiscovered Cline additive hook with native pre-tool batch wrapping, preserve complete failed-command streams with opt-in `--keep-failures`, migrate owned legacy scripts, and validate real CLI 3.0.74 sessions.
 
 - Match native Copilot CLI Bash hooks, require proven shell exit 0 before compaction, and preserve completion metadata outside output summaries; verify real 1.0.105 model requests and remove obsolete synthetic fixtures.

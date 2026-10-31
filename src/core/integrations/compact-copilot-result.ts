@@ -5,13 +5,16 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 
 /** Copilot's successful tool invocation can still contain a failed shell command. */
-export async function compactCopilotCliResult(
+export async function compactCopilotResult(
   payload: unknown,
-  options: { maxInlineChars?: number; storeRaw?: boolean } = {},
+  options: { source?: "copilot-cli" | "copilot-agent"; maxInlineChars?: number; storeRaw?: boolean } = {},
 ): Promise<Record<string, unknown> | undefined> {
   if (!record(payload) || (payload.toolName ?? payload.tool_name) !== "bash"
     || (payload.hook_event_name !== undefined && payload.hook_event_name !== "PostToolUse")) return undefined;
-  const input = payload.toolArgs ?? payload.tool_input;
+  let input = payload.toolArgs ?? payload.tool_input;
+  if (typeof input === "string") {
+    try { input = JSON.parse(input) as unknown; } catch { return undefined; }
+  }
   const result = payload.toolResult ?? payload.tool_result;
   if (!record(input) || typeof input.command !== "string" || !input.command.trim()
     || !record(result) || (result.resultType ?? result.result_type) !== "success") return undefined;
@@ -21,12 +24,13 @@ export async function compactCopilotCliResult(
   // The host appends this status after command output. Unknown/running formats stay raw.
   const footer = /\n<(?:shellId: \d+ completed with exit code|exited with exit code) (-?\d+)>$/u.exec(text);
   if (!footer || footer[1] !== "0") return undefined;
+  const { source = "copilot-cli", ...compactionOptions } = options;
   const outcome = await compactBashResult({
-    source: "copilot-cli", command: input.command, visibleText: text.slice(0, footer.index), exitCode: 0,
+    source, command: input.command, visibleText: text.slice(0, footer.index), exitCode: 0,
     ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-    ...options,
+    ...compactionOptions,
     inspectionPolicy: "allow-safe-inventory",
-    metadata: { source: "copilot-cli-post-tool-use" },
+    metadata: { source: `${source}-post-tool-use` },
     genericFallbackMinSavedChars: 120, genericFallbackMaxRatio: 0.75,
     skipGenericFallbackForCompoundCommands: true,
   });

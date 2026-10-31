@@ -203,6 +203,9 @@ jobs:
 
       - name: Verify Copilot CLI model-visible tool results
         run: node scripts/copilot-cli-e2e.mjs "$RUNNER_TEMP/tokenjuice-copilot-cli/node_modules/@github/copilot-linux-x64/copilot"
+      - name: Verify Copilot agent repository hook through local CLI
+        run: node scripts/copilot-cli-e2e.mjs "$RUNNER_TEMP/tokenjuice-copilot-cli/node_modules/@github/copilot-linux-x64/copilot" copilot-agent
+
       - name: Install pinned Xum host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-xum" --ignore-scripts --omit=dev --no-audit --no-fund @coder/xum@0.32.1
 

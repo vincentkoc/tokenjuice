@@ -5,9 +5,8 @@ import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { findGitRoot } from "../shared/project-root.js";
 
-import { stripLeadingCdPrefix, stripLeadingEnvAssignments } from "../../core/command.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import { extractHookCommandPaths, isNodeExecutablePath, isTokenjuiceExecutablePath, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { compactCopilotResult } from "../../core/integrations/compact-copilot-result.js";
+import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
 import {
   buildTokenjuiceHookCommand,
   isExecutableFile,
@@ -41,19 +40,6 @@ export type UninstallCopilotAgentHookResult = {
 
 export type CopilotAgentDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
-type CopilotAgentPostToolUsePayload = {
-  hook_event_name?: unknown;
-  hookEventName?: unknown;
-  tool_name?: unknown;
-  toolName?: unknown;
-  tool_input?: unknown;
-  toolInput?: unknown;
-  toolArgs?: unknown;
-  tool_result?: unknown;
-  toolResult?: unknown;
-  cwd?: unknown;
-};
-
 type StrayCopilotAgentHook = {
   path: string;
   command: string;
@@ -67,9 +53,6 @@ const TOKENJUICE_COPILOT_AGENT_ADVISORY =
   "Copilot coding agent support is beta; cloud agent jobs must have tokenjuice available in PATH before the repo hook runs.";
 const TOKENJUICE_COPILOT_AGENT_DISABLED_ADVISORY =
   "Copilot coding agent support is beta; install writes a repo-level .github/hooks hook for bash PostToolUse events.";
-
-const GENERIC_FALLBACK_MIN_SAVED_CHARS = 120;
-const GENERIC_FALLBACK_MAX_RATIO = 0.75;
 
 async function buildCopilotAgentHookCommand(
   options: CopilotAgentHookCommandOptions = {},
@@ -453,152 +436,22 @@ export async function doctorCopilotAgentHook(
   };
 }
 
-function parseJsonObject(value: unknown): Record<string, unknown> | undefined {
-  if (isRecord(value)) {
-    return value;
-  }
-  if (typeof value !== "string" || !value.trim()) {
-    return undefined;
-  }
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return isRecord(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  let argv: string[];
-  try {
-    argv = stripLeadingEnvAssignments(parseShellWords(stripLeadingCdPrefix(command)));
-  } catch {
-    return false;
-  }
-  if (argv.length < 3) {
-    return false;
-  }
-
-  let wrapIndex = -1;
-  const first = argv[0];
-  const second = argv[1];
-  if (typeof first === "string" && isTokenjuiceExecutablePath(first)) {
-    wrapIndex = 1;
-  } else if (
-    typeof first === "string"
-    && isNodeExecutablePath(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-  ) {
-    wrapIndex = 2;
-  }
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  if (optionEndIndex === -1) {
-    return false;
-  }
-
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
 function shouldStoreFromEnv(): boolean {
   const value = process.env.TOKENJUICE_COPILOT_AGENT_STORE;
   return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
 }
 
 export async function runCopilotAgentPostToolUseHook(rawText: string): Promise<number> {
-  let payload: CopilotAgentPostToolUsePayload;
   try {
-    payload = JSON.parse(rawText) as CopilotAgentPostToolUsePayload;
-  } catch {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const toolName = typeof payload.toolName === "string"
-    ? payload.toolName
-    : typeof payload.tool_name === "string"
-    ? payload.tool_name
-    : undefined;
-  if (toolName !== "bash") {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const toolInput = parseJsonObject(payload.toolArgs)
-    ?? parseJsonObject(payload.toolInput)
-    ?? parseJsonObject(payload.tool_input);
-  const command = typeof toolInput?.command === "string" ? toolInput.command : undefined;
-  if (!command || !command.trim() || commandRequestsTokenjuiceRawBypass(command)) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const toolResult = parseJsonObject(payload.toolResult) ?? parseJsonObject(payload.tool_result);
-  if (!toolResult) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const resultType = typeof toolResult.resultType === "string"
-    ? toolResult.resultType
-    : typeof toolResult.result_type === "string"
-    ? toolResult.result_type
-    : undefined;
-  if (resultType && resultType !== "success") {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const visibleText = typeof toolResult.textResultForLlm === "string"
-    ? toolResult.textResultForLlm
-    : typeof toolResult.text_result_for_llm === "string"
-    ? toolResult.text_result_for_llm
-    : "";
-  if (!visibleText.trim()) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_COPILOT_AGENT_MAX_INLINE_CHARS");
-
-  try {
-    const outcome = await compactBashResult({
+    const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_COPILOT_AGENT_MAX_INLINE_CHARS");
+    const response = await compactCopilotResult(JSON.parse(rawText), {
       source: "copilot-agent",
-      command,
-      visibleText,
-      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-      inspectionPolicy: "allow-safe-inventory",
+      ...(maxInlineChars !== undefined ? { maxInlineChars } : {}),
       storeRaw: shouldStoreFromEnv(),
-      metadata: { source: "copilot-agent-post-tool-use" },
-      genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
-      genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
-      skipGenericFallbackForCompoundCommands: true,
     });
-
-    if (outcome.action === "keep") {
-      process.stdout.write("{}\n");
-      return 0;
-    }
-
-    process.stdout.write(`${JSON.stringify({
-      modifiedResult: {
-        ...toolResult,
-        resultType: "success",
-        result_type: "success",
-        textResultForLlm: outcome.result.inlineText,
-        text_result_for_llm: outcome.result.inlineText,
-      },
-    })}\n`);
-    return 0;
+    process.stdout.write(`${JSON.stringify(response ?? {})}\n`);
   } catch {
     process.stdout.write("{}\n");
-    return 0;
   }
+  return 0;
 }

@@ -454,7 +454,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
       toolArgs: { command: "git ls-files" },
       toolResult: {
         resultType: "success",
-        textResultForLlm: longOutput,
+        textResultForLlm: longOutput + "\n<shellId: 0 completed with exit code 0>",
       },
     });
 
@@ -466,6 +466,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
     const compacted = response.modifiedResult?.textResultForLlm ?? "";
     expect(compacted.length).toBeGreaterThan(0);
     expect(compacted.length).toBeLessThan(longOutput.length);
+    expect(compacted).toMatch(/\n<shellId: 0 completed with exit code 0>$/u);
   });
 
   it("accepts VS Code-compatible snake_case payloads and JSON-string tool args", async () => {
@@ -476,7 +477,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
       tool_input: JSON.stringify({ command: "git ls-files" }),
       tool_result: {
         result_type: "success",
-        text_result_for_llm: longOutput,
+        text_result_for_llm: longOutput + "\n<shellId: 0 completed with exit code 0>",
       },
     });
 
@@ -501,17 +502,17 @@ describe("runCopilotAgentPostToolUseHook", () => {
       JSON.stringify({
         toolName: "view",
         toolArgs: { command: "git ls-files" },
-        toolResult: { resultType: "success", textResultForLlm: noisy },
+        toolResult: { resultType: "success", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
       }),
       JSON.stringify({
         toolName: "bash",
         toolArgs: { command: "exit 1" },
-        toolResult: { resultType: "failure", textResultForLlm: noisy },
+        toolResult: { resultType: "failure", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
       }),
       JSON.stringify({
         toolName: "bash",
         toolArgs: { command: "tokenjuice wrap --raw -- cat large.log" },
-        toolResult: { resultType: "success", textResultForLlm: noisy },
+        toolResult: { resultType: "success", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
       }),
     ];
 
@@ -527,7 +528,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
     const payload = JSON.stringify({
       toolName: "bash",
       toolArgs: { command: "cd /repo && tokenjuice wrap --full -- cat large.log" },
-      toolResult: { resultType: "success", textResultForLlm: noisy },
+      toolResult: { resultType: "success", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
     });
 
     const { code, output } = await captureStdout(() => runCopilotAgentPostToolUseHook(payload));
@@ -541,7 +542,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
     const payload = JSON.stringify({
       toolName: "bash",
       toolArgs: { command: "/usr/local/bin/tokenjuice wrap --raw -- cat large.log" },
-      toolResult: { resultType: "success", textResultForLlm: noisy },
+      toolResult: { resultType: "success", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
     });
 
     const { code, output } = await captureStdout(() => runCopilotAgentPostToolUseHook(payload));
@@ -561,7 +562,7 @@ describe("runCopilotAgentPostToolUseHook", () => {
       const payload = JSON.stringify({
         toolName: "bash",
         toolArgs: { command },
-        toolResult: { resultType: "success", textResultForLlm: noisy },
+        toolResult: { resultType: "success", textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>" },
       });
       const { code, output } = await captureStdout(() => runCopilotAgentPostToolUseHook(payload));
 
@@ -570,18 +571,18 @@ describe("runCopilotAgentPostToolUseHook", () => {
     }
   });
 
-  it("does not treat inner command flags as a raw bypass without the wrap separator", async () => {
-    const noisy = Array.from({ length: 200 }, (_, i) => `diff line ${i}`).join("\n");
-    const payload = JSON.stringify({
-      toolName: "bash",
-      toolArgs: { command: "tokenjuice wrap git diff --raw" },
-      toolResult: { resultType: "success", textResultForLlm: noisy },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotAgentPostToolUseHook(payload));
-    const response = JSON.parse(output) as { modifiedResult?: { textResultForLlm?: string } };
-
-    expect(code).toBe(0);
-    expect(response.modifiedResult?.textResultForLlm).toContain("diff line");
+  it("preserves unknown, running and failed shell results even when the invocation succeeded", async () => {
+    const noisy = Array.from({ length: 120 }, (_, i) => `src/file-${i}.ts`).join("\n");
+    for (const suffix of ["", "\n<shellId: 0 running>", "\n<shellId: 0 completed with exit code 7>", "\n<exited with exit code -1>"]) {
+      const payload = { toolName: "bash", toolArgs: { command: "git ls-files" }, toolResult: {
+        resultType: "success", textResultForLlm: noisy + suffix,
+      } };
+      expect((await captureStdout(() => runCopilotAgentPostToolUseHook(JSON.stringify(payload)))).output).toBe("{}\n");
+    }
+    for (const payload of [null, [], 7, { toolName: "bash", toolArgs: { command: "git ls-files" }, toolResult: {
+      textResultForLlm: noisy + "\n<shellId: 0 completed with exit code 0>",
+    } }]) {
+      expect((await captureStdout(() => runCopilotAgentPostToolUseHook(JSON.stringify(payload)))).output).toBe("{}\n");
+    }
   });
 });

@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 
 const cli = fileURLToPath(new URL("../dist/cli/main.js", import.meta.url));
 const host = process.argv[2] ? resolve(process.argv[2]) : "copilot";
+const adapter = process.argv[3] ?? "copilot-cli";
+assert.ok(["copilot-cli", "copilot-agent"].includes(adapter));
 const root = await realpath(await mkdtemp(join(tmpdir(), "tokenjuice-copilot-cli-e2e-")));
 const home = join(root, "home");
 const project = join(root, "project");
@@ -19,6 +21,7 @@ const env = {
   HOME: home,
   COPILOT_HOME: configDir,
   COPILOT_OFFLINE: "true",
+  ...(adapter === "copilot-agent" ? { COPILOT_AGENT_PROJECT_DIR: project } : {}),
   XDG_CONFIG_HOME: join(home, ".config"),
   XDG_DATA_HOME: join(home, ".local", "share"),
   XDG_STATE_HOME: join(home, ".local", "state"),
@@ -127,10 +130,11 @@ const server = createServer(async (request, response) => {
   }
 });
 
-async function session() {
+async function session({ trustFolder = adapter === "copilot-agent" } = {}) {
   observed.clear();
   modelRequests = 0;
   const result = await run(host, [
+    ...(trustFolder ? ["--trust-folder"] : []),
     "--output-format", "json", "--model", "fixture/fixture", "--no-auto-update", "--disable-builtin-mcps",
     "--no-custom-instructions", "--no-ask-user", "--allow-all-tools", "--add-dir", dirname(process.execPath),
     "--add-dir", dirname(cli), "--prompt", "Run the disposable fixture shell tools.",
@@ -171,11 +175,14 @@ try {
   }));
   const version = (await run(host, ["--version"])).stdout.split("\n")[0].trim();
   assert.equal(version, "GitHub Copilot CLI 1.0.105.");
+  if (adapter === "copilot-agent") await run("git", ["init", "--quiet"]);
   const baseline = await session();
-  await run(process.execPath, [cli, "install", "copilot-cli", "--local"]);
-  const hooksPath = join(configDir, "hooks", "tokenjuice-cli.json");
+  await run(process.execPath, [cli, "install", adapter, "--local"]);
+  const hooksPath = adapter === "copilot-agent" ? join(project, ".github", "hooks", "tokenjuice-agent.json")
+    : join(configDir, "hooks", "tokenjuice-cli.json");
   const hooks = JSON.parse(await readFile(hooksPath, "utf8"));
-  assert.equal(hooks.hooks.postToolUse[0].matcher, "bash");
+  if (adapter === "copilot-cli") assert.equal(hooks.hooks.postToolUse[0].matcher, "bash");
+  else assert.equal(hooks.hooks.postToolUse[0].bash, hooks.hooks.postToolUse[0].command);
   const originalCommand = hooks.hooks.postToolUse[0].command;
   const receipt = join(root, "hook-receipt.jsonl");
   const probe = join(project, "hook-probe.mjs");
@@ -187,7 +194,13 @@ appendFileSync(${JSON.stringify(receipt)}, JSON.stringify({ input: JSON.parse(in
 process.stdout.write(output);
 `);
   hooks.hooks.postToolUse[0].command = `${quote(process.execPath)} ${quote(probe)}`;
+  if (adapter === "copilot-agent") hooks.hooks.postToolUse[0].bash = hooks.hooks.postToolUse[0].command;
   await writeFile(hooksPath, JSON.stringify(hooks));
+  if (adapter === "copilot-agent") {
+    const untrusted = await session({ trustFolder: false });
+    assert.deepEqual(untrusted, baseline, "untrusted repository hooks must not execute");
+    await assert.rejects(readFile(receipt), { code: "ENOENT" });
+  }
   const installed = await session();
   const receipts = (await readFile(receipt, "utf8")).trim().split("\n").map(JSON.parse);
   assert.equal(receipts.length, cases.length, "the actual installed hook must run for every native bash result");
@@ -211,7 +224,7 @@ process.stdout.write(output);
   const failed = baseline.get("failure");
   assert.ok(failed.includes(Array.from({ length: 80 }, (_, i) => `failure-${i}`).join("\n")));
   assert.ok(failed.includes("failure-stderr"));
-  process.stdout.write(`${JSON.stringify({ ok: true, host: "copilot-cli", version, modelRequestsPerSession: modelRequests })}\n`);
+  process.stdout.write(`${JSON.stringify({ ok: true, host: "copilot-cli", adapter, version, modelRequestsPerSession: modelRequests })}\n`);
 
 } finally {
   server.closeAllConnections();

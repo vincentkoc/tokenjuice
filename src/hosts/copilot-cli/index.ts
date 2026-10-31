@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
-import { compactCopilotCliResult } from "../../core/integrations/compact-copilot-cli-result.js";
+import { compactCopilotResult } from "../../core/integrations/compact-copilot-result.js";
 import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
 import {
   ensureHooksDir,
@@ -384,7 +384,7 @@ function shouldStoreFromEnv(): boolean {
 export async function runCopilotCliPostToolUseHook(rawText: string): Promise<number> {
   try {
     const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_COPILOT_CLI_MAX_INLINE_CHARS");
-    const response = await compactCopilotCliResult(JSON.parse(rawText), {
+    const response = await compactCopilotResult(JSON.parse(rawText), {
       ...(maxInlineChars !== undefined ? { maxInlineChars } : {}),
       storeRaw: shouldStoreFromEnv(),
     });

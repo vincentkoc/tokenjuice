@@ -3,17 +3,9 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { readStringField } from "../../core/record-fields.js";
-import { readPositiveIntegerEnv } from "../../core/env.js";
-import { stripLeadingCdPrefix } from "../../core/command.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
-import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
-import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
+import { parseTokenjuiceHookCommand, type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { writeEmptyHookJsonLine } from "../shared/hook-output.js";
 import { type HooksSettings as GrokCliUserSettings, isRecord, sanitizeHooksSettings as sanitizeGrokCliSettings } from "../shared/hooks-json-file.js";
 
 export type GrokCliHookCommandOptions = TokenjuiceHookCommandOptions;
@@ -31,18 +23,9 @@ export type UninstallGrokCliHookResult = {
 
 export type GrokCliDoctorReport = HookCommandDoctorReport<"settingsPath">;
 
-type GrokCliPostToolUsePayload = {
-  hook_event_name?: unknown;
-  tool_name?: unknown;
-  tool_input?: unknown;
-  tool_output?: unknown;
-  cwd?: unknown;
-};
-
 const TOKENJUICE_GROK_CLI_SUBCOMMAND = "grok-cli-post-tool-use";
-const TOKENJUICE_GROK_CLI_FIX_COMMAND = "tokenjuice install grok-cli";
-const TOKENJUICE_GROK_CLI_ADVISORY = "Grok CLI support is beta and injects compacted context without suppressing the original tool result.";
-const TOKENJUICE_GROK_CLI_DISABLED_ADVISORY = "Grok CLI support is beta; verify live PostToolUse behavior after install.";
+const TOKENJUICE_GROK_CLI_RETIRED =
+  "Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.";
 
 function getDefaultSettingsPath(): string {
   return join(homedir(), ".grok", "user-settings.json");
@@ -60,20 +43,6 @@ async function readGrokCliSettings(settingsPath: string): Promise<{ config: Grok
   }
 }
 
-async function loadGrokCliSettingsWithBackup(settingsPath: string): Promise<{ config: GrokCliUserSettings; backupPath?: string }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const backupPath = `${settingsPath}.bak`;
-    await writeFile(backupPath, rawText, { encoding: "utf8", mode: fsConstants.S_IRUSR | fsConstants.S_IWUSR });
-    return { config: sanitizeGrokCliSettings(JSON.parse(rawText) as unknown), backupPath };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} } };
-    }
-    throw error;
-  }
-}
-
 async function writeGrokCliSettings(settingsPath: string, config: GrokCliUserSettings): Promise<void> {
   await mkdir(dirname(settingsPath), { recursive: true, mode: fsConstants.S_IRWXU });
   const tempPath = `${settingsPath}.tmp`;
@@ -86,9 +55,14 @@ async function writeGrokCliSettings(settingsPath: string, config: GrokCliUserSet
 }
 
 function isTokenjuiceGrokCliHook(entry: unknown): boolean {
-  return isRecord(entry)
-    && typeof entry.command === "string"
-    && entry.command.includes(TOKENJUICE_GROK_CLI_SUBCOMMAND);
+  if (!isRecord(entry) || typeof entry.command !== "string") return false;
+  // Generated hook commands end with this unquoted argument. Preserve custom shell text.
+  if (!entry.command.trimEnd().endsWith(` ${TOKENJUICE_GROK_CLI_SUBCOMMAND}`)) return false;
+  try {
+    return parseTokenjuiceHookCommand(entry.command).subcommand === TOKENJUICE_GROK_CLI_SUBCOMMAND;
+  } catch {
+    return false;
+  }
 }
 
 function getPostToolUseHooks(config: GrokCliUserSettings): unknown[] {
@@ -133,33 +107,12 @@ function removeTokenjuiceGrokCliHooks(config: GrokCliUserSettings): number {
   return removed;
 }
 
-function createGrokCliHook(command: string): Record<string, unknown> {
-  return {
-    matcher: "bash",
-    hooks: [
-      {
-        type: "command",
-        command,
-        timeout: 30,
-      },
-    ],
-  };
-}
-
+/** @deprecated Additive hook context cannot compact model-visible tool output. */
 export async function installGrokCliHook(
-  settingsPath = getDefaultSettingsPath(),
-  options: GrokCliHookCommandOptions = {},
+  _settingsPath?: string,
+  _options: GrokCliHookCommandOptions = {},
 ): Promise<InstallGrokCliHookResult> {
-  const { config, backupPath } = await loadGrokCliSettingsWithBackup(settingsPath);
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_GROK_CLI_SUBCOMMAND, "grok-cli", options);
-  removeTokenjuiceGrokCliHooks(config);
-  config.hooks.PostToolUse = [...getPostToolUseHooks(config), createGrokCliHook(command)];
-  await writeGrokCliSettings(settingsPath, config);
-  return {
-    settingsPath,
-    ...(backupPath ? { backupPath } : {}),
-    command,
-  };
+  throw new Error(TOKENJUICE_GROK_CLI_RETIRED);
 }
 
 export async function uninstallGrokCliHook(settingsPath = getDefaultSettingsPath()): Promise<UninstallGrokCliHookResult> {
@@ -173,128 +126,25 @@ export async function uninstallGrokCliHook(settingsPath = getDefaultSettingsPath
 
 export async function doctorGrokCliHook(
   settingsPath = getDefaultSettingsPath(),
-  options: GrokCliHookCommandOptions = {},
+  _options: GrokCliHookCommandOptions = {},
 ): Promise<GrokCliDoctorReport> {
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_GROK_CLI_SUBCOMMAND, "grok-cli", options);
   const { config, exists } = await readGrokCliSettings(settingsPath);
   const detectedCommand = findTokenjuiceGrokCliHookCommand(config);
-
   return {
     settingsPath,
-    ...(await buildHookCommandDoctorFields({
-      expectedCommand,
-      detectedCommand: exists ? detectedCommand : undefined,
-      disabledIssue: "tokenjuice PostToolUse hook is not installed for Grok CLI",
-      hostLabel: "Grok CLI",
-      advisory: detectedCommand ? TOKENJUICE_GROK_CLI_ADVISORY : TOKENJUICE_GROK_CLI_DISABLED_ADVISORY,
-      fixCommand: TOKENJUICE_GROK_CLI_FIX_COMMAND,
-    })),
+    status: detectedCommand ? "broken" : "disabled",
+    expectedCommand: "tokenjuice wrap -- <command>",
+    ...(detectedCommand ? { detectedCommand } : {}),
+    issues: detectedCommand ? ["retired tokenjuice Grok CLI hook is still installed"] : [],
+    advisories: [TOKENJUICE_GROK_CLI_RETIRED],
+    fixCommand: detectedCommand ? "tokenjuice uninstall grok-cli" : "tokenjuice wrap -- <command>",
+    checkedPaths: [settingsPath],
+    missingPaths: exists ? [] : [settingsPath],
   };
 }
 
-function readGrokCliOutputText(output: unknown): string {
-  if (typeof output === "string") {
-    return output;
-  }
-  if (!isRecord(output)) {
-    return "";
-  }
-  return readStringField(output, ["output", "error", "text", "content", "result", "stdout"]) ?? "";
-}
-
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  let argv: string[];
-  try {
-    argv = parseShellWords(stripLeadingCdPrefix(command));
-  } catch {
-    return false;
-  }
-  if (argv.length < 3) {
-    return false;
-  }
-
-  const first = argv[0];
-  const wrapIndex = typeof first === "string" && isTokenjuiceExecutablePath(first) ? 1 : -1;
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  if (optionEndIndex === -1) {
-    return false;
-  }
-
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-export async function runGrokCliPostToolUseHook(rawText: string): Promise<number> {
-  let payload: GrokCliPostToolUsePayload;
-  try {
-    const parsed: unknown = JSON.parse(rawText);
-    if (!isRecord(parsed)) {
-      writeEmptyHookJsonLine();
-      return 0;
-    }
-    payload = parsed;
-  } catch {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  if (
-    (payload.hook_event_name !== undefined && payload.hook_event_name !== "PostToolUse")
-    || payload.tool_name !== "bash"
-  ) {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  const toolInput = isRecord(payload.tool_input) ? payload.tool_input : undefined;
-  const command = toolInput ? readStringField(toolInput, ["command", "cmd"]) : undefined;
-  const toolOutput = isRecord(payload.tool_output) ? payload.tool_output : undefined;
-  if (toolOutput?.success !== true) {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-  const visibleText = readGrokCliOutputText(payload.tool_output);
-  if (!command || !visibleText.trim()) {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  if (commandRequestsTokenjuiceRawBypass(command)) {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  try {
-    const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_GROK_CLI_MAX_INLINE_CHARS");
-    const outcome = await compactBashResult({
-      source: "grok-cli",
-      command,
-      visibleText,
-      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-      inspectionPolicy: "allow-safe-inventory",
-      metadata: { source: "grok-cli-post-tool-use" },
-      genericFallbackMinSavedChars: 120,
-      genericFallbackMaxRatio: 0.75,
-      skipGenericFallbackForCompoundCommands: true,
-    });
-
-    if (outcome.action === "keep") {
-      writeEmptyHookJsonLine();
-      return 0;
-    }
-
-    writeHookJsonLine({
-      additionalContext: buildCompactedOutputContext(outcome.result.inlineText),
-    });
-    return 0;
-  } catch {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
+/** Keep stale configurations harmless until their hooks are removed. */
+export async function runGrokCliPostToolUseHook(_rawText: string): Promise<number> {
+  writeEmptyHookJsonLine();
+  return 0;
 }

@@ -5120,60 +5120,52 @@ exports[`host CLI commands > install, doctor, and uninstall grok-cli 1`] = `
 "$ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Grok CLI
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install grok-cli
-[stdout] success: grok-cli hook installed successfully
-
-  Hook        : <SANDBOX>/home/.grok/user-settings.json
-  Command     : <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-  Beta        : user-level PostToolUse hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor grok-cli
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor grok-cli --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.grok/user-settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Grok CLI support is beta and injects compacted context without suppressing the original tool result."
+    "Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install grok-cli",
-  "expectedCommand": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.grok/user-settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.grok/user-settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install grok-cli --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.grok/user-settings.json",
-  "backupPath": "<SANDBOX>/home/.grok/user-settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use"
-}
-exit 0
+throws Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall grok-cli
-[stdout] removed grok-cli entries: 1
+[stdout] removed grok-cli entries: 0
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] enable: tokenjuice install grok-cli
 exit 0
@@ -5188,12 +5180,12 @@ exit 0
 $ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Grok CLI
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -9098,10 +9090,10 @@ exit 0
 
 exports[`host CLI commands > rejects unknown or missing targets 1`] = `
 "$ tokenjuice install not-a-host
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice install
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall not-a-host
 throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder

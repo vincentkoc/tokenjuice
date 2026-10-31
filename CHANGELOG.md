@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Retire community Grok CLI additive hook compaction, retain scoped legacy cleanup, and validate explicit wrapping against the actual packaged standalone runtime.
+
 - Retire Kimi automatic compaction because current observation-only hooks cannot replace model output; preserve legacy cleanup and validate explicit wrapping with native Kimi Code CLI 2.4.1.
 - Preserve original Codex Bash results when hook payloads omit exit status, avoiding duplicate summaries and lost failure metadata; replace eligible status-bearing results through supported hook feedback and add native 0.166.0 acceptance coverage.
 

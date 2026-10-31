@@ -21,12 +21,13 @@ describe("Ante instructions", () => {
   it("installs idempotent guidance and removes only its own block", async () => {
     const root = await sandbox();
     const path = join(root, "AGENTS.md");
-    const original = "# project rules\n\n<!-- tokenjuice:other begin -->\nkeep this\n<!-- tokenjuice:other end -->\n";
+    const original = "    indented example\n\n\n# project rules\n\n<!-- tokenjuice:other begin -->\nkeep this\n<!-- tokenjuice:other end -->";
     await writeFile(path, original);
     expect((await doctorAnteInstructions(path)).status).toBe("disabled");
     const first = await installAnteInstructions(path);
     expect(await readFile(first.backupPath!, "utf8")).toBe(original);
     const installed = await readFile(path, "utf8");
+    expect(installed.endsWith(original)).toBe(true);
     expect(installed).toContain("through Ante");
     expect(installed).toContain("tokenjuice wrap --raw -- <command>");
     await installAnteInstructions(path);

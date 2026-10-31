@@ -99,6 +99,7 @@ const TOKENJUICE_ANTE_BLOCK_CONFIG = {
   beginMarker: TOKENJUICE_ANTE_BEGIN,
   endMarker: TOKENJUICE_ANTE_END,
   block: TOKENJUICE_ANTE_BLOCK,
+  preserveSurroundingText: true,
 };
 
 export async function installAnteInstructions(

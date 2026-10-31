@@ -203,7 +203,11 @@ describe("AdaL CLI instructions", () => {
     const doctor = await doctorAdalInstructions(instructionsPath);
 
     expect(doctor.status).toBe("broken");
-    expect(doctor.issues[0]).toContain("without an end marker");
+    expect(doctor.issues).toEqual([
+      "configured AdaL CLI instructions have a tokenjuice start marker without an end marker",
+      "configured AdaL CLI instructions are missing tokenjuice wrap guidance",
+      "configured AdaL CLI instructions are missing the raw escape hatch",
+    ]);
     expect(doctor.fixCommand).toContain("remove unmatched tokenjuice markers");
   });
 

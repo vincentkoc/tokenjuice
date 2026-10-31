@@ -1,9 +1,9 @@
 import { lstat, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -85,26 +85,6 @@ async function chooseLeanCtlBackupPath(instructionsPath: string): Promise<string
   }
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use LeanCTL instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
@@ -118,7 +98,11 @@ async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: 
   }
 
   await rejectInstructionSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use LeanCTL instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   await rejectInstructionSymlink(resolvedPath);
   return resolvedPath;
 }

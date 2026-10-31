@@ -3,6 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
@@ -232,15 +233,6 @@ function readGrokCliOutputText(output: unknown): string {
     return "";
   }
   return readStringField(output, ["output", "error", "text", "content", "result", "stdout"]) ?? "";
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {

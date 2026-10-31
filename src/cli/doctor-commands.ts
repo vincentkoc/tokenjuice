@@ -1,3 +1,4 @@
+import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
 // Per-target handlers for `tokenjuice doctor <target>` (hosts plus `doctor hooks`).
 // Each handler is keyed by the target name and its aliases in doctorCommands.
 
@@ -436,6 +437,19 @@ const doctorQoderCommand = createDoctorCommand(() => doctorQoderInstructions(), 
 const doctorReplitCommand = createDoctorCommand(() => doctorReplitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) {
+    process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  }
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
@@ -1133,6 +1147,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["plandex", doctorPlandexCommand],
   ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],
+  ["qoder-cli", doctorQoderCliCommand],
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],

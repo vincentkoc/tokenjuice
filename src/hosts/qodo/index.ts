@@ -1,7 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -16,6 +16,7 @@ import {
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { getTomlStructureLines, isTomlTableHeader } from "../../core/toml-structure.js";
 
 type QodoConfigSnapshot = Awaited<ReturnType<typeof readInstructionFile>>;
 
@@ -89,26 +90,6 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectConfigSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
@@ -122,7 +103,11 @@ async function resolveSafeProjectConfigPath(filePath: string, projectDir: string
   }
 
   await rejectConfigSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Qodo config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   await rejectConfigSymlink(resolvedPath);
   const expectedConfigPath = getExpectedConfigPath(projectDir);
   if (resolvedPath !== expectedConfigPath) {
@@ -299,99 +284,6 @@ function readTableName(line: string): string | undefined {
     return "review_agent";
   }
   return name;
-}
-
-type TomlMultilineState = {
-  delimiter: "\"\"\"" | "'''" | undefined;
-};
-
-function isEscaped(text: string, index: number): boolean {
-  let slashCount = 0;
-  for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor -= 1) {
-    slashCount += 1;
-  }
-  return slashCount % 2 === 1;
-}
-
-function findTomlMultilineClose(line: string, delimiter: "\"\"\"" | "'''", fromIndex: number): number {
-  let searchIndex = fromIndex;
-  while (searchIndex < line.length) {
-    const closeIndex = line.indexOf(delimiter, searchIndex);
-    if (closeIndex === -1) {
-      return -1;
-    }
-    if (delimiter === "'''" || !isEscaped(line, closeIndex)) {
-      return closeIndex;
-    }
-    searchIndex = closeIndex + 1;
-  }
-  return -1;
-}
-
-function updateTomlMultilineState(line: string, state: TomlMultilineState): void {
-  let index = 0;
-  let inBasicString = false;
-  let inLiteralString = false;
-  while (index < line.length) {
-    if (state.delimiter) {
-      const closeIndex = findTomlMultilineClose(line, state.delimiter, index);
-      if (closeIndex === -1) {
-        return;
-      }
-      index = closeIndex + state.delimiter.length;
-      state.delimiter = undefined;
-      continue;
-    }
-
-    const next = line.slice(index, index + 3);
-    const char = line[index];
-    if (inBasicString) {
-      if (char === "\"" && !isEscaped(line, index)) {
-        inBasicString = false;
-      }
-      index += 1;
-      continue;
-    }
-    if (inLiteralString) {
-      if (char === "'") {
-        inLiteralString = false;
-      }
-      index += 1;
-      continue;
-    }
-
-    if (char === "#") {
-      return;
-    }
-    if (next === "\"\"\"" || next === "'''") {
-      const closeIndex = findTomlMultilineClose(line, next, index + next.length);
-      if (closeIndex === -1) {
-        state.delimiter = next;
-        return;
-      }
-      index = closeIndex + next.length;
-      continue;
-    }
-    if (char === "\"") {
-      inBasicString = true;
-    } else if (char === "'") {
-      inLiteralString = true;
-    }
-    index += 1;
-  }
-}
-
-function getTomlStructureLines(lines: readonly string[]): string[] {
-  const state: TomlMultilineState = { delimiter: undefined };
-  return lines.map((line) => {
-    const structuralLine = state.delimiter ? "" : line;
-    updateTomlMultilineState(line, state);
-    return structuralLine;
-  });
-}
-
-function isTomlTableHeader(line: string): boolean {
-  return /^\s*(?:\[[^\]\n]+\]|\[\[[^\]\n]+\]\])\s*(?:#.*)?$/u.test(line);
 }
 
 function findReviewAgentTableRange(lines: readonly string[]): { start: number; end: number } | undefined {

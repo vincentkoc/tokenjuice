@@ -1,3 +1,4 @@
+import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 // Per-target handlers for `tokenjuice uninstall <target>`.
 // Each handler is keyed by the target name and its aliases in uninstallCommands.
 
@@ -637,6 +638,12 @@ const uninstallReplitCommand = createHostCommand(() => uninstallReplitInstructio
   process.stdout.write("enable: tokenjuice install replit\n");
 });
 
+const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (result) => {
+  process.stdout.write(`removed qoder-cli entries: ${result.removed}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  process.stdout.write("enable: tokenjuice install qoder-cli\n");
+});
+
 const uninstallQwenCodeCommand = createHostCommand(() => uninstallQwenCodeHook(), (result) => {
   process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
@@ -853,6 +860,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["plandex", uninstallPlandexCommand],
   ["ante", uninstallAnteCommand],
   ["qoder", uninstallQoderCommand],
+  ["qoder-cli", uninstallQoderCliCommand],
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],

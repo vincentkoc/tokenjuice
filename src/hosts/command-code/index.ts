@@ -3,6 +3,7 @@ import { lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -391,15 +392,6 @@ function readCommandCodeOutputText(response: unknown): string {
     return "";
   }
   return readStringField(response, ["output", "text", "content", "result", "stdout"]) ?? "";
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function readPayloadField(payload: CommandCodePostToolUsePayload, snakeKey: keyof CommandCodePostToolUsePayload, camelKey: keyof CommandCodePostToolUsePayload): unknown {

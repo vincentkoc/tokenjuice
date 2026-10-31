@@ -3,6 +3,7 @@ import { access, rm } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { extractHookCommandPaths, parseShellWords, shellQuote } from "../shared/hook-command.js";
@@ -437,15 +438,6 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
   const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
   const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex === -1 ? undefined : optionEndIndex);
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function shouldStoreFromEnv(): boolean {

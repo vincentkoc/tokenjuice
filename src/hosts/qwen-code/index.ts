@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -279,15 +280,6 @@ function readQwenCodeOutputText(response: unknown): string {
     return readQwenCodeOutputText(response.result);
   }
   return "";
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function readPayloadField(payload: QwenCodePostToolUsePayload, snakeKey: keyof QwenCodePostToolUsePayload, camelKey: keyof QwenCodePostToolUsePayload): unknown {

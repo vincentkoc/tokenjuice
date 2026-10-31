@@ -2,6 +2,7 @@ import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { shouldRecordStats } from "../../core/artifacts.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
@@ -267,15 +268,6 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
 
   const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function shouldStoreFromEnv(): boolean {

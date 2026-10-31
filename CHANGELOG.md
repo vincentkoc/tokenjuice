@@ -5,6 +5,7 @@
 ### Fixes
 
 - Preserve failed-command stdout/stderr in automatic pre-tool wrappers and validate complete 80-line failures through native Claude Code, CodeBuddy, Droid, Gemini CLI and Qwen Code model requests.
+- Silence obsolete Droid and Qwen Code post-tool handlers, removing duplicate additive summaries, diagnostics and artifact writes; retain reinstall migration to pre-tool wrapping.
 
 - Require proven shell exit 0 before Copilot coding-agent compaction, share the CLI result compactor, preserve completion metadata and validate the repository hook through real local CLI sessions without claiming cloud acceptance.
 - Retire OpenHands additive hook compaction, preserve scoped cleanup for both supported configuration formats, and keep stale hooks silent.

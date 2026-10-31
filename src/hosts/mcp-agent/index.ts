@@ -16,6 +16,7 @@ import {
 } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -34,15 +35,9 @@ export type UninstallMcpAgentDefinitionResult = {
   removed: boolean;
 };
 
-export type McpAgentDoctorReport = {
+export type McpAgentDoctorReport = InstructionDoctorReportFields & {
   agentPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_MCP_AGENT_FIX_COMMAND = "tokenjuice install mcp-agent";

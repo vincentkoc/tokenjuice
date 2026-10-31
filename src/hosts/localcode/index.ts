@@ -7,6 +7,7 @@ import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/i
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -31,17 +32,11 @@ export type UninstallLocalCodePluginResult = {
   removed: boolean;
 };
 
-export type LocalCodeDoctorReport = {
+export type LocalCodeDoctorReport = InstructionDoctorReportFields & {
   pluginDir: string;
   manifestPath: string;
   indexPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_LOCALCODE_FIX_COMMAND = "tokenjuice install localcode";

@@ -9,6 +9,7 @@ import { findGitRoot } from "../shared/project-root.js";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -27,14 +28,8 @@ export type UninstallDockerAgentPromptResult = {
   removed: boolean;
 };
 
-export type DockerAgentDoctorReport = {
+export type DockerAgentDoctorReport = InstructionDoctorReportFields & {
   promptPath: string;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_DOCKER_AGENT_FIX_COMMAND = "tokenjuice install docker-agent";

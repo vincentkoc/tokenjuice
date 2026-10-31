@@ -4,6 +4,7 @@ import { findGitRoot } from "../shared/project-root.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -22,14 +23,8 @@ export type UninstallOpenWebUIToolResult = {
   removed: boolean;
 };
 
-export type OpenWebUIDoctorReport = {
+export type OpenWebUIDoctorReport = InstructionDoctorReportFields & {
   toolPath: string;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_OPENWEBUI_FIX_COMMAND = "tokenjuice install openwebui";

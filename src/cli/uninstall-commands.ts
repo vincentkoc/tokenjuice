@@ -103,206 +103,103 @@ import { uninstallWindsurfRule } from "../hosts/windsurf/index.js";
 import { uninstallZedInstructions } from "../hosts/zed/index.js";
 import { uninstallZencoderRule } from "../hosts/zencoder/index.js";
 import { shellQuote } from "../hosts/shared/hook-command.js";
-import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
+import { createHostCommand } from "./host-command.js";
+import type { HostCommandHandler } from "./command-types.js";
 
-async function uninstallAdalCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAdalInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAdalCommand = createHostCommand(() => uninstallAdalInstructions(), (result) => {
   process.stdout.write(`removed adal instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install adal\n");
-  return 0;
-}
+});
 
-async function uninstallAetherCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAetherPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAetherCommand = createHostCommand(() => uninstallAetherPrompt(), (result) => {
   process.stdout.write(`removed aether prompt: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`prompt path: ${result.promptPath}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write(`prompt refs removed: ${result.promptsRemoved}\n`);
   process.stdout.write("enable: tokenjuice install aether\n");
-  return 0;
-}
+});
 
-async function uninstallAiderCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAiderConvention();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAiderCommand = createHostCommand(() => uninstallAiderConvention(), (result) => {
   process.stdout.write(`removed aider convention: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`convention path: ${result.conventionPath}\n`);
   process.stdout.write("enable: tokenjuice install aider\n");
-  return 0;
-}
+});
 
-async function uninstallAictlCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAictlInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAictlCommand = createHostCommand(() => uninstallAictlInstructions(), (result) => {
   process.stdout.write(`removed aictl instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install aictl\n");
-  return 0;
-}
+});
 
-async function uninstallAiMemoryProtocolCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAiMemoryProtocolMemory();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAiMemoryProtocolCommand = createHostCommand(() => uninstallAiMemoryProtocolMemory(), (result) => {
   process.stdout.write(`removed ai-memory-protocol memory: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`memory path: ${result.memoryPath}\n`);
   process.stdout.write(`rebuild: MEMORY_DIR=${shellQuote(dirname(dirname(result.memoryPath)))} memory rebuild\n`);
   process.stdout.write("enable: tokenjuice install ai-memory-protocol\n");
-  return 0;
-}
+});
 
-async function uninstallAgentLayerCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentLayerInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentLayerCommand = createHostCommand(() => uninstallAgentLayerInstructions(), (result) => {
   process.stdout.write(`removed agent-layer instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agent-layer\n");
-  return 0;
-}
+});
 
-async function uninstallAgentinitCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentInitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentinitCommand = createHostCommand(() => uninstallAgentInitInstructions(), (result) => {
   process.stdout.write(`removed agentinit instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agentinit\n");
-  return 0;
-}
+});
 
-async function uninstallAgentlinkCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentlinkInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentlinkCommand = createHostCommand(() => uninstallAgentlinkInstructions(), (result) => {
   process.stdout.write(`removed agentlink instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agentlink\n");
-  return 0;
-}
+});
 
-async function uninstallAgentloomCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentloomRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentloomCommand = createHostCommand(() => uninstallAgentloomRule(), (result) => {
   process.stdout.write(`removed agentloom rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agentloom\n");
-  return 0;
-}
+});
 
-async function uninstallAgentsCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentsCliMemory();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentsCliCommand = createHostCommand(() => uninstallAgentsCliMemory(), (result) => {
   process.stdout.write(`removed agents-cli memory: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`memory path: ${result.instructionsPath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agents-cli\n");
-  return 0;
-}
+});
 
-async function uninstallAgentsMdCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentsMdInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentsMdCommand = createHostCommand(() => uninstallAgentsMdInstructions(), (result) => {
   process.stdout.write(`removed agents-md instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install agents-md\n");
-  return 0;
-}
+});
 
-async function uninstallAgentsgeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentsGeRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentsgeCommand = createHostCommand(() => uninstallAgentsGeRule(), (result) => {
   process.stdout.write(`removed agentsge rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install agentsge\n");
-  return 0;
-}
+});
 
-async function uninstallAgentsmeshCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAgentsMeshRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAgentsmeshCommand = createHostCommand(() => uninstallAgentsMeshRule(), (result) => {
   process.stdout.write(`removed agentsmesh rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write(`generate: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install agentsmesh\n");
-  return 0;
-}
+});
 
-async function uninstallAmazonQCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAmazonQRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAmazonQCommand = createHostCommand(() => uninstallAmazonQRule(), (result) => {
   process.stdout.write(`removed amazon-q rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install amazon-q\n");
-  return 0;
-}
+});
 
-async function uninstallAmpCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAmpInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAmpCommand = createHostCommand(() => uninstallAmpInstructions(), (result) => {
   process.stdout.write(`removed amp instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   if (result.removedPaths && result.removedPaths.length > 1) {
@@ -312,174 +209,83 @@ async function uninstallAmpCommand(args: ParsedArgs): Promise<number> {
     }
   }
   process.stdout.write("enable: tokenjuice install amp\n");
-  return 0;
-}
+});
 
-async function uninstallAntigravityCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAntigravityRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAntigravityCommand = createHostCommand(() => uninstallAntigravityRule(), (result) => {
   process.stdout.write(`removed antigravity rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install antigravity\n");
-  return 0;
-}
+});
 
-async function uninstallAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAnywhereAgentsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAnywhereAgentsCommand = createHostCommand(() => uninstallAnywhereAgentsInstructions(), (result) => {
   process.stdout.write(`removed anywhere-agents instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install anywhere-agents\n");
-  return 0;
-}
+});
 
-async function uninstallAugmentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAugmentRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAugmentCommand = createHostCommand(() => uninstallAugmentRule(), (result) => {
   process.stdout.write(`removed augment rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install augment\n");
-  return 0;
-}
+});
 
-async function uninstallAvanteCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallAvanteInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallAvanteCommand = createHostCommand(() => uninstallAvanteInstructions(), (result) => {
   process.stdout.write(`removed avante instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install avante\n");
-  return 0;
-}
+});
 
-async function uninstallBazCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBazSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBazCommand = createHostCommand(() => uninstallBazSkill(), (result) => {
   process.stdout.write(`removed baz skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install baz\n");
-  return 0;
-}
+});
 
-async function uninstallBitoCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBitoGuidelines();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBitoCommand = createHostCommand(() => uninstallBitoGuidelines(), (result) => {
   process.stdout.write(`removed bito custom guidelines: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write(`guidelines path: ${result.guidelinesPath}\n`);
   process.stdout.write("enable: tokenjuice install bito\n");
-  return 0;
-}
+});
 
-async function uninstallBlackboxCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBlackboxSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBlackboxCommand = createHostCommand(() => uninstallBlackboxSkill(), (result) => {
   process.stdout.write(`removed blackbox skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install blackbox\n");
-  return 0;
-}
+});
 
-async function uninstallBlocksCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBlocksSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBlocksCommand = createHostCommand(() => uninstallBlocksSkill(), (result) => {
   process.stdout.write(`removed blocks skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install blocks\n");
-  return 0;
-}
+});
 
-async function uninstallClawdbotCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallClawdbotSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallClawdbotCommand = createHostCommand(() => uninstallClawdbotSkill(), (result) => {
   process.stdout.write(`removed clawdbot skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install clawdbot\n");
-  return 0;
-}
+});
 
-async function uninstallBobCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBobInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBobCommand = createHostCommand(() => uninstallBobInstructions(), (result) => {
   process.stdout.write(`removed bob instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install bob\n");
-  return 0;
-}
+});
 
-async function uninstallBuilderCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallBuilderRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallBuilderCommand = createHostCommand(() => uninstallBuilderRule(), (result) => {
   process.stdout.write(`removed builder rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install builder\n");
-  return 0;
-}
+});
 
-async function uninstallCharlieCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCharlieInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCharlieCommand = createHostCommand(() => uninstallCharlieInstructions(), (result) => {
   process.stdout.write(`removed charlie instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install charlie\n");
-  return 0;
-}
+});
 
-async function uninstallCodexCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodexHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCodexCommand = createHostCommand(() => uninstallCodexHook(), (result) => {
   process.stdout.write(`removed codex hook: ${result.hooksPath}\n`);
   process.stdout.write(`removed entries: ${result.removed}\n`);
   process.stdout.write(`writer: ${result.writer} (${result.fragmentId})\n`);
@@ -487,644 +293,308 @@ async function uninstallCodexCommand(args: ParsedArgs): Promise<number> {
     process.stdout.write(`backup: ${result.backupPath}\n`);
   }
   process.stdout.write("enable: tokenjuice install codex\n");
-  return 0;
-}
+});
 
-async function uninstallClaudeCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallClaudeCodeHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallClaudeCodeCommand = createHostCommand(() => uninstallClaudeCodeHook(), (result) => {
   process.stdout.write(`removed claude-code hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   if (result.backupPath) {
     process.stdout.write(`backup: ${result.backupPath}\n`);
   }
   process.stdout.write("enable: tokenjuice install claude-code\n");
-  return 0;
-}
+});
 
-async function uninstallClineCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallClineHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallClineCommand = createHostCommand(() => uninstallClineHook(), (result) => {
   process.stdout.write(`removed cline hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`hook path: ${result.hookPath}\n`);
   process.stdout.write("enable: tokenjuice install cline\n");
-  return 0;
-}
+});
 
-async function uninstallCodeantCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodeAntInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCodeantCommand = createHostCommand(() => uninstallCodeAntInstructions(), (result) => {
   process.stdout.write(`removed codeant instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install codeant\n");
-  return 0;
-}
+});
 
-async function uninstallCodebuffCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodebuffInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCodebuffCommand = createHostCommand(() => uninstallCodebuffInstructions(), (result) => {
   process.stdout.write(`removed codebuff instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install codebuff\n");
-  return 0;
-}
+});
 
-async function uninstallCodegenCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodegenInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCodegenCommand = createHostCommand(() => uninstallCodegenInstructions(), (result) => {
   process.stdout.write(`removed codegen instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install codegen\n");
-  return 0;
-}
+});
 
-async function uninstallCoderAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCoderAgentsSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCoderAgentsCommand = createHostCommand(() => uninstallCoderAgentsSkill(), (result) => {
   process.stdout.write(`removed coder-agents skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install coder-agents\n");
-  return 0;
-}
+});
 
-async function uninstallCodebuddyCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodeBuddyHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCodebuddyCommand = createHostCommand(() => uninstallCodeBuddyHook(), (result) => {
   process.stdout.write(`removed codebuddy hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   if (result.backupPath) {
     process.stdout.write(`backup: ${result.backupPath}\n`);
   }
   process.stdout.write("enable: tokenjuice install codebuddy\n");
-  return 0;
-}
+});
 
-async function uninstallCommandCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCommandCodeHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCommandCodeCommand = createHostCommand(() => uninstallCommandCodeHook(), (result) => {
   process.stdout.write(`removed command-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install command-code\n");
-  return 0;
-}
+});
 
-async function uninstallPiGoCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallPiGoSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallPiGoCommand = createHostCommand(() => uninstallPiGoSkill(), (result) => {
   process.stdout.write(`removed pi-go skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install pi-go\n");
-  return 0;
-}
+});
 
-async function uninstallContinueCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallContinueRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallContinueCommand = createHostCommand(() => uninstallContinueRule(), (result) => {
   process.stdout.write(`removed continue rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install continue\n");
-  return 0;
-}
+});
 
-async function uninstallCopilotAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCopilotAgentHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCopilotAgentCommand = createHostCommand(() => uninstallCopilotAgentHook(), (result) => {
   process.stdout.write(`removed copilot-agent entries: ${result.removed}\n`);
   process.stdout.write(`hook path: ${result.hooksPath}\n`);
   if (result.deletedFile) {
     process.stdout.write("deleted empty hook file: yes\n");
   }
   process.stdout.write("enable: tokenjuice install copilot-agent\n");
-  return 0;
-}
+});
 
-async function uninstallCrushCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCrushSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCrushCommand = createHostCommand(() => uninstallCrushSkill(), (result) => {
   process.stdout.write(`removed crush skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install crush\n");
-  return 0;
-}
+});
 
-async function uninstallCursorCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCursorHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCursorCommand = createHostCommand(() => uninstallCursorHook(), (result) => {
   process.stdout.write(`removed cursor hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}\n`);
   if (result.backupPath) {
     process.stdout.write(`backup: ${result.backupPath}\n`);
   }
   process.stdout.write("enable: tokenjuice install cursor\n");
-  return 0;
-}
+});
 
-async function uninstallFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallFirebaseStudioRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallFirebaseStudioCommand = createHostCommand(() => uninstallFirebaseStudioRule(), (result) => {
   process.stdout.write(`removed firebase-studio rules: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rules path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install firebase-studio\n");
-  return 0;
-}
+});
 
-async function uninstallForgecodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallForgeCodeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallForgecodeCommand = createHostCommand(() => uninstallForgeCodeInstructions(), (result) => {
   process.stdout.write(`removed forgecode instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install forgecode\n");
-  return 0;
-}
+});
 
-async function uninstallGeminiCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGeminiCliHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGeminiCliCommand = createHostCommand(() => uninstallGeminiCliHook(), (result) => {
   process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install gemini-cli\n");
-  return 0;
-}
+});
 
-async function uninstallGitlabDuoCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGitLabDuoRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGitlabDuoCommand = createHostCommand(() => uninstallGitLabDuoRule(), (result) => {
   process.stdout.write(`removed gitlab-duo rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install gitlab-duo\n");
-  return 0;
-}
+});
 
-async function uninstallGrokCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGrokCliHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGrokCliCommand = createHostCommand(() => uninstallGrokCliHook(), (result) => {
   process.stdout.write(`removed grok-cli entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install grok-cli\n");
-  return 0;
-}
+});
 
-async function uninstallGptmeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGptmeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGptmeCommand = createHostCommand(() => uninstallGptmeInstructions(), (result) => {
   process.stdout.write(`removed gptme instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install gptme\n");
-  return 0;
-}
+});
 
-async function uninstallJean2Command(args: ParsedArgs): Promise<number> {
-  const result = await uninstallJean2Instructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallJean2Command = createHostCommand(() => uninstallJean2Instructions(), (result) => {
   process.stdout.write(`removed jean2 instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install jean2\n");
-  return 0;
-}
+});
 
-async function uninstallGrokBuildCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGrokBuildInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGrokBuildCommand = createHostCommand(() => uninstallGrokBuildInstructions(), (result) => {
   process.stdout.write(`removed grok-build instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install grok-build\n");
-  return 0;
-}
+});
 
-async function uninstallGrokBotCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGrokBotRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGrokBotCommand = createHostCommand(() => uninstallGrokBotRule(), (result) => {
   process.stdout.write(`removed grok-bot rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write(`restored backup: ${result.restoredBackup ? "yes" : "no"}\n`);
   process.stdout.write("enable: tokenjuice install grok-bot\n");
-  return 0;
-}
+});
 
-async function uninstallGooseCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGooseHints();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGooseCommand = createHostCommand(() => uninstallGooseHints(), (result) => {
   process.stdout.write(`removed goose hints: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`hints path: ${result.hintsPath}\n`);
   process.stdout.write("enable: tokenjuice install goose\n");
-  return 0;
-}
+});
 
-async function uninstallGreptileCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallGreptileRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallGreptileCommand = createHostCommand(() => uninstallGreptileRule(), (result) => {
   process.stdout.write(`removed greptile rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install greptile\n");
-  return 0;
-}
+});
 
-async function uninstallQodoCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallQodoReviewConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallQodoCommand = createHostCommand(() => uninstallQodoReviewConfig(), (result) => {
   process.stdout.write(`removed qodo review config: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install qodo\n");
-  return 0;
-}
+});
 
-async function uninstallCoderabbitCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCodeRabbitConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCoderabbitCommand = createHostCommand(() => uninstallCodeRabbitConfig(), (result) => {
   process.stdout.write(`removed coderabbit review config: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install coderabbit\n");
-  return 0;
-}
+});
 
-async function uninstallJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallJetBrainsAiRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallJetbrainsAiCommand = createHostCommand(() => uninstallJetBrainsAiRule(), (result) => {
   process.stdout.write(`removed jetbrains-ai rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install jetbrains-ai\n");
-  return 0;
-}
+});
 
-async function uninstallJunieCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallJunieInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallJunieCommand = createHostCommand(() => uninstallJunieInstructions(), (result) => {
   process.stdout.write(`removed junie instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install junie\n");
-  return 0;
-}
+});
 
-async function uninstallJulesCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallJulesInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallJulesCommand = createHostCommand(() => uninstallJulesInstructions(), (result) => {
   process.stdout.write(`removed jules instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install jules\n");
-  return 0;
-}
+});
 
-async function uninstallLeanctlCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallLeanCtlInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallLeanctlCommand = createHostCommand(() => uninstallLeanCtlInstructions(), (result) => {
   process.stdout.write(`removed leanctl instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install leanctl\n");
-  return 0;
-}
+});
 
-async function uninstallKimiCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallKimiHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallKimiCommand = createHostCommand(() => uninstallKimiHook(), (result) => {
   process.stdout.write(`removed kimi entries: ${result.removed}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install kimi\n");
-  return 0;
-}
+});
 
-async function uninstallLocalcodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallLocalCodePlugin();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallLocalcodeCommand = createHostCommand(() => uninstallLocalCodePlugin(), (result) => {
   process.stdout.write(`removed localcode plugin: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`plugin dir: ${result.pluginDir}\n`);
   process.stdout.write(`manifest path: ${result.manifestPath}\n`);
   process.stdout.write(`entrypoint path: ${result.indexPath}\n`);
   process.stdout.write("enable: tokenjuice install localcode\n");
-  return 0;
-}
+});
 
-async function uninstallKiroCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallKiroSteering();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallKiroCommand = createHostCommand(() => uninstallKiroSteering(), (result) => {
   process.stdout.write(`removed kiro steering: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`steering path: ${result.steeringPath}\n`);
   process.stdout.write("enable: tokenjuice install kiro\n");
-  return 0;
-}
+});
 
-async function uninstallKiloCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallKiloRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallKiloCommand = createHostCommand(() => uninstallKiloRule(), (result) => {
   process.stdout.write(`removed kilo rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write(`removed kilo config entry: ${result.configUpdated ? "yes" : "no"}\n`);
   process.stdout.write("enable: tokenjuice install kilo\n");
-  return 0;
-}
+});
 
-async function uninstallMistralVibeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallMistralVibeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallMistralVibeCommand = createHostCommand(() => uninstallMistralVibeInstructions(), (result) => {
   process.stdout.write(`removed mistral-vibe instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install mistral-vibe\n");
-  return 0;
-}
+});
 
-async function uninstallMcpAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallMcpAgentDefinition();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallMcpAgentCommand = createHostCommand(() => uninstallMcpAgentDefinition(), (result) => {
   process.stdout.write(`removed mcp-agent definition: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`agent path: ${result.agentPath}\n`);
   process.stdout.write("enable: tokenjuice install mcp-agent\n");
-  return 0;
-}
+});
 
-async function uninstallMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallMiniSweAgentConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallMiniSweAgentCommand = createHostCommand(() => uninstallMiniSweAgentConfig(), (result) => {
   process.stdout.write(`removed mini-swe-agent config: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install mini-swe-agent\n");
-  return 0;
-}
+});
 
-async function uninstallSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallSweAgentConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallSweAgentCommand = createHostCommand(() => uninstallSweAgentConfig(), (result) => {
   process.stdout.write(`removed swe-agent config: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install swe-agent\n");
-  return 0;
-}
+});
 
-async function uninstallStagewiseCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallStagewiseSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallStagewiseCommand = createHostCommand(() => uninstallStagewiseSkill(), (result) => {
   process.stdout.write(`removed stagewise skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install stagewise\n");
-  return 0;
-}
+});
 
-async function uninstallMuxCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallMuxHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallMuxCommand = createHostCommand(() => uninstallMuxHook(), (result) => {
   process.stdout.write(`removed mux hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`hook path: ${result.hookPath}\n`);
   process.stdout.write("enable: tokenjuice install mux\n");
-  return 0;
-}
+});
 
-async function uninstallNovakitCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallNovaKitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallNovakitCommand = createHostCommand(() => uninstallNovaKitInstructions(), (result) => {
   process.stdout.write(`removed novakit instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install novakit\n");
-  return 0;
-}
+});
 
-async function uninstallKnownsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallKnownsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallKnownsCommand = createHostCommand(() => uninstallKnownsInstructions(), (result) => {
   process.stdout.write(`removed knowns instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install knowns\n");
-  return 0;
-}
+});
 
-async function uninstallOnaCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallOnaSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallOnaCommand = createHostCommand(() => uninstallOnaSkill(), (result) => {
   process.stdout.write(`removed ona skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install ona\n");
-  return 0;
-}
+});
 
-async function uninstallWarpCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallWarpInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallWarpCommand = createHostCommand(() => uninstallWarpInstructions(), (result) => {
   process.stdout.write(`removed warp instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install warp\n");
-  return 0;
-}
+});
 
-async function uninstallOpenhandsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallOpenHandsHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallOpenhandsCommand = createHostCommand(() => uninstallOpenHandsHook(), (result) => {
   process.stdout.write(`removed openhands entries: ${result.removed}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}\n`);
   process.stdout.write("enable: tokenjuice install openhands\n");
-  return 0;
-}
+});
 
-async function uninstallOpenInterpreterCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallOpenInterpreterInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallOpenInterpreterCommand = createHostCommand(() => uninstallOpenInterpreterInstructions(), (result) => {
   process.stdout.write(`removed open-interpreter instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install open-interpreter\n");
-  return 0;
-}
+});
 
-async function uninstallOpenwebuiCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallOpenWebUITool();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallOpenwebuiCommand = createHostCommand(() => uninstallOpenWebUITool(), (result) => {
   process.stdout.write(`removed openwebui tool source: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`tool path: ${result.toolPath}\n`);
   process.stdout.write("enable: tokenjuice install openwebui\n");
-  return 0;
-}
+});
 
-async function uninstallPiCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallPiExtension();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallPiCommand = createHostCommand(() => uninstallPiExtension(), (result) => {
   process.stdout.write(`removed pi extension: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
   if (result.backupPath) {
@@ -1134,321 +604,152 @@ async function uninstallPiCommand(args: ParsedArgs): Promise<number> {
     process.stdout.write("restored backup: yes\n");
   }
   process.stdout.write("enable: tokenjuice install pi\n");
-  return 0;
-}
+});
 
-async function uninstallOpencodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallOpenCodeExtension();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallOpencodeCommand = createHostCommand(() => uninstallOpenCodeExtension(), (result) => {
   process.stdout.write(`removed opencode extension: ${result.removed ? "yes" : "missing"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
   process.stdout.write("enable: tokenjuice install opencode\n");
-  return 0;
-}
+});
 
-async function uninstallPlandexCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallPlandexConvention();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallPlandexCommand = createHostCommand(() => uninstallPlandexConvention(), (result) => {
   process.stdout.write(`removed plandex convention: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`convention path: ${result.conventionPath}\n`);
   process.stdout.write("enable: tokenjuice install plandex\n");
-  return 0;
-}
+});
 
-async function uninstallQoderCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallQoderInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallQoderCommand = createHostCommand(() => uninstallQoderInstructions(), (result) => {
   process.stdout.write(`removed qoder instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install qoder\n");
-  return 0;
-}
+});
 
-async function uninstallReplitCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallReplitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallReplitCommand = createHostCommand(() => uninstallReplitInstructions(), (result) => {
   process.stdout.write(`removed replit instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install replit\n");
-  return 0;
-}
+});
 
-async function uninstallQwenCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallQwenCodeHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallQwenCodeCommand = createHostCommand(() => uninstallQwenCodeHook(), (result) => {
   process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install qwen-code\n");
-  return 0;
-}
+});
 
-async function uninstallRooCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallRooInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallRooCommand = createHostCommand(() => uninstallRooInstructions(), (result) => {
   process.stdout.write(`removed roo rules: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rules path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install roo\n");
-  return 0;
-}
+});
 
-async function uninstallRovoCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallRovoInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallRovoCommand = createHostCommand(() => uninstallRovoInstructions(), (result) => {
   process.stdout.write(`removed rovo instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install rovo\n");
-  return 0;
-}
+});
 
-async function uninstallRulerCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallRulerRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallRulerCommand = createHostCommand(() => uninstallRulerRule(), (result) => {
   process.stdout.write(`removed ruler rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install ruler\n");
-  return 0;
-}
+});
 
-async function uninstallTabnineCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallTabnineInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallTabnineCommand = createHostCommand(() => uninstallTabnineInstructions(), (result) => {
   process.stdout.write(`removed tabnine instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install tabnine\n");
-  return 0;
-}
+});
 
-async function uninstallTabbyCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallTabbySystemPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallTabbyCommand = createHostCommand(() => uninstallTabbySystemPrompt(), (result) => {
   process.stdout.write(`removed tabby system prompt: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`config path: ${result.configPath}\n`);
   process.stdout.write("enable: tokenjuice install tabby\n");
-  return 0;
-}
+});
 
-async function uninstallTraeCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallTraeRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallTraeCommand = createHostCommand(() => uninstallTraeRule(), (result) => {
   process.stdout.write(`removed trae rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install trae\n");
-  return 0;
-}
+});
 
-async function uninstallUipathCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallUiPathInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallUipathCommand = createHostCommand(() => uninstallUiPathInstructions(), (result) => {
   process.stdout.write(`removed uipath instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install uipath\n");
-  return 0;
-}
+});
 
-async function uninstallVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallVscodeCopilotHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallVscodeCopilotCommand = createHostCommand(() => uninstallVscodeCopilotHook(), (result) => {
   process.stdout.write(`removed vscode-copilot entries: ${result.removed}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}${result.deletedFile ? " (file deleted)" : ""}\n`);
   process.stdout.write("enable: tokenjuice install vscode-copilot\n");
-  return 0;
-}
+});
 
-async function uninstallWindsurfCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallWindsurfRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallWindsurfCommand = createHostCommand(() => uninstallWindsurfRule(), (result) => {
   process.stdout.write(`removed windsurf rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install windsurf\n");
-  return 0;
-}
+});
 
-async function uninstallCopilotCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallCopilotCliHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallCopilotCliCommand = createHostCommand(() => uninstallCopilotCliHook(), (result) => {
   process.stdout.write(`removed copilot-cli entries: ${result.removed}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}${result.deletedFile ? " (file deleted)" : ""}\n`);
   process.stdout.write("enable: tokenjuice install copilot-cli\n");
-  return 0;
-}
+});
 
-async function uninstallDeepagentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallDeepAgentsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallDeepagentsCommand = createHostCommand(() => uninstallDeepAgentsInstructions(), (result) => {
   process.stdout.write(`removed deepagents instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install deepagents\n");
-  return 0;
-}
+});
 
-async function uninstallDevinCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallDevinHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallDevinCommand = createHostCommand(() => uninstallDevinHook(), (result) => {
   process.stdout.write(`removed devin entries: ${result.removed}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}${result.deletedFile ? " (file deleted)" : ""}\n`);
   process.stdout.write("enable: tokenjuice install devin\n");
-  return 0;
-}
+});
 
-async function uninstallDotAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallDotAgentsRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallDotAgentsCommand = createHostCommand(() => uninstallDotAgentsRule(), (result) => {
   process.stdout.write(`removed dot-agents rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write(`sync: ${result.syncCommand}\n`);
   process.stdout.write("enable: tokenjuice install dot-agents\n");
-  return 0;
-}
+});
 
-async function uninstallDockerAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallDockerAgentPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallDockerAgentCommand = createHostCommand(() => uninstallDockerAgentPrompt(), (result) => {
   process.stdout.write(`removed docker-agent prompt: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`prompt path: ${result.promptPath}\n`);
   process.stdout.write("enable: tokenjuice install docker-agent\n");
-  return 0;
-}
+});
 
-async function uninstallEcaCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallEcaSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallEcaCommand = createHostCommand(() => uninstallEcaSkill(), (result) => {
   process.stdout.write(`removed ECA skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install eca\n");
-  return 0;
-}
+});
 
-async function uninstallElyraCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallElyraSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallElyraCommand = createHostCommand(() => uninstallElyraSkill(), (result) => {
   process.stdout.write(`removed Elyra skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
   process.stdout.write("enable: tokenjuice install elyra\n");
-  return 0;
-}
+});
 
-async function uninstallDroidCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallDroidHook();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallDroidCommand = createHostCommand(() => uninstallDroidHook(), (result) => {
   process.stdout.write(`removed droid entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install droid\n");
-  return 0;
-}
+});
 
-async function uninstallZedCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallZedInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallZedCommand = createHostCommand(() => uninstallZedInstructions(), (result) => {
   process.stdout.write(`removed zed rules: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rules path: ${result.instructionsPath}\n`);
   process.stdout.write("enable: tokenjuice install zed\n");
-  return 0;
-}
+});
 
-async function uninstallZencoderCommand(args: ParsedArgs): Promise<number> {
-  const result = await uninstallZencoderRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const uninstallZencoderCommand = createHostCommand(() => uninstallZencoderRule(), (result) => {
   process.stdout.write(`removed zencoder rule: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`rule path: ${result.rulePath}\n`);
   process.stdout.write("enable: tokenjuice install zencoder\n");
-  return 0;
-}
+});
 
 export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Map<string, HostCommandHandler>([
   ["adal", uninstallAdalCommand],

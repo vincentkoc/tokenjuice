@@ -51,13 +51,16 @@ OpenAI-compatible model endpoint. It compares baseline and installed sessions,
 checking listing compaction, exact file reads, Bash syntax independent of the login
 shell, raw bypass, failure output, and
 native failure flags and exit status in subsequent model requests. Qwen Code
-trims edge whitespace from shell output; exact reads are compared against its
-baseline result. No model credentials are passed through.
+normalizes CRLF and trims trailing whitespace in PTY output; exact reads are
+compared against its baseline result. Raw results exclude only the native
+process group ID from comparison. No model credentials are passed through.
 
 This verifies host loading and model-visible delivery, not remote provider
 availability or model reasoning quality. The test allows only the shell tool in
 its disposable environment using Qwen Code's native `--allowed-tools` option.
 
-The Bash case observes array expansion through an external Node process. An
-immediate builtin-only case intermittently returned empty output in the pinned
-host's Linux baseline; that output-capture case remains unqualified.
+The test explicitly enables Qwen Code's PTY shell mode. The pinned host's default
+headless buffered pipe mode intermittently lost output before tokenjuice was
+installed, including a file listing and a builtin-only Bash command. That mode
+remains unqualified. The Bash case observes array expansion through an external
+Node process.

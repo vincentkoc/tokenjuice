@@ -74,6 +74,11 @@ function commandOutput(content) {
   return match[1];
 }
 
+function stableRawResult(content) {
+  // PTY sessions allocate a fresh process group; preserve every other byte.
+  return content.replace(/(\nError: \(none\)\nExit Code: 0\nSignal: \(none\)\nProcess Group PGID: )\d+(?=\n|$)/u, "$1<runtime-pgid>");
+}
+
 const observed = new Map();
 let modelRequests = 0;
 let serverError;
@@ -172,7 +177,8 @@ try {
     general: { disableAutoUpdate: true, disableUpdateNag: true },
     privacy: { usageStatisticsEnabled: false },
     telemetry: { enabled: false },
-    tools: { visible: ["run_shell_command"] },
+    // The pinned host's buffered pipe mode can settle on exit before stdout drains.
+    tools: { visible: ["run_shell_command"], shell: { enableInteractiveShell: true } },
   }));
   await writeFile(join(configDir, "trustedFolders.json"), JSON.stringify({ [project]: "TRUST_FOLDER" }));
   const version = (await run(host, ["--version"])).stdout.trim();
@@ -184,7 +190,7 @@ try {
     assert.equal(entries.length, 80, `${id}: native fixture must return exactly 80 entries; received ${JSON.stringify(commandOutput(nativeResult)).slice(0, 2000)}`);
     assert.deepEqual(new Set(entries), expectedEntries, `${id}: native fixture must retain every file`);
   }
-  assert.equal(commandOutput(baseline.get("exact")), exact.trim(), "native exact read must contain the fixture");
+  assert.equal(commandOutput(baseline.get("exact")), exact.replaceAll("\r\n", "\n").trimEnd(), "native exact read must contain the fixture");
   assert.equal(commandOutput(baseline.get("dialect")), "beta", `native Bash syntax must execute independently of SHELL: ${baseline.get("dialect")}`);
   await run(process.execPath, [cli, "install", "qwen-code", "--local"]);
   const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "qwen-code", "--format", "json"])).stdout);
@@ -195,7 +201,7 @@ try {
   assert.ok(commandOutput(listing).length < commandOutput(baseline.get("listing")).length);
   assert.equal(commandOutput(installed.get("exact")), commandOutput(baseline.get("exact")), "hook must preserve the native exact read");
   assert.equal(commandOutput(installed.get("dialect")), commandOutput(baseline.get("dialect")), "hook must retain native Bash syntax");
-  assert.deepEqual(installed.get("raw"), baseline.get("raw"), "raw bypass must preserve the native result");
+  assert.equal(stableRawResult(installed.get("raw")), stableRawResult(baseline.get("raw")), "raw bypass must preserve the native result apart from its process group ID");
   assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(installed.get("failure").includes("\nExit Code: 7\n"), "model must receive failure status");

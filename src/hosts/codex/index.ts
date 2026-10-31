@@ -9,7 +9,7 @@ import { stripLeadingCdPrefix } from "../../core/command.js";
 import { getTelemetryCommandFamily, shouldRecordStats, storeArtifact, tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
 import type { CompactionMetadata } from "../../core/compaction-metadata.js";
-import { readNoOmissionFromEnv } from "../../core/env.js";
+import { readPositiveIntegerEnv, readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
@@ -1274,15 +1274,6 @@ export async function doctorCodexHook(
     featureFlag,
     runtimeConfig,
   };
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function shouldStoreFromEnv(): boolean {

@@ -1,6 +1,7 @@
 import { readdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { findGitRoot } from "../shared/project-root.js";
 
 import { stripLeadingCdPrefix, stripLeadingEnvAssignments } from "../../core/command.js";
@@ -512,15 +513,6 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
 
   const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
   return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function shouldStoreFromEnv(): boolean {

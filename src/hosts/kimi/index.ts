@@ -3,6 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -293,15 +294,6 @@ function readKimiOutputText(output: unknown): string {
     return "";
   }
   return readStringField(output, ["output", "stdout", "stderr", "text", "content", "result"]) ?? "";
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 export async function runKimiPostToolUseHook(rawText: string): Promise<number> {

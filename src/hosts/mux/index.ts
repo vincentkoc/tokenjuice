@@ -1,6 +1,7 @@
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { readStringField } from "../../core/record-fields.js";
 import { backupPathExists } from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
@@ -348,16 +349,6 @@ async function readJsonFile(path: string | undefined): Promise<unknown> {
   } catch {
     return undefined;
   }
-}
-
-function readStringField(record: Record<string, unknown>, keys: readonly string[]): string | undefined {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return undefined;
 }
 
 function readNumberField(record: Record<string, unknown>, keys: readonly string[]): number | undefined {

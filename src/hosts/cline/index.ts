@@ -2,6 +2,7 @@ import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { readStringField } from "../../core/record-fields.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -138,16 +139,6 @@ export async function doctorClineHook(
       fixCommand: TOKENJUICE_CLINE_FIX_COMMAND,
     })),
   };
-}
-
-function readStringField(record: Record<string, unknown>, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return undefined;
 }
 
 function readWorkspaceCwd(payload: ClinePostToolUsePayload): string | undefined {

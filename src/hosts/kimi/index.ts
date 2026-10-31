@@ -3,6 +3,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { readStringField } from "../../core/record-fields.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
@@ -271,16 +272,6 @@ export async function doctorKimiHook(
     ...fields,
     hasTokenjuiceMarker,
   };
-}
-
-function readStringField(record: Record<string, unknown>, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return undefined;
 }
 
 function readKimiOutputText(output: unknown): string {

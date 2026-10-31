@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { readStringField } from "../../core/record-fields.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
@@ -220,16 +221,6 @@ export async function doctorGeminiCliHook(
       fixCommand: TOKENJUICE_GEMINI_CLI_FIX_COMMAND,
     })),
   };
-}
-
-function readStringField(record: Record<string, unknown>, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return undefined;
 }
 
 function readGeminiOutputText(response: unknown): string {

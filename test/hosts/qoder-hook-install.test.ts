@@ -53,8 +53,8 @@ describe("Qoder native hook lifecycle", () => {
 
   it.each(["null", "[]", '{"hooks":[]}', '{"hooks":{"PostToolUse":{}}}', "{broken"])("refuses malformed settings without changing bytes: %s", async (text) => {
     await writeFile(path, text);
-    await expect(installQoderHook(path, options)).rejects.toThrow();
-    await expect(uninstallQoderHook(path)).rejects.toThrow();
+    await expect(installQoderHook(path, options)).rejects.toThrow(/invalid Qoder|JSON|Unexpected/u);
+    await expect(uninstallQoderHook(path)).rejects.toThrow(/invalid Qoder|JSON|Unexpected/u);
     expect(await readFile(path, "utf8")).toBe(text);
   });
 

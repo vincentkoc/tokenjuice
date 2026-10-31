@@ -37,8 +37,9 @@ OpenCode 2; V1 fixture results do not establish V2 or T3 propagation. [T3 OpenCo
 
 1. Record T3, provider and tokenjuice versions, execution machine and selected
    configuration directory. Run the provider's tokenjuice doctor there.
-2. Start a fresh T3 thread with that provider. In a disposable project, ask it to
-   list a directory containing many files, then read a small file exactly.
+2. Start a fresh T3 thread with that provider. In a disposable project, produce
+   noisy Git status or test output, then read a small file exactly. OpenCode V2
+   skips inventory commands, so a directory listing is not its compaction check.
 3. Inspect the provider transcript: confirm the compaction reached the next
    model request and exact file bytes remain intact. UI appearance alone is
    insufficient. Codex's context hook is additive; do not count it as replacement.

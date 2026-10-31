@@ -99,6 +99,12 @@ jobs:
       - name: Verify installed hook contracts
         run: node scripts/hook-contracts.mjs
 
+      - name: Install pinned Gemini CLI host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-gemini" --ignore-scripts --no-audit --no-fund @google/gemini-cli@0.66.0
+
+      - name: Verify Gemini CLI model-visible tool results
+        run: node scripts/gemini-e2e.mjs "$RUNNER_TEMP/tokenjuice-gemini/node_modules/@google/gemini-cli/bundle/gemini.js"
+
       - name: Install pinned Qwen Code host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-qwen" --ignore-scripts --no-audit --no-fund @qwen-code/qwen-code@0.26.4
 

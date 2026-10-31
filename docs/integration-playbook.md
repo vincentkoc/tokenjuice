@@ -192,6 +192,24 @@ also need evidence that the host loads the file and uses `tokenjuice wrap`.
 Record missing credentials or unavailable hosts as unverified; a passing doctor
 or a generated config snapshot cannot substitute for this evidence.
 
+### Gemini CLI session acceptance
+
+`node scripts/gemini-e2e.mjs /path/to/gemini` runs native Gemini CLI 0.66.0
+against a loopback Gemini API endpoint. Baseline and installed sessions execute
+shell commands in a disposable trusted workspace with an isolated
+`GEMINI_CLI_HOME` root. Assertions inspect follow-up model requests for listing
+compaction, exact reads, Bash syntax independent of the login shell, raw bypass,
+failure output and exit code 7. Native stream
+statuses must remain unchanged: Gemini reports shell execution successful even
+for nonzero command exit codes. A compacted success must not become a hook error.
+
+The host trims edge whitespace; exact reads match its baseline result. Raw results
+match except for the volatile native process-group footer ID. The fixture uses
+native `--skip-trust` and `--allowed-tools run_shell_command` only in its disposable
+environment. The hook rewrites `BeforeTool` input without granting permission.
+No real credentials are passed through; remote provider availability and model
+reasoning remain outside this test.
+
 ### Qwen Code session acceptance
 
 `node scripts/qwen-e2e.mjs /path/to/qwen` runs Qwen Code with a disposable trusted

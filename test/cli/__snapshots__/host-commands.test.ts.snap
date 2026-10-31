@@ -4594,11 +4594,11 @@ exports[`host CLI commands > install, doctor, and uninstall gemini-cli 1`] = `
 "$ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice AfterTool hook is not installed for Gemini CLI
+[stdout] - tokenjuice BeforeTool hook is not installed for Gemini CLI
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; verify live hook behavior after install.
+[stdout] - Gemini CLI BeforeTool hook is not installed.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 
@@ -4606,8 +4606,8 @@ $ tokenjuice install gemini-cli
 [stdout] success: gemini-cli hook installed successfully
 
   Hook        : <SANDBOX>/home/.gemini/settings.json
-  Command     : <NODE> '<LAUNCHER>' gemini-cli-after-tool
-  Beta        : AfterTool output replacement is new; verify with a noisy shell command
+  Command     : <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
+  Beta        : BeforeTool wrapping; Gemini CLI retains permission policy
   Verify      : tokenjuice doctor gemini-cli
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -4615,10 +4615,10 @@ exit 0
 $ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
-[stdout] configured command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; AfterTool replacement depends on current hook semantics.
+[stdout] - Gemini CLI pre-tool wrapping is beta; shell commands run through tokenjuice before execution.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 
@@ -4628,11 +4628,11 @@ $ tokenjuice doctor gemini-cli --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Gemini CLI support is beta; AfterTool replacement depends on current hook semantics."
+    "Gemini CLI pre-tool wrapping is beta; shell commands run through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install gemini-cli",
-  "expectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-after-tool",
-  "detectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-after-tool",
+  "expectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -4642,7 +4642,7 @@ $ tokenjuice install gemini-cli --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.gemini/settings.json",
   "backupPath": "<SANDBOX>/home/.gemini/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' gemini-cli-after-tool"
+  "command": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -4662,11 +4662,11 @@ exit 0
 $ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice AfterTool hook is not installed for Gemini CLI
+[stdout] - tokenjuice BeforeTool hook is not installed for Gemini CLI
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; verify live hook behavior after install.
+[stdout] - Gemini CLI BeforeTool hook is not installed.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 "

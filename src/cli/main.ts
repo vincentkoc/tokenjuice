@@ -30,7 +30,7 @@ import { runCopilotCliPostToolUseHook } from "../hosts/copilot-cli/index.js";
 import { runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { runDevinPreToolUseHook } from "../hosts/devin/index.js";
 import { runDroidPostToolUseHook, runDroidPreToolUseHook } from "../hosts/droid/index.js";
-import { runGeminiCliAfterToolHook } from "../hosts/gemini-cli/index.js";
+import { runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook } from "../hosts/gemini-cli/index.js";
 import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
@@ -1103,6 +1103,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "devin-pre-tool-use":
       return await runDevinPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "gemini-cli-before-tool":
+      return await runGeminiCliBeforeToolHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "grok-cli-post-tool-use":

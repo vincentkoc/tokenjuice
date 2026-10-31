@@ -780,7 +780,7 @@ const installGeminiCliCommand = createHostCommand((args) => installGeminiCliHook
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
-    { label: "Beta", value: "AfterTool output replacement is new; verify with a noisy shell command" },
+    { label: "Beta", value: "BeforeTool wrapping; Gemini CLI retains permission policy" },
     { label: "Verify", value: `tokenjuice doctor gemini-cli${args.local ? " --local" : ""}` },
     { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
   ];

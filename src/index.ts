@@ -78,7 +78,7 @@ export { doctorEcaSkill, installEcaSkill, uninstallEcaSkill } from "./hosts/eca/
 export { doctorElyraSkill, installElyraSkill, uninstallElyraSkill } from "./hosts/elyra/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallForgeCodeInstructions } from "./hosts/forgecode/index.js";
-export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "./hosts/gitlab-duo/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGreptileRule, installGreptileRule, uninstallGreptileRule } from "./hosts/greptile/index.js";

@@ -2,30 +2,11 @@ import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  createMarkerInstructionCommands,
-  getMarkerDelimitedBlockText,
-  hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
-} from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
-  type InstructionsDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import {
-  type RemoveInstructionFileResult,
-  type WriteInstructionFileResult,
-  collectGuidanceIssues,
-  readInstructionFile,
-} from "../shared/instruction-file.js";
+import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type DeepAgentsInstructionsOptions = {
   projectDir?: string;
@@ -89,59 +70,12 @@ export async function doctorDeepAgentsInstructions(
   options: DeepAgentsInstructionsOptions = {},
 ): Promise<DeepAgentsDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_DEEPAGENTS_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Deep Agents Code instructions are not installed"],
-        advisory: TOKENJUICE_DEEPAGENTS_ADVISORY,
-        fixCommand: TOKENJUICE_DEEPAGENTS_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerInstructions(resolvedInstructionsPath, TOKENJUICE_DEEPAGENTS_BLOCK_CONFIG, {
     configuredLabel: "Deep Agents Code instructions",
-    repairCommand: TOKENJUICE_DEEPAGENTS_FIX_COMMAND,
+    advisory: TOKENJUICE_DEEPAGENTS_ADVISORY,
+    fixCommand: TOKENJUICE_DEEPAGENTS_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from .deepagents/AGENTS.md, then run tokenjuice install deepagents",
+    malformedMarkerIssue: "configured Deep Agents Code instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install deepagents",
+    malformedIssueOnlyWithoutMarkerIssues: true,
   });
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DEEPAGENTS_BLOCK_CONFIG);
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers && markerIssues.length === 0
-      ? ["configured Deep Agents Code instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install deepagents"]
-      : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_DEEPAGENTS_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Deep Agents Code instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Deep Agents Code instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Deep Agents Code instructions still suggest the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_DEEPAGENTS_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from .deepagents/AGENTS.md, then run tokenjuice install deepagents"
-        : TOKENJUICE_DEEPAGENTS_FIX_COMMAND,
-    }),
-  };
 }

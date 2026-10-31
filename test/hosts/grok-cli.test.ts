@@ -40,7 +40,7 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("grok-cli hooks", () => {
-  it.each(["null", "[]", "7", "true", '\"text\"', "{malformed"])("fails open for unsupported hook input: %s", async (raw) => {
+  it.each(["null", "[]", "7", "true", '"text"', "{malformed"])("fails open for unsupported hook input: %s", async (raw) => {
     const result = await captureStdout(() => runGrokCliPostToolUseHook(raw));
     expect(result).toEqual({ code: 0, output: "{}\n" });
   });

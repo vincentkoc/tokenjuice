@@ -102,7 +102,7 @@ import { doctorWindsurfRule } from "../hosts/windsurf/index.js";
 import { doctorZedInstructions } from "../hosts/zed/index.js";
 import { doctorZencoderRule } from "../hosts/zencoder/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
-import { formatHookDoctorReport } from "./doctor-output.js";
+import { formatHookDoctorReport, writeDoctorList } from "./doctor-output.js";
 import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
 
 async function doctorHooksCommand(args: ParsedArgs): Promise<number> {
@@ -127,18 +127,8 @@ async function doctorAdalCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -154,24 +144,9 @@ async function doctorAetherCommand(args: ParsedArgs): Promise<number> {
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -186,18 +161,8 @@ async function doctorAiderCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`convention path: ${report.conventionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -212,24 +177,9 @@ async function doctorAictlCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -244,24 +194,9 @@ async function doctorAiMemoryProtocolCommand(args: ParsedArgs): Promise<number> 
 
   process.stdout.write(`memory path: ${report.memoryPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -276,18 +211,8 @@ async function doctorAgentLayerCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -302,18 +227,8 @@ async function doctorAgentinitCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
   return report.status === "broken" ? 1 : 0;
@@ -329,18 +244,8 @@ async function doctorAgentlinkCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
   return report.status === "broken" ? 1 : 0;
@@ -356,18 +261,8 @@ async function doctorAgentloomCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -382,18 +277,8 @@ async function doctorAgentsCliCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`memory path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
   return report.status === "broken" ? 1 : 0;
@@ -409,18 +294,8 @@ async function doctorAgentsMdCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -435,18 +310,8 @@ async function doctorAgentsgeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -461,24 +326,9 @@ async function doctorAgentsmeshCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -493,24 +343,9 @@ async function doctorAmazonQCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -525,18 +360,8 @@ async function doctorAmpCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -551,18 +376,8 @@ async function doctorAntigravityCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -577,18 +392,8 @@ async function doctorAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
   return report.status === "broken" ? 1 : 0;
@@ -604,18 +409,8 @@ async function doctorAugmentCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -630,18 +425,8 @@ async function doctorAvanteCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -656,24 +441,9 @@ async function doctorBazCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -689,24 +459,9 @@ async function doctorBitoCommand(args: ParsedArgs): Promise<number> {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`guidelines path: ${report.guidelinesPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -721,24 +476,9 @@ async function doctorBlackboxCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -753,24 +493,9 @@ async function doctorBlocksCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -785,24 +510,9 @@ async function doctorClawdbotCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -817,18 +527,8 @@ async function doctorBobCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -843,18 +543,8 @@ async function doctorBuilderCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -869,18 +559,8 @@ async function doctorCharlieCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -902,18 +582,8 @@ async function doctorCodexCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   if (report.featureFlag.enabled) {
     const source = report.featureFlag.key ? `[features].${report.featureFlag.key}` : "default-on";
     process.stdout.write(
@@ -945,18 +615,8 @@ async function doctorPiCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -971,24 +631,9 @@ async function doctorPiGoCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1003,12 +648,7 @@ async function doctorOpencodeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1023,18 +663,8 @@ async function doctorPlandexCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`convention path: ${report.conventionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1049,24 +679,9 @@ async function doctorQoderCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1081,24 +696,9 @@ async function doctorReplitCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1117,24 +717,9 @@ async function doctorQwenCodeCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1153,24 +738,9 @@ async function doctorCommandCodeCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1185,24 +755,9 @@ async function doctorCrushCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1221,18 +776,8 @@ async function doctorCursorCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1247,18 +792,8 @@ async function doctorDeepagentsCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1277,24 +812,9 @@ async function doctorDevinCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1309,18 +829,8 @@ async function doctorDotAgentsCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
   return report.status === "broken" ? 1 : 0;
@@ -1336,18 +846,8 @@ async function doctorDockerAgentCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1366,24 +866,9 @@ async function doctorCopilotAgentCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1398,24 +883,9 @@ async function doctorEcaCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1430,24 +900,9 @@ async function doctorElyraCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1462,24 +917,9 @@ async function doctorFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rules path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1494,24 +934,9 @@ async function doctorForgecodeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1530,24 +955,9 @@ async function doctorGeminiCliCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1562,24 +972,9 @@ async function doctorGitlabDuoCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1598,24 +993,9 @@ async function doctorGrokCliCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1630,18 +1010,8 @@ async function doctorGptmeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1656,18 +1026,8 @@ async function doctorJean2Command(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1682,24 +1042,9 @@ async function doctorGrokBuildCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1714,24 +1059,9 @@ async function doctorGrokBotCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1746,18 +1076,8 @@ async function doctorGooseCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`hints path: ${report.hintsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1772,24 +1092,9 @@ async function doctorGreptileCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1804,24 +1109,9 @@ async function doctorQodoCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1836,24 +1126,9 @@ async function doctorCoderabbitCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1868,18 +1143,8 @@ async function doctorJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1894,18 +1159,8 @@ async function doctorJunieCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1920,18 +1175,8 @@ async function doctorJulesCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1946,18 +1191,8 @@ async function doctorLeanctlCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -1976,24 +1211,9 @@ async function doctorKimiCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2010,24 +1230,9 @@ async function doctorLocalcodeCommand(args: ParsedArgs): Promise<number> {
   process.stdout.write(`manifest path: ${report.manifestPath}\n`);
   process.stdout.write(`entrypoint path: ${report.indexPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2046,24 +1251,9 @@ async function doctorOpenhandsCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2078,18 +1268,8 @@ async function doctorOpenwebuiCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`tool path: ${report.toolPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2104,18 +1284,8 @@ async function doctorMcpAgentCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`agent path: ${report.agentPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2130,18 +1300,8 @@ async function doctorMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2156,18 +1316,8 @@ async function doctorSweAgentCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2182,24 +1332,9 @@ async function doctorStagewiseCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2214,18 +1349,8 @@ async function doctorOpenInterpreterCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2248,24 +1373,9 @@ async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2280,18 +1390,8 @@ async function doctorZedCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rules path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2306,18 +1406,8 @@ async function doctorZencoderCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2332,18 +1422,8 @@ async function doctorRooCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rules path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2358,18 +1438,8 @@ async function doctorRovoCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2384,18 +1454,8 @@ async function doctorRulerCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2410,18 +1470,8 @@ async function doctorTabnineCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2436,18 +1486,8 @@ async function doctorTabbyCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2462,18 +1502,8 @@ async function doctorTraeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2488,18 +1518,8 @@ async function doctorUipathCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2515,18 +1535,8 @@ async function doctorKiloCommand(args: ParsedArgs): Promise<number> {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2541,24 +1551,9 @@ async function doctorMistralVibeCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2577,24 +1572,9 @@ async function doctorMuxCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2609,24 +1589,9 @@ async function doctorNovakitCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2641,24 +1606,9 @@ async function doctorKnownsCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2673,18 +1623,8 @@ async function doctorOnaCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2699,24 +1639,9 @@ async function doctorWarpCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2731,18 +1656,8 @@ async function doctorKiroCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`steering path: ${report.steeringPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2757,18 +1672,8 @@ async function doctorWindsurfCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2791,24 +1696,9 @@ async function doctorCopilotCliCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2827,18 +1717,8 @@ async function doctorClaudeCodeCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2857,24 +1737,9 @@ async function doctorClineCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2889,18 +1754,8 @@ async function doctorCodebuffCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2915,18 +1770,8 @@ async function doctorCodeantCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2941,18 +1786,8 @@ async function doctorCodegenCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -2967,24 +1802,9 @@ async function doctorCoderAgentsCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -3003,18 +1823,8 @@ async function doctorCodebuddyCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -3029,18 +1839,8 @@ async function doctorContinueCommand(args: ParsedArgs): Promise<number> {
 
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
@@ -3059,24 +1859,9 @@ async function doctorDroidCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }

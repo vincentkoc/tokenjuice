@@ -71,6 +71,7 @@ describe("runWrappedCommand", () => {
     ], {
       maxCaptureBytes: 128,
       store: true,
+      recordStats: true,
       storeDir,
     });
 

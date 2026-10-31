@@ -1,9 +1,13 @@
 import { lstat, realpath, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -74,24 +78,6 @@ function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
 type ResolvedInstructionsTarget = {
   filePath: string;
   followedSymlink: boolean;
@@ -159,28 +145,6 @@ const TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG = {
   block: TOKENJUICE_ANYWHERE_AGENTS_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_ANYWHERE_AGENTS_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_ANYWHERE_AGENTS_END, beginIndex + TOKENJUICE_ANYWHERE_AGENTS_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_ANYWHERE_AGENTS_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_ANYWHERE_AGENTS_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_ANYWHERE_AGENTS_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAnywhereAgentsInstructions(
   instructionsPath?: string,
   options: AnywhereAgentsInstructionsOptions = {},
@@ -188,7 +152,7 @@ export async function installAnywhereAgentsInstructions(
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install anywhere-agents`,
     );
@@ -212,7 +176,7 @@ export async function uninstallAnywhereAgentsInstructions(
   const resolvedInstructionsPath = target.filePath;
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall anywhere-agents`,
     );
@@ -280,7 +244,7 @@ export async function doctorAnywhereAgentsInstructions(
     configuredLabel: "anywhere-agents instructions",
     repairCommand: TOKENJUICE_ANYWHERE_AGENTS_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers && markerIssues.length === 0
@@ -288,7 +252,7 @@ export async function doctorAnywhereAgentsInstructions(
           "configured anywhere-agents instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install anywhere-agents",
         ]
       : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

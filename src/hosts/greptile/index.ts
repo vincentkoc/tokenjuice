@@ -1,9 +1,13 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -73,24 +77,6 @@ function isInsideOrEqual(parentDir: string, childPath: string): boolean {
 
 function getExpectedRulePath(projectDir: string): string {
   return join(projectDir, ".greptile", "rules.md");
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function rejectRuleSymlink(filePath: string): Promise<void> {
@@ -202,28 +188,6 @@ const TOKENJUICE_GREPTILE_BLOCK_CONFIG = {
   block: TOKENJUICE_GREPTILE_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GREPTILE_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GREPTILE_END, beginIndex + TOKENJUICE_GREPTILE_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GREPTILE_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GREPTILE_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GREPTILE_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installGreptileRule(
   rulePath?: string,
   options: GreptileRuleOptions = {},
@@ -232,7 +196,7 @@ export async function installGreptileRule(
   await rejectInstallSidecarSymlinks(resolvedRulePath);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install greptile`,
     );
@@ -252,7 +216,7 @@ export async function uninstallGreptileRule(
   const resolvedRulePath = await resolveRulePath(rulePath, options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall greptile`,
     );
@@ -320,11 +284,11 @@ export async function doctorGreptileRule(
     configuredLabel: "Greptile rule",
     repairCommand: TOKENJUICE_GREPTILE_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Greptile rule has malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

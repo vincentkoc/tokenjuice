@@ -1,6 +1,8 @@
 import { lstat, realpath, rm } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -83,24 +85,6 @@ function isInsideOrEqual(parentDir: string, childPath: string): boolean {
 
 function getExpectedInstructionsPath(projectDir: string): string {
   return join(projectDir, ".codeant", "instructions.json");
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function rejectInstructionsSymlink(filePath: string): Promise<void> {

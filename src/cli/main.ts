@@ -28,7 +28,7 @@ import { runCopilotAgentPostToolUseHook } from "../hosts/copilot-agent/index.js"
 import { runCopilotCliPostToolUseHook } from "../hosts/copilot-cli/index.js";
 import { runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { runDevinPreToolUseHook } from "../hosts/devin/index.js";
-import { runDroidPostToolUseHook } from "../hosts/droid/index.js";
+import { runDroidPostToolUseHook, runDroidPreToolUseHook } from "../hosts/droid/index.js";
 import { runGeminiCliAfterToolHook } from "../hosts/gemini-cli/index.js";
 import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
@@ -1109,6 +1109,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCopilotAgentPostToolUseHook(await readStdin(args.maxInputBytes));
     case "copilot-cli-post-tool-use":
       return await runCopilotCliPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "droid-pre-tool-use":
+      return await runDroidPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "droid-post-tool-use":
       return await runDroidPostToolUseHook(await readStdin(args.maxInputBytes));
     default:

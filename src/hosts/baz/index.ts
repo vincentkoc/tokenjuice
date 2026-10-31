@@ -1,6 +1,8 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
@@ -66,24 +68,6 @@ function isInsideOrEqual(parentDir: string, childPath: string): boolean {
 
 function getExpectedSkillPath(projectDir: string): string {
   return join(projectDir, ".baz", "skills", "tokenjuice", "SKILL.md");
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function rejectSkillSymlink(filePath: string): Promise<void> {

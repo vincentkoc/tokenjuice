@@ -1,9 +1,13 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -68,24 +72,6 @@ async function resolveProjectDir(options: ForgeCodeInstructionsOptions = {}): Pr
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);
   return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function rejectInstructionSymlink(filePath: string): Promise<void> {
@@ -182,28 +168,6 @@ const TOKENJUICE_FORGECODE_BLOCK_CONFIG = {
   block: TOKENJUICE_FORGECODE_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_FORGECODE_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_FORGECODE_END, beginIndex + TOKENJUICE_FORGECODE_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_FORGECODE_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_FORGECODE_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_FORGECODE_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installForgeCodeInstructions(
   instructionsPath?: string,
   options: ForgeCodeInstructionsOptions = {},
@@ -212,7 +176,7 @@ export async function installForgeCodeInstructions(
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_FORGECODE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_FORGECODE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install forgecode`,
     );
@@ -232,7 +196,7 @@ export async function uninstallForgeCodeInstructions(
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_FORGECODE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_FORGECODE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall forgecode`,
     );
@@ -284,10 +248,10 @@ export async function doctorForgeCodeInstructions(
     configuredLabel: "ForgeCode instructions",
     repairCommand: TOKENJUICE_FORGECODE_FIX_COMMAND,
   });
-  const structureIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+  const structureIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_FORGECODE_BLOCK_CONFIG)
     ? ["configured ForgeCode instructions have unmatched tokenjuice markers"]
     : [];
-  const blockText = getTokenjuiceBlockText(existing.text);
+  const blockText = getMarkerDelimitedBlockText(existing.text, TOKENJUICE_FORGECODE_BLOCK_CONFIG);
   const guidanceIssues = collectGuidanceIssues(blockText, {
     required: [
       {

@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -82,28 +84,6 @@ const TOKENJUICE_GPTME_BLOCK_CONFIG = {
   block: TOKENJUICE_GPTME_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GPTME_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GPTME_END, beginIndex + TOKENJUICE_GPTME_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GPTME_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GPTME_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GPTME_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installGptmeInstructions(
   instructionsPath?: string,
   options: GptmeInstructionsOptions = {},
@@ -111,7 +91,7 @@ export async function installGptmeInstructions(
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GPTME_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GPTME_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install gptme`,
     );
@@ -131,7 +111,7 @@ export async function uninstallGptmeInstructions(
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GPTME_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GPTME_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall gptme`,
     );
@@ -164,11 +144,11 @@ export async function doctorGptmeInstructions(
     configuredLabel: "gptme instructions",
     repairCommand: TOKENJUICE_GPTME_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GPTME_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured gptme instructions have malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GPTME_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

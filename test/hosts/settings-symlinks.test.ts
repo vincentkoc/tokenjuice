@@ -12,7 +12,7 @@ const directories: string[] = [];
 const hosts = [
   { name: "Claude Code", install: installClaudeCodeHook, uninstall: uninstallClaudeCodeHook, marker: "claude-code-pre-tool-use" },
   { name: "CodeBuddy", install: installCodeBuddyHook, uninstall: uninstallCodeBuddyHook, marker: "codebuddy-pre-tool-use" },
-  { name: "Droid", install: installDroidHook, uninstall: uninstallDroidHook, marker: "droid-post-tool-use" },
+  { name: "Droid", install: installDroidHook, uninstall: uninstallDroidHook, marker: "droid-pre-tool-use" },
 ];
 
 afterEach(async () => {

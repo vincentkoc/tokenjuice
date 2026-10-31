@@ -1,6 +1,8 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -103,42 +105,6 @@ async function resolveCanonicalProjectDir(options: OnaSkillOptions = {}): Promis
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);
   return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function findExistingAncestor(path: string): Promise<{ path: string; realPath: string }> {
-  let current = path;
-  while (true) {
-    try {
-      return { path: current, realPath: await realpath(current) };
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function resolveCanonicalInstructionPath(filePath: string): Promise<string> {

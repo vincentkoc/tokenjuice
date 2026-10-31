@@ -1,9 +1,13 @@
 import { lstat, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -130,24 +134,6 @@ async function readAgentlinkConfigSource(projectDir: string): Promise<string | u
   }
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
 async function resolveSafeProjectWriteTarget(
   filePath: string,
   projectDir: string,
@@ -229,28 +215,6 @@ const TOKENJUICE_AGENTLINK_BLOCK_CONFIG = {
   block: TOKENJUICE_AGENTLINK_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AGENTLINK_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AGENTLINK_END, beginIndex + TOKENJUICE_AGENTLINK_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AGENTLINK_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AGENTLINK_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AGENTLINK_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAgentlinkInstructions(
   instructionsPath?: string,
   options: AgentlinkInstructionsOptions = {},
@@ -258,7 +222,7 @@ export async function installAgentlinkInstructions(
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTLINK_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTLINK_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install agentlink`,
     );
@@ -282,7 +246,7 @@ export async function uninstallAgentlinkInstructions(
   const resolvedInstructionsPath = target.instructionsPath;
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTLINK_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTLINK_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall agentlink`,
     );
@@ -340,7 +304,7 @@ export async function doctorAgentlinkInstructions(
     configuredLabel: "Agentlink instructions",
     repairCommand: TOKENJUICE_AGENTLINK_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTLINK_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers && markerIssues.length === 0
@@ -348,7 +312,7 @@ export async function doctorAgentlinkInstructions(
           "configured Agentlink instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install agentlink",
         ]
       : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTLINK_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

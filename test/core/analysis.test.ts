@@ -31,6 +31,7 @@ describe("analysis", () => {
       },
       {
         store: true,
+        recordStats: true,
         storeDir,
       },
     );
@@ -56,6 +57,7 @@ describe("analysis", () => {
       },
       {
         store: true,
+        recordStats: true,
         storeDir,
         maxInlineChars: 5000,
       },
@@ -103,6 +105,7 @@ describe("analysis", () => {
       },
       {
         store: true,
+        recordStats: true,
         storeDir,
       },
     );
@@ -119,6 +122,7 @@ describe("analysis", () => {
       },
       {
         store: true,
+        recordStats: true,
         storeDir,
       },
     );

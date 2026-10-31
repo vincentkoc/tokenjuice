@@ -166,3 +166,26 @@ when adding a host integration, update:
 - `README.md` command examples and support table
 - `docs/spec.md` supported host hooks table
 - dedicated design doc if host behavior differs materially (like cursor pre-tool wrapping)
+
+## installed hook contracts and live acceptance
+
+Run `pnpm test:hook-contracts` on Linux, macOS, or WSL. CI runs this script after
+building the package. It installs into disposable homes, reads the generated
+hook commands, invokes them through a shell, and executes rewritten commands.
+No host CLI, model account, or developer config is required.
+
+Coverage: Codex post-tool feedback and fail-open limits; Claude Code, CodeBuddy,
+Cursor, and VS Code Copilot pre-tool listing compaction, exact reads, stderr and
+exit status, repeat invocation, malformed input, and uninstall.
+
+These are installed-hook integration contracts. Payloads are synthetic; they do
+not prove that a host discovers the config, invokes a hook, accepts a rewrite,
+or delivers compacted output to the model. The former `e2e:local` command was
+renamed to `test:hook-contracts` to reflect that boundary.
+
+Live acceptance must use a real host session in an isolated home/workspace and
+record the host version, command, observed hook invocation, and model-visible
+output. Check raw bypass and failing commands too. Instruction/skill integrations
+also need evidence that the host loads the file and uses `tokenjuice wrap`.
+Record missing credentials or unavailable hosts as unverified; a passing doctor
+or a generated config snapshot cannot substitute for this evidence.

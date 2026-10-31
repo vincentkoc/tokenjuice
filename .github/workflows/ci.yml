@@ -62,3 +62,6 @@ jobs:
 
       - name: Verify package outputs
         run: pnpm verify:package
+
+      - name: Verify installed hook contracts
+        run: node scripts/hook-contracts.mjs

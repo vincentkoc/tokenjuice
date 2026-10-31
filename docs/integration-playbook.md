@@ -244,3 +244,24 @@ status and command output instead of requiring identical error formatting.
 This validates settings discovery, hook execution, command rewriting, and
 model-visible delivery. It does not validate remote provider availability or
 model reasoning quality.
+
+### CodeBuddy session acceptance
+
+`node scripts/codebuddy-e2e.mjs /path/to/codebuddy` runs two real CLI sessions in
+an isolated home/workspace, before and after installing tokenjuice. CI pins
+`@tencent-ai/codebuddy-code@2.179.0`. A custom model in `models.json` points to a
+loopback OpenAI-compatible endpoint; no account credentials are passed through.
+Telemetry, error reporting, automatic updates, and the built-in marketplace are
+disabled for the fixture.
+
+The endpoint requests real Bash commands and checks their results in subsequent
+model requests: listing compaction, exact file bytes, raw bypass, and failing
+command output and exit status. The script also checks native exit/failure
+metadata in the CLI event stream. CodeBuddy wraps stdout/stderr/status in text
+and appends a reminder when a hook changes input; exact reads are checked inside
+the native stdout envelope, while raw results match the unhooked baseline.
+
+The installed hook returns `hookSpecificOutput.updatedInput`; the pinned CLI
+silently ignores `modifiedInput`. Permission decisions remain with CodeBuddy.
+This validates config discovery, hook execution, command rewriting, and
+model-visible delivery, rather than remote provider availability or reasoning.

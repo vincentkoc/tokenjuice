@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Send CodeBuddy pre-tool command rewrites through the runtime-supported `updatedInput` field so installed hooks compact Bash output.
+
 - Document the external OpenClaw plugin installation step before enabling it, replacing the outdated bundled-plugin instructions.
 - Add a Qoder CLI native-hook lifecycle API with synchronous Bash replacement, scoped removal and configuration diagnostics.
 

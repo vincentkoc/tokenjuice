@@ -432,7 +432,8 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
   const response = {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      modifiedInput: {
+      // The runtime reads updatedInput; modifiedInput is silently ignored.
+      updatedInput: {
         ...toolInput,
         command: wrappedCommand,
       },

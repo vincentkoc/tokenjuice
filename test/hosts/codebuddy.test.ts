@@ -715,19 +715,20 @@ describe("runCodeBuddyPreToolUseHook", () => {
       hookSpecificOutput: {
         hookEventName: string;
         permissionDecision?: string;
-        modifiedInput: { command: string; description?: string };
+        updatedInput: { command: string; description?: string };
       };
     };
 
     expect(code).toBe(0);
     expect(response.hookSpecificOutput.hookEventName).toBe("PreToolUse");
     expect(response.hookSpecificOutput).not.toHaveProperty("permissionDecision");
+    expect(response.hookSpecificOutput).not.toHaveProperty("modifiedInput");
 
     // Behavioral contract (not byte-for-byte quoting):
     //   (1) wrapped exactly once through tokenjuice wrap,
     //   (2) against the shell the caller asked for,
     //   (3) with the original command preserved for the shell to execute.
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.launcher).toEqual(["/usr/local/bin/tokenjuice"]);
     expect(parsed.subcommand).toBe("wrap");
     expect(parsed.wrapArgs).toEqual(["--source", "codebuddy"]);
@@ -735,7 +736,7 @@ describe("runCodeBuddyPreToolUseHook", () => {
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
     // Untouched fields from the original tool_input pass through unchanged.
-    expect(response.hookSpecificOutput.modifiedInput.description).toBe("Check working tree");
+    expect(response.hookSpecificOutput.updatedInput.description).toBe("Check working tree");
   });
 
   it("skips commands that are already wrapped", async () => {
@@ -808,11 +809,11 @@ describe("runCodeBuddyPreToolUseHook", () => {
       runCodeBuddyPreToolUseHook(payload, "/repo/dist/cli/main.js"),
     );
     const response = JSON.parse(output) as {
-      hookSpecificOutput: { modifiedInput: { command: string } };
+      hookSpecificOutput: { updatedInput: { command: string } };
     };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.launcher[0]).toBe(process.execPath);
     expect(parsed.launcher[1]).toBe("/repo/dist/cli/main.js");
     expect(parsed.wrapArgs).toEqual(["--source", "codebuddy"]);
@@ -837,11 +838,11 @@ describe("runCodeBuddyPreToolUseHook", () => {
     });
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
     const response = JSON.parse(output) as {
-      hookSpecificOutput: { modifiedInput: { command: string } };
+      hookSpecificOutput: { updatedInput: { command: string } };
     };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -867,10 +868,10 @@ describe("runCodeBuddyPreToolUseHook", () => {
       tool_input: { command: "git status --short" },
     });
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
-    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+    const response = JSON.parse(output) as { hookSpecificOutput: { updatedInput: { command: string } } };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(tjShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -896,10 +897,10 @@ describe("runCodeBuddyPreToolUseHook", () => {
       tool_input: { command: "git status --short", shell: payloadShellPath },
     });
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
-    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+    const response = JSON.parse(output) as { hookSpecificOutput: { updatedInput: { command: string } } };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(payloadShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -927,10 +928,10 @@ describe("runCodeBuddyPreToolUseHook", () => {
       tool_input: { command: "git status --short" },
     });
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
-    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+    const response = JSON.parse(output) as { hookSpecificOutput: { updatedInput: { command: string } } };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(bashPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -953,10 +954,10 @@ describe("runCodeBuddyPreToolUseHook", () => {
       tool_input: { command: "git status --short" },
     });
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
-    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+    const response = JSON.parse(output) as { hookSpecificOutput: { updatedInput: { command: string } } };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(shPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -1020,10 +1021,10 @@ describe("runCodeBuddyPreToolUseHook", () => {
     });
 
     const { code, output } = await captureStdout(() => runCodeBuddyPreToolUseHook(payload, "/usr/local/bin/tokenjuice"));
-    const response = JSON.parse(output) as { hookSpecificOutput: { modifiedInput: { command: string } } };
+    const response = JSON.parse(output) as { hookSpecificOutput: { updatedInput: { command: string } } };
 
     expect(code).toBe(0);
-    const parsed = parseWrappedCommand(response.hookSpecificOutput.modifiedInput.command);
+    const parsed = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("echo it's raining");
     expect(parsed.wrapDepth).toBe(1);

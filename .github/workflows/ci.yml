@@ -113,3 +113,9 @@ jobs:
 
       - name: Verify Claude Code model-visible tool results
         run: node scripts/claude-e2e.mjs "$RUNNER_TEMP/tokenjuice-claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude"
+
+      - name: Install pinned CodeBuddy host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-codebuddy" --ignore-scripts --no-audit --no-fund @tencent-ai/codebuddy-code@2.179.0
+
+      - name: Verify CodeBuddy model-visible tool results
+        run: node scripts/codebuddy-e2e.mjs "$RUNNER_TEMP/tokenjuice-codebuddy/node_modules/@tencent-ai/codebuddy-code/bin/codebuddy"

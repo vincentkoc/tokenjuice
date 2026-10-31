@@ -244,7 +244,7 @@ async function readInstalledHook(path, event) {
 const preToolHosts = [
   { host: "droid", dir: ".factory", file: "settings.json", envKey: "FACTORY_HOME", tool: "Execute" },
   { host: "claude-code", dir: ".claude", file: "settings.json", envKey: "CLAUDE_CONFIG_DIR" },
-  { host: "codebuddy", dir: ".codebuddy", file: "settings.json", envKey: "CODEBUDDY_CONFIG_DIR", inputKey: "modifiedInput" },
+  { host: "codebuddy", dir: ".codebuddy", file: "settings.json", envKey: "CODEBUDDY_CONFIG_DIR" },
   { host: "cursor", dir: ".cursor", file: "hooks.json", envKey: "CURSOR_HOME", event: "preToolUse", tool: "Shell" },
   { host: "vscode-copilot", dir: ".copilot/hooks", file: "tokenjuice-vscode.json", tool: "run_in_terminal" },
 ];
@@ -275,7 +275,7 @@ async function runPreToolContracts(spec) {
       assert(output.hookSpecificOutput?.hookEventName === "PreToolUse", "droid: wrong hook event");
       assert(output.hookSpecificOutput?.permissionDecision === undefined, "droid: wrapper changed permission policy");
     }
-    const updated = spec.host === "cursor" ? output.updated_input : output.hookSpecificOutput?.[spec.inputKey ?? "updatedInput"];
+    const updated = spec.host === "cursor" ? output.updated_input : output.hookSpecificOutput?.updatedInput;
     assert(updated?.description === "contract fixture" && updated.timeout === 120000, `${spec.host}: lost input fields`);
     assert(typeof updated.command === "string" && updated.command !== command, `${spec.host}: missing rewrite`);
     return updated.command;

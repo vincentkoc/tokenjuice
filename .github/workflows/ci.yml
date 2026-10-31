@@ -5,12 +5,46 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 1 * * 1"
 
 permissions:
   contents: read
 
 jobs:
   quality:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify quality gates
+        run: pnpm verify
+
+  audit:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,11 +64,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify quality gates
-        run: pnpm verify
+      - name: Audit dependencies
+        run: pnpm audit --audit-level moderate
 
   package:
     runs-on: ubuntu-latest

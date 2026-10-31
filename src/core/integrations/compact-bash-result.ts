@@ -225,7 +225,8 @@ function commandRequestsRawBypass(command: string): boolean {
         : -1;
     if (wrapIndex !== -1 && argv[wrapIndex] === "wrap") {
       const end = argv.indexOf("--", wrapIndex + 1);
-      const options = argv.slice(wrapIndex + 1, end === -1 ? undefined : end);
+      if (end === -1) return false;
+      const options = argv.slice(wrapIndex + 1, end);
       return options.includes("--raw") || options.includes("--full");
     }
     const wrapped = getWrappedCommandArgv(argv);

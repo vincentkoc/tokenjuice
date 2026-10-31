@@ -48,6 +48,7 @@ describe("compactBashResult", () => {
 
   it.each([
     "tokenjuice wrap -- find fixtures --raw",
+    "tokenjuice wrap git diff --raw",
     "echo 'tokenjuice wrap --raw -- find fixtures'",
     "node /workspace/other.js wrap --raw -- find fixtures",
   ])("does not infer a raw bypass from command arguments: %s", async (command) => {

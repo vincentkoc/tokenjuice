@@ -179,7 +179,7 @@ try {
   for (const id of ["listing", "raw"]) {
     const nativeResult = baseline.get(id);
     const entries = commandOutput(nativeResult).split("\n");
-    assert.equal(entries.length, 80, `${id}: native fixture must return exactly 80 entries`);
+    assert.equal(entries.length, 80, `${id}: native fixture must return exactly 80 entries; received ${JSON.stringify(commandOutput(nativeResult)).slice(0, 2000)}`);
     assert.deepEqual(new Set(entries), expectedEntries, `${id}: native fixture must retain every file`);
   }
   assert.equal(commandOutput(baseline.get("exact")), exact.trim(), "native exact read must contain the fixture");

@@ -39,3 +39,22 @@ Goose hints are prompt guidance, not command hooks. Goose has lifecycle hooks,
 but this integration does not rely on them because the documented hooks surface
 does not guarantee shell output replacement. It gives Goose a stable project
 hint to follow when it decides how to run terminal commands.
+
+## Native CLI verification
+
+Build tokenjuice, then run `node scripts/goose-e2e.mjs /path/to/goose` with
+Goose `1.57.0`. CI downloads that pinned Linux release and checks its SHA-256
+before running the fixture. The fixture uses a disposable HOME and workspace,
+the Developer extension, Auto mode and a loopback OpenAI-compatible model endpoint.
+
+Fresh baseline, installed, filename-excluded and uninstalled sessions check
+the actual system prompt and follow-up model requests. The checks cover hint
+discovery, an 80-entry listing summary, raw bypass, native-normalized exact
+reads and complete failed output with exit 7. The failure command uses the
+explicit `--keep-failures` option. Existing custom hints survive install and
+uninstall.
+
+The deterministic fixture model chooses wrapping only when the native system
+prompt contains the installed guidance. This verifies discovery and tool
+transport; it does not establish adherence by other models. Desktop sessions,
+remote providers, other versions and permission modes remain unqualified.

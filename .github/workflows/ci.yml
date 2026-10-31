@@ -236,3 +236,13 @@ jobs:
 
       - name: Verify Droid model-visible tool results
         run: node scripts/droid-e2e.mjs "$RUNNER_TEMP/tokenjuice-droid/node_modules/droid/bin/droid"
+
+      - name: Extract pinned Goose host
+        run: |
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/goose.tar.bz2" https://github.com/aaif-goose/goose/releases/download/v1.57.0/goose-x86_64-unknown-linux-gnu.tar.bz2
+          printf '%s  %s\n' e54036f3b7f95d3b0d7854c09465af5ef52a28c7fa03d2497d0ea68a6382282d "$RUNNER_TEMP/goose.tar.bz2" | sha256sum --check --status
+          mkdir -p "$RUNNER_TEMP/tokenjuice-goose"
+          tar -xjf "$RUNNER_TEMP/goose.tar.bz2" -C "$RUNNER_TEMP/tokenjuice-goose"
+
+      - name: Verify Goose hints and model-visible tool results
+        run: node scripts/goose-e2e.mjs "$RUNNER_TEMP/tokenjuice-goose/goose"

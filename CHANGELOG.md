@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Verify Goose hint discovery and model-visible wrapped output through pinned native CLI sessions, including filename overrides, uninstall, raw bypass and complete failed output.
+
 - Ignore non-object pre-tool payloads in Claude Code, CodeBuddy, Cursor, Devin and VS Code Local hooks; share wrapper detection so absolute raw commands are not wrapped again and Node subcommand arguments are not misidentified.
 
 - Preserve failed-command stdout/stderr in automatic pre-tool wrappers and validate complete 80-line failures through native Claude Code, CodeBuddy, Droid, Gemini CLI and Qwen Code model requests.

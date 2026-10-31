@@ -103,3 +103,13 @@ export function formatHookDoctorReport(report: HookDoctorReport): string {
   appendInstallHint(lines);
   return `${lines.join("\n")}\n`;
 }
+
+export function writeDoctorList(label: string, items: readonly string[]): void {
+  if (items.length === 0) {
+    return;
+  }
+  process.stdout.write(`${label}:\n`);
+  for (const item of items) {
+    process.stdout.write(`- ${item}\n`);
+  }
+}

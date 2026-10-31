@@ -144,13 +144,21 @@ try {
   env.ANTHROPIC_BASE_URL = `http://127.0.0.1:${server.address().port}`;
   const version = (await run(host, ["--version"])).stdout.trim();
   const baseline = await session();
-  const listingEntries = text(baseline.get("listing").content).match(/^fixtures\/example-\d+\.json$/gmu);
-  assert.deepEqual(new Set(listingEntries), new Set(Array.from({ length: 80 }, (_, index) => `fixtures/example-${index}.json`)), "native listing must retain every fixture entry");
+  const expectedEntries = new Set(Array.from({ length: 80 }, (_, index) => `fixtures/example-${index}.json`));
+  for (const id of ["listing", "raw"]) {
+    const nativeResult = baseline.get(id);
+    assert.equal(nativeResult.is_error, false, `${id}: native fixture must succeed`);
+    const entries = text(nativeResult.content).match(/^fixtures\/example-\d+\.json$/gmu) ?? [];
+    assert.equal(entries.length, 80, `${id}: native fixture must return exactly 80 entries`);
+    assert.deepEqual(new Set(entries), expectedEntries, `${id}: native fixture must retain every file`);
+  }
+  assert.equal(baseline.get("exact").is_error, false, "native exact read must succeed");
   assert.ok(text(baseline.get("exact").content).startsWith("exact content\r\ntrailing blanks"), "native exact read must succeed");
   await run(process.execPath, [cli, "install", "claude-code", "--local"]);
   const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "claude-code", "--format", "json"])).stdout);
   assert.equal(doctor.status, "ok");
   const installed = await session();
+  assert.equal(installed.get("listing").is_error, false, "compacted listing must succeed");
   const listing = text(installed.get("listing").content);
   assert.ok(listing.includes("80 matches"), "installed hook must compact the real shell listing before model delivery");
   assert.ok(listing.length < text(baseline.get("listing").content).length);

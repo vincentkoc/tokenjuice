@@ -31,6 +31,7 @@ describe("QwenWork guidance skill", () => {
   });
 
   it("registers install, doctor and uninstall JSON CLI routes", async () => {
+    const results = [];
     for (const operation of ["install", "doctor", "uninstall"]) {
       let output = "";
       const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => { output += String(chunk); return true; });
@@ -38,8 +39,9 @@ describe("QwenWork guidance skill", () => {
       spy.mockRestore();
       const result = JSON.parse(output);
       expect(result.skillPath).toBe(join(home, ".qwenwork", "skills", "tokenjuice", "SKILL.md"));
-      if (operation === "doctor") expect(result.status).toBe("ok");
-      if (operation === "uninstall") expect(result.removed).toBe(true);
+      results.push(result);
     }
+    expect(results[1].status).toBe("ok");
+    expect(results[2].removed).toBe(true);
   });
 });

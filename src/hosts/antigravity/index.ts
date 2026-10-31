@@ -3,8 +3,16 @@ import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  readInstructionFile,
+  removeInstructionFile,
+  installManagedInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -138,8 +146,10 @@ export async function doctorAntigravityRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Antigravity rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: "activation: always_on",
         missingIssue: "configured Antigravity rule file is missing always-on activation frontmatter",
@@ -151,20 +161,6 @@ export async function doctorAntigravityRule(
       {
         requiredText: TOKENJUICE_ANTIGRAVITY_RULE_MARKER,
         missingIssue: "configured Antigravity rule file does not look like the tokenjuice rule",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Antigravity rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Antigravity rule file is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Antigravity rule file still suggests the full escape hatch",
       },
     ],
   });

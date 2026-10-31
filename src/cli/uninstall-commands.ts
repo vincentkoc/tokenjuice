@@ -1,4 +1,5 @@
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
+import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
 // Per-target handlers for `tokenjuice uninstall <target>`.
 // Each handler is keyed by the target name and its aliases in uninstallCommands.
 
@@ -644,6 +645,11 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
 });
 
+const uninstallQwenWorkCommand = createHostCommand(() => uninstallQwenWorkSkill(), (result) => {
+  process.stdout.write(`removed qwenwork skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQwenCodeCommand = createHostCommand(() => uninstallQwenCodeHook(), (result) => {
   process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
@@ -864,6 +870,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],
+  ["qwenwork", uninstallQwenWorkCommand],
   ["roo", uninstallRooCommand],
   ["rovo", uninstallRovoCommand],
   ["rovo-dev", uninstallRovoCommand],

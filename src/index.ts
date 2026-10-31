@@ -1,3 +1,5 @@
+export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";
+export type { QwenWorkSkillOptions } from "./hosts/qwenwork/index.js";
 export { ARTIFACT_DIR_ENV, STATS_ENABLED_ENV, getArtifact, isValidArtifactId, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, resolveArtifactBaseDir, shouldRecordStats, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";

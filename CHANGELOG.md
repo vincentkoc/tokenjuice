@@ -29,6 +29,7 @@
 - Add a DeepSeek Harness native Bash post-execute plugin that compacts model-facing content while preserving canonical values and downstream policy decisions.
 - Package the DeepSeek Harness runtime as a self-contained, version-pinned Cordis bundle with native profile activation guidance.
 - Add a separate OpenCode V2 shell-result runtime with coherent structured/content replacement and failure-preserving guards.
+- Add QwenWork guidance skill installation, diagnostics and owned-file uninstall at its documented user skill path.
 
 ### Maintenance
 

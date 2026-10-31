@@ -39,6 +39,7 @@
 - Document QClaw migration to WorkBuddy and the boundary between account migration and tokenjuice host support.
 
 - Provide a portable WorkBuddy desktop guidance skill with localized metadata and explicit manual-import/runtime verification steps.
+- Provide a portable Doubao Work terminal guidance skill and document personal import, archive layout and execution verification.
 
 ### Breaking changes
 

@@ -19,6 +19,19 @@ async function fixture(): Promise<string> {
 }
 
 describe("settings snapshots", () => {
+  it.skipIf(process.platform === "win32")("rejects FIFO settings without waiting for a writer", async () => {
+    const path = join(await fixture(), "settings.fifo");
+    execFileSync("mkfifo", [path]);
+    const moduleUrl = new URL("../../../src/hosts/shared/settings-file.ts", import.meta.url).href;
+    const script = `import assert from "node:assert/strict";
+      import { readSettingsFile } from ${JSON.stringify(moduleUrl)};
+      await assert.rejects(readSettingsFile(${JSON.stringify(path)}), /not a regular file/);
+      console.log("rejected");`;
+    expect(execFileSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", script], {
+      encoding: "utf8", timeout: 3000,
+    }).trim()).toBe("rejected");
+  });
+
   it("applies an explicit publish mode without changing the snapshot check", async () => {
     const directory = await fixture();
     const path = join(directory, "hook");
@@ -146,3 +159,4 @@ describe("settings snapshots", () => {
     expect(await readFile(`${settingsPath}.bak.1`, "utf8")).toBe("{}\n");
   });
 });
+import { execFileSync } from "node:child_process";

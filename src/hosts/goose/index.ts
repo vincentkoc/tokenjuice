@@ -4,6 +4,8 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -188,28 +190,6 @@ async function getDefaultHintsPaths(
   return [rootHintsPath];
 }
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GOOSE_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GOOSE_END, beginIndex + TOKENJUICE_GOOSE_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GOOSE_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GOOSE_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GOOSE_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 const TOKENJUICE_GOOSE_BLOCK = [
   TOKENJUICE_GOOSE_BEGIN,
   "## tokenjuice terminal output compaction",
@@ -233,7 +213,7 @@ export async function installGooseHints(
   for (const resolvedHintsPath of resolvedHintsPaths) {
     const existing = await readInstructionFile(resolvedHintsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely repair malformed tokenjuice markers in ${resolvedHintsPath}; remove the dangling marker manually, then rerun tokenjuice install goose`,
       );
@@ -261,7 +241,7 @@ export async function uninstallGooseHints(
   for (const resolvedHintsPath of resolvedHintsPaths) {
     const existing = await readInstructionFile(resolvedHintsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely uninstall malformed tokenjuice markers in ${resolvedHintsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall goose`,
       );
@@ -296,7 +276,7 @@ async function inspectGooseHintsPath(resolvedHintsPath: string): Promise<GooseDo
     };
   }
 
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG);
   const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
     configuredLabel: "Goose hints",
     repairCommand: TOKENJUICE_GOOSE_FIX_COMMAND,
@@ -304,7 +284,7 @@ async function inspectGooseHintsPath(resolvedHintsPath: string): Promise<GooseDo
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Goose hints have unmatched tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

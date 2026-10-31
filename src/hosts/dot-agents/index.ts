@@ -3,6 +3,8 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   removeMarkerDelimitedBlock,
@@ -79,28 +81,6 @@ const TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG = {
   block: TOKENJUICE_DOT_AGENTS_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_DOT_AGENTS_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_DOT_AGENTS_END, beginIndex + TOKENJUICE_DOT_AGENTS_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_DOT_AGENTS_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_DOT_AGENTS_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_DOT_AGENTS_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 function ensureDotAgentsFrontmatter(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -119,7 +99,7 @@ export async function installDotAgentsRule(
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install dot-agents`,
     );
@@ -148,7 +128,7 @@ export async function uninstallDotAgentsRule(
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall dot-agents`,
     );
@@ -190,14 +170,14 @@ export async function doctorDotAgentsRule(
     configuredLabel: "dot-agents global rules",
     repairCommand: TOKENJUICE_DOT_AGENTS_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
   const malformedMarkerIssues =
     hasMalformedMarkers && markerIssues.length === 0
       ? [
           "configured dot-agents global rules have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install dot-agents",
         ]
       : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+  const guidanceIssues = collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG), {
     required: [
       {
         requiredText: TOKENJUICE_DOT_AGENTS_RULE_MARKER,

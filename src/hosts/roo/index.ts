@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 import {
+  getMarkerDelimitedBlockText,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -73,18 +74,6 @@ const TOKENJUICE_ROO_BLOCK_CONFIG = {
   block: TOKENJUICE_ROO_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_ROO_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_ROO_END, beginIndex + TOKENJUICE_ROO_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_ROO_END.length);
-}
-
 export async function installRooInstructions(
   instructionsPath?: string,
   options: RooInstructionsOptions = {},
@@ -128,7 +117,7 @@ export async function doctorRooInstructions(
       configuredLabel: "Roo Code rules",
       repairCommand: TOKENJUICE_ROO_FIX_COMMAND,
     }),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ROO_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

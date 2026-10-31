@@ -30,6 +30,28 @@ export type UninstallMarkerDelimitedBlockResult = {
   removed: boolean;
 };
 
+function countMarker(text: string, marker: string): number {
+  return text.split(marker).length - 1;
+}
+
+export function getMarkerDelimitedBlockText(text: string, config: Pick<MarkerDelimitedBlockConfig, "beginMarker" | "endMarker">): string {
+  const beginIndex = text.indexOf(config.beginMarker);
+  if (beginIndex === -1) {
+    return "";
+  }
+  const endIndex = text.indexOf(config.endMarker, beginIndex + config.beginMarker.length);
+  if (endIndex === -1) {
+    return text.slice(beginIndex);
+  }
+  return text.slice(beginIndex, endIndex + config.endMarker.length);
+}
+
+export function hasMalformedMarkerDelimitedBlock(text: string, completeBlockCount: number, config: Pick<MarkerDelimitedBlockConfig, "beginMarker" | "endMarker">): boolean {
+  const beginCount = countMarker(text, config.beginMarker);
+  const endCount = countMarker(text, config.endMarker);
+  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }

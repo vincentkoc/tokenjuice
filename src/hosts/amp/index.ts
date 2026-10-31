@@ -4,6 +4,8 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -247,28 +249,6 @@ const TOKENJUICE_AMP_BLOCK_CONFIG = {
   block: TOKENJUICE_AMP_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AMP_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AMP_END, beginIndex + TOKENJUICE_AMP_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AMP_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AMP_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AMP_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAmpInstructions(
   instructionsPath?: string,
   options: AmpInstructionsOptions = {},
@@ -277,7 +257,7 @@ export async function installAmpInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install amp`,
       );
@@ -305,7 +285,7 @@ export async function uninstallAmpInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall amp`,
       );
@@ -340,7 +320,7 @@ async function inspectAmpInstructionsPath(resolvedInstructionsPath: string): Pro
     };
   }
 
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG);
   const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
     configuredLabel: "Amp instructions",
     repairCommand: TOKENJUICE_AMP_FIX_COMMAND,
@@ -348,7 +328,7 @@ async function inspectAmpInstructionsPath(resolvedInstructionsPath: string): Pro
   const issues = uniquePaths([
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Amp instructions have unmatched tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

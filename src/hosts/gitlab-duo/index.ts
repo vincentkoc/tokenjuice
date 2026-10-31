@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
@@ -83,28 +85,6 @@ const TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG = {
   block: TOKENJUICE_GITLAB_DUO_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GITLAB_DUO_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GITLAB_DUO_END, beginIndex + TOKENJUICE_GITLAB_DUO_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GITLAB_DUO_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GITLAB_DUO_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GITLAB_DUO_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installGitLabDuoRule(
   rulePath?: string,
   options: GitLabDuoRuleOptions = {},
@@ -112,7 +92,7 @@ export async function installGitLabDuoRule(
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install gitlab-duo`,
     );
@@ -132,7 +112,7 @@ export async function uninstallGitLabDuoRule(
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall gitlab-duo`,
     );
@@ -165,11 +145,11 @@ export async function doctorGitLabDuoRule(
     configuredLabel: "GitLab Duo rule",
     repairCommand: TOKENJUICE_GITLAB_DUO_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured GitLab Duo rule has malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,

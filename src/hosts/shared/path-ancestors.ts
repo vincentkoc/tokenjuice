@@ -110,3 +110,43 @@ export function createProjectInstructionPathResolver(
     return resolvedPath;
   };
 }
+
+/** Checks symlink components before canonical ancestor containment. */
+export function createCanonicalProjectSkillPaths(
+  label: string,
+  relativeSkillPath: string,
+  rejectSymlink: (filePath: string) => Promise<void>,
+) {
+  const skillPathSegments = relativeSkillPath.split("/");
+
+  function getExpectedSkillPath(projectDir: string): string {
+    return join(projectDir, ...skillPathSegments);
+  }
+
+  async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
+    const resolvedPath = resolve(filePath);
+    await rejectSymlink(projectDir);
+    await rejectSymlinkPathComponents(
+      resolvedPath,
+      projectDir,
+      `cannot use ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+    );
+    const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
+    if (!isInsideOrEqual(realProjectDir, realParentDir)) {
+      throw new Error(
+        `cannot use ${label} ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
+      );
+    }
+
+    await rejectSymlink(resolvedPath);
+    const expectedSkillPath = getExpectedSkillPath(projectDir);
+    if (resolvedPath !== expectedSkillPath) {
+      throw new Error(
+        `cannot use ${label} ${resolvedPath}; tokenjuice only installs the project-local ${relativeSkillPath} file`,
+      );
+    }
+    return resolvedPath;
+  }
+
+  return { getExpectedSkillPath, resolveSafeProjectSkillPath };
+}

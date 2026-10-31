@@ -6,7 +6,7 @@ import {
   parseSimpleYamlFrontmatter,
   stripYamlComment,
 } from "../../core/simple-yaml-frontmatter.js";
-import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
+import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -66,34 +66,11 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.tmp`);
 }
 
-function getExpectedSkillPath(projectDir: string): string {
-  return join(projectDir, ".stagewise", "skills", "tokenjuice", "SKILL.md");
-}
-
-async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  await rejectSkillSymlink(projectDir);
-  await rejectSymlinkPathComponents(
-    resolvedPath,
-    projectDir,
-    `cannot use Stagewise skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
-  );
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Stagewise skill ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectSkillSymlink(resolvedPath);
-  const expectedSkillPath = getExpectedSkillPath(projectDir);
-  if (resolvedPath !== expectedSkillPath) {
-    throw new Error(
-      `cannot use Stagewise skill ${resolvedPath}; tokenjuice only installs the project-local .stagewise/skills/tokenjuice/SKILL.md file`,
-    );
-  }
-  return resolvedPath;
-}
+const { getExpectedSkillPath, resolveSafeProjectSkillPath } = createCanonicalProjectSkillPaths(
+  "Stagewise skill",
+  ".stagewise/skills/tokenjuice/SKILL.md",
+  rejectSkillSymlink,
+);
 
 async function getDefaultSkillPath(options: StagewiseSkillOptions = {}): Promise<string> {
   const projectDir = await resolveCanonicalProjectDir(options);

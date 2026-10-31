@@ -601,19 +601,10 @@ const installCodebuddyCommand = createHostCommand((args) => installCodeBuddyHook
   process.stdout.write(formatCodeBuddyInstallSuccess({ ...result, local: args.local }));
 });
 
-const installCommandCodeCommand = createHostCommand((args) => installCommandCodeHook(undefined, { local: args.local }), (result, args) => {
-  const details = [
-    { label: "Hook", value: result.settingsPath },
-    { label: "Command", value: result.command },
-    { label: "Beta", value: "PostToolUse shell hook; compacted context is injected alongside original output" },
-    { label: "Verify", value: `tokenjuice doctor command-code${args.local ? " --local" : ""}` },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("command-code", "hook", details));
-});
+const installCommandCodeCommand: HostCommandHandler = async (args) => {
+  await installCommandCodeHook(undefined, { local: args.local });
+  return 0;
+};
 
 const installContinueCommand = createHostCommand(() => installContinueRule(), (result) => {
   const details = [

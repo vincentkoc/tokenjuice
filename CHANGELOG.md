@@ -5,6 +5,7 @@
 ### Fixes
 
 - Replace the undiscovered Cline additive hook with native pre-tool batch wrapping, preserve complete failed-command streams with opt-in `--keep-failures`, migrate owned legacy scripts, and validate real CLI 3.0.74 sessions.
+- Retire Command Code additive hook compaction, preserve scoped legacy cleanup and custom hooks, and document the native 1.88.2 authentication blocker without claiming host E2E coverage.
 
 - Match native Copilot CLI Bash hooks, require proven shell exit 0 before compaction, and preserve completion metadata outside output summaries; verify real 1.0.105 model requests and remove obsolete synthetic fixtures.
 - Retire additive Mux/Xum automatic compaction, keep legacy hook cleanup and silent handlers, and qualify explicit wrapping against the published Xum CLI.

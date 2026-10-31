@@ -3238,62 +3238,54 @@ exports[`host CLI commands > install, doctor, and uninstall command-code 1`] = `
 "$ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install command-code
-[stdout] success: command-code hook installed successfully
-
-  Hook        : <SANDBOX>/home/.commandcode/settings.json
-  Command     : <NODE> '<LAUNCHER>' command-code-post-tool-use
-  Beta        : PostToolUse shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor command-code
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' command-code-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor command-code --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Command Code support is beta and injects compacted context without suppressing the original tool result."
+    "Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install command-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install command-code --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "backupPath": "<SANDBOX>/home/.commandcode/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' command-code-post-tool-use"
-}
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall command-code
-[stdout] removed command-code entries: 1
+[stdout] removed command-code entries: 0
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] enable: tokenjuice install command-code
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall command-code --format json
@@ -3306,12 +3298,12 @@ exit 0
 $ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -3320,62 +3312,54 @@ exports[`host CLI commands > install, doctor, and uninstall commandcode 1`] = `
 "$ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install commandcode
-[stdout] success: command-code hook installed successfully
-
-  Hook        : <SANDBOX>/home/.commandcode/settings.json
-  Command     : <NODE> '<LAUNCHER>' command-code-post-tool-use
-  Beta        : PostToolUse shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor command-code
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' command-code-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor commandcode --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Command Code support is beta and injects compacted context without suppressing the original tool result."
+    "Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install command-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install commandcode --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "backupPath": "<SANDBOX>/home/.commandcode/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' command-code-post-tool-use"
-}
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall commandcode
-[stdout] removed command-code entries: 1
+[stdout] removed command-code entries: 0
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] enable: tokenjuice install command-code
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall commandcode --format json
@@ -3388,12 +3372,12 @@ exit 0
 $ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -9083,10 +9067,10 @@ exit 0
 
 exports[`host CLI commands > rejects unknown or missing targets 1`] = `
 "$ tokenjuice install not-a-host
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice install
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall not-a-host
 throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder

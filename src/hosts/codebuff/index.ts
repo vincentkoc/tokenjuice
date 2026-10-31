@@ -2,24 +2,9 @@ import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  createMarkerInstructionCommands,
-  getMarkerDelimitedBlockText,
-  hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
-} from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 
 export type CodebuffInstructionsOptions = {
   projectDir?: string;
@@ -95,57 +80,10 @@ export async function doctorCodebuffInstructions(
   options: CodebuffInstructionsOptions = {},
 ): Promise<CodebuffDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_CODEBUFF_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Codebuff instructions are not installed"],
-        advisory: TOKENJUICE_CODEBUFF_ADVISORY,
-        fixCommand: TOKENJUICE_CODEBUFF_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerInstructions(resolvedInstructionsPath, TOKENJUICE_CODEBUFF_BLOCK_CONFIG, {
     configuredLabel: "Codebuff instructions",
-    repairCommand: TOKENJUICE_CODEBUFF_FIX_COMMAND,
+    advisory: TOKENJUICE_CODEBUFF_ADVISORY,
+    fixCommand: TOKENJUICE_CODEBUFF_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install codebuff",
   });
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_CODEBUFF_BLOCK_CONFIG);
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers ? ["configured Codebuff instructions have malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_CODEBUFF_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Codebuff instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Codebuff instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Codebuff instructions still suggest the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_CODEBUFF_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install codebuff"
-        : TOKENJUICE_CODEBUFF_FIX_COMMAND,
-    }),
-  };
 }

@@ -1,6 +1,7 @@
 # Grok CLI integration
 
-Grok CLI support is beta.
+This adapter targets the third-party [superagent-ai/grok-cli](https://github.com/superagent-ai/grok-cli),
+not xAI Grok Build or Grok Bot. Support is beta.
 
 `tokenjuice install grok-cli` writes a user-level `PostToolUse` command hook
 into `~/.grok/user-settings.json`. Grok CLI loads hooks only from user settings,

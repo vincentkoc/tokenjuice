@@ -42,6 +42,7 @@
 - Provide a portable WorkBuddy desktop guidance skill with localized metadata and explicit manual-import/runtime verification steps.
 - Provide a portable Doubao Work terminal guidance skill and document personal import, archive layout and execution verification.
 - Provide an AutoClaw skill-creation workflow with explicit command capability and runtime dependency checks.
+- Distinguish Grok Bot cloud skills, Grok Build passive hooks and the community Grok CLI; provide a copyable cloud terminal workflow.
 
 ### Breaking changes
 

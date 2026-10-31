@@ -26,7 +26,9 @@ describe("OpenCode V2 plugin lifecycle", () => {
     expect((await uninstallOpenCodeV2Extension()).removed).toBe(true);
     expect(await readFile(v1, "utf8")).toBe("V1 preserved");
     expect(await readFile(join(dirname(result.extensionPath), "notes.txt"), "utf8")).toBe("preserved");
-    expect((await doctorOpenCodeV2Extension()).status).toBe("disabled");
+    const disabled = await doctorOpenCodeV2Extension();
+    expect(disabled.status).toBe("disabled");
+    expect(disabled.missingPaths).toEqual([result.extensionPath]);
   });
 
   it("preserves foreign files and backs up refreshed owned source", async () => {

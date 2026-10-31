@@ -66,10 +66,10 @@ export async function doctorOpenCodeV2Extension(options: OpenCodeV2Options = {})
   const extensionPath = join(configRoot(options), "plugins", "tokenjuice-v2", "index.js");
   const base = { extensionPath, fixCommand: "tokenjuice install opencode-v2",
     advisories: ["OpenCode V2 support is beta, pinned to v2.0.18 contracts. Doctor checks the plugin file; live loading and execution remain unqualified."],
-    checkedPaths: [extensionPath] };
+    checkedPaths: [extensionPath], missingPaths: [] as string[] };
   try {
     const file = await readSettingsFile(await safePath(options));
-    if (!file.data) return { ...base, status: "disabled" as const, issues: ["OpenCode V2 plugin is not installed"] };
+    if (!file.data) return { ...base, status: "disabled" as const, issues: ["OpenCode V2 plugin is not installed"], missingPaths: [extensionPath] };
     const text = file.data.toString("utf8");
     if (!text.startsWith(marker)) return { ...base, status: "broken" as const, issues: ["plugin path contains an unowned file"] };
     const issues = text === await source(Boolean(options.local)) ? [] : ["plugin differs from the current bundle; reinstall to refresh"];

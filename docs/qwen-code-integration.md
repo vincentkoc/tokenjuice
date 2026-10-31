@@ -57,3 +57,7 @@ baseline result. No model credentials are passed through.
 This verifies host loading and model-visible delivery, not remote provider
 availability or model reasoning quality. The test allows only the shell tool in
 its disposable environment using Qwen Code's native `--allowed-tools` option.
+
+The Bash case observes array expansion through an external Node process. An
+immediate builtin-only case intermittently returned empty output in the pinned
+host's Linux baseline; that output-capture case remains unqualified.

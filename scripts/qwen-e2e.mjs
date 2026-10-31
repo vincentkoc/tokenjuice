@@ -56,7 +56,7 @@ const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
-  { id: "dialect", command: "values=(alpha beta); [[ ${values[1]} == beta ]] && printf '%s\\n' \"${values[1]}\"" },
+  { id: "dialect", command: `values=(alpha beta); [[ \${values[1]} == beta ]] && ${quote(process.execPath)} -e 'console.log(process.argv[1])' "\${values[1]}"` },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
   { id: "failure", command: `${quote(process.execPath)} -e ${quote("process.stdout.write('failure-output\\n'); process.stderr.write('failure-stderr\\n'); process.exit(7)")}` },
 ];

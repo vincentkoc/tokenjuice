@@ -14,6 +14,7 @@ export type ParsedArgs = {
   noStats: boolean;
   tee: boolean;
   raw: boolean;
+  keepFailures?: boolean;
   noOmit: boolean;
   allowOmit: boolean;
   storeDir: string | undefined;

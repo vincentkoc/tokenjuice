@@ -52,6 +52,10 @@ function statsSource(
 }
 
 describe("parseArgs", () => {
+  it("parses opt-in failure passthrough for automatic wrapping", () => {
+    expect(parseArgs(["wrap", "--keep-failures", "--", "false"]).keepFailures).toBe(true);
+    expect(parseArgs(["wrap", "--", "false"]).keepFailures).toBe(false);
+  });
   it("parses --no-omit for direct commands and explicit Codex hook policy", () => {
     expect(parseArgs(["reduce", "--no-omit"]).noOmit).toBe(true);
     expect(parseArgs(["wrap", "--no-omit", "--", "echo", "hi"]).noOmit).toBe(true);

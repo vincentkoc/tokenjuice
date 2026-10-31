@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Replace the undiscovered Cline additive hook with native pre-tool batch wrapping, preserve complete failed-command streams with opt-in `--keep-failures`, migrate owned legacy scripts, and validate real CLI 3.0.74 sessions.
+
 - Match native Copilot CLI Bash hooks, require proven shell exit 0 before compaction, and preserve completion metadata outside output summaries; verify real 1.0.105 model requests and remove obsolete synthetic fixtures.
 
 - Retire community Grok CLI additive hook compaction, retain scoped legacy cleanup, and validate explicit wrapping against the actual packaged standalone runtime.

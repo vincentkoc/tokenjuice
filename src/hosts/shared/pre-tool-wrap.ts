@@ -185,6 +185,7 @@ export function buildWrappedCommand(params: {
   shellPath: string;
   command: string;
   source?: string;
+  keepFailures?: boolean;
   nodePath?: string;
 }): string {
   const nodePath = params.nodePath ?? process.execPath;
@@ -192,7 +193,7 @@ export function buildWrappedCommand(params: {
     ? `${posixShellQuote(nodePath)} ${posixShellQuote(params.wrapLauncher)}`
     : posixShellQuote(params.wrapLauncher);
   const sourceArgs = params.source ? ` --source ${posixShellQuote(params.source)}` : "";
-  return `${launcherCommand} wrap${sourceArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
+  return `${launcherCommand} wrap${params.keepFailures ? " --keep-failures" : ""}${sourceArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
 }
 
 /**

@@ -273,7 +273,12 @@ function commandRequestsTokenjuiceRawBypass(command: string): boolean {
 export async function runGrokCliPostToolUseHook(rawText: string): Promise<number> {
   let payload: GrokCliPostToolUsePayload;
   try {
-    payload = JSON.parse(rawText) as GrokCliPostToolUsePayload;
+    const parsed: unknown = JSON.parse(rawText);
+    if (!isRecord(parsed)) {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    payload = parsed;
   } catch {
     writeEmptyHookJsonLine();
     return 0;

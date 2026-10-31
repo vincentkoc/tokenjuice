@@ -16,6 +16,8 @@
 - Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.
 - Route Droid Execute commands through pre-tool wrapping so compacted output replaces noisy terminal output; migrate legacy tokenjuice post-tool entries on reinstall.
 
+- Keep the community Grok CLI hook fail-open when its JSON input is null, an array or a primitive.
+
 ### Maintenance
 
 - Pin third-party GitHub Actions to verified commit SHAs so mutable tags cannot replace CI or release code.

@@ -40,6 +40,11 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("grok-cli hooks", () => {
+  it.each(["null", "[]", "7", "true", '\"text\"', "{malformed"])("fails open for unsupported hook input: %s", async (raw) => {
+    const result = await captureStdout(() => runGrokCliPostToolUseHook(raw));
+    expect(result).toEqual({ code: 0, output: "{}\n" });
+  });
+
   it("installs a PostToolUse hook into Grok CLI user settings", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, ".grok", "user-settings.json");

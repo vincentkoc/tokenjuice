@@ -9,6 +9,7 @@
 ### Maintenance
 
 - Audit dependencies weekly and on pull requests, validate Node.js 22/24/26, and patch the development-tool minimatch denial-of-service advisory.
+- Scan JavaScript, TypeScript, and GitHub Actions workflows with CodeQL on pull requests, main pushes, and a weekly schedule.
 
 ### Breaking changes
 

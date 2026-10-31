@@ -242,6 +242,7 @@ async function readInstalledHook(path, event) {
 }
 
 const preToolHosts = [
+  { host: "droid", dir: ".factory", file: "settings.json", envKey: "FACTORY_HOME", tool: "Execute" },
   { host: "claude-code", dir: ".claude", file: "settings.json", envKey: "CLAUDE_CONFIG_DIR" },
   { host: "codebuddy", dir: ".codebuddy", file: "settings.json", envKey: "CODEBUDDY_CONFIG_DIR", inputKey: "modifiedInput" },
   { host: "cursor", dir: ".cursor", file: "hooks.json", envKey: "CURSOR_HOME", event: "preToolUse", tool: "Shell" },
@@ -270,6 +271,10 @@ async function runPreToolContracts(spec) {
     const hook = await invoke(payload(command));
     assert(hook.stderr === "", `${spec.host}: unexpected hook stderr: ${hook.stderr}`);
     const output = JSON.parse(hook.stdout);
+    if (spec.host === "droid") {
+      assert(output.hookSpecificOutput?.hookEventName === "PreToolUse", "droid: wrong hook event");
+      assert(output.hookSpecificOutput?.permissionDecision === undefined, "droid: wrapper changed permission policy");
+    }
     const updated = spec.host === "cursor" ? output.updated_input : output.hookSpecificOutput?.[spec.inputKey ?? "updatedInput"];
     assert(updated?.description === "contract fixture" && updated.timeout === 120000, `${spec.host}: lost input fields`);
     assert(typeof updated.command === "string" && updated.command !== command, `${spec.host}: missing rewrite`);
@@ -305,6 +310,11 @@ async function runPreToolContracts(spec) {
   if (spec.host === "cursor") assert(!secondPass.stdout, "cursor: double wrap");
   const malformed = await invoke("{broken");
   assert(malformed.stderr === "" && (malformed.stdout === "" || malformed.stdout.trim() === "{}"), `${spec.host}: malformed input did not fail open`);
+
+  if (spec.host === "droid") {
+    const rawBypass = await invoke(payload(`"${process.execPath}" "${distCliPath}" wrap --raw -- ${listing}`));
+    assert(rawBypass.stdout.trim() === "{}" && rawBypass.stderr === "", "droid: explicit raw bypass was wrapped again");
+  }
 
   await cli(["uninstall", spec.host]);
   const removed = JSON.parse(await readFile(configPath, "utf8").catch((error) => {

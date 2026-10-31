@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -84,18 +84,7 @@ async function writeSweAgentConfigWithoutBackup(configPath: string, text: string
   }
 }
 
-function getExplicitProjectDir(options: SweAgentConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.SWE_AGENT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: SweAgentConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("SWE_AGENT_PROJECT_DIR");
 
 async function getDefaultConfigPath(options: SweAgentConfigOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".swe-agent", "tokenjuice.yaml");

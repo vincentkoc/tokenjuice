@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -56,18 +56,7 @@ const TOKENJUICE_KNOWNS_END = "<!-- tokenjuice:knowns end -->";
 const TOKENJUICE_KNOWNS_ADVISORY =
   "Knowns support is beta and instruction-based; Knowns generates KNOWNS.md guidance and exposes memory, tasks, docs, and code intelligence through MCP, but tokenjuice does not intercept tool output.";
 
-function getExplicitProjectDir(options: KnownsInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.KNOWNS_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: KnownsInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("KNOWNS_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

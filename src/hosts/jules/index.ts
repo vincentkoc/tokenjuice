@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_JULES_BEGIN = "<!-- tokenjuice:jules begin -->";
 const TOKENJUICE_JULES_END = "<!-- tokenjuice:jules end -->";
 const TOKENJUICE_JULES_ADVISORY = "Jules support is beta and instruction-based; it guides command usage through project AGENTS.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: JulesInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.JULES_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: JulesInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("JULES_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: JulesInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

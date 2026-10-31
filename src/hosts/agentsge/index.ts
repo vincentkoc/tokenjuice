@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -38,18 +38,7 @@ const TOKENJUICE_AGENTSGE_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_AGENTSGE_ADVISORY =
   "agents.ge support is beta and rule-based; run `agents sync` after install so generated agent entrypoints receive the rule.";
 
-function getExplicitProjectDir(options: AgentsGeRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTSGE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AgentsGeRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTSGE_PROJECT_DIR");
 
 async function getDefaultRulePath(options: AgentsGeRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".agents", "rules", "tokenjuice-agentsge.md");

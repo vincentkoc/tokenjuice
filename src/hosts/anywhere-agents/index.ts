@@ -1,9 +1,9 @@
 import { lstat, realpath, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -60,18 +60,7 @@ const TOKENJUICE_ANYWHERE_AGENTS_END = "<!-- tokenjuice:anywhere-agents end -->"
 const TOKENJUICE_ANYWHERE_AGENTS_ADVISORY =
   "anywhere-agents support is beta and local-override based; anywhere-agents composes AGENTS.md plus AGENTS.local.md into downstream agent files, but each agent still owns command execution. Run `anywhere-agents` after install or uninstall.";
 
-function getExplicitProjectDir(options: AnywhereAgentsInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.ANYWHERE_AGENTS_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AnywhereAgentsInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("ANYWHERE_AGENTS_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

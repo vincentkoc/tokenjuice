@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,10 +52,6 @@ const TOKENJUICE_WARP_BEGIN = "<!-- tokenjuice:warp begin -->";
 const TOKENJUICE_WARP_END = "<!-- tokenjuice:warp end -->";
 const TOKENJUICE_WARP_ADVISORY = "Warp support is beta and instruction-based; Warp loads AGENTS.md project rules, with WARP.md taking priority when it exists, but still owns command execution.";
 
-function getExplicitProjectDir(options: WarpInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.WARP_PROJECT_DIR;
-}
-
 async function pathExists(path: string): Promise<boolean> {
   try {
     await stat(path);
@@ -65,14 +61,7 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function resolveProjectDir(options: WarpInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("WARP_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: WarpInstructionsOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);

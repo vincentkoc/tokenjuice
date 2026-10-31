@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_TRAE_BEGIN = "<!-- tokenjuice:trae begin -->";
 const TOKENJUICE_TRAE_END = "<!-- tokenjuice:trae end -->";
 const TOKENJUICE_TRAE_ADVISORY = "Trae support is beta and rule-based; Trae loads project .rules Markdown but still owns command execution.";
 
-function getExplicitProjectDir(options: TraeRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.TRAE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: TraeRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("TRAE_PROJECT_DIR");
 
 async function getDefaultRulePath(options: TraeRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".trae", "rules", "project_rules.md");

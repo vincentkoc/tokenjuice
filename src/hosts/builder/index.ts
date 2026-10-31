@@ -1,7 +1,7 @@
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -40,18 +40,7 @@ const TOKENJUICE_BUILDER_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_BUILDER_ADVISORY = "Builder support is beta and rule-based; it guides command usage but does not intercept tool output.";
 const TOKENJUICE_BUILDER_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
-function getExplicitProjectDir(options: BuilderRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.BUILDER_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: BuilderRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("BUILDER_PROJECT_DIR");
 
 async function getDefaultRulePath(options: BuilderRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".builder", "rules", "tokenjuice.mdc");

@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -57,18 +57,7 @@ const TOKENJUICE_GREPTILE_END = "<!-- tokenjuice:greptile end -->";
 const TOKENJUICE_GREPTILE_ADVISORY =
   "Greptile support is beta and rules-based; Greptile still owns PR review, runtime inspection, and comment delivery.";
 
-function getExplicitProjectDir(options: GreptileRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.GREPTILE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: GreptileRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("GREPTILE_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

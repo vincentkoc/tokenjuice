@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -64,18 +64,7 @@ const INLINE_REVIEW_AGENT_TABLE_PATTERN = new RegExp(String.raw`^\s*${TOML_REVIE
 const ISSUES_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_ISSUES_GUIDELINES_KEY}\s*=`, "u");
 const COMPLIANCE_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_COMPLIANCE_GUIDELINES_KEY}\s*=`, "u");
 
-function getExplicitProjectDir(options: QodoReviewConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.QODO_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: QodoReviewConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("QODO_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

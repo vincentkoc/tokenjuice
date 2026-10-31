@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -57,18 +57,7 @@ const TOKENJUICE_CHARLIE_END = "<!-- tokenjuice:charlie end -->";
 const TOKENJUICE_CHARLIE_ADVISORY =
   "Charlie support is beta and AGENTS.md-based; Charlie still owns planning, coding, review, and command execution.";
 
-function getExplicitProjectDir(options: CharlieInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.CHARLIE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: CharlieInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("CHARLIE_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

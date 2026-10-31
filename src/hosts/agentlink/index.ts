@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -60,18 +60,7 @@ const TOKENJUICE_AGENTLINK_END = "<!-- tokenjuice:agentlink end -->";
 const TOKENJUICE_AGENTLINK_ADVISORY =
   "Agentlink support is beta and source-instruction based; Agentlink symlinks AGENTS.md into downstream tool files, but each tool still owns command execution. Run `agentlink sync` after install or uninstall.";
 
-function getExplicitProjectDir(options: AgentlinkInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTLINK_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AgentlinkInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTLINK_PROJECT_DIR");
 
 function stripInlineComment(value: string): string {
   let quote: string | undefined;

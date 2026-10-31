@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_MISTRAL_VIBE_BEGIN = "<!-- tokenjuice:mistral-vibe begin -->";
 const TOKENJUICE_MISTRAL_VIBE_END = "<!-- tokenjuice:mistral-vibe end -->";
 const TOKENJUICE_MISTRAL_VIBE_ADVISORY = "Mistral Vibe support is beta and instruction-based; Vibe loads root AGENTS.md but still owns command execution.";
 
-function getExplicitProjectDir(options: MistralVibeInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.MISTRAL_VIBE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: MistralVibeInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("MISTRAL_VIBE_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: MistralVibeInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_TABNINE_BEGIN = "<!-- tokenjuice:tabnine begin -->";
 const TOKENJUICE_TABNINE_END = "<!-- tokenjuice:tabnine end -->";
 const TOKENJUICE_TABNINE_ADVISORY = "Tabnine support is beta and instruction-based; it guides command usage through project TABNINE.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: TabnineInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.TABNINE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: TabnineInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("TABNINE_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: TabnineInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "TABNINE.md");

@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,18 +52,7 @@ const TOKENJUICE_DEEPAGENTS_END = "<!-- tokenjuice:deepagents end -->";
 const TOKENJUICE_DEEPAGENTS_ADVISORY =
   "Deep Agents Code support is beta and instruction-based; Deep Agents Code reads project instructions but still owns command execution.";
 
-function getExplicitProjectDir(options: DeepAgentsInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.DEEPAGENTS_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: DeepAgentsInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("DEEPAGENTS_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: DeepAgentsInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".deepagents", "AGENTS.md");

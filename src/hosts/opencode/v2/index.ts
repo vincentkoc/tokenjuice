@@ -65,7 +65,7 @@ export async function installOpenCodeV2Extension(options: OpenCodeV2Options = {}
 export async function doctorOpenCodeV2Extension(options: OpenCodeV2Options = {}) {
   const extensionPath = join(configRoot(options), "plugins", "tokenjuice-v2", "index.js");
   const base = { extensionPath, fixCommand: "tokenjuice install opencode-v2",
-    advisories: ["OpenCode V2 support is beta, pinned to v2.0.18 contracts. Doctor checks the plugin file; live loading and execution remain unqualified."],
+    advisories: ["OpenCode V2 support is beta, pinned to v2.0.18. Doctor checks the plugin file, not server loading or execution."],
     checkedPaths: [extensionPath], missingPaths: [] as string[] };
   try {
     const file = await readSettingsFile(await safePath(options));

@@ -5,6 +5,7 @@
 ### Fixes
 
 - Retire community Grok CLI additive hook compaction, retain scoped legacy cleanup, and validate explicit wrapping against the actual packaged standalone runtime.
+- Validate OpenCode V2 plugin discovery and model-visible shell-result replacement with native v2.0.18 baseline/installed sessions, including exact reads, raw bypass and complete failure metadata.
 
 - Retire Kimi automatic compaction because current observation-only hooks cannot replace model output; preserve legacy cleanup and validate explicit wrapping with native Kimi Code CLI 2.4.1.
 - Preserve original Codex Bash results when hook payloads omit exit status, avoiding duplicate summaries and lost failure metadata; replace eligible status-bearing results through supported hook feedback and add native 0.166.0 acceptance coverage.

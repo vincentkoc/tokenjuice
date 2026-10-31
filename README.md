@@ -111,7 +111,7 @@ beta integrations:
 | <img width="48px" src="docs/client-pi-go.svg" alt="pi-go" /> | [pi-go](https://pi-go.sh/) | `tokenjuice install pi-go` | `.pi/skills/tokenjuice/SKILL.md` |
 | <img width="48px" src="docs/client-plandex.svg" alt="Plandex" /> | [Plandex](https://docs.plandex.ai/) | `tokenjuice install plandex` | `PLANDEX.tokenjuice.md` |
 | <img width="48px" src="docs/client-qodo.svg" alt="Qodo" /> | [Qodo Code Review](https://docs.qodo.ai/code-review/get-started/configuration-overview/configuration-file) | `tokenjuice install qodo` | `.pr_agent.toml` |
-| | [OpenCode V2](docs/opencode-v2-integration.md) | `tokenjuice install opencode-v2` | foreground `shell` result replacement; v2.0.18 contract, live acceptance unqualified |
+| | [OpenCode V2](docs/opencode-v2-integration.md) | `tokenjuice install opencode-v2` | foreground `shell` result replacement; native v2.0.18 acceptance |
 | | [Antigma Ante](docs/ante-integration.md) | `tokenjuice install ante` | project `AGENTS.md` or `CLAUDE.md` |
 | <img width="48px" src="docs/client-qoder.svg" alt="Qoder" /> | [Qoder CLI](https://docs.qoder.com/cli/using-cli) | `tokenjuice install qoder-cli` | native `PostToolUse`; `qoder` retains `AGENTS.md` guidance |
 | QoderWork | [QoderWork skills](docs/qoderwork-integration.md) | `tokenjuice install qoderwork` | guidance skill at `~/.qoderwork/skills/tokenjuice/SKILL.md` |

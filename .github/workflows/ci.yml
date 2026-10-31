@@ -203,6 +203,11 @@ jobs:
 
       - name: Verify Copilot CLI model-visible tool results
         run: node scripts/copilot-cli-e2e.mjs "$RUNNER_TEMP/tokenjuice-copilot-cli/node_modules/@github/copilot-linux-x64/copilot"
+      - name: Install pinned Xum host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-xum" --ignore-scripts --omit=dev --no-audit --no-fund @coder/xum@0.32.1
+
+      - name: Verify Mux/Xum model-visible tool results
+        run: node scripts/mux-e2e.mjs "$RUNNER_TEMP/tokenjuice-xum/node_modules/@coder/xum/dist/cli/index.js"
 
       - name: Install pinned Pi host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-pi" --ignore-scripts --no-audit --no-fund @earendil-works/pi-coding-agent@1.4.0

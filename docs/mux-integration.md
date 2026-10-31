@@ -1,40 +1,47 @@
-# Mux integration
+# Mux / Xum integration
 
-Mux support is beta.
-
-`tokenjuice install mux` writes an executable tokenjuice block to the project
-hook at `.mux/tool_post`. Mux documents `tool_post` as a post-tool hook that
-runs after every tool execution and receives the full tool result path in
-`MUX_TOOL_RESULT_PATH`.
+Automatic hook compaction is retired. Use explicit wrapping:
 
 ```bash
-tokenjuice install mux
+tokenjuice wrap -- find src -type f
+tokenjuice wrap --raw -- cat important.txt
+```
+
+Mux is now Xum. The published `@coder/xum@0.32.1` package retains the `mux`
+binary alias, `.mux` project metadata and `MUX_*` hook environment aliases.
+The rename alone does not break the old adapter.
+
+The [native post-tool contract](https://github.com/coder/xum/blob/main/docs/hooks/tools.mdx)
+adds stdout as `hook_output` alongside the original result. A compacted copy
+therefore increases model context. It does not replace or suppress the tool
+result. Tokenjuice no longer creates that hook; `install mux` fails before
+writing any file. Existing `mux-post-tool-use` commands return silently.
+
+Remove a legacy installation with:
+
+```bash
 tokenjuice doctor mux
 tokenjuice uninstall mux
 ```
 
-By default tokenjuice resolves the nearest git root and writes the hook there.
-Set `MUX_PROJECT_DIR=/path/to/repo` to target a specific repository in scripts
-or tests.
+Cleanup targets the nearest Git root's `.mux/tool_post`. Set `MUX_PROJECT_DIR`
+or pass the library's `projectDir` option to target another project. Only the
+recognized generated tokenjuice block is removed. Unrelated hook text,
+permissions and existing backups are preserved. Symlinked hooks or hook
+directories require manual inspection before cleanup.
 
-When Mux runs a `bash` tool, the installed hook calls:
+## Native acceptance
+
+After building, run:
 
 ```bash
-tokenjuice mux-post-tool-use
+node scripts/mux-e2e.mjs /path/to/@coder/xum/dist/cli/index.js
 ```
 
-The hook reads Mux's `MUX_TOOL_INPUT_PATH` and `MUX_TOOL_RESULT_PATH`, compacts
-noisy shell output through the shared reducer, and prints compacted context as
-hook output when compaction is useful.
-
-This does not suppress the original tool result. Mux still owns tool execution
-and hook rendering; tokenjuice adds compacted context alongside the original
-output.
-
-If `.mux/tool_post` already exists, tokenjuice backs it up, preserves the
-existing hook body, and removes only the tokenjuice block during uninstall.
-Existing hook files must be bash scripts so tokenjuice can safely add its
-managed block without changing the hook interpreter.
-
-`doctor mux` reports `ok` when `.mux/tool_post` is executable and points at the
-expected `mux-post-tool-use` command.
+The fixture uses a private home and trusted disposable project with a loopback
+provider. It checks baseline and post-hook model requests, exact reads, explicit
+wrapping, raw bypass and a failing command with stderr and exit status. Xum
+normalizes CRLF and trailing blank lines before delivery; the fixture checks
+that native baseline rather than claiming byte-exact reads. This
+qualifies the pinned CLI only; desktop sessions, remote providers and other
+versions need separate acceptance.

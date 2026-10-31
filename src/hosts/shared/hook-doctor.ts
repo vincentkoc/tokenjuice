@@ -1,3 +1,4 @@
+import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorAdalInstructions } from "../adal/index.js";
 import { doctorAetherPrompt } from "../aether/index.js";
 import { doctorAiderConvention } from "../aider/index.js";
@@ -288,6 +289,7 @@ export type HookIntegrationDoctorReport = {
   qodo: QodoDoctorReport;
   ante: AnteDoctorReport;
   qoder: QoderDoctorReport;
+  "qoder-cli": Awaited<ReturnType<typeof doctorQoderHook>>;
   "qwen-code": QwenCodeDoctorReport;
   replit: ReplitDoctorReport;
   roo: RooDoctorReport;
@@ -407,6 +409,7 @@ const hookDoctorIntegrationDoctors = {
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
   qodo: (options) => doctorQodoReviewConfig(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
+  "qoder-cli": (options) => doctorQoderHook(undefined, getHookCommandOptions(options)),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),

@@ -25,6 +25,8 @@
 
 - Warn when the visible Goose context filename configuration excludes installed `.goosehints`, and document its Developer extension prerequisite.
 
+- Expose native Qoder CLI hook installation, doctor and uninstall as `qoder-cli`, retaining the existing `qoder` instruction target.
+
 ### Maintenance
 
 - Pin third-party GitHub Actions to verified commit SHAs so mutable tags cannot replace CI or release code.

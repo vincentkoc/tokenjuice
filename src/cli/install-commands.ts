@@ -1,3 +1,4 @@
+import { installQoderHook } from "../hosts/qoder/hook-install.js";
 // Per-target handlers for `tokenjuice install <target>`.
 // Each handler is keyed by the target name and its aliases in installCommands.
 
@@ -1260,6 +1261,20 @@ const installReplitCommand = createHostCommand(() => installReplitInstructions()
   process.stdout.write(formatInstallSuccess("replit", "instructions", details));
 });
 
+const installQoderCliCommand = createHostCommand((args) => installQoderHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Hook", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "synchronous Bash output replacement; verify live Qoder CLI behavior" },
+    { label: "Verify", value: `tokenjuice doctor qoder-cli${args.local ? " --local" : ""}` },
+    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+  ];
+  if (result.backupPath) {
+    details.push({ label: "Backup", value: result.backupPath });
+  }
+  process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
+});
+
 const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1592,6 +1607,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["plandex", installPlandexCommand],
   ["ante", installAnteCommand],
   ["qoder", installQoderCommand],
+  ["qoder-cli", installQoderCliCommand],
   ["replit", installReplitCommand],
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],

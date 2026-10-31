@@ -6,12 +6,11 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -127,25 +126,15 @@ const TOKENJUICE_NOVAKIT_BLOCK_CONFIG = {
   preserveSurroundingText: true,
 };
 
+const markerInstructions = createMarkerInstructionCommands("novakit", TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
+
 export async function installNovaKitInstructions(
   instructionsPath?: string,
   options: NovaKitInstructionsOptions = {},
 ): Promise<InstallNovaKitInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_NOVAKIT_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install novakit`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallNovaKitInstructions(
@@ -153,16 +142,7 @@ export async function uninstallNovaKitInstructions(
   options: NovaKitInstructionsOptions = {},
 ): Promise<UninstallNovaKitInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_NOVAKIT_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall novakit`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorNovaKitInstructions(

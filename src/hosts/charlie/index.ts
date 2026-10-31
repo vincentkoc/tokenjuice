@@ -6,12 +6,11 @@ import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from ".
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -143,25 +142,15 @@ const TOKENJUICE_CHARLIE_BLOCK_CONFIG = {
   block: TOKENJUICE_CHARLIE_BLOCK,
 };
 
+const markerInstructions = createMarkerInstructionCommands("charlie", TOKENJUICE_CHARLIE_BLOCK_CONFIG);
+
 export async function installCharlieInstructions(
   instructionsPath?: string,
   options: CharlieInstructionsOptions = {},
 ): Promise<InstallCharlieInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_CHARLIE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_CHARLIE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install charlie`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_CHARLIE_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallCharlieInstructions(
@@ -169,16 +158,7 @@ export async function uninstallCharlieInstructions(
   options: CharlieInstructionsOptions = {},
 ): Promise<UninstallCharlieInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_CHARLIE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_CHARLIE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall charlie`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_CHARLIE_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorCharlieInstructions(

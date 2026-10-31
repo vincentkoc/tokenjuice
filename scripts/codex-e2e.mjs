@@ -139,7 +139,10 @@ async function session(installed = false) {
   assert.deepEqual(completed.filter((item) => item.type === "error"
     && !item.message.includes("--dangerously-bypass-hook-trust")), [], "native host must report no unexpected errors");
   const commands = completed.filter((item) => item.type === "command_execution");
-  assert.equal(commands.length, cases.length);
+  assert.equal(commands.length, cases.length, `native shell commands must execute: ${JSON.stringify({
+    events: result.stdout.slice(0, 4000), stderr: result.stderr.slice(0, 2000),
+    results: [...observed].map(([id, output]) => [id, output.slice(0, 800)]),
+  })}`);
   assert.deepEqual(commands.map((item) => item.exit_code), [0, 0, 0, 0, 7]);
   assert.deepEqual(commands.map((item) => item.status), ["completed", "completed", "completed", "completed", "failed"]);
   assert.equal(completed.find((item) => item.type === "agent_message")?.text, "fixture complete");

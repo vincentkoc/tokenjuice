@@ -101,3 +101,9 @@ jobs:
 
       - name: Verify OpenCode model-visible tool results
         run: node scripts/opencode-e2e.mjs "$RUNNER_TEMP/tokenjuice-opencode/node_modules/opencode-linux-x64/bin/opencode"
+
+      - name: Install pinned Pi host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-pi" --ignore-scripts --no-audit --no-fund @earendil-works/pi-coding-agent@1.4.0
+
+      - name: Verify Pi model-visible tool results
+        run: node scripts/pi-e2e.mjs "$RUNNER_TEMP/tokenjuice-pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"

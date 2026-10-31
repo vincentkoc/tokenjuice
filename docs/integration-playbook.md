@@ -206,3 +206,20 @@ or model reasoning quality. The exported plugin must be an async initializer,
 as described in the [OpenCode plugin contract](https://opencode.ai/docs/plugins/).
 Reinstall and restart OpenCode after upgrading from an installation that exported
 an unsupported `{ id, setup }` object; doctor reports that older format as a warning.
+
+### Pi session acceptance
+
+`node scripts/pi-e2e.mjs /path/to/pi` runs Pi with an installed extension and a
+disposable home/workspace. A JavaScript CLI entry path is also accepted. CI pins
+`@earendil-works/pi-coding-agent@1.4.0` and passes its `dist/bundle/cli.js` entry.
+A loopback OpenAI-compatible fixture requests real bash commands and checks the
+results in Pi's next model request: listing compaction, exact file bytes, raw
+bypass, and failure output and exit status. A listing exceeding Pi's output
+limit also verifies that the extension reads the host's full-output file before
+compacting, preserving entries omitted from the visible tool result.
+
+The test uses automatic extension discovery and the real bash tool. Pi runs
+offline with a local model endpoint and isolated settings; no model credentials
+are passed through. This validates host loading and model-visible delivery,
+including Pi's failure flag, rather than remote provider availability or model
+reasoning quality.

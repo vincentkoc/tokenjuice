@@ -15,7 +15,14 @@ tokenjuice doctor goose
 ```
 
 Restart the Goose session after installing or changing `.goosehints` so Goose
-loads the updated hints.
+loads the updated hints. Enable Goose's Developer extension, which supplies
+hint-file loading. By default Goose reads both `AGENTS.md` and `.goosehints`.
+A custom `CONTEXT_FILE_NAMES` JSON array replaces that filename list; include
+`.goosehints`, for example `CONTEXT_FILE_NAMES='["AGENTS.md", ".goosehints"]'`.
+Doctor warns about incompatible values visible in its own environment. Run it
+with the same setting as Goose; it cannot inspect a separately launched desktop
+process or confirm the Developer extension is enabled.
+[Goose hint configuration](https://github.com/aaif-goose/goose/blob/main/documentation/docs/guides/context-engineering/using-goosehints.md)
 
 ## Behavior
 

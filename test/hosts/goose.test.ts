@@ -22,6 +22,7 @@ const envKeys = [
   "CODEBUDDY_CONFIG_DIR",
   "CODEX_HOME",
   "CONTINUE_PROJECT_DIR",
+  "CONTEXT_FILE_NAMES",
   "COPILOT_AGENT_PROJECT_DIR",
   "COPILOT_HOME",
   "CRUSH_PROJECT_DIR",
@@ -64,6 +65,25 @@ async function createTempDir(): Promise<string> {
 }
 
 describe("goose hints", () => {
+  it.each(['["AGENTS.md"]', '[]', 'invalid', '{}', '[7]'])("warns when the visible context filename setting cannot load hints: %s", async (names) => {
+    const home = await createTempDir();
+    const path = join(home, ".goosehints");
+    await installGooseHints(path);
+    process.env.CONTEXT_FILE_NAMES = names;
+    const report = await doctorGooseHints(path);
+    expect(report.status).toBe("warn");
+    expect(report.issues.some((issue) => issue.includes("CONTEXT_FILE_NAMES"))).toBe(true);
+    expect(process.env.CONTEXT_FILE_NAMES).toBe(names);
+  });
+
+  it("accepts a custom context filename list containing .goosehints", async () => {
+    const home = await createTempDir();
+    const path = join(home, ".goosehints");
+    await installGooseHints(path);
+    process.env.CONTEXT_FILE_NAMES = '["CLAUDE.md", ".goosehints"]';
+    expect((await doctorGooseHints(path)).status).toBe("ok");
+  });
+
   function countTokenjuiceBlocks(text: string): number {
     return text.match(/<!-- tokenjuice:begin -->/gu)?.length ?? 0;
   }

@@ -316,8 +316,28 @@ export async function doctorGooseHints(
     reports.push(await inspectGooseHintsPath(resolvedHintsPath));
   }
 
-  return reports.find((report) => report.status === "broken")
+  const report = reports.find((report) => report.status === "broken")
     ?? reports.find((report) => report.status === "warn")
     ?? reports.find((report) => report.status === "ok")
     ?? reports[0]!;
+  const configuredNames = process.env.CONTEXT_FILE_NAMES;
+  if (configuredNames === undefined || report.status === "disabled") return report;
+
+  let contextIssue: string | undefined;
+  try {
+    const names: unknown = JSON.parse(configuredNames);
+    if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
+      contextIssue = "CONTEXT_FILE_NAMES must be a JSON array of filenames; Goose hint loading is unverified";
+    } else if (!names.includes(GOOSE_HINTS_FILENAME)) {
+      contextIssue = "CONTEXT_FILE_NAMES excludes .goosehints; Goose will not discover the installed tokenjuice hints through this filename list";
+    }
+  } catch {
+    contextIssue = "CONTEXT_FILE_NAMES must be a JSON array of filenames; Goose hint loading is unverified";
+  }
+  return contextIssue ? {
+    ...report,
+    status: report.status === "broken" ? "broken" : "warn",
+    issues: [...report.issues, contextIssue],
+    advisories: [...report.advisories, "Include .goosehints in the Goose process's CONTEXT_FILE_NAMES array and restart the session; tokenjuice does not change this setting."],
+  } : report;
 }

@@ -45,4 +45,16 @@ describe("collectTokenjuiceGuidanceIssues", () => {
     ]);
     expect(collectTokenjuiceGuidanceIssues(buildTokenjuiceGuidanceBullets().join("\n"), options)).toEqual([]);
   });
+
+  it("keeps host-specific requirements ahead of standard guidance issues", () => {
+    expect(collectTokenjuiceGuidanceIssues("", {
+      configuredLabel: "example rule",
+      singular: true,
+      additionalRequired: [{ requiredText: "activation: always_on", missingIssue: "missing activation" }],
+    })).toEqual([
+      "missing activation",
+      "configured example rule is missing tokenjuice wrap guidance",
+      "configured example rule is missing the raw escape hatch",
+    ]);
+  });
 });

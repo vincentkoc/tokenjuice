@@ -3,8 +3,16 @@ import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  readInstructionFile,
+  removeInstructionFile,
+  installManagedInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -129,25 +137,13 @@ export async function doctorRulerRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Ruler rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_RULER_RULE_MARKER,
         missingIssue: "configured Ruler rule file does not look like the tokenjuice rule",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Ruler rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Ruler rule file is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Ruler rule file still suggests the full escape hatch",
       },
     ],
   });

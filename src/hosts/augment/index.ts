@@ -3,8 +3,16 @@ import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  readInstructionFile,
+  removeInstructionFile,
+  installManagedInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -137,8 +145,10 @@ export async function doctorAugmentRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Augment rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: "type: always_apply",
         missingIssue: "configured Augment rule file is missing always_apply frontmatter",
@@ -150,20 +160,6 @@ export async function doctorAugmentRule(
       {
         requiredText: TOKENJUICE_AUGMENT_RULE_MARKER,
         missingIssue: "configured Augment rule file does not look like the tokenjuice rule",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Augment rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Augment rule file is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Augment rule file still suggests the full escape hatch",
       },
     ],
   });

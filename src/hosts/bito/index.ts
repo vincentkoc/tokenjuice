@@ -10,12 +10,7 @@ import {
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -336,25 +331,12 @@ export async function doctorBitoGuidelines(options: BitoGuidelinesOptions = {}):
     ],
   });
   const guidelinesIssues = guidelines.exists
-    ? collectGuidanceIssues(guidelines.text, {
-        required: [
+    ? collectTokenjuiceGuidanceIssues(guidelines.text, {
+        configuredLabel: "Bito guidelines",
+        additionalRequired: [
           {
             requiredText: TOKENJUICE_BITO_GUIDELINES_MARKER,
             missingIssue: "configured Bito guidelines do not look like the tokenjuice guidelines",
-          },
-          {
-            requiredText: TOKENJUICE_WRAP_COMMAND,
-            missingIssue: "configured Bito guidelines are missing tokenjuice wrap guidance",
-          },
-          {
-            requiredText: TOKENJUICE_RAW_COMMAND,
-            missingIssue: "configured Bito guidelines are missing the raw escape hatch",
-          },
-        ],
-        forbidden: [
-          {
-            forbiddenText: TOKENJUICE_FULL_COMMAND,
-            presentIssue: "configured Bito guidelines still suggest the full escape hatch",
           },
         ],
       })

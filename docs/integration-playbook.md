@@ -192,6 +192,22 @@ also need evidence that the host loads the file and uses `tokenjuice wrap`.
 Record missing credentials or unavailable hosts as unverified; a passing doctor
 or a generated config snapshot cannot substitute for this evidence.
 
+### Qwen Code session acceptance
+
+`node scripts/qwen-e2e.mjs /path/to/qwen` runs Qwen Code with a disposable trusted
+home/workspace and a loopback OpenAI-compatible endpoint. CI pins 0.26.4. The real
+host executes shell commands in baseline and installed sessions, then sends their
+results to the model endpoint. Assertions cover listing compaction, exact reads,
+raw bypass, failure output, and native failure flags and exit status. Qwen Code
+trims edge whitespace; exact reads must match the baseline host result. Raw
+results must match the entire baseline result.
+
+The fixture uses native `--allowed-tools run_shell_command` in its disposable
+project. The hook supplies only `updatedInput` and leaves permission policy to
+Qwen Code. Reinstalling migrates tokenjuice's legacy context-only `PostToolUse`
+entries to `PreToolUse` wrapping. No remote model credentials are passed through;
+remote provider availability and model reasoning quality remain outside this test.
+
 ### OpenCode session acceptance
 
 `node scripts/opencode-e2e.mjs /path/to/opencode` runs the real host with an

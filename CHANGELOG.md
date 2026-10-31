@@ -5,6 +5,7 @@
 ### Fixes
 
 - Document Droid 1.1.0's High autonomy requirement for headless pre-tool command rewrites, verified through native sessions.
+- Route Qwen Code shell commands through pre-tool wrapping so compacted output reaches the model; migrate legacy context-only hooks on reinstall and verify native sessions in CI.
 
 - Send CodeBuddy pre-tool command rewrites through the runtime-supported `updatedInput` field so installed hooks compact Bash output.
 - Add QoderWork terminal guidance skill installation, diagnostics and owned-file removal at its documented user skill path.

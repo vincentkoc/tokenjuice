@@ -1300,7 +1300,7 @@ const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(u
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
-    { label: "Beta", value: "project-local PostToolUse hook; compacted context is injected alongside original output" },
+    { label: "Beta", value: "project-local PreToolUse wrapping; Qwen Code retains permission policy" },
     { label: "Verify", value: `tokenjuice doctor qwen-code${args.local ? " --local" : ""}` },
     { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
   ];

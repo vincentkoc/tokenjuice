@@ -99,6 +99,12 @@ jobs:
       - name: Verify installed hook contracts
         run: node scripts/hook-contracts.mjs
 
+      - name: Install pinned Qwen Code host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-qwen" --ignore-scripts --no-audit --no-fund @qwen-code/qwen-code@0.26.4
+
+      - name: Verify Qwen Code model-visible tool results
+        run: node scripts/qwen-e2e.mjs "$RUNNER_TEMP/tokenjuice-qwen/node_modules/@qwen-code/qwen-code/cli-entry.js"
+
       - name: Install pinned OpenCode host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-opencode" --ignore-scripts --no-audit --no-fund opencode-linux-x64@1.19.5
 

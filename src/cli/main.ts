@@ -35,7 +35,7 @@ import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
 import { runOpenHandsPostToolUseHook } from "../hosts/openhands/index.js";
-import { runQwenCodePostToolUseHook } from "../hosts/qwen-code/index.js";
+import { runQwenCodePostToolUseHook, runQwenCodePreToolUseHook } from "../hosts/qwen-code/index.js";
 import { runQoderPostToolUseHook } from "../hosts/qoder/hook.js";
 import { runVscodeCopilotPreToolUseHook } from "../hosts/vscode-copilot/index.js";
 import type { Format, ParsedArgs } from "./command-types.js";
@@ -1113,6 +1113,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runMuxPostToolUseHook();
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "qwen-code-pre-tool-use":
+      return await runQwenCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "qwen-code-post-tool-use":
       return await runQwenCodePostToolUseHook(await readStdin(args.maxInputBytes));
     case "vscode-copilot-pre-tool-use":

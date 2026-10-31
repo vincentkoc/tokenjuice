@@ -4,13 +4,11 @@ import { dirname, join } from "node:path";
 import { readStringField } from "../../core/record-fields.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
+import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
+import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 
 export type QwenCodeHookCommandOptions = TokenjuiceHookCommandOptions & {
   projectDir?: string;
@@ -55,10 +53,11 @@ type QwenCodePostToolUsePayload = {
   cwd?: unknown;
 };
 
-const TOKENJUICE_QWEN_CODE_SUBCOMMAND = "qwen-code-post-tool-use";
+const TOKENJUICE_QWEN_CODE_SUBCOMMAND = "qwen-code-pre-tool-use";
+const TOKENJUICE_QWEN_CODE_LEGACY_SUBCOMMAND = "qwen-code-post-tool-use";
 const TOKENJUICE_QWEN_CODE_FIX_COMMAND = "tokenjuice install qwen-code";
-const TOKENJUICE_QWEN_CODE_ADVISORY = "Qwen Code support is beta and injects compacted context without suppressing the original tool result.";
-const TOKENJUICE_QWEN_CODE_DISABLED_ADVISORY = "Qwen Code support is beta; verify live PostToolUse behavior after install.";
+const TOKENJUICE_QWEN_CODE_ADVISORY = "Qwen Code pre-tool wrapping is beta; shell commands run through tokenjuice before execution.";
+const TOKENJUICE_QWEN_CODE_DISABLED_ADVISORY = "Qwen Code PreToolUse hook is not installed.";
 
 function getProjectDir(options: QwenCodeHookCommandOptions = {}): string {
   return options.projectDir || process.env.QWEN_PROJECT_DIR || process.cwd();
@@ -114,16 +113,16 @@ async function writeQwenCodeSettings(settingsPath: string, config: QwenCodeSetti
 function isTokenjuiceQwenCodeHook(entry: unknown): boolean {
   return isRecord(entry)
     && typeof entry.command === "string"
-    && entry.command.includes(TOKENJUICE_QWEN_CODE_SUBCOMMAND);
+    && (entry.command.includes(TOKENJUICE_QWEN_CODE_SUBCOMMAND) || entry.command.includes(TOKENJUICE_QWEN_CODE_LEGACY_SUBCOMMAND));
 }
 
-function getPostToolUseHooks(config: QwenCodeSettings): unknown[] {
-  const postToolUse = config.hooks.PostToolUse;
-  return Array.isArray(postToolUse) ? postToolUse : [];
+function getHookGroups(config: QwenCodeSettings, event: "PreToolUse" | "PostToolUse"): unknown[] {
+  const groups = config.hooks[event];
+  return Array.isArray(groups) ? groups : [];
 }
 
 function findTokenjuiceQwenCodeHookCommand(config: QwenCodeSettings): string | undefined {
-  for (const group of getPostToolUseHooks(config)) {
+  for (const group of [...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")]) {
     if (!isRecord(group) || !Array.isArray(group.hooks)) {
       continue;
     }
@@ -136,10 +135,10 @@ function findTokenjuiceQwenCodeHookCommand(config: QwenCodeSettings): string | u
   return undefined;
 }
 
-function removeTokenjuiceQwenCodeHooks(config: QwenCodeSettings): number {
+function removeTokenjuiceQwenCodeHookEvent(config: QwenCodeSettings, event: "PreToolUse" | "PostToolUse"): number {
   let removed = 0;
   const retainedGroups: unknown[] = [];
-  for (const group of getPostToolUseHooks(config)) {
+  for (const group of getHookGroups(config, event)) {
     if (!isRecord(group) || !Array.isArray(group.hooks)) {
       retainedGroups.push(group);
       continue;
@@ -155,8 +154,13 @@ function removeTokenjuiceQwenCodeHooks(config: QwenCodeSettings): number {
       retainedGroups.push({ ...group, hooks: retainedHooks });
     }
   }
-  config.hooks.PostToolUse = retainedGroups;
+  if (retainedGroups.length > 0) config.hooks[event] = retainedGroups;
+  else delete config.hooks[event];
   return removed;
+}
+
+function removeTokenjuiceQwenCodeHooks(config: QwenCodeSettings): number {
+  return removeTokenjuiceQwenCodeHookEvent(config, "PreToolUse") + removeTokenjuiceQwenCodeHookEvent(config, "PostToolUse");
 }
 
 function createQwenCodeHook(command: string): Record<string, unknown> {
@@ -169,7 +173,7 @@ function createQwenCodeHook(command: string): Record<string, unknown> {
         name: "tokenjuice",
         command,
         timeout: 60000,
-        description: "Inject compacted context for noisy shell output after Qwen Code runs a command.",
+        description: "Wrap shell commands through tokenjuice before Qwen Code executes them.",
       },
     ],
   };
@@ -179,11 +183,14 @@ export async function installQwenCodeHook(
   settingsPath?: string,
   options: QwenCodeHookCommandOptions = {},
 ): Promise<InstallQwenCodeHookResult> {
+  if (process.platform === "win32") {
+    throw new Error("Qwen Code pre-tool wrapping requires a POSIX shell; run Qwen Code and tokenjuice in WSL.");
+  }
   const resolvedSettingsPath = settingsPath ?? getDefaultSettingsPath(options);
   const { config, backupPath } = await loadQwenCodeSettingsWithBackup(resolvedSettingsPath);
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_QWEN_CODE_SUBCOMMAND, "qwen-code", options);
+  const command = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_QWEN_CODE_SUBCOMMAND, hostName: "qwen-code" });
   removeTokenjuiceQwenCodeHooks(config);
-  config.hooks.PostToolUse = [...getPostToolUseHooks(config), createQwenCodeHook(command)];
+  config.hooks.PreToolUse = [...getHookGroups(config, "PreToolUse"), createQwenCodeHook(command)];
   await writeQwenCodeSettings(resolvedSettingsPath, config);
   return {
     settingsPath: resolvedSettingsPath,
@@ -210,17 +217,25 @@ export async function doctorQwenCodeHook(
   options: QwenCodeHookCommandOptions = {},
 ): Promise<QwenCodeDoctorReport> {
   const resolvedSettingsPath = settingsPath ?? getDefaultSettingsPath(options);
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_QWEN_CODE_SUBCOMMAND, "qwen-code", options);
+  const expectedCommand = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_QWEN_CODE_SUBCOMMAND, hostName: "qwen-code" });
   const { config, exists } = await readQwenCodeSettings(resolvedSettingsPath);
   const detectedCommand = findTokenjuiceQwenCodeHookCommand(config);
   const fields = await buildHookCommandDoctorFields({
     expectedCommand,
     detectedCommand: exists ? detectedCommand : undefined,
-    disabledIssue: "tokenjuice PostToolUse hook is not installed for Qwen Code",
+    disabledIssue: "tokenjuice PreToolUse hook is not installed for Qwen Code",
     hostLabel: "Qwen Code",
-    advisory: detectedCommand ? TOKENJUICE_QWEN_CODE_ADVISORY : TOKENJUICE_QWEN_CODE_DISABLED_ADVISORY,
+    advisory: detectedCommand?.includes(TOKENJUICE_QWEN_CODE_LEGACY_SUBCOMMAND)
+      ? "Legacy Qwen Code PostToolUse hook cannot replace terminal output; reinstall to enable pre-tool wrapping."
+      : detectedCommand ? TOKENJUICE_QWEN_CODE_ADVISORY : TOKENJUICE_QWEN_CODE_DISABLED_ADVISORY,
     fixCommand: TOKENJUICE_QWEN_CODE_FIX_COMMAND,
   });
+
+  if (process.platform === "win32") {
+    fields.status = detectedCommand ? "broken" : "disabled";
+    fields.issues.push("Qwen Code pre-tool wrapping requires a POSIX shell; run Qwen Code and tokenjuice in WSL.");
+    fields.fixCommand = "run Qwen Code in WSL, then run tokenjuice install qwen-code";
+  }
 
   if (detectedCommand && config.disableAllHooks === true) {
     return {
@@ -338,4 +353,42 @@ export async function runQwenCodePostToolUseHook(rawText: string): Promise<numbe
     writeEmptyHookJsonLine();
     return 0;
   }
+}
+
+/** Rewrite shell input through the shared wrapper; Qwen Code retains permission policy. */
+export async function runQwenCodePreToolUseHook(rawText: string, wrapLauncher = "tokenjuice"): Promise<number> {
+  try {
+    const payload: unknown = JSON.parse(rawText);
+    if (!isRecord(payload) || payload.hook_event_name !== "PreToolUse"
+      || !["Bash", "Shell", "run_shell_command"].includes(String(payload.tool_name)) || !isRecord(payload.tool_input)) {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    const toolInput = payload.tool_input;
+    const command = toolInput.command;
+    if (typeof command !== "string" || !command.trim() || commandAlreadyWrapped(command)
+      || process.platform === "win32") {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    const shellPath = await resolveHostShell([
+      process.env.TOKENJUICE_QWEN_CODE_SHELL, process.env.SHELL, "bash", "sh",
+    ]);
+    if (!shellPath) {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    writeHookJsonLine({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        updatedInput: {
+          ...toolInput,
+          command: buildWrappedCommand({ wrapLauncher, shellPath, command, source: "qwen-code" }),
+        },
+      },
+    });
+  } catch {
+    writeEmptyHookJsonLine();
+  }
+  return 0;
 }

@@ -7689,11 +7689,11 @@ exports[`host CLI commands > install, doctor, and uninstall qwen-code 1`] = `
 "$ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Qwen Code
+[stdout] - tokenjuice PreToolUse hook is not installed for Qwen Code
 [stdout] advisories:
-[stdout] - Qwen Code support is beta; verify live PostToolUse behavior after install.
+[stdout] - Qwen Code PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 
@@ -7701,8 +7701,8 @@ $ tokenjuice install qwen-code
 [stdout] success: qwen-code hook installed successfully
 
   Hook        : <SANDBOX>/project/.qwen/settings.json
-  Command     : <NODE> '<LAUNCHER>' qwen-code-post-tool-use
-  Beta        : project-local PostToolUse hook; compacted context is injected alongside original output
+  Command     : <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
+  Beta        : project-local PreToolUse wrapping; Qwen Code retains permission policy
   Verify      : tokenjuice doctor qwen-code
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -7710,10 +7710,10 @@ exit 0
 $ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Qwen Code support is beta and injects compacted context without suppressing the original tool result.
+[stdout] - Qwen Code pre-tool wrapping is beta; shell commands run through tokenjuice before execution.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 
@@ -7723,11 +7723,11 @@ $ tokenjuice doctor qwen-code --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Qwen Code support is beta and injects compacted context without suppressing the original tool result."
+    "Qwen Code pre-tool wrapping is beta; shell commands run through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install qwen-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -7737,7 +7737,7 @@ $ tokenjuice install qwen-code --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/project/.qwen/settings.json",
   "backupPath": "<SANDBOX>/project/.qwen/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use"
+  "command": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -7757,11 +7757,11 @@ exit 0
 $ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Qwen Code
+[stdout] - tokenjuice PreToolUse hook is not installed for Qwen Code
 [stdout] advisories:
-[stdout] - Qwen Code support is beta; verify live PostToolUse behavior after install.
+[stdout] - Qwen Code PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 "

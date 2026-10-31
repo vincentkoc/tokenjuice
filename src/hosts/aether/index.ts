@@ -6,7 +6,6 @@ import {
   findAvailableBackupPath,
   writeTextFileWithoutBackup,
   pathTargetExists as pathExists,
-  collectGuidanceIssues,
   readInstructionFile,
   removeInstructionFile,
   writeInstructionFile,
@@ -16,7 +15,7 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
@@ -646,29 +645,19 @@ export async function doctorAetherPrompt(
   }
 
   const promptIssues = prompt.exists
-    ? collectGuidanceIssues(prompt.text, {
-        required: [
+    ? collectTokenjuiceGuidanceIssues(prompt.text, {
+        configuredLabel: "Aether prompt",
+        singular: true,
+        additionalRequired: [
           {
             requiredText: TOKENJUICE_AETHER_MARKER,
             missingIssue: "configured Aether prompt does not look like the tokenjuice prompt",
           },
-          {
-            requiredText: TOKENJUICE_WRAP_COMMAND,
-            missingIssue: "configured Aether prompt is missing tokenjuice wrap guidance",
-          },
-          {
-            requiredText: TOKENJUICE_RAW_COMMAND,
-            missingIssue: "configured Aether prompt is missing the raw escape hatch",
-          },
+        ],
+        additionalRequiredAfter: [
           {
             requiredText: "aether show-prompt",
             missingIssue: "configured Aether prompt is missing prompt verification guidance",
-          },
-        ],
-        forbidden: [
-          {
-            forbiddenText: TOKENJUICE_FULL_COMMAND,
-            presentIssue: "configured Aether prompt still suggests the full escape hatch",
           },
         ],
       })

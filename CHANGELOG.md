@@ -63,6 +63,8 @@
 
 ### Maintenance
 
+- Record Qoder CLI 1.1.81 startup checks, account/catalog prerequisites and the exact remaining native replacement acceptance procedure.
+
 - Update the contributor and CI package manager to pnpm 10.34.9 and read the CI version from `package.json`.
 - Publish adapter support modes, automated evidence and remaining host-acceptance steps; distinguish OpenCode V1/V2 setup in T3 guidance.
 

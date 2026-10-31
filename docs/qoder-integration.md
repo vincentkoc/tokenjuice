@@ -72,3 +72,43 @@ executes that command as a child process, and checks serialized response
 replacement, raw/exact-read bypass, failure/background preservation, reinstall
 idempotence and surgical uninstall. This validates tokenjuice's installed
 process boundary. Live Qoder execution has not yet been qualified.
+
+## Native acceptance prerequisite
+
+The published `@qoder-ai/qodercli@1.1.81` JavaScript entrypoint starts under Node
+26 in an isolated home: `bundle/qodercli.js --version`, `--help` and
+`hooks --help` succeed. The hook subcommand migrates Claude Code configuration;
+it does not expose a credential-free tool-execution fixture. Startup and help
+output therefore do not qualify hook loading or replacement in a model request.
+
+Qoder's [SDK authentication guide](https://docs.qoder.com/cli/sdk/authentication)
+requires a PAT, a service account or an existing local sign-in for SDK sessions.
+Its [Custom Models guide](https://docs.qoder.com/cli/custom-models) requires the
+`/model` Custom wizard and the catalog available to the current account. It
+explicitly excludes manual BYOK configuration in `settings.json`. The hook
+configuration example above is independent of BYOK configuration.
+
+A live acceptance run needs an approved Qoder account session and a model route
+available to that account. A loopback endpoint must be supported by its actual
+catalog before using a credential-free provider fixture; a fabricated account
+or undocumented model setting does not establish this support. No account sign-in,
+credential lookup or paid model request is part of the automated hook contracts.
+
+After that prerequisite is available, qualify a disposable project:
+
+1. Record the actual CLI entrypoint/version, account-selected model route and
+   effective user/project/local hook scopes. Keep one synchronous tokenjuice
+   Bash replacement hook and preserve unrelated hooks.
+2. Start a fresh native session. Exercise noisy Git status for 80 modified files,
+   an exact read containing CRLF and trailing blank lines, explicit
+   `tokenjuice wrap --raw`, and a command that emits 80 stdout lines plus stderr
+   and exits 7.
+3. Inspect the next model request or authoritative provider transcript after
+   all replacement hooks. Verify compacted successful output, exact/raw bytes,
+   unchanged failed output and exit status. A shorter terminal preview is
+   insufficient.
+4. Remove only the managed hook and confirm that unrelated configuration and
+   native execution outcomes remain intact.
+
+Until this run is recorded, support remains documented native-hook compatibility
+with installed-process tests, rather than real-host acceptance.

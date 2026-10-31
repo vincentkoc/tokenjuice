@@ -3,25 +3,18 @@ import { join } from "node:path";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
-  getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
+
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 
 export type TraeRuleOptions = {
   projectDir?: string;
@@ -108,57 +101,12 @@ export async function doctorTraeRule(
   options: TraeRuleOptions = {},
 ): Promise<TraeDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Trae rule is not installed"],
-        advisory: TOKENJUICE_TRAE_ADVISORY,
-        fixCommand: TOKENJUICE_TRAE_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  const { instructionsPath, ...report } = await doctorMarkerInstructions(resolvedRulePath, TOKENJUICE_TRAE_BLOCK_CONFIG, {
     configuredLabel: "Trae rule",
-    repairCommand: TOKENJUICE_TRAE_FIX_COMMAND,
+    advisory: TOKENJUICE_TRAE_ADVISORY,
+    fixCommand: TOKENJUICE_TRAE_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from .trae/rules/project_rules.md, then run tokenjuice install trae",
+    singular: true,
   });
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers ? ["configured Trae rule has malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_TRAE_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Trae rule is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Trae rule is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Trae rule still suggests the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_TRAE_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from .trae/rules/project_rules.md, then run tokenjuice install trae"
-        : TOKENJUICE_TRAE_FIX_COMMAND,
-    }),
-  };
+  return { rulePath: instructionsPath, ...report };
 }

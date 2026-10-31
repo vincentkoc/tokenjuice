@@ -25,9 +25,10 @@ export async function doctorMarkerInstructions(
     advisory: string;
     fixCommand: string;
     malformedFixCommand: string;
+    singular?: boolean;
   },
 ): Promise<InstructionDoctorReportFields & { instructionsPath: string }> {
-  const { configuredLabel, advisory, fixCommand, malformedFixCommand } = options;
+  const { configuredLabel, advisory, fixCommand, malformedFixCommand, singular = false } = options;
   const existing = await readInstructionFile(instructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, config);
   if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
@@ -35,7 +36,7 @@ export async function doctorMarkerInstructions(
       instructionsPath,
       ...buildInstructionDoctorReportFields({
         status: "disabled",
-        issues: [`tokenjuice ${configuredLabel} are not installed`],
+        issues: [`tokenjuice ${configuredLabel} ${singular ? "is" : "are"} not installed`],
         advisory,
         fixCommand,
       }),
@@ -49,22 +50,22 @@ export async function doctorMarkerInstructions(
   const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, config);
   const issues = [
     ...markerIssues,
-    ...(hasMalformedMarkers ? [`configured ${configuredLabel} have malformed tokenjuice markers`] : []),
+    ...(hasMalformedMarkers ? [`configured ${configuredLabel} ${singular ? "has" : "have"} malformed tokenjuice markers`] : []),
     ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, config), {
       required: [
         {
           requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: `configured ${configuredLabel} are missing tokenjuice wrap guidance`,
+          missingIssue: `configured ${configuredLabel} ${singular ? "is" : "are"} missing tokenjuice wrap guidance`,
         },
         {
           requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: `configured ${configuredLabel} are missing the raw escape hatch`,
+          missingIssue: `configured ${configuredLabel} ${singular ? "is" : "are"} missing the raw escape hatch`,
         },
       ],
       forbidden: [
         {
           forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: `configured ${configuredLabel} still suggest the full escape hatch`,
+          presentIssue: `configured ${configuredLabel} still ${singular ? "suggests" : "suggest"} the full escape hatch`,
         },
       ],
     }),

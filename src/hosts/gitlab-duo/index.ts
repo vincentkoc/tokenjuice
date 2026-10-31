@@ -3,25 +3,18 @@ import { join } from "node:path";
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
-  getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
+
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 
 export type GitLabDuoRuleOptions = {
   projectDir?: string;
@@ -109,57 +102,12 @@ export async function doctorGitLabDuoRule(
   options: GitLabDuoRuleOptions = {},
 ): Promise<GitLabDuoDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice GitLab Duo rule is not installed"],
-        advisory: TOKENJUICE_GITLAB_DUO_ADVISORY,
-        fixCommand: TOKENJUICE_GITLAB_DUO_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  const { instructionsPath, ...report } = await doctorMarkerInstructions(resolvedRulePath, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG, {
     configuredLabel: "GitLab Duo rule",
-    repairCommand: TOKENJUICE_GITLAB_DUO_FIX_COMMAND,
+    advisory: TOKENJUICE_GITLAB_DUO_ADVISORY,
+    fixCommand: TOKENJUICE_GITLAB_DUO_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from .gitlab/duo/chat-rules.md, then run tokenjuice install gitlab-duo",
+    singular: true,
   });
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG);
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers ? ["configured GitLab Duo rule has malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GITLAB_DUO_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured GitLab Duo rule is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured GitLab Duo rule is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured GitLab Duo rule still suggests the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_GITLAB_DUO_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from .gitlab/duo/chat-rules.md, then run tokenjuice install gitlab-duo"
-        : TOKENJUICE_GITLAB_DUO_FIX_COMMAND,
-    }),
-  };
+  return { rulePath: instructionsPath, ...report };
 }

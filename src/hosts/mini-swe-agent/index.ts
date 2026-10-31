@@ -3,7 +3,7 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
-import { pathEntryExists } from "../shared/instruction-file.js";
+import { findAvailableBackupPath } from "../shared/instruction-file.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -49,15 +49,6 @@ function isTokenjuiceMiniSweAgentConfigText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^# tokenjuice:mini-swe-agent-restore-backup=(\.bak(?:\.\d+)?)$/mu);
   return match?.[1];
-}
-
-async function chooseMiniSweAgentBackupPath(configPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${configPath}.bak` : `${configPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function writeMiniSweAgentConfigWithoutBackup(configPath: string, text: string): Promise<void> {
@@ -148,7 +139,7 @@ export async function installMiniSweAgentConfig(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseMiniSweAgentBackupPath(resolvedConfigPath);
+    const backupPath = await findAvailableBackupPath(resolvedConfigPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeMiniSweAgentConfigWithoutBackup(
       resolvedConfigPath,

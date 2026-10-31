@@ -1,7 +1,7 @@
 import { realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -58,15 +58,6 @@ const rejectInstructionSymlink = createSymlinkGuard(
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
   await rejectInstructionSymlink(`${filePath}.tmp`);
-}
-
-async function chooseLeanCtlBackupPath(instructionsPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${instructionsPath}.bak` : `${instructionsPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
@@ -148,7 +139,7 @@ export async function installLeanCtlInstructions(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseLeanCtlBackupPath(resolvedInstructionsPath);
+    const backupPath = await findAvailableBackupPath(resolvedInstructionsPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeTextFileWithoutBackup(
       resolvedInstructionsPath,

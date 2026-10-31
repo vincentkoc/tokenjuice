@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { pathEntryExists } from "../shared/instruction-file.js";
+import { findAvailableBackupPath } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -66,15 +66,6 @@ function isLegacyTokenjuiceMcpAgentDefinitionText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^<!-- tokenjuice:mcp-agent-restore-backup=(\.bak(?:\.\d+)?) -->$/mu);
   return match?.[1];
-}
-
-async function chooseMcpAgentBackupPath(agentPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${agentPath}.bak` : `${agentPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: string): Promise<void> {
@@ -191,7 +182,7 @@ export async function installMcpAgentDefinition(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseMcpAgentBackupPath(resolvedAgentPath);
+    const backupPath = await findAvailableBackupPath(resolvedAgentPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeMcpAgentDefinitionWithoutBackup(
       resolvedAgentPath,

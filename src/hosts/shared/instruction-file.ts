@@ -172,6 +172,16 @@ export async function pathEntryExists(filePath: string): Promise<boolean> {
   }
 }
 
+/** Finds a name without reserving it; callers must use an exclusive write. */
+export async function findAvailableBackupPath(filePath: string): Promise<string> {
+  for (let index = 0; ; index += 1) {
+    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
+    if (!(await pathEntryExists(candidate))) {
+      return candidate;
+    }
+  }
+}
+
 export async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
   const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;

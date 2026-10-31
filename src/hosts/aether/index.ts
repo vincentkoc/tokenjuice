@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -156,15 +156,6 @@ async function pathExists(path: string): Promise<boolean> {
       return false;
     }
     throw error;
-  }
-}
-
-async function chooseAetherBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
   }
 }
 
@@ -465,7 +456,7 @@ async function readRequiredAetherSettings(settingsPath: string): Promise<{ confi
 }
 
 async function backupAetherFile(filePath: string, text: string): Promise<string> {
-  const backupPath = await chooseAetherBackupPath(filePath);
+  const backupPath = await findAvailableBackupPath(filePath);
   await writeFile(backupPath, text, { encoding: "utf8", flag: "wx" });
   return backupPath;
 }

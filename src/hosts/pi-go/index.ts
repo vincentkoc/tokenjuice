@@ -1,7 +1,7 @@
 import { realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -75,15 +75,6 @@ const rejectSkillSymlink = createSymlinkGuard(
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.bak`);
   await rejectSkillSymlink(`${filePath}.tmp`);
-}
-
-async function choosePiGoBackupPath(skillPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${skillPath}.bak` : `${skillPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
@@ -173,7 +164,7 @@ export async function installPiGoSkill(
   }
 
   if (existing.exists) {
-    const backupPath = await choosePiGoBackupPath(resolvedSkillPath);
+    const backupPath = await findAvailableBackupPath(resolvedSkillPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeTextFileWithoutBackup(
       resolvedSkillPath,

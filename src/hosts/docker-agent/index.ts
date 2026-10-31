@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { pathEntryExists } from "../shared/instruction-file.js";
+import { findAvailableBackupPath } from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -51,15 +51,6 @@ function isTokenjuiceDockerAgentPromptText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^# tokenjuice:docker-agent-restore-backup=(\.bak(?:\.\d+)?)$/mu);
   return match?.[1];
-}
-
-async function chooseDockerAgentBackupPath(promptPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${promptPath}.bak` : `${promptPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function writeDockerAgentPromptWithoutBackup(promptPath: string, text: string): Promise<void> {
@@ -140,7 +131,7 @@ export async function installDockerAgentPrompt(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseDockerAgentBackupPath(resolvedPromptPath);
+    const backupPath = await findAvailableBackupPath(resolvedPromptPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeDockerAgentPromptWithoutBackup(
       resolvedPromptPath,

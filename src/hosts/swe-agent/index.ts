@@ -3,7 +3,7 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
-import { pathEntryExists } from "../shared/instruction-file.js";
+import { findAvailableBackupPath } from "../shared/instruction-file.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -50,15 +50,6 @@ function isTokenjuiceSweAgentConfigText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^# tokenjuice:swe-agent-restore-backup=(\.bak(?:\.\d+)?)$/mu);
   return match?.[1];
-}
-
-async function chooseSweAgentBackupPath(configPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${configPath}.bak` : `${configPath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function writeSweAgentConfigWithoutBackup(configPath: string, text: string): Promise<void> {
@@ -134,7 +125,7 @@ export async function installSweAgentConfig(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseSweAgentBackupPath(resolvedConfigPath);
+    const backupPath = await findAvailableBackupPath(resolvedConfigPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeSweAgentConfigWithoutBackup(
       resolvedConfigPath,

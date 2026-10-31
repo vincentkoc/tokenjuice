@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createSymlinkGuard } from "../shared/path-ancestors.js";
-import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
@@ -87,15 +87,6 @@ const rejectPluginFileSymlink = createSymlinkGuard(
 
 async function rejectPluginFileSidecarSymlinks(filePath: string): Promise<void> {
   await rejectPluginFileSymlink(`${filePath}.bak`);
-}
-
-async function chooseLocalCodeBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await pathEntryExists(candidate))) {
-      return candidate;
-    }
-  }
 }
 
 async function readLocalCodePluginFiles(options: LocalCodePluginOptions = {}): Promise<{
@@ -311,11 +302,11 @@ export async function installLocalCodePlugin(
     const restoreBackups = readRestoreBackups(existingIndex.text);
     const manifestBackupPath =
       existingManifest.exists && !existingManifest.text.includes(TOKENJUICE_LOCALCODE_OWNERSHIP_MARKER)
-        ? await chooseLocalCodeBackupPath(manifestPath)
+        ? await findAvailableBackupPath(manifestPath)
         : undefined;
     const indexBackupPath =
       existingIndex.exists && !existingIndex.text.includes(TOKENJUICE_LOCALCODE_OWNERSHIP_MARKER)
-        ? await chooseLocalCodeBackupPath(indexPath)
+        ? await findAvailableBackupPath(indexPath)
         : undefined;
     if (manifestBackupPath) {
       await writeFile(manifestBackupPath, existingManifest.text, { encoding: "utf8", flag: "wx" });
@@ -358,8 +349,8 @@ export async function installLocalCodePlugin(
     };
   }
 
-  const manifestBackupPath = existingManifest.exists ? await chooseLocalCodeBackupPath(manifestPath) : undefined;
-  const indexBackupPath = existingIndex.exists ? await chooseLocalCodeBackupPath(indexPath) : undefined;
+  const manifestBackupPath = existingManifest.exists ? await findAvailableBackupPath(manifestPath) : undefined;
+  const indexBackupPath = existingIndex.exists ? await findAvailableBackupPath(indexPath) : undefined;
   if (manifestBackupPath) {
     await writeFile(manifestBackupPath, existingManifest.text, { encoding: "utf8", flag: "wx" });
   }

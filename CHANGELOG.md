@@ -37,6 +37,8 @@
 
 ### Maintenance
 
+- Publish adapter support modes, automated evidence and remaining host-acceptance steps; distinguish OpenCode V1/V2 setup in T3 guidance.
+
 - Pin third-party GitHub Actions to verified commit SHAs so mutable tags cannot replace CI or release code.
 - Document T3 Code provider configuration boundaries and verification requirements.
 

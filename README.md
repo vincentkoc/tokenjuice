@@ -244,6 +244,9 @@ direct payload:
 
 ## docs
 
+- [Adapter support and verification](docs/adapter-support-matrix.md)
+- [OpenCode V2 integration](docs/opencode-v2-integration.md)
+
 - [spec](docs/spec.md)
 - [rules](docs/rules.md)
 - [integration playbook](docs/integration-playbook.md)

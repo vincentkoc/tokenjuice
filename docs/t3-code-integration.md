@@ -9,7 +9,8 @@ a remote environment or external provider server. There is no separate
 | --- | --- | --- |
 | Codex | `tokenjuice install codex` | The provider instance's shared `CODEX_HOME`; check shadow-home propagation separately. |
 | Claude Code | `tokenjuice install claude-code` | The instance's `CLAUDE_CONFIG_DIR`, including custom instances. |
-| OpenCode | `tokenjuice install opencode` | The configuration directory on the OpenCode server's machine. Check its major version. |
+| OpenCode V1 | `tokenjuice install opencode` | The configuration directory on the OpenCode server's machine. |
+| OpenCode V2 | `tokenjuice install opencode-v2` | The V2 server's configuration directory; qualify loading separately from V1. |
 
 For a custom home, pass the same environment variable to install and doctor:
 
@@ -29,8 +30,8 @@ configuration variable rather than redirecting the whole home directory.
 After changing OpenCode plugins, restart the relevant server. T3 may retain a
 local helper; its documentation describes configuration reload after 30 seconds
 without refresh or generation activity. External servers need their own reload.
-T3 supports both OpenCode 1 and 2; tokenjuice's V1 plugin does not establish V2
-compatibility. [T3 OpenCode configuration](https://github.com/pingdotgg/t3code/blob/main/docs/user/providers-opencode.md)
+T3 supports both OpenCode 1 and 2. Use tokenjuice's separate V2 target for
+OpenCode 2; V1 fixture results do not establish V2 or T3 propagation. [T3 OpenCode configuration](https://github.com/pingdotgg/t3code/blob/main/docs/user/providers-opencode.md)
 
 ## Verify the complete route
 

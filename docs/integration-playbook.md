@@ -19,6 +19,8 @@ pick one integration mode:
 
 - post-tool compaction (preferred when shell output can be replaced safely)
 - pre-tool command wrapping (use `tokenjuice wrap` when post replacement is unavailable)
+- instruction or skill guidance (when the documented host surface cannot rewrite commands/results)
+- provider configuration or migration guidance (when the product delegates execution or has retired)
 
 for pre-tool wrapping, preserve shell semantics (for example `bash -lc '<cmd>'`) and ensure classification normalization can recover the nested command.
 
@@ -265,3 +267,17 @@ The installed hook returns `hookSpecificOutput.updatedInput`; the pinned CLI
 silently ignores `modifiedInput`. Permission decisions remain with CodeBuddy.
 This validates config discovery, hook execution, command rewriting, and
 model-visible delivery, rather than remote provider availability or reasoning.
+
+## qualify the support claim
+
+Use [adapter support and verification](adapter-support-matrix.md) to distinguish
+file validation, installed-process contracts and real-host/model-request proof.
+A managed file passing doctor does not establish host discovery or execution.
+Preserve structured values, status, stderr, downstream policy decisions and raw
+escape hatches. If a host returns structured output and content projections,
+update both coherently or leave the result unchanged.
+
+For skill-only products, use documented discovery paths or manual import. Probe
+dependencies inside the actual tool environment; do not infer a cloud or VM PATH
+from the desktop. Keep personal import separate from marketplace publication.
+For versioned plugin APIs, qualify each API and loader separately.

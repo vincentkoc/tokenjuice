@@ -65,6 +65,8 @@
 
 ### Maintenance
 
+- Avoid false Goose native-test failures from stdout/stderr arrival order while checking complete failed output and exit status.
+
 - Record Qoder CLI 1.1.81 startup checks, account/catalog prerequisites and the exact remaining native replacement acceptance procedure.
 - Qualify DeepSeek Harness 0.2.2-alpha.2 native profile activation and model-visible Bash results through an isolated loopback fixture, including exact/raw output and complete failed-command preservation.
 

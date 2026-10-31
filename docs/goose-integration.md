@@ -54,6 +54,9 @@ reads and complete failed output with exit 7. The failure command uses the
 explicit `--keep-failures` option. Existing custom hints survive install and
 uninstall.
 
+Failure checks preserve every stdout and stderr byte and exit 7 while allowing
+the native host to merge the separate streams in either order.
+
 The deterministic fixture model chooses wrapping only when the native system
 prompt contains the installed guidance. This verifies discovery and tool
 transport; it does not establish adherence by other models. Desktop sessions,

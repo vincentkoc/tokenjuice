@@ -1,45 +1,43 @@
 # OpenHands integration
 
-OpenHands support is beta.
-
-`tokenjuice install openhands` writes a project-local `PostToolUse` hook into
-`.openhands/hooks.json` for the `terminal` tool. When OpenHands returns noisy
-shell output, tokenjuice compacts it and injects the compacted result as
-additional context with the raw-output escape hatch:
+Automatic hook compaction is retired. OpenHands adds `additionalContext` to the
+agent prompt; its documented post-tool contract does not replace the original
+result. A second summary therefore does not establish token savings.
+Use explicit wrapping in the backend terminal instead:
 
 ```bash
+tokenjuice wrap -- ls -la
 tokenjuice wrap --raw -- <command>
 ```
 
-## Install
+## Remove a legacy hook
 
 ```bash
-tokenjuice install openhands
 tokenjuice doctor openhands
+tokenjuice uninstall openhands
 ```
 
-For repo-local verification during development:
+Cleanup selects `.openhands/hooks.json` under `OPENHANDS_PROJECT_DIR`, or the
+current directory when that variable is unset. It removes only recognized
+tokenjuice commands, preserving other hooks, unknown fields, file modes and
+existing backup files. Symlinked project/config paths and concurrent edits are
+rejected. Stale runtime handlers return `{}` without injecting context.
+`tokenjuice install openhands` fails before creating any files.
 
-```bash
-pnpm build
-node dist/cli/main.js install openhands --local
-node dist/cli/main.js doctor openhands --local
-```
+OpenHands loads this configuration from the exact conversation working folder
+inside its backend; it does not search parent folders. Both snake_case event
+keys and the PascalCase/wrapped compatibility format are supported. The old
+mapping was valid; additive output is the limitation.
 
-## Behavior
+## Verification boundary
 
-- Only `PostToolUse` payloads for `terminal` are considered.
-- Empty output and low-savings reductions are left untouched.
-- Safe repository inventory commands can still be compacted.
-- Exact file-content inspection commands stay raw unless tokenjuice can build a
-  safe summary.
-- The hook is project-local because OpenHands reads `.openhands/hooks.json` from
-  the workspace.
+Tests cover retirement, scoped cleanup, custom-command preservation, file modes,
+symlinks, concurrent edits and silent stale handlers. They do not qualify a native
+OpenHands session. Agent Canvas acceptance remains blocked locally by the
+unavailable Docker runtime. To qualify it, start an authorized Canvas backend,
+make tokenjuice available in that backend, and inspect the next model request
+for successful wrapping, exact reads, raw bypass and complete failure output.
+The unmaintained V1 CLI and a direct SDK call do not establish Canvas acceptance.
 
-## Current beta caveat
-
-OpenHands `PostToolUse` hooks cannot block or replace the original tool result.
-This integration injects compacted context alongside the original output instead
-of suppressing the raw result. That makes the first cut useful for model-facing
-summary context, but duplicate raw output can still appear until OpenHands has a
-post-tool replacement surface.
+Sources: [OpenHands hook contract](https://docs.openhands.dev/openhands/usage/customization/hooks),
+[V1 CLI status](https://github.com/OpenHands/OpenHands-CLI#project-status).

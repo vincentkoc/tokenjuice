@@ -5,6 +5,7 @@
 ### Fixes
 
 - Require proven shell exit 0 before Copilot coding-agent compaction, share the CLI result compactor, preserve completion metadata and validate the repository hook through real local CLI sessions without claiming cloud acceptance.
+- Retire OpenHands additive hook compaction, preserve scoped cleanup for both supported configuration formats, and keep stale hooks silent.
 
 - Replace the undiscovered Cline additive hook with native pre-tool batch wrapping, preserve complete failed-command streams with opt-in `--keep-failures`, migrate owned legacy scripts, and validate real CLI 3.0.74 sessions.
 - Retire Command Code additive hook compaction, preserve scoped legacy cleanup and custom hooks, and document the native 1.88.2 authentication blocker without claiming host E2E coverage.

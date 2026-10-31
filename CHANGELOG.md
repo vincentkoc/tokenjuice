@@ -24,6 +24,8 @@
 - Audit dependencies weekly and on pull requests, validate Node.js 22/24/26, and patch the development-tool minimatch denial-of-service advisory.
 - Scan JavaScript, TypeScript, and GitHub Actions workflows with CodeQL on pull requests, main pushes, and a weekly schedule.
 
+- Document QClaw migration to WorkBuddy and the boundary between account migration and tokenjuice host support.
+
 ### Breaking changes
 
 - Require Node.js 22 or newer (`engines.node` is now `>=22`). Node.js 20 reached end of life in April 2026.

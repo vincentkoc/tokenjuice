@@ -13,6 +13,7 @@ the point is leverage: less transcript waste, fewer useless reruns, and cleaner 
 ## host integrations
 
 For provider-based front ends, see [T3 Code configuration and verification](docs/t3-code-integration.md).
+[QClaw migration guidance](docs/qclaw-migration.md) covers its transition to WorkBuddy.
 
 supported integrations:
 

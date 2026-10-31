@@ -11,6 +11,7 @@ import {
 } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -29,15 +30,7 @@ export type UninstallAmazonQRuleResult = {
   removed: boolean;
 };
 
-export type AmazonQDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AmazonQDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_AMAZON_Q_FIX_COMMAND = "tokenjuice install amazon-q";
 const TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER = "<!-- tokenjuice:amazon-q-rule -->";

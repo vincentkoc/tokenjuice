@@ -17,6 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -36,15 +37,7 @@ export type UninstallFirebaseStudioRuleResult = {
   removed: boolean;
 };
 
-export type FirebaseStudioDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type FirebaseStudioDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_FIREBASE_STUDIO_FIX_COMMAND = "tokenjuice install firebase-studio";
 const TOKENJUICE_FIREBASE_STUDIO_BEGIN = "<!-- tokenjuice:firebase-studio begin -->";

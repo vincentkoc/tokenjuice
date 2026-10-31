@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -21,15 +22,7 @@ export type UninstallContinueRuleResult = {
   removed: boolean;
 };
 
-export type ContinueDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type ContinueDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_CONTINUE_FIX_COMMAND = "tokenjuice install continue";
 const TOKENJUICE_CONTINUE_RULE_MARKER = "tokenjuice terminal output compaction";

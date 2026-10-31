@@ -17,6 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -36,15 +37,7 @@ export type UninstallTraeRuleResult = {
   removed: boolean;
 };
 
-export type TraeDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type TraeDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_TRAE_FIX_COMMAND = "tokenjuice install trae";
 const TOKENJUICE_TRAE_BEGIN = "<!-- tokenjuice:trae begin -->";

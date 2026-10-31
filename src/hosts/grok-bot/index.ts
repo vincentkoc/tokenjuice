@@ -13,6 +13,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -33,15 +34,8 @@ export type UninstallGrokBotRuleResult = {
   restoredBackup: boolean;
 };
 
-export type GrokBotDoctorReport = {
-  rulePath: string;
+export type GrokBotDoctorReport = PathDoctorReport<"rulePath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_GROK_BOT_FIX_COMMAND = "tokenjuice install grok-bot";

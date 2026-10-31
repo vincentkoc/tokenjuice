@@ -11,6 +11,7 @@ import {
 } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -29,15 +30,7 @@ export type UninstallJetBrainsAiRuleResult = {
   removed: boolean;
 };
 
-export type JetBrainsAiDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type JetBrainsAiDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_JETBRAINS_AI_FIX_COMMAND = "tokenjuice install jetbrains-ai";
 const TOKENJUICE_JETBRAINS_AI_OWNERSHIP_MARKER = "<!-- tokenjuice:jetbrains-ai-rule -->";

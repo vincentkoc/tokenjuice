@@ -6,6 +6,7 @@ import { findGitRoot } from "../shared/project-root.js";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
 } from "../shared/instruction-doctor.js";
 
@@ -25,15 +26,8 @@ export type UninstallAgentsMeshRuleResult = {
   syncCommand: string;
 };
 
-export type AgentsMeshDoctorReport = {
-  rulePath: string;
+export type AgentsMeshDoctorReport = PathDoctorReport<"rulePath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type AgentsMeshDoctorReportFields = Omit<AgentsMeshDoctorReport, "rulePath" | "hasTokenjuiceMarker">;

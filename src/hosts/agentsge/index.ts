@@ -5,6 +5,7 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -23,15 +24,7 @@ export type UninstallAgentsGeRuleResult = {
   removed: boolean;
 };
 
-export type AgentsGeDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AgentsGeDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_AGENTSGE_FIX_COMMAND = "tokenjuice install agentsge";
 const TOKENJUICE_AGENTSGE_RULE_MARKER = "tokenjuice terminal output compaction";

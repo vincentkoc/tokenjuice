@@ -5,6 +5,7 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -24,15 +25,7 @@ export type UninstallAgentloomRuleResult = {
   syncCommand: string;
 };
 
-export type AgentloomDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AgentloomDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_AGENTLOOM_FIX_COMMAND = "tokenjuice install agentloom";
 const TOKENJUICE_AGENTLOOM_RULE_MARKER = "tokenjuice terminal output compaction";

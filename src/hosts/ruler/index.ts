@@ -6,6 +6,7 @@ import { findGitRoot } from "../shared/project-root.js";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -24,15 +25,7 @@ export type UninstallRulerRuleResult = {
   removed: boolean;
 };
 
-export type RulerDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type RulerDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_RULER_FIX_COMMAND = "tokenjuice install ruler";
 const TOKENJUICE_RULER_RULE_MARKER = "tokenjuice terminal output compaction";

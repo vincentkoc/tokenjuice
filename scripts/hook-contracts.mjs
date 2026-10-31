@@ -301,7 +301,10 @@ async function runPreToolContracts(spec) {
   assert(malformed.stderr === "" && (malformed.stdout === "" || malformed.stdout.trim() === "{}"), `${spec.host}: malformed input did not fail open`);
 
   await cli(["uninstall", spec.host]);
-  const removed = JSON.parse(await readFile(configPath, "utf8"));
+  const removed = JSON.parse(await readFile(configPath, "utf8").catch((error) => {
+    if (error.code === "ENOENT") return "{}";
+    throw error;
+  }));
   const remaining = (removed.hooks?.[spec.event ?? "PreToolUse"] ?? []).flatMap((entry) => entry.hooks ?? [entry]);
   assert(!remaining.some((entry) => entry.command === installed), `${spec.host}: uninstall left the hook command`);
   return { doctor: doctor.status, listing: "compacted", exactRead: "preserved", failureExit: failed.code };

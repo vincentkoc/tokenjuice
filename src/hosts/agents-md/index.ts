@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -57,11 +57,6 @@ const TOKENJUICE_AGENTS_MD_ADVISORY =
   "AGENTS.md support is beta and instruction-based; it guides agents that read AGENTS.md but does not intercept tool output.";
 
 const resolveProjectDir = createProjectDirResolver("AGENTS_MD_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectInstructionSymlink(filePath: string): Promise<void> {
   try {

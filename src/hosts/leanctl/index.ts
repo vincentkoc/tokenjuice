@@ -1,9 +1,9 @@
 import { lstat, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -56,11 +56,6 @@ function readRestoreBackupSuffix(text: string): string | undefined {
 }
 
 const resolveProjectDir = createProjectDirResolver("LEANCTL_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectInstructionSymlink(filePath: string): Promise<void> {
   try {

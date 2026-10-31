@@ -1,7 +1,7 @@
 import { lstat, readFile, realpath, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -97,11 +97,6 @@ function parseAgentlinkSourceConfig(configText: string): string | undefined {
     return source || undefined;
   }
   return undefined;
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
 }
 
 function resolveAgentlinkSourcePath(projectDir: string, source: string): string {

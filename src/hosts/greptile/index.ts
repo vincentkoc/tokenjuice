@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -58,11 +58,6 @@ const TOKENJUICE_GREPTILE_ADVISORY =
   "Greptile support is beta and rules-based; Greptile still owns PR review, runtime inspection, and comment delivery.";
 
 const resolveProjectDir = createProjectDirResolver("GREPTILE_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 function getExpectedRulePath(projectDir: string): string {
   return join(projectDir, ".greptile", "rules.md");

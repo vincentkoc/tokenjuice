@@ -2,7 +2,7 @@ import { constants } from "node:fs";
 import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -99,11 +99,6 @@ async function resolveProjectDir(options: GrokBotRuleOptions = {}): Promise<stri
     return resolve(explicitProjectDir);
   }
   return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
 }
 
 async function rejectSymlink(filePath: string): Promise<void> {

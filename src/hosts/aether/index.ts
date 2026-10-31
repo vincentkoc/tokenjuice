@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -169,11 +169,6 @@ async function chooseAetherBackupPath(filePath: string): Promise<string> {
 }
 
 const resolveProjectDir = createProjectDirResolver("AETHER_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectAetherPathSymlink(filePath: string): Promise<void> {
   try {

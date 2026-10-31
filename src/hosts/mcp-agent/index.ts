@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { backupPathExists } from "../shared/instruction-file.js";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -90,11 +90,6 @@ async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: str
 }
 
 const resolveProjectDir = createProjectDirResolver("MCP_AGENT_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectDefinitionSymlink(filePath: string): Promise<void> {
   try {

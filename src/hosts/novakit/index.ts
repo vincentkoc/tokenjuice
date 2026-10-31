@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -57,11 +57,6 @@ const TOKENJUICE_NOVAKIT_ADVISORY =
   "NovaKit support is beta and instruction-based; NovaKit loads NOVAKIT.md context files, but tokenjuice does not intercept tool output.";
 
 const resolveProjectDir = createProjectDirResolver("NOVAKIT_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectInstructionSymlink(filePath: string): Promise<void> {
   try {

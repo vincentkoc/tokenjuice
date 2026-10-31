@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -58,11 +58,6 @@ const TOKENJUICE_CHARLIE_ADVISORY =
   "Charlie support is beta and AGENTS.md-based; Charlie still owns planning, coding, review, and command execution.";
 
 const resolveProjectDir = createProjectDirResolver("CHARLIE_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 async function rejectInstructionSymlink(filePath: string): Promise<void> {
   try {

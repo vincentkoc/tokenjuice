@@ -1,7 +1,7 @@
 import { lstat, realpath, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, join } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -61,11 +61,6 @@ const TOKENJUICE_ANYWHERE_AGENTS_ADVISORY =
   "anywhere-agents support is beta and local-override based; anywhere-agents composes AGENTS.md plus AGENTS.local.md into downstream agent files, but each agent still owns command execution. Run `anywhere-agents` after install or uninstall.";
 
 const resolveProjectDir = createProjectDirResolver("ANYWHERE_AGENTS_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 type ResolvedInstructionsTarget = {
   filePath: string;

@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -50,11 +50,6 @@ async function resolveCanonicalProjectDir(options: ClawdbotSkillOptions = {}): P
   const projectDir = await resolveProjectDir(options);
   await rejectSkillSymlink(projectDir);
   return realpath(projectDir).catch(() => projectDir);
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
 }
 
 async function resolveCanonicalInstructionPath(filePath: string): Promise<string> {

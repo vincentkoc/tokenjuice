@@ -1,7 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
-import { realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -65,11 +65,6 @@ const ISSUES_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_ISSUES_GU
 const COMPLIANCE_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_COMPLIANCE_GUIDELINES_KEY}\s*=`, "u");
 
 const resolveProjectDir = createProjectDirResolver("QODO_PROJECT_DIR");
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
 
 function getExpectedConfigPath(projectDir: string): string {
   return join(projectDir, ".pr_agent.toml");

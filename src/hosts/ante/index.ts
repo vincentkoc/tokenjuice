@@ -3,30 +3,12 @@ import { dirname, join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import {
-  createMarkerInstructionCommands,
-  getMarkerDelimitedBlockText,
-  hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
-} from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
-  type InstructionsDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import {
-  type RemoveInstructionFileResult,
-  type WriteInstructionFileResult,
-  collectGuidanceIssues,
-  readInstructionFile,
-} from "../shared/instruction-file.js";
+import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
+
+import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 
 export type AnteInstructionsOptions = {
   projectDir?: string;
@@ -116,57 +98,11 @@ export async function doctorAnteInstructions(
   options: AnteInstructionsOptions = {},
 ): Promise<AnteDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Ante instructions are not installed"],
-        advisory: TOKENJUICE_ANTE_ADVISORY,
-        fixCommand: TOKENJUICE_ANTE_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerInstructions(resolvedInstructionsPath, TOKENJUICE_ANTE_BLOCK_CONFIG, {
     configuredLabel: "Ante instructions",
-    repairCommand: TOKENJUICE_ANTE_FIX_COMMAND,
+    advisory: TOKENJUICE_ANTE_ADVISORY,
+    fixCommand: TOKENJUICE_ANTE_FIX_COMMAND,
+    malformedFixCommand: "remove unmatched tokenjuice markers from the instruction file, then run tokenjuice install ante",
+    malformedMarkerIssue: "configured Ante instructions have unmatched tokenjuice markers",
   });
-  const issues = [
-    ...markerIssues,
-    ...(hasMalformedMarkers ? ["configured Ante instructions have unmatched tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ANTE_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Ante instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Ante instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Ante instructions still suggest the full escape hatch",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_ANTE_ADVISORY,
-      fixCommand: hasMalformedMarkers
-        ? "remove unmatched tokenjuice markers from the instruction file, then run tokenjuice install ante"
-        : TOKENJUICE_ANTE_FIX_COMMAND,
-    }),
-  };
 }

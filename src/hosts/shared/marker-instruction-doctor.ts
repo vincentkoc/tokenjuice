@@ -26,6 +26,7 @@ export async function doctorMarkerInstructions(
     fixCommand: string;
     malformedFixCommand: string;
     singular?: boolean;
+    malformedMarkerIssue?: string;
   },
 ): Promise<InstructionDoctorReportFields & { instructionsPath: string }> {
   const { configuredLabel, advisory, fixCommand, malformedFixCommand, singular = false } = options;
@@ -50,7 +51,9 @@ export async function doctorMarkerInstructions(
   const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, config);
   const issues = [
     ...markerIssues,
-    ...(hasMalformedMarkers ? [`configured ${configuredLabel} ${singular ? "has" : "have"} malformed tokenjuice markers`] : []),
+    ...(hasMalformedMarkers ? [
+      options.malformedMarkerIssue ?? `configured ${configuredLabel} ${singular ? "has" : "have"} malformed tokenjuice markers`,
+    ] : []),
     ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, config), {
       required: [
         {

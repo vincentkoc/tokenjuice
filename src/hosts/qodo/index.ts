@@ -1,7 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
-import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -69,25 +69,13 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectConfigSymlink(`${filePath}.tmp`);
 }
 
-async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use Qodo config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Qodo config ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
+const resolveProjectConfigPath = createProjectInstructionPathResolver(
+  "Qodo config",
+  rejectConfigSymlink,
+);
 
-  await rejectConfigSymlink(projectDir);
-  await rejectSymlinkPathComponents(
-    resolvedPath,
-    projectDir,
-    `cannot use Qodo config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
-  );
-  await rejectConfigSymlink(resolvedPath);
+async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
+  const resolvedPath = await resolveProjectConfigPath(filePath, projectDir, realProjectDir);
   const expectedConfigPath = getExpectedConfigPath(projectDir);
   if (resolvedPath !== expectedConfigPath) {
     throw new Error(`cannot use Qodo config ${resolvedPath}; tokenjuice only installs the project-local .pr_agent.toml config`);

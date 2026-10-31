@@ -8,7 +8,7 @@ import { readBoundedTextFile } from "../../src/core/bounded-text-file.js";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, open: vi.fn(actual.open) };
+  return { ...actual, open: vi.fn<typeof actual.open>(actual.open) };
 });
 
 const tempDirs: string[] = [];
@@ -68,7 +68,7 @@ describe("bounded text file reads", () => {
         }
         return { bytesRead, buffer };
       },
-      close: vi.fn(),
+      close: vi.fn<() => void>(),
     };
     vi.mocked(open).mockResolvedValueOnce(file as unknown as Awaited<ReturnType<typeof open>>);
 

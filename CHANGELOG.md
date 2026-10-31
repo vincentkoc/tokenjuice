@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.
+
 ### Breaking changes
 
 - Require Node.js 22 or newer (`engines.node` is now `>=22`). Node.js 20 reached end of life in April 2026.

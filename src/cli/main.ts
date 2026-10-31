@@ -648,7 +648,9 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(args.source ? { source: args.source } : {}),
   });
   const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
-  emit(args.format, wrapped, inlineText, args.raw);
+  // Passthrough output already has the command's exact line endings.
+  const exactText = args.raw || (wrapped.stderr.length === 0 && inlineText === wrapped.stdout);
+  emit(args.format, wrapped, inlineText, exactText);
   return wrapped.exitCode;
 }
 

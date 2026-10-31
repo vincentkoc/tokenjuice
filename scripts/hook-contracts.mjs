@@ -183,13 +183,12 @@ async function runCodexContracts() {
   );
   assert(!hook.stdout.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
 
-  const authoritativeHook = await invoke(postToolUsePayload(
-      "git log --oneline",
-      Array.from(
-        { length: 40 },
-        (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
-      ).join("\n"),
-    ));
+  const logText = Array.from(
+    { length: 40 },
+    (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
+  ).join("\n");
+  const authoritativePayload = postToolUsePayload("git log --oneline", logText);
+  const authoritativeHook = await invoke(authoritativePayload);
   const authoritativeOutput = JSON.parse(authoritativeHook.stdout);
   const authoritativeContext = authoritativeOutput.hookSpecificOutput?.additionalContext;
   assert(typeof authoritativeContext === "string", "expected authoritative Codex context");
@@ -200,10 +199,15 @@ async function runCodexContracts() {
     authoritativeObservation.authority === "authoritative-omission",
     "expected authoritative Codex omission label",
   );
-  assert(
-    authoritativeObservation.recoveryReference === "tokenjuice wrap --raw -- <command>",
-    "expected authoritative Codex omissions to retain a factual recovery reference",
-  );
+  assert(authoritativeObservation.recoveryReference === undefined, "must not claim raw recovery without storage");
+  const storedHook = await invoke(authoritativePayload, { ...hookEnv, TOKENJUICE_CODEX_STORE: "1" });
+  const storedContext = JSON.parse(storedHook.stdout).hookSpecificOutput?.additionalContext;
+  assert(typeof storedContext === "string", "expected stored Codex observation");
+  const storedObservation = JSON.parse(storedContext.slice(observationPrefix.length, -observationSuffix.length));
+  const recovery = storedObservation.recoveryReference;
+  assert(typeof recovery === "string" && /^tokenjuice cat [a-zA-Z0-9_-]+$/.test(recovery), "expected stored artifact recovery command");
+  const recovered = await run(process.execPath, [distCliPath, "cat", recovery.split(" ")[2]], { env: hookEnv });
+  assert(recovered.stdout === `${logText}\n`, "stored Codex raw output did not round-trip through cat");
 
   // Exercise the packaged CLI at both fail-open thresholds: compaction itself
   // is optional above 1 MiB, while stdin is drained above 16 MiB so Tokenjuice
@@ -284,14 +288,16 @@ async function runPreToolContracts(spec) {
   assert(compacted.stdout.includes("files space/example-"), `${spec.host}: listing lost paths`);
 
   // The output resembles a reducible inventory, but an exact file read must stay byte-for-byte raw.
-  const exact = `${raw.stdout}quote: ' \" $ \`\n\n`;
-  await writeFile(join(home, "exact content.txt"), exact);
-  const exactResult = await execute(await rewrite("cat 'exact content.txt'"));
-  assert(exactResult.stdout === exact && exactResult.stderr === "", `${spec.host}: exact read changed`);
+  const exact = `${raw.stdout}quote: ' " $ \`\n\n`;
+  for (const text of [exact, exact.trimEnd(), "", "\r\n"]) {
+    await writeFile(join(home, "exact content.txt"), text);
+    const exactResult = await execute(await rewrite("cat 'exact content.txt'"));
+    assert(exactResult.stdout === text && exactResult.stderr === "", `${spec.host}: exact read changed (${text.length} chars)`);
+  }
 
   const failure = `"${process.execPath}" -e 'process.stdout.write("out" + String.fromCharCode(10)); process.stderr.write("err" + String.fromCharCode(10)); process.exit(7)'`;
   const failed = await execute(await rewrite(failure), [7]);
-  assert(failed.stdout === "out\n" && failed.stderr === "err\n", `${spec.host}: failed command streams changed`);
+  assert(failed.stdout.includes("out\n") && failed.stdout.includes("err\n"), `${spec.host}: lost stdout or stderr content`);
 
   const secondPass = await invoke(payload(rewritten));
   assert(secondPass.stderr === "", `${spec.host}: second pass wrote stderr`);

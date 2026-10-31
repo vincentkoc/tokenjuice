@@ -175,7 +175,10 @@ try {
   assert.ok(config.includes("tokenjuice-deepseek-harness"));
   const installed = await session();
   assert.ok(installed.get("status").length < baseline.get("status").length);
-  assert.match(installed.get("status"), /tokenjuice/);
+  // Native content carries the reducer text, without a host-specific notice.
+  assert.match(installed.get("status"), /^Changes not staged:\n/);
+  assert.match(installed.get("status"), /M: src\/file-0\.txt/);
+  assert.match(installed.get("status"), /\d+ lines omitted/);
   for (const id of ["exact", "raw", "failure"]) assert.equal(installed.get(id), baseline.get(id), `${id} must remain identical to native baseline`);
   await runHost(["plugin", "--profile", "headless", "remove", "tokenjuice-deepseek-harness"]);
   const removed = (await runHost(["--profile", "headless", "--dump-config"])).stdout;

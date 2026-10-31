@@ -412,19 +412,74 @@ function isSetupConditionCommand(command: string): boolean {
 }
 
 function stripLeadingSetupIfBlock(command: string): string | null {
-  const match = /^if\s+([\s\S]+?)(?:;|\n)\s*then\s+([\s\S]+?)(?:(?:;|\n)\s*else\s+([\s\S]+?))?(?:;|\n)\s*fi\s*(?:;|&&|\n)\s*(.+)$/u.exec(command.trim());
-  if (!match) {
+  const text = command.trim();
+  if (!/^if\s/u.test(text)) {
     return null;
   }
+  let quote: "'" | "\"" | null = null;
+  let escaping = false;
+  let depth = 0;
+  let phase: "condition" | "then" | "else" = "condition";
+  let start = 2;
+  let condition = "";
+  let thenCommand = "";
+  let elseCommand: string | undefined;
+  let tail = "";
 
-  const [, condition, thenCommand, elseCommand, tail] = match;
+  // Visit each delimiter once instead of backtracking across candidate
+  // then/else/fi combinations. Quoted markers belong to the command text.
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index]!;
+    if (escaping) { escaping = false; continue; }
+    if (char === "\\" && quote !== "'") { escaping = true; continue; }
+    if (quote) {
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "'" || char === "\"") { quote = char; continue; }
+    if (char === "(") { depth += 1; continue; }
+    if (char === ")") {
+      if (--depth < 0) return null;
+      continue;
+    }
+    if (depth > 0 || (char !== ";" && char !== "\n")) continue;
+    let wordStart = index + 1;
+    while (/[ \t\r]/u.test(text[wordStart] ?? "")) wordStart += 1;
+    const keyword = ["then", "else", "fi", "if", "elif"].find((word) =>
+      text.startsWith(word, wordStart) && /[\s;&]/u.test(text[wordStart + word.length] ?? ""));
+    if (!keyword) continue;
+    const part = text.slice(start, index).trim();
+    const next = wordStart + keyword.length;
+    if (keyword === "then" && phase === "condition" && /\s/u.test(text[next] ?? "")) {
+      condition = part;
+      phase = "then";
+    } else if (keyword === "else" && phase === "then" && /\s/u.test(text[next] ?? "")) {
+      thenCommand = part;
+      phase = "else";
+    } else if (keyword === "fi" && phase !== "condition") {
+      if (phase === "then") thenCommand = part;
+      else elseCommand = part;
+      let end = next;
+      while (/[ \t\r]/u.test(text[end] ?? "")) end += 1;
+      if (text[end] === ";" || text[end] === "\n") end += 1;
+      else if (text.startsWith("&&", end)) end += 2;
+      else return null;
+      tail = text.slice(end).trim();
+      break;
+    } else {
+      // Nested or repeated control keywords are outside this setup grammar.
+      return null;
+    }
+    start = next;
+    index = next - 1;
+  }
   if (!condition || !thenCommand || !tail) {
     return null;
   }
   if (!isSetupConditionCommand(condition) || !isSetupWrapperCommand(thenCommand)) {
     return null;
   }
-  if (elseCommand && !isSetupWrapperCommand(elseCommand)) {
+  if (elseCommand !== undefined && !isSetupWrapperCommand(elseCommand)) {
     return null;
   }
 

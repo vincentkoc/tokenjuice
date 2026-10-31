@@ -1,3 +1,6 @@
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -61,6 +64,36 @@ describe("unwrapShellRunner", () => {
 });
 
 describe("resolveEffectiveCommand", () => {
+  it("ignores quoted control markers and accepts multiple setup statements", () => {
+    expect(resolveEffectiveCommand({
+      command: `if [ "$x" = "; then " ]; then tt title 'else; fi'; true; else pwd; true; fi && pnpm test`,
+    })).toMatchObject({ command: "pnpm test", argv: ["pnpm", "test"] });
+  });
+
+  it.each([
+    "if true; then pnpm build; fi; pnpm test",
+    "if true; then true; else pnpm build; fi; pnpm test",
+    "if true; then true; pnpm test",
+    "if true; then true; fi",
+    "if true; then tt title 'unterminated; fi; pnpm test",
+    "if true; then if true; then true; fi; fi; pnpm test",
+    "if true; then true; else ; fi; pnpm test",
+  ])("does not strip substantive or unsupported if blocks: %s", (command) => {
+    expect(resolveEffectiveCommand({ command })?.command).not.toBe("pnpm test");
+  });
+
+  it("bounds malformed command parsing in a disposable child process", async () => {
+    const bundle = await build({
+      entryPoints: [fileURLToPath(new URL("../../src/core/command.ts", import.meta.url))],
+      bundle: true, write: false, platform: "node", format: "esm",
+    });
+    const child = spawnSync(process.execPath, ["--input-type=module", "-e", `${bundle.outputFiles[0]!.text}
+      const malformed = "if true; then true" + "; then true".repeat(20000);
+      if (resolveEffectiveCommand({ command: malformed })?.command === "pnpm test") throw new Error("malformed block stripped");
+    `], { encoding: "utf8", timeout: 5000 });
+    expect(child.error).toBeUndefined();
+    expect(child.status, child.stderr).toBe(0);
+  });
   it("skips leading setup segments and chooses the first substantive command", () => {
     expect(resolveEffectiveCommand({ command: "cd repo && swift test && rg failure src" })).toEqual({
       command: "swift test",

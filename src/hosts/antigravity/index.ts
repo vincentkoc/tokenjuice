@@ -1,10 +1,10 @@
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { rename, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -31,7 +31,6 @@ const TOKENJUICE_ANTIGRAVITY_FIX_COMMAND = "tokenjuice install antigravity";
 const TOKENJUICE_ANTIGRAVITY_OWNERSHIP_MARKER = "<!-- tokenjuice:antigravity-rule -->";
 const TOKENJUICE_ANTIGRAVITY_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_ANTIGRAVITY_ADVISORY = "Antigravity support is beta and rule-based; it guides command usage but does not intercept tool output.";
-const TOKENJUICE_ANTIGRAVITY_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getExplicitProjectDir(options: AntigravityRuleOptions = {}): string | undefined {
   return options.projectDir || process.env.ANTIGRAVITY_PROJECT_DIR;
@@ -70,35 +69,16 @@ function isTokenjuiceAntigravityRuleText(text: string): boolean {
   return text.includes(TOKENJUICE_ANTIGRAVITY_OWNERSHIP_MARKER);
 }
 
-async function writeAntigravityRuleWithoutBackup(rulePath: string): Promise<void> {
-  await mkdir(dirname(rulePath), { recursive: true });
-  const tempPath = `${rulePath}.tmp`;
-  await writeFile(tempPath, TOKENJUICE_ANTIGRAVITY_RULE, "utf8");
-  await rename(tempPath, rulePath);
-}
-
 export async function installAntigravityRule(
   rulePath?: string,
   options: AntigravityRuleOptions = {},
 ): Promise<InstallAntigravityRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceAntigravityRuleText(existing.text)) {
-    if (existing.text === TOKENJUICE_ANTIGRAVITY_RULE) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const primaryBackupPath = `${resolvedRulePath}.bak`;
-    const primaryBackup = await readInstructionFile(primaryBackupPath);
-    const backupPath = primaryBackup.exists && !isTokenjuiceAntigravityRuleText(primaryBackup.text)
-      ? `${resolvedRulePath}${TOKENJUICE_ANTIGRAVITY_REINSTALL_BACKUP_SUFFIX}`
-      : primaryBackupPath;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeAntigravityRuleWithoutBackup(resolvedRulePath);
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_ANTIGRAVITY_RULE);
+  const result = await installManagedInstructionFile(
+    resolvedRulePath,
+    TOKENJUICE_ANTIGRAVITY_RULE,
+    isTokenjuiceAntigravityRuleText,
+  );
   return {
     rulePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),

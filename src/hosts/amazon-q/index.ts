@@ -1,5 +1,5 @@
-import { mkdir, rename, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { rename } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -9,7 +9,7 @@ import {
   TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -36,7 +36,6 @@ const TOKENJUICE_AMAZON_Q_FIX_COMMAND = "tokenjuice install amazon-q";
 const TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER = "<!-- tokenjuice:amazon-q-rule -->";
 const TOKENJUICE_AMAZON_Q_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_AMAZON_Q_RESOURCE_GLOB = "file://.amazonq/rules/**/*.md";
-const TOKENJUICE_AMAZON_Q_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 const TOKENJUICE_AMAZON_Q_ADVISORY =
   "Amazon Q support is beta and rule-based; Amazon Q CLI has been rebranded to Kiro, but Kiro can continue using Amazon Q rules. Include `file://.amazonq/rules/**/*.md` in the active agent resources so the rule is loaded.";
 
@@ -73,35 +72,16 @@ function isTokenjuiceAmazonQRuleText(text: string): boolean {
   return text.includes(TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER);
 }
 
-async function writeAmazonQRuleWithoutBackup(rulePath: string): Promise<void> {
-  await mkdir(dirname(rulePath), { recursive: true });
-  const tempPath = `${rulePath}.tmp`;
-  await writeFile(tempPath, TOKENJUICE_AMAZON_Q_RULE, "utf8");
-  await rename(tempPath, rulePath);
-}
-
 export async function installAmazonQRule(
   rulePath?: string,
   options: AmazonQRuleOptions = {},
 ): Promise<InstallAmazonQRuleResult> {
   const resolvedRulePath = rulePath ?? await getDefaultRulePath(options);
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceAmazonQRuleText(existing.text)) {
-    if (existing.text === TOKENJUICE_AMAZON_Q_RULE) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const primaryBackupPath = `${resolvedRulePath}.bak`;
-    const primaryBackup = await readInstructionFile(primaryBackupPath);
-    const backupPath = primaryBackup.exists && !isTokenjuiceAmazonQRuleText(primaryBackup.text)
-      ? `${resolvedRulePath}${TOKENJUICE_AMAZON_Q_REINSTALL_BACKUP_SUFFIX}`
-      : primaryBackupPath;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeAmazonQRuleWithoutBackup(resolvedRulePath);
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_AMAZON_Q_RULE);
+  const result = await installManagedInstructionFile(
+    resolvedRulePath,
+    TOKENJUICE_AMAZON_Q_RULE,
+    isTokenjuiceAmazonQRuleText,
+  );
   return {
     rulePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),

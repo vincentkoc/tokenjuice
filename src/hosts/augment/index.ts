@@ -1,10 +1,10 @@
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { rename, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -31,7 +31,6 @@ const TOKENJUICE_AUGMENT_FIX_COMMAND = "tokenjuice install augment";
 const TOKENJUICE_AUGMENT_OWNERSHIP_MARKER = "<!-- tokenjuice:augment-rule -->";
 const TOKENJUICE_AUGMENT_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_AUGMENT_ADVISORY = "Augment support is beta and rule-based; it guides command usage but does not intercept tool output.";
-const TOKENJUICE_AUGMENT_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getProjectDir(options: AugmentRuleOptions = {}): string {
   return options.projectDir || process.env.AUGMENT_PROJECT_DIR || "";
@@ -69,35 +68,16 @@ function isTokenjuiceAugmentRuleText(text: string): boolean {
   return text.includes(TOKENJUICE_AUGMENT_OWNERSHIP_MARKER);
 }
 
-async function writeAugmentRuleWithoutBackup(rulePath: string): Promise<void> {
-  await mkdir(dirname(rulePath), { recursive: true });
-  const tempPath = `${rulePath}.tmp`;
-  await writeFile(tempPath, TOKENJUICE_AUGMENT_RULE, "utf8");
-  await rename(tempPath, rulePath);
-}
-
 export async function installAugmentRule(
   rulePath?: string,
   options: AugmentRuleOptions = {},
 ): Promise<InstallAugmentRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceAugmentRuleText(existing.text)) {
-    if (existing.text === TOKENJUICE_AUGMENT_RULE) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const primaryBackupPath = `${resolvedRulePath}.bak`;
-    const primaryBackup = await readInstructionFile(primaryBackupPath);
-    const backupPath = primaryBackup.exists && !isTokenjuiceAugmentRuleText(primaryBackup.text)
-      ? `${resolvedRulePath}${TOKENJUICE_AUGMENT_REINSTALL_BACKUP_SUFFIX}`
-      : primaryBackupPath;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeAugmentRuleWithoutBackup(resolvedRulePath);
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_AUGMENT_RULE);
+  const result = await installManagedInstructionFile(
+    resolvedRulePath,
+    TOKENJUICE_AUGMENT_RULE,
+    isTokenjuiceAugmentRuleText,
+  );
   return {
     rulePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),

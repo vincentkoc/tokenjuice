@@ -1,10 +1,10 @@
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { rename, rm } from "node:fs/promises";
+import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -31,7 +31,6 @@ const TOKENJUICE_BUILDER_FIX_COMMAND = "tokenjuice install builder";
 const TOKENJUICE_BUILDER_OWNERSHIP_MARKER = "<!-- tokenjuice:builder-rule -->";
 const TOKENJUICE_BUILDER_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_BUILDER_ADVISORY = "Builder support is beta and rule-based; it guides command usage but does not intercept tool output.";
-const TOKENJUICE_BUILDER_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 const resolveProjectDir = createProjectDirResolver("BUILDER_PROJECT_DIR");
 
@@ -60,35 +59,16 @@ function isTokenjuiceBuilderRuleText(text: string): boolean {
   return text.includes(TOKENJUICE_BUILDER_OWNERSHIP_MARKER);
 }
 
-async function writeBuilderRuleWithoutBackup(rulePath: string): Promise<void> {
-  await mkdir(dirname(rulePath), { recursive: true });
-  const tempPath = `${rulePath}.tmp`;
-  await writeFile(tempPath, TOKENJUICE_BUILDER_RULE, "utf8");
-  await rename(tempPath, rulePath);
-}
-
 export async function installBuilderRule(
   rulePath?: string,
   options: BuilderRuleOptions = {},
 ): Promise<InstallBuilderRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceBuilderRuleText(existing.text)) {
-    if (existing.text === TOKENJUICE_BUILDER_RULE) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const primaryBackupPath = `${resolvedRulePath}.bak`;
-    const primaryBackup = await readInstructionFile(primaryBackupPath);
-    const backupPath = primaryBackup.exists && !isTokenjuiceBuilderRuleText(primaryBackup.text)
-      ? `${resolvedRulePath}${TOKENJUICE_BUILDER_REINSTALL_BACKUP_SUFFIX}`
-      : primaryBackupPath;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeBuilderRuleWithoutBackup(resolvedRulePath);
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_BUILDER_RULE);
+  const result = await installManagedInstructionFile(
+    resolvedRulePath,
+    TOKENJUICE_BUILDER_RULE,
+    isTokenjuiceBuilderRuleText,
+  );
   return {
     rulePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),

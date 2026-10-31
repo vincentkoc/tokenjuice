@@ -113,6 +113,33 @@ export async function writeInstructionFile(filePath: string, text: string): Prom
   };
 }
 
+export async function installManagedInstructionFile(
+  filePath: string,
+  text: string,
+  isManagedText: (text: string) => boolean,
+): Promise<WriteInstructionFileResult> {
+  const existing = await readInstructionFile(filePath);
+  if (existing.exists && isManagedText(existing.text)) {
+    if (existing.text === text) {
+      return { filePath };
+    }
+
+    const primaryBackupPath = `${filePath}.bak`;
+    const primaryBackup = await readInstructionFile(primaryBackupPath);
+    const backupPath = primaryBackup.exists && !isManagedText(primaryBackup.text)
+      ? `${filePath}.tokenjuice.bak`
+      : primaryBackupPath;
+    await writeFile(backupPath, existing.text, "utf8");
+    await mkdir(dirname(filePath), { recursive: true });
+    const tempPath = `${filePath}.tmp`;
+    await writeFile(tempPath, text, "utf8");
+    await rename(tempPath, filePath);
+    return { filePath, backupPath };
+  }
+
+  return writeInstructionFile(filePath, text);
+}
+
 export async function removeInstructionFile(filePath: string): Promise<RemoveInstructionFileResult> {
   const existing = await readInstructionFile(filePath);
   if (existing.exists) {

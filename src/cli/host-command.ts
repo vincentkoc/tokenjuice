@@ -1,3 +1,4 @@
+import type { RemoveInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
 
 export function createHostCommand<Result>(
@@ -14,4 +15,16 @@ export function createHostCommand<Result>(
     }
     return getExitCode(result);
   };
+}
+export function createFileUninstallCommand<PathKey extends string>(
+  host: string,
+  resource: string,
+  pathKey: PathKey,
+  run: () => Promise<RemoveInstructionFileResult<PathKey>>,
+): HostCommandHandler {
+  return createHostCommand(run, (result) => {
+    process.stdout.write(`removed ${host} ${resource}: ${result.removed ? "yes" : "no"}\n`);
+    process.stdout.write(`${resource} path: ${result[pathKey]}\n`);
+    process.stdout.write(`enable: tokenjuice install ${host}\n`);
+  });
 }

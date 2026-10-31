@@ -1,9 +1,9 @@
 import { realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
-import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -71,25 +71,13 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.tmp`);
 }
 
-async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use elyra skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use elyra skill ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
+const resolveProjectSkillPath = createProjectInstructionPathResolver(
+  "elyra skill",
+  rejectSkillSymlink,
+);
 
-  await rejectSkillSymlink(projectDir);
-  await rejectSymlinkPathComponents(
-    resolvedPath,
-    projectDir,
-    `cannot use elyra skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
-  );
-  await rejectSkillSymlink(resolvedPath);
+async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
+  const resolvedPath = await resolveProjectSkillPath(filePath, projectDir, realProjectDir);
   const expectedSkillPath = getExpectedSkillPath(projectDir);
   if (resolvedPath !== expectedSkillPath) {
     throw new Error(`cannot use elyra skill ${resolvedPath}; tokenjuice only installs the project-local .elyra/skills/tokenjuice/SKILL.md skill`);

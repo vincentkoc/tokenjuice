@@ -12,12 +12,7 @@ import {
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -26,7 +21,6 @@ import {
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  collectGuidanceIssues,
   readInstructionFile,
 } from "../shared/instruction-file.js";
 
@@ -174,23 +168,8 @@ export async function doctorAgentsMdInstructions(
   const issues = [
     ...markerIssues,
     ...malformedMarkerIssues,
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured AGENTS.md instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured AGENTS.md instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured AGENTS.md instructions still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG), {
+      configuredLabel: "AGENTS.md instructions",
     }),
   ];
 

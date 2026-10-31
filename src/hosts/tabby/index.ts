@@ -2,18 +2,13 @@ import { chmod, lstat, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/pro
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 import { getTomlStructureLines, isTomlTableHeader } from "../../core/toml-structure.js";
 
 type TabbyConfigSnapshot = Awaited<ReturnType<typeof readInstructionFile>>;
@@ -441,23 +436,9 @@ export async function doctorTabbySystemPrompt(
   const collisionIssues = hasUserOwnedSystemPrompt(removeTokenjuiceBlock(existing.text).text)
     ? ["configured Tabby [answer].system_prompt also exists outside tokenjuice markers"]
     : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-    required: [
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Tabby system prompt is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Tabby system prompt is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Tabby system prompt still suggests the full escape hatch",
-      },
-    ],
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    configuredLabel: "Tabby system prompt",
+    singular: true,
   });
   const issues = [...collisionIssues, ...guidanceIssues];
 

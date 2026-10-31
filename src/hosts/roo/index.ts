@@ -7,12 +7,7 @@ import {
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -21,7 +16,6 @@ import {
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  collectGuidanceIssues,
   readInstructionFile,
 } from "../shared/instruction-file.js";
 
@@ -109,23 +103,8 @@ export async function doctorRooInstructions(
       configuredLabel: "Roo Code rules",
       repairCommand: TOKENJUICE_ROO_FIX_COMMAND,
     }),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ROO_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Roo Code rules are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Roo Code rules are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Roo Code rules still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ROO_BLOCK_CONFIG), {
+      configuredLabel: "Roo Code rules",
     }),
   ];
 

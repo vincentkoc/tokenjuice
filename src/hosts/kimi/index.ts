@@ -3,16 +3,8 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { readStringField } from "../../core/record-fields.js";
-import { readPositiveIntegerEnv } from "../../core/env.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
-import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 
 export type KimiHookCommandOptions = TokenjuiceHookCommandOptions & {
   configDir?: string;
@@ -33,48 +25,22 @@ export type KimiDoctorReport = HookCommandDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
 };
 
-type KimiPostToolUsePayload = {
-  hook_event_name?: unknown;
-  tool_name?: unknown;
-  tool_input?: unknown;
-  tool_output?: unknown;
-  cwd?: unknown;
-};
-
-const TOKENJUICE_KIMI_SUBCOMMAND = "kimi-post-tool-use";
-const TOKENJUICE_KIMI_FIX_COMMAND = "tokenjuice install kimi";
 const TOKENJUICE_KIMI_BEGIN = "# tokenjuice:kimi begin";
 const TOKENJUICE_KIMI_END = "# tokenjuice:kimi end";
-const TOKENJUICE_KIMI_ADVISORY =
-  "Kimi support is beta and injects compacted context after Shell tool output without suppressing the original result.";
-const TOKENJUICE_KIMI_DISABLED_ADVISORY = "Kimi support is beta; verify live PostToolUse behavior after install.";
+const TOKENJUICE_KIMI_RETIRED =
+  "Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.";
 
-function getKimiConfigDir(options: KimiHookCommandOptions = {}): string {
-  return options.configDir || process.env.KIMI_SHARE_DIR || process.env.KIMI_HOME || join(homedir(), ".kimi");
-}
-
-function getDefaultConfigPath(options: KimiHookCommandOptions = {}): string {
-  return join(getKimiConfigDir(options), "config.toml");
-}
-
-function getLegacyJsonConfigPath(configPath: string): string {
-  return join(dirname(configPath), "config.json");
-}
-
-function tomlString(value: string): string {
-  return JSON.stringify(value);
-}
-
-function createKimiHookBlock(command: string): string {
-  return [
-    TOKENJUICE_KIMI_BEGIN,
-    "[[hooks]]",
-    'event = "PostToolUse"',
-    'matcher = "Shell"',
-    `command = ${tomlString(command)}`,
-    "timeout = 30",
-    TOKENJUICE_KIMI_END,
-  ].join("\n");
+async function getDefaultConfigPath(options: KimiHookCommandOptions = {}): Promise<string> {
+  const configDir = options.configDir || process.env.KIMI_CODE_HOME || process.env.KIMI_SHARE_DIR || process.env.KIMI_HOME;
+  if (configDir) return join(configDir, "config.toml");
+  const current = join(homedir(), ".kimi-code", "config.toml");
+  const legacy = join(homedir(), ".kimi", "config.toml");
+  // Find an old installation for cleanup without creating or migrating host config.
+  for (const path of [current, legacy]) {
+    const { text } = await readConfig(path);
+    if (text.includes(TOKENJUICE_KIMI_BEGIN) || text.includes(TOKENJUICE_KIMI_END)) return path;
+  }
+  return current;
 }
 
 async function readConfig(configPath: string): Promise<{ text: string; exists: boolean }> {
@@ -134,11 +100,6 @@ function removeKimiHookBlock(text: string): { text: string; removed: number } {
   return { text: remaining.trimEnd(), removed };
 }
 
-function appendKimiHookBlock(text: string, command: string): string {
-  const withoutTokenjuice = removeKimiHookBlock(text).text;
-  return `${withoutTokenjuice}${withoutTokenjuice ? "\n\n" : ""}${createKimiHookBlock(command)}\n`;
-}
-
 async function writeConfig(configPath: string, text: string): Promise<void> {
   await mkdir(dirname(configPath), { recursive: true, mode: fsConstants.S_IRWXU });
   const tempPath = `${configPath}.tmp`;
@@ -175,45 +136,16 @@ function findTokenjuiceKimiHookCommand(text: string): string | undefined {
   }
 }
 
+/** @deprecated Kimi's observation-only hooks cannot compact model-visible output. */
 export async function installKimiHook(
-  configPath?: string,
-  options: KimiHookCommandOptions = {},
+  _configPath?: string,
+  _options: KimiHookCommandOptions = {},
 ): Promise<InstallKimiHookResult> {
-  const resolvedConfigPath = configPath ?? getDefaultConfigPath(options);
-  const existing = await readConfig(resolvedConfigPath);
-  if (!existing.exists) {
-    const legacyJsonConfigPath = getLegacyJsonConfigPath(resolvedConfigPath);
-    const legacyJsonConfig = await readConfig(legacyJsonConfigPath);
-    if (legacyJsonConfig.exists) {
-      throw new Error(
-        `cannot install Kimi hook because ${legacyJsonConfigPath} exists and ${resolvedConfigPath} does not; start Kimi once to migrate config.json to config.toml, then rerun tokenjuice install kimi`,
-      );
-    }
-  }
-  if (existing.exists && hasMalformedMarkerStructure(existing.text)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice Kimi markers in ${resolvedConfigPath}; remove the dangling marker manually, then rerun tokenjuice install kimi`,
-    );
-  }
-
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_KIMI_SUBCOMMAND, "kimi", options);
-  const backupPath = existing.exists ? `${resolvedConfigPath}.bak` : undefined;
-  if (backupPath) {
-    await writeFile(backupPath, existing.text, {
-      encoding: "utf8",
-      mode: fsConstants.S_IRUSR | fsConstants.S_IWUSR,
-    });
-    await chmod(backupPath, fsConstants.S_IRUSR | fsConstants.S_IWUSR);
-  }
-  await writeConfig(resolvedConfigPath, appendKimiHookBlock(existing.text, command));
-  return {
-    configPath: resolvedConfigPath,
-    ...(backupPath ? { backupPath } : {}),
-    command,
-  };
+  throw new Error(TOKENJUICE_KIMI_RETIRED);
 }
 
-export async function uninstallKimiHook(configPath = getDefaultConfigPath()): Promise<UninstallKimiHookResult> {
+export async function uninstallKimiHook(configPath?: string): Promise<UninstallKimiHookResult> {
+  configPath ??= await getDefaultConfigPath();
   const existing = await readConfig(configPath);
   if (!existing.exists) {
     return { configPath, removed: 0 };
@@ -234,89 +166,30 @@ export async function doctorKimiHook(
   configPath?: string,
   options: KimiHookCommandOptions = {},
 ): Promise<KimiDoctorReport> {
-  const resolvedConfigPath = configPath ?? getDefaultConfigPath(options);
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_KIMI_SUBCOMMAND, "kimi", options);
+  const resolvedConfigPath = configPath ?? await getDefaultConfigPath(options);
   const existing = await readConfig(resolvedConfigPath);
   const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_KIMI_BEGIN) || existing.text.includes(TOKENJUICE_KIMI_END);
-  const detectedCommand = existing.exists ? findTokenjuiceKimiHookCommand(existing.text) : undefined;
-  const fields = await buildHookCommandDoctorFields({
-    expectedCommand,
-    detectedCommand,
-    disabledIssue: "tokenjuice PostToolUse hook is not installed for Kimi",
-    hostLabel: "Kimi",
-    advisory: detectedCommand ? TOKENJUICE_KIMI_ADVISORY : TOKENJUICE_KIMI_DISABLED_ADVISORY,
-    fixCommand: hasMalformedMarkerStructure(existing.text)
-      ? "remove unmatched tokenjuice Kimi markers from config.toml, then run tokenjuice install kimi"
-      : TOKENJUICE_KIMI_FIX_COMMAND,
-  });
-  if (existing.exists && hasMalformedMarkerStructure(existing.text)) {
-    return {
-      configPath: resolvedConfigPath,
-      ...fields,
-      hasTokenjuiceMarker,
-      status: "broken",
-      issues: ["configured Kimi config has unmatched tokenjuice markers", ...fields.issues],
-    };
-  }
+  const detectedCommand = findTokenjuiceKimiHookCommand(existing.text);
+  const malformed = hasMalformedMarkerStructure(existing.text);
   return {
     configPath: resolvedConfigPath,
-    ...fields,
+    status: hasTokenjuiceMarker ? "broken" : "disabled",
     hasTokenjuiceMarker,
+    expectedCommand: "tokenjuice wrap -- <command>",
+    ...(detectedCommand ? { detectedCommand } : {}),
+    issues: malformed
+      ? ["configured Kimi config has unmatched tokenjuice markers"]
+      : hasTokenjuiceMarker ? ["retired tokenjuice Kimi hook is still installed"] : [],
+    advisories: [TOKENJUICE_KIMI_RETIRED],
+    fixCommand: malformed
+      ? "remove unmatched tokenjuice Kimi markers from config.toml"
+      : hasTokenjuiceMarker ? "tokenjuice uninstall kimi" : "tokenjuice wrap -- <command>",
+    checkedPaths: [resolvedConfigPath],
+    missingPaths: existing.exists ? [] : [resolvedConfigPath],
   };
 }
 
-function readKimiOutputText(output: unknown): string {
-  if (typeof output === "string") {
-    return output;
-  }
-  if (Array.isArray(output)) {
-    return output.map(readKimiOutputText).filter(Boolean).join("\n");
-  }
-  if (!isRecord(output)) {
-    return "";
-  }
-  return readStringField(output, ["output", "stdout", "stderr", "text", "content", "result"]) ?? "";
-}
-
-export async function runKimiPostToolUseHook(rawText: string): Promise<number> {
-  let payload: KimiPostToolUsePayload;
-  try {
-    payload = JSON.parse(rawText) as KimiPostToolUsePayload;
-  } catch {
-    return 0;
-  }
-
-  if (payload.hook_event_name !== "PostToolUse" || payload.tool_name !== "Shell") {
-    return 0;
-  }
-
-  const toolInput = isRecord(payload.tool_input) ? payload.tool_input : undefined;
-  const command = toolInput ? readStringField(toolInput, ["command", "cmd"]) : undefined;
-  const visibleText = readKimiOutputText(payload.tool_output);
-  if (!command || !visibleText.trim()) {
-    return 0;
-  }
-
-  try {
-    const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_KIMI_MAX_INLINE_CHARS");
-    const outcome = await compactBashResult({
-      source: "kimi",
-      command,
-      visibleText,
-      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-      inspectionPolicy: "allow-safe-inventory",
-      metadata: { source: "kimi-post-tool-use" },
-      genericFallbackMinSavedChars: 120,
-      genericFallbackMaxRatio: 0.75,
-      skipGenericFallbackForCompoundCommands: true,
-    });
-
-    if (outcome.action !== "keep") {
-      process.stdout.write(`${buildCompactedOutputContext(outcome.result.inlineText)}\n`);
-    }
-    return 0;
-  } catch {
-    return 0;
-  }
+/** Keep existing hook commands harmless until users remove their old configuration. */
+export async function runKimiPostToolUseHook(_rawText: string): Promise<number> {
+  return 0;
 }

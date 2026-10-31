@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   doctorInstalledHooks,
@@ -32,7 +32,10 @@ const envKeys = [
   "GEMINI_HOME",
   "GROK_BUILD_PROJECT_DIR",
   "HOME",
+  "PATH",
+  "SHELL",
   "JUNIE_PROJECT_DIR",
+  "KIMI_CODE_HOME",
   "KIMI_HOME",
   "KIMI_SHARE_DIR",
   "KILO_PROJECT_DIR",
@@ -84,228 +87,105 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   }
 }
 
-describe("kimi hook", () => {
-  it("rejects an unterminated command string with many escapes", async () => {
+beforeEach(() => {
+  delete process.env.KIMI_CODE_HOME;
+  delete process.env.KIMI_SHARE_DIR;
+  delete process.env.KIMI_HOME;
+});
+
+const legacyBlock = [
+  "# tokenjuice:kimi begin", "[[hooks]]", 'event = "PostToolUse"',
+  'matcher = "Shell"', 'command = "tokenjuice kimi-post-tool-use"',
+  "timeout = 30", "# tokenjuice:kimi end", "",
+].join("\n");
+
+describe("retired Kimi hook", () => {
+  it("refuses installation without creating or changing host config", async () => {
     const home = await createTempDir();
     const configPath = join(home, "config.toml");
-    await writeFile(configPath, [
-      "# tokenjuice:kimi begin",
-      `command = "${"\\!".repeat(128)}`,
-      "# tokenjuice:kimi end",
-    ].join("\n"));
-
-    const report = await doctorKimiHook(configPath, { binaryPath: "/opt/tokenjuice", local: true });
-    expect(report.detectedCommand).toBeUndefined();
-    expect(report.status).not.toBe("ok");
+    await expect(installKimiHook(configPath)).rejects.toThrow(/cannot replace tool output/u);
+    await expect(readFile(configPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await writeFile(configPath, legacyBlock);
+    await expect(installKimiHook(configPath)).rejects.toThrow(/tokenjuice wrap/u);
+    await expect(readFile(configPath, "utf8")).resolves.toBe(legacyBlock);
   });
 
-  it("installs a marker-delimited PostToolUse Shell hook in config.toml", async () => {
+  it("reports old hooks as retired and preserves unrelated config on uninstall", async () => {
     const home = await createTempDir();
-    const configPath = join(home, ".kimi", "config.toml");
-
-    const result = await installKimiHook(configPath, { binaryPath: "/usr/local/bin/tokenjuice", local: true });
-    const config = await readFile(configPath, "utf8");
-
-    expect(result.configPath).toBe(configPath);
-    expect(result.command).toBe("/usr/local/bin/tokenjuice kimi-post-tool-use");
-    expect(result.backupPath).toBeUndefined();
-    expect(config).toContain("# tokenjuice:kimi begin");
-    expect(config).toContain("[[hooks]]");
-    expect(config).toContain('event = "PostToolUse"');
-    expect(config).toContain('matcher = "Shell"');
-    expect(config).toContain('command = "/usr/local/bin/tokenjuice kimi-post-tool-use"');
-    expect(config).toContain("# tokenjuice:kimi end");
-  });
-
-  it("preserves existing config and backs it up before replacing its own block", async () => {
-    const home = await createTempDir();
-    const configPath = join(home, ".kimi", "config.toml");
-    await mkdir(join(home, ".kimi"), { recursive: true });
-    await writeFile(
-      configPath,
-      [
-        'theme = "dark"',
-        "",
-        "[[hooks]]",
-        'event = "Stop"',
-        'command = "echo keep"',
-        "",
-        "# tokenjuice:kimi begin",
-        "[[hooks]]",
-        'event = "PostToolUse"',
-        'matcher = "Shell"',
-        'command = "/old/tokenjuice kimi-post-tool-use"',
-        "timeout = 30",
-        "# tokenjuice:kimi end",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-
-    const result = await installKimiHook(configPath, { binaryPath: "/new/tokenjuice", local: true });
-    const config = await readFile(configPath, "utf8");
-
-    expect(result.backupPath).toBe(`${configPath}.bak`);
-    await expect(readFile(`${configPath}.bak`, "utf8")).resolves.toContain("/old/tokenjuice");
-    expect(config).toContain('theme = "dark"');
-    expect(config).toContain('command = "echo keep"');
-    expect(config).toContain('command = "/new/tokenjuice kimi-post-tool-use"');
-    expect(config).not.toContain("/old/tokenjuice");
+    const configPath = join(home, "config.toml");
+    const unrelated = 'default_model = "keep"\n\n[[hooks]]\nevent = "Stop"\ncommand = "echo keep"';
+    await writeFile(configPath, `${unrelated}\n\n${legacyBlock}`);
+    const report = await doctorKimiHook(configPath);
+    expect(report.status).toBe("broken");
+    expect(report.detectedCommand).toBe("tokenjuice kimi-post-tool-use");
+    expect(report.issues).toContain("retired tokenjuice Kimi hook is still installed");
+    expect(report.fixCommand).toBe("tokenjuice uninstall kimi");
+    expect(await uninstallKimiHook(configPath)).toEqual({ configPath, removed: 1 });
+    await expect(readFile(configPath, "utf8")).resolves.toBe(`${unrelated}\n`);
     expect((await stat(configPath)).mode & 0o777).toBe(0o600);
-    expect((await stat(`${configPath}.bak`)).mode & 0o777).toBe(0o600);
+    expect((await doctorKimiHook(configPath)).status).toBe("disabled");
+    expect((await uninstallKimiHook(configPath)).removed).toBe(0);
   });
 
-  it("reports installed, broken, and uninstalled hook health", async () => {
+  it("finds existing legacy default installs while preferring current marked config", async () => {
     const home = await createTempDir();
-    const configPath = join(home, ".kimi", "config.toml");
-    const missingLauncherPath = join(home, "missing", "tokenjuice");
-
-    await installKimiHook(configPath, { binaryPath: missingLauncherPath, local: true });
-    const installed = await doctorKimiHook(configPath, { binaryPath: missingLauncherPath, local: true });
-
-    expect(installed.status).toBe("broken");
-    expect(installed.issues).toContain("configured Kimi hook points at missing path");
-    expect(installed.detectedCommand).toBe(`${missingLauncherPath} kimi-post-tool-use`);
-
-    await writeFile(configPath, "# tokenjuice:kimi begin\n[[hooks]]\n", "utf8");
-    const broken = await doctorKimiHook(configPath, { binaryPath: missingLauncherPath, local: true });
-    expect(broken.status).toBe("broken");
-    expect(broken.issues[0]).toContain("unmatched tokenjuice markers");
-
-    await writeFile(
-      configPath,
-      "# tokenjuice:kimi begin\n[[hooks]]\nevent = \"PostToolUse\"\nmatcher = \"Shell\"\ncommand = \"/usr/local/bin/tokenjuice kimi-post-tool-use\"\ntimeout = 30\n# tokenjuice:kimi end\n",
-      "utf8",
-    );
-    const removed = await uninstallKimiHook(configPath);
-    const disabled = await doctorKimiHook(configPath, { binaryPath: missingLauncherPath, local: true });
-    expect(removed.removed).toBe(1);
-    expect(disabled.status).toBe("disabled");
+    process.env.HOME = home;
+    const current = join(home, ".kimi-code", "config.toml");
+    const legacy = join(home, ".kimi", "config.toml");
+    await mkdir(join(home, ".kimi"));
+    await mkdir(join(home, ".kimi-code"));
+    await writeFile(legacy, legacyBlock);
+    await writeFile(current, 'default_model = "keep"\n');
+    expect((await doctorKimiHook()).configPath).toBe(legacy);
+    await writeFile(current, legacyBlock);
+    expect((await uninstallKimiHook()).configPath).toBe(current);
+    expect((await uninstallKimiHook()).configPath).toBe(legacy);
+    expect((await doctorKimiHook()).configPath).toBe(current);
   });
 
-  it("refuses balanced but misordered tokenjuice markers", async () => {
+  it.each(["KIMI_CODE_HOME", "KIMI_SHARE_DIR", "KIMI_HOME"] as const)("honors %s for cleanup", async (key) => {
     const home = await createTempDir();
-    const configPath = join(home, ".kimi", "config.toml");
-    const malformed = [
-      "# tokenjuice:kimi begin",
-      'theme = "dark"',
-      "# tokenjuice:kimi begin",
-      "# tokenjuice:kimi end",
-      'model = "keep"',
-      "# tokenjuice:kimi end",
-    ].join("\n");
-    await mkdir(join(home, ".kimi"), { recursive: true });
-    await writeFile(configPath, malformed, "utf8");
+    process.env[key] = home;
+    await writeFile(join(home, "config.toml"), legacyBlock);
+    expect((await doctorKimiHook()).configPath).toBe(join(home, "config.toml"));
+    expect((await uninstallKimiHook()).removed).toBe(1);
+  });
 
+  it("prefers KIMI_CODE_HOME over legacy environment variables", async () => {
+    const home = await createTempDir();
+    process.env.KIMI_CODE_HOME = home;
+    process.env.KIMI_SHARE_DIR = join(home, "legacy");
+    process.env.KIMI_HOME = join(home, "older");
+    expect((await doctorKimiHook()).configPath).toBe(join(home, "config.toml"));
+  });
+
+  it("keeps malformed markers visible and refuses unsafe cleanup", async () => {
+    const home = await createTempDir();
+    for (const key of envKeys) process.env[key] = home;
+    const configPath = join(home, "config.toml");
+    const malformed = "# tokenjuice:kimi begin\n# tokenjuice:kimi begin\n# tokenjuice:kimi end\n# tokenjuice:kimi end\n";
+    await writeFile(configPath, malformed);
+    const report = await doctorInstalledHooks({ configDir: home });
+    expect(report.status).toBe("broken");
+    expect(report.integrations.kimi.issues[0]).toContain("unmatched tokenjuice markers");
     await expect(uninstallKimiHook(configPath)).rejects.toThrow(/malformed tokenjuice Kimi markers/u);
     await expect(readFile(configPath, "utf8")).resolves.toBe(malformed);
   });
 
-  it("uses KIMI_HOME for the default config path", async () => {
+  it("does not parse unterminated legacy command strings", async () => {
     const home = await createTempDir();
-    process.env.KIMI_HOME = home;
-
-    const installed = await installKimiHook(undefined, { binaryPath: "/usr/local/bin/tokenjuice" });
-    const expectedConfigPath = join(home, "config.toml");
-
-    expect(installed.configPath).toBe(expectedConfigPath);
-    await expect(readFile(expectedConfigPath, "utf8")).resolves.toContain("kimi-post-tool-use");
+    const configPath = join(home, "config.toml");
+    await writeFile(configPath, `# tokenjuice:kimi begin\ncommand = "${"\\!".repeat(128)}\n# tokenjuice:kimi end`);
+    expect((await doctorKimiHook(configPath)).detectedCommand).toBeUndefined();
   });
 
-  it("prefers KIMI_SHARE_DIR over the legacy KIMI_HOME fallback", async () => {
-    const home = await createTempDir();
-    const shareDir = await createTempDir();
-    process.env.KIMI_HOME = home;
-    process.env.KIMI_SHARE_DIR = shareDir;
-
-    const installed = await installKimiHook(undefined, { binaryPath: "/usr/local/bin/tokenjuice", local: true });
-    const expectedConfigPath = join(shareDir, "config.toml");
-
-    expect(installed.configPath).toBe(expectedConfigPath);
-    await expect(readFile(expectedConfigPath, "utf8")).resolves.toContain("kimi-post-tool-use");
-  });
-
-  it("refuses to shadow a legacy config.json before Kimi migrates it", async () => {
-    const home = await createTempDir();
-    process.env.KIMI_SHARE_DIR = home;
-    await writeFile(join(home, "config.json"), JSON.stringify({ default_model: "kimi-for-coding" }), "utf8");
-
-    await expect(installKimiHook(undefined, { local: true })).rejects.toThrow(/config\.json exists/);
-    await expect(readFile(join(home, "config.toml"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
-  });
-
-  it("is included in aggregate hook doctor output", async () => {
-    const home = await createTempDir();
-    const binDir = join(home, "bin");
-    const launcherPath = join(binDir, "tokenjuice");
-    for (const key of envKeys) {
-      process.env[key] = home;
+  it("keeps stale hook commands silent for current, legacy and malformed payloads", async () => {
+    for (const tool_name of ["Bash", "Shell"]) {
+      const payload = JSON.stringify({ hook_event_name: "PostToolUse", tool_name,
+        tool_input: { command: "git status --short" },
+        tool_output: Array.from({ length: 80 }, (_, i) => ` M src/file-${i}.ts`).join("\n") });
+      expect(await captureStdout(() => runKimiPostToolUseHook(payload))).toEqual({ code: 0, output: "" });
     }
-    process.env.PATH = binDir;
-    await mkdir(binDir, { recursive: true });
-    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-    await installKimiHook(undefined, { binaryPath: launcherPath });
-
-    const report = await doctorInstalledHooks({ binaryPath: launcherPath, configDir: home });
-
-    expect(report.integrations.kimi.configPath).toBe(join(home, "config.toml"));
-    expect(report.integrations.kimi.status).toBe("ok");
-  });
-
-  it("keeps malformed Kimi markers visible in aggregate hook doctor output", async () => {
-    const home = await createTempDir();
-    for (const key of envKeys) {
-      process.env[key] = home;
-    }
-    await writeFile(join(home, "config.toml"), "# tokenjuice:kimi begin\n[[hooks]]\n", "utf8");
-
-    const report = await doctorInstalledHooks({ configDir: home });
-
-    expect(report.status).toBe("broken");
-    expect(report.integrations.kimi.status).toBe("broken");
-    expect(report.integrations.kimi.hasTokenjuiceMarker).toBe(true);
-    expect(report.integrations.kimi.issues[0]).toContain("unmatched tokenjuice markers");
-  });
-});
-
-describe("runKimiPostToolUseHook", () => {
-  it("prints compacted context for Kimi Shell output", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Shell",
-      cwd: "/repo",
-      tool_input: { command: "git status --short" },
-      tool_output: {
-        output: Array.from({ length: 80 }, (_, index) => ` M src/file-${index}.ts`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runKimiPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toContain("M: src/file-0.ts");
-    expect(output).toContain("need raw? `tokenjuice wrap --raw -- <command>`");
-    expect(output).not.toContain('"hookSpecificOutput"');
-  });
-
-  it("stays silent for malformed, non-Shell, or uninteresting payloads", async () => {
-    await expect(captureStdout(() => runKimiPostToolUseHook("not-json"))).resolves.toEqual({ code: 0, output: "" });
-    await expect(
-      captureStdout(() =>
-        runKimiPostToolUseHook(JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "ReadFile" })),
-      ),
-    ).resolves.toEqual({ code: 0, output: "" });
-    await expect(
-      captureStdout(() =>
-        runKimiPostToolUseHook(
-          JSON.stringify({
-            hook_event_name: "PostToolUse",
-            tool_name: "Shell",
-            tool_input: { command: "echo hi" },
-            tool_output: { output: "hi" },
-          }),
-        ),
-      ),
-    ).resolves.toEqual({ code: 0, output: "" });
+    expect(await captureStdout(() => runKimiPostToolUseHook("not-json"))).toEqual({ code: 0, output: "" });
   });
 });

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -21,15 +22,7 @@ export type UninstallAiderConventionResult = {
   removed: boolean;
 };
 
-export type AiderDoctorReport = {
-  conventionPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AiderDoctorReport = PathDoctorReport<"conventionPath">;
 
 const TOKENJUICE_AIDER_FIX_COMMAND = "tokenjuice install aider";
 const TOKENJUICE_AIDER_MARKER = "tokenjuice terminal output compaction";

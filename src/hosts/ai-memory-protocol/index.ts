@@ -17,6 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -36,15 +37,8 @@ export type UninstallAiMemoryProtocolResult = {
   removed: boolean;
 };
 
-export type AiMemoryProtocolDoctorReport = {
-  memoryPath: string;
+export type AiMemoryProtocolDoctorReport = PathDoctorReport<"memoryPath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AI_MEMORY_PROTOCOL_BEGIN = ".. tokenjuice:ai-memory-protocol begin";

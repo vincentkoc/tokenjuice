@@ -17,6 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -45,16 +46,9 @@ export type UninstallBitoGuidelinesResult = {
   removed: boolean;
 };
 
-export type BitoDoctorReport = {
-  configPath: string;
+export type BitoDoctorReport = PathDoctorReport<"configPath"> & {
   guidelinesPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_BITO_FIX_COMMAND = "tokenjuice install bito";

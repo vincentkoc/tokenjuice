@@ -12,6 +12,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -31,16 +32,9 @@ export type UninstallCodeRabbitConfigResult = {
   removed: boolean;
 };
 
-export type CodeRabbitDoctorReport = {
-  configPath: string;
+export type CodeRabbitDoctorReport = PathDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_CODERABBIT_FIX_COMMAND = "tokenjuice install coderabbit";

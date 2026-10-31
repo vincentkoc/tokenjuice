@@ -10,7 +10,7 @@ import {
   buildTokenjuiceHookCommand,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
-import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -29,17 +29,8 @@ export type UninstallKimiHookResult = {
   removed: number;
 };
 
-export type KimiDoctorReport = {
-  configPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
+export type KimiDoctorReport = HookCommandDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type KimiPostToolUsePayload = {

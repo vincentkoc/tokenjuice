@@ -13,6 +13,7 @@ import {
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -40,15 +41,7 @@ export type UninstallGooseHintsResult = {
   removed: boolean;
 };
 
-export type GooseDoctorReport = {
-  hintsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type GooseDoctorReport = PathDoctorReport<"hintsPath">;
 
 const TOKENJUICE_GOOSE_FIX_COMMAND = "tokenjuice install goose";
 const TOKENJUICE_GOOSE_BEGIN = "<!-- tokenjuice:begin -->";

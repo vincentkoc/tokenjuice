@@ -1,6 +1,8 @@
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -9,11 +11,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import { readInstructionFile, removeInstructionFile } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type JetBrainsAiRuleOptions = {
   projectDir?: string;
@@ -183,52 +181,28 @@ export async function doctorJetBrainsAiRule(
   options: JetBrainsAiRuleOptions = {},
 ): Promise<JetBrainsAiDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice JetBrains AI Assistant rule is not installed"],
-        advisory: TOKENJUICE_JETBRAINS_AI_ADVISORY,
-        fixCommand: TOKENJUICE_JETBRAINS_AI_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceJetBrainsAiRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice JetBrains AI Assistant rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_JETBRAINS_AI_ADVISORY,
-        fixCommand: TOKENJUICE_JETBRAINS_AI_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "JetBrains AI Assistant rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: TOKENJUICE_JETBRAINS_AI_OWNERSHIP_MARKER,
-        missingIssue: "configured JetBrains AI Assistant rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_JETBRAINS_AI_RULE_MARKER,
-        missingIssue: "configured JetBrains AI Assistant rule file does not look like the tokenjuice rule",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceJetBrainsAiRuleText,
+      missingIssue: "tokenjuice JetBrains AI Assistant rule is not installed",
+      unmanagedIssue: "tokenjuice JetBrains AI Assistant rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_JETBRAINS_AI_ADVISORY,
       fixCommand: TOKENJUICE_JETBRAINS_AI_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "JetBrains AI Assistant rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: TOKENJUICE_JETBRAINS_AI_OWNERSHIP_MARKER,
+            missingIssue: "configured JetBrains AI Assistant rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_JETBRAINS_AI_RULE_MARKER,
+            missingIssue: "configured JetBrains AI Assistant rule file does not look like the tokenjuice rule",
+          },
+        ],
+      }),
     }),
   };
 }

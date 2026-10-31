@@ -1,6 +1,8 @@
 import { rename, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -13,11 +15,7 @@ import {
   removeInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type AntigravityRuleOptions = {
   projectDir?: string;
@@ -122,56 +120,32 @@ export async function doctorAntigravityRule(
   options: AntigravityRuleOptions = {},
 ): Promise<AntigravityDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Antigravity rule is not installed"],
-        advisory: TOKENJUICE_ANTIGRAVITY_ADVISORY,
-        fixCommand: TOKENJUICE_ANTIGRAVITY_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceAntigravityRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Antigravity rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_ANTIGRAVITY_ADVISORY,
-        fixCommand: TOKENJUICE_ANTIGRAVITY_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "Antigravity rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: "activation: always_on",
-        missingIssue: "configured Antigravity rule file is missing always-on activation frontmatter",
-      },
-      {
-        requiredText: TOKENJUICE_ANTIGRAVITY_OWNERSHIP_MARKER,
-        missingIssue: "configured Antigravity rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_ANTIGRAVITY_RULE_MARKER,
-        missingIssue: "configured Antigravity rule file does not look like the tokenjuice rule",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceAntigravityRuleText,
+      missingIssue: "tokenjuice Antigravity rule is not installed",
+      unmanagedIssue: "tokenjuice Antigravity rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_ANTIGRAVITY_ADVISORY,
       fixCommand: TOKENJUICE_ANTIGRAVITY_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "Antigravity rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: "activation: always_on",
+            missingIssue: "configured Antigravity rule file is missing always-on activation frontmatter",
+          },
+          {
+            requiredText: TOKENJUICE_ANTIGRAVITY_OWNERSHIP_MARKER,
+            missingIssue: "configured Antigravity rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_ANTIGRAVITY_RULE_MARKER,
+            missingIssue: "configured Antigravity rule file does not look like the tokenjuice rule",
+          },
+        ],
+      }),
     }),
   };
 }

@@ -1,6 +1,8 @@
 import { rename, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -13,11 +15,7 @@ import {
   removeInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type AugmentRuleOptions = {
   projectDir?: string;
@@ -121,56 +119,32 @@ export async function doctorAugmentRule(
   options: AugmentRuleOptions = {},
 ): Promise<AugmentDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Augment rule is not installed"],
-        advisory: TOKENJUICE_AUGMENT_ADVISORY,
-        fixCommand: TOKENJUICE_AUGMENT_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceAugmentRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Augment rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_AUGMENT_ADVISORY,
-        fixCommand: TOKENJUICE_AUGMENT_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "Augment rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: "type: always_apply",
-        missingIssue: "configured Augment rule file is missing always_apply frontmatter",
-      },
-      {
-        requiredText: TOKENJUICE_AUGMENT_OWNERSHIP_MARKER,
-        missingIssue: "configured Augment rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_AUGMENT_RULE_MARKER,
-        missingIssue: "configured Augment rule file does not look like the tokenjuice rule",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceAugmentRuleText,
+      missingIssue: "tokenjuice Augment rule is not installed",
+      unmanagedIssue: "tokenjuice Augment rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_AUGMENT_ADVISORY,
       fixCommand: TOKENJUICE_AUGMENT_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "Augment rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: "type: always_apply",
+            missingIssue: "configured Augment rule file is missing always_apply frontmatter",
+          },
+          {
+            requiredText: TOKENJUICE_AUGMENT_OWNERSHIP_MARKER,
+            missingIssue: "configured Augment rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_AUGMENT_RULE_MARKER,
+            missingIssue: "configured Augment rule file does not look like the tokenjuice rule",
+          },
+        ],
+      }),
     }),
   };
 }

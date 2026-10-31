@@ -2,7 +2,7 @@ import { constants } from "node:fs";
 import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -128,24 +128,6 @@ async function rejectHardlink(filePath: string): Promise<void> {
   }
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const segments = relative(projectDir, filePath).split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      if ((await lstat(currentPath)).isSymbolicLink()) {
-        throw new Error(`cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeRulePath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
@@ -156,7 +138,11 @@ async function resolveSafeRulePath(filePath: string, projectDir: string, realPro
     throw new Error(`cannot use Grok Bot rule ${resolvedPath}; tokenjuice will not write outside ${realProjectDir}`);
   }
   await rejectSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Grok Bot rule ${resolvedPath}; tokenjuice will not read or write through symlinks`,
+  );
   await rejectSymlink(resolvedPath);
   await rejectHardlink(resolvedPath);
   try {

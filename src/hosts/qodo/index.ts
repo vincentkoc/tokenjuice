@@ -1,7 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -89,26 +89,6 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectConfigSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
@@ -122,7 +102,11 @@ async function resolveSafeProjectConfigPath(filePath: string, projectDir: string
   }
 
   await rejectConfigSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Qodo config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   await rejectConfigSymlink(resolvedPath);
   const expectedConfigPath = getExpectedConfigPath(projectDir);
   if (resolvedPath !== expectedConfigPath) {

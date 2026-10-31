@@ -1,7 +1,7 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -81,33 +81,17 @@ async function rejectInstructionSymlink(filePath: string, label: string): Promis
   }
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string, label: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeProjectPath(filePath: string, projectDir: string, realProjectDir: string, label: string): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
     throw new Error(`cannot use Bito ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
   }
   await rejectInstructionSymlink(projectDir, label);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir, label);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Bito ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
   if (!isInsideOrEqual(realProjectDir, realParentDir)) {
     throw new Error(

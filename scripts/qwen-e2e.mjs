@@ -185,7 +185,7 @@ try {
     assert.deepEqual(new Set(entries), expectedEntries, `${id}: native fixture must retain every file`);
   }
   assert.equal(commandOutput(baseline.get("exact")), exact.trim(), "native exact read must contain the fixture");
-  assert.equal(commandOutput(baseline.get("dialect")), "beta", "native Bash syntax must execute independently of SHELL");
+  assert.equal(commandOutput(baseline.get("dialect")), "beta", `native Bash syntax must execute independently of SHELL: ${baseline.get("dialect")}`);
   await run(process.execPath, [cli, "install", "qwen-code", "--local"]);
   const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "qwen-code", "--format", "json"])).stdout);
   assert.equal(doctor.status, "ok");

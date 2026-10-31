@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -229,84 +229,15 @@ describe("qwen-code hooks", () => {
     })))).toEqual({ code: 0, output: "{}\n" });
   });
 
-  it("retains the legacy context hook entrypoint", async () => {
-    const payload = JSON.stringify({
-      tool_name: "Bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "git status",
-      },
-      tool_response: {
-        llmContent: [
-          "On branch pr-65478-security-fix",
-          "Your branch and 'origin/pr-65478-security-fix' have diverged,",
-          "and have 8 and 642 different commits each, respectively.",
-          "",
-          "Changes not staged for commit:",
-          "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
-          "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
-          "",
-          "no changes added to commit",
-        ].join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runQwenCodePostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      decision?: string;
-      reason?: string;
-      hookSpecificOutput?: {
-        hookEventName?: string;
-        additionalContext?: string;
-      };
-    };
-
-    expect(code).toBe(0);
-    expect(response.decision).toBe("allow");
-    expect(response.reason).toContain("tokenjuice compacted");
-    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.hookSpecificOutput?.additionalContext).not.toContain("and have 8 and 642");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
-  });
-
-  it("accepts camelCase payload fields and run_shell_command aliases", async () => {
-    const payload = JSON.stringify({
-      hookEventName: "PostToolUse",
-      toolName: "run_shell_command",
-      toolInput: {
-        cmd: "git status",
-      },
-      toolResponse: {
-        output: [
-          "Changes not staged for commit:",
-          "\tmodified:   README.md",
-          "\tmodified:   docs/spec.md",
-          "no changes added to commit",
-        ].join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runQwenCodePostToolUseHook(payload));
-    const response = JSON.parse(output) as { hookSpecificOutput?: { additionalContext?: string } };
-
-    expect(code).toBe(0);
-    expect(response.hookSpecificOutput?.additionalContext).toContain("M: README.md");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("M: docs/spec.md");
-  });
-
-  it("keeps unrelated hook payloads silent", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "ReadFile",
-      tool_input: { path: "README.md" },
-      tool_response: { llmContent: "hello" },
-    });
-
-    const { code, output } = await captureStdout(() => runQwenCodePostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
+  it("keeps retired post-tool hooks silent without creating artifacts", async () => {
+    const noisy = { hook_event_name: "PostToolUse", tool_name: "run_shell_command",
+      tool_input: { command: "find fixtures -type f" },
+      tool_response: { output: Array.from({ length: 80 }, (_, i) => `fixtures/file-${i}.txt`).join("\n") } };
+    process.env.TOKENJUICE_STATS = "1";
+    for (const raw of ["{bad", "null", "[]", JSON.stringify(noisy), JSON.stringify({ ...noisy, exit_code: 7 }),
+      JSON.stringify({ hookEventName: "PostToolUse", toolName: "Bash", toolInput: noisy.tool_input, toolResponse: noisy.tool_response })]) {
+      expect(await captureStdout(() => runQwenCodePostToolUseHook(raw))).toEqual({ code: 0, output: "{}\n" });
+    }
+    await expect(stat(process.env.TOKENJUICE_ARTIFACT_DIR!)).rejects.toMatchObject({ code: "ENOENT" });
   });
 });

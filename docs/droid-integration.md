@@ -12,6 +12,9 @@ tokenjuice doctor droid
 tokenjuice uninstall droid
 ```
 
+Legacy post-tool entrypoints now return `{}` without adding context, writing
+diagnostics or storing artifacts. Reinstall to enable the supported pre-tool path.
+
 Reinstall to migrate an older tokenjuice `PostToolUse` hook. Migration removes
 only tokenjuice entries, including entries inside shared matcher groups.
 The old runtime entrypoint remains available for existing installations.

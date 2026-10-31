@@ -69,18 +69,6 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   }
 }
 
-const noisyPayload = {
-  hook_event_name: "PostToolUse",
-  tool_name: "Execute",
-  tool_input: { command: "git status" },
-  tool_response: [
-    "On branch main",
-    "Changes not staged for commit:",
-    ...Array.from({ length: 20 }, (_, index) => `\tmodified:   src/file-${index}.ts`),
-    "no changes added to commit",
-  ].join("\n"),
-};
-
 describe("droid hooks", () => {
   it.each(["hooks.json", "hooks/hooks.json"])("uses the standalone %s event map ahead of settings.json", async (relativePath) => {
     const home = process.env.FACTORY_HOME!;
@@ -196,105 +184,6 @@ describe("droid hooks", () => {
     expect((await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true })).status).toBe("ok");
   });
 
-  it.each([
-    ["rewrite", {}],
-    ["non-post-tool-use", { hook_event_name: "PreToolUse" }],
-    ["non-execute", { tool_name: "Read" }],
-    ["missing-command", { tool_input: {} }],
-    ["empty-tool-response", { tool_response: "" }],
-    ["explicit-raw-bypass", { tool_input: { command: "tokenjuice wrap --raw -- git status" } }],
-    ["unsupported-command", { tool_input: { command: "unknown-command" }, tool_response: "short output" }],
-  ])("does not create diagnostic or metadata files with stats off: %s", async (path, overrides) => {
-    const home = process.env.FACTORY_HOME!;
-    process.env.FACTORY_HOME = join(home, "unused-factory-home");
-    process.env.TOKENJUICE_STATS = "off";
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({
-      ...noisyPayload,
-      ...overrides,
-    })));
-
-    const response = JSON.parse(output);
-    expect(code).toBe(0);
-    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
-    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
-    expect(await readdir(home)).toEqual([]);
-  });
-
-  it("leaves existing diagnostics unchanged when stats are disabled", async () => {
-    const home = process.env.FACTORY_HOME!;
-    const debugPath = join(home, "tokenjuice-hook.last.json");
-    const previous = '{"previous":"diagnostic"}\n';
-    await writeFile(debugPath, previous);
-    process.env.TOKENJUICE_STATS = "off";
-
-    await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
-    await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({ ...noisyPayload, tool_name: "Read" })));
-
-    expect(await readFile(debugPath, "utf8")).toBe(previous);
-    expect(await readdir(home)).toEqual(["tokenjuice-hook.last.json"]);
-  });
-
-  it.each([
-    ["mkdir", "rewrite"],
-    ["mkdir", "early-skip"],
-    ["write", "rewrite"],
-    ["write", "early-skip"],
-  ])("keeps exactly one hook response when diagnostic %s fails on %s", async (operation, path) => {
-    const home = process.env.FACTORY_HOME!;
-    if (operation === "mkdir") {
-      const blockedHome = join(home, "blocked-home");
-      await writeFile(blockedHome, "occupied");
-      process.env.FACTORY_HOME = blockedHome;
-    } else {
-      await mkdir(join(home, "tokenjuice-hook.last.json"));
-    }
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify({
-      ...noisyPayload,
-      ...(path === "early-skip" ? { tool_name: "Read" } : {}),
-    })));
-
-    const response = JSON.parse(output);
-    expect(code).toBe(0);
-    expect(response.suppressOutput).toBe(path === "rewrite" ? true : undefined);
-    expect(output).toBe(path === "rewrite" ? `${JSON.stringify(response)}\n` : "{}\n");
-  });
-
-  it("preserves explicitly requested raw artifacts with statistics disabled", async () => {
-    const home = process.env.FACTORY_HOME!;
-    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR!;
-    process.env.TOKENJUICE_STATS = "off";
-    process.env.TOKENJUICE_DROID_STORE = "true";
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
-    const files = await readdir(artifactDir);
-    const rawFile = files.find((file) => file.endsWith(".txt"));
-
-    expect(code).toBe(0);
-    expect(JSON.parse(output).suppressOutput).toBe(true);
-    expect(files).toHaveLength(2);
-    expect(rawFile).toBeDefined();
-    expect(files).toContain(rawFile!.replace(/\.txt$/, ".json"));
-    expect(await readFile(join(artifactDir, rawFile!), "utf8")).toBe(noisyPayload.tool_response);
-    expect(await readdir(home)).toEqual(["artifacts"]);
-  });
-
-  it("keeps the error response free of diagnostics when statistics are disabled", async () => {
-    const home = process.env.FACTORY_HOME!;
-    const artifactDir = process.env.TOKENJUICE_ARTIFACT_DIR!;
-    await writeFile(artifactDir, "occupied");
-    process.env.TOKENJUICE_STATS = "off";
-    process.env.TOKENJUICE_DROID_STORE = "true";
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(JSON.stringify(noisyPayload)));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-    expect(await readdir(home)).toEqual(["artifacts"]);
-    expect(await readFile(artifactDir, "utf8")).toBe("occupied");
-  });
-
   it("installs a PreToolUse hook into Factory settings.json", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -393,207 +282,20 @@ describe("droid hooks", () => {
     expect(report.issues[0]).toContain("not installed");
   });
 
-  it("compacts noisy shell output and returns JSON with suppressOutput", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      cwd: "/repo",
-      tool_input: {
-        command: "git status",
-      },
-      tool_response: [
-        "On branch pr-65478-security-fix",
-        "Your branch and 'origin/pr-65478-security-fix' have diverged,",
-        "and have 8 and 642 different commits each, respectively.",
-        "",
-        "Changes not staged for commit:",
-        "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
-        "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
-        "",
-        "no changes added to commit",
-      ].join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      suppressOutput?: boolean;
-      hookSpecificOutput?: {
-        hookEventName?: string;
-        additionalContext?: string;
-      };
-    };
-
-    expect(code).toBe(0);
-    expect(response.suppressOutput).toBe(true);
-    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.hookSpecificOutput?.additionalContext).not.toContain("and have 8 and 642");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw");
-  });
-
-  it("keeps unrelated hook payloads silent", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Read",
-      tool_input: { file_path: "README.md" },
-      tool_response: { content: "hello" },
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("skips non-PostToolUse events", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PreToolUse",
-      tool_name: "Execute",
-      tool_input: { command: "ls" },
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("skips payloads with missing command", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      tool_input: {},
-      tool_response: "some output",
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("skips payloads with empty tool response", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      tool_input: { command: "ls" },
-      tool_response: "",
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("skips invalid JSON gracefully", async () => {
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook("not json"));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
-    const home = await createTempDir();
-    process.env.FACTORY_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      cwd: "/repo",
-      tool_input: {
-        command: "tokenjuice wrap --raw -- git log --oneline -50",
-      },
-      tool_response: Array.from({ length: 50 }, (_, i) => `${String(i).padStart(7, "0")} commit message ${i}`).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("explicit-raw-bypass");
-  });
-
-  it("honors tokenjuice raw bypass commands with leading cd prefixes", async () => {
-    const home = await createTempDir();
-    process.env.FACTORY_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      cwd: "/repo",
-      tool_input: {
-        command: "cd /data/code/project && tokenjuice wrap --raw -- python scripts/dump.py --limit 500",
-      },
-      tool_response: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("explicit-raw-bypass");
-  });
-
-  it("does not treat inner command flags as a raw bypass without the wrap separator", async () => {
-    const home = await createTempDir();
-    process.env.FACTORY_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      cwd: "/repo",
-      tool_input: {
-        command: "tokenjuice wrap git diff --raw",
-      },
-      tool_response: Array.from({ length: 40 }, (_, i) => `diff line ${i + 1}`).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      skipped?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(() => JSON.parse(output)).not.toThrow();
-    expect(debug.skipped).not.toBe("explicit-raw-bypass");
-  });
-
-  it("honors absolute tokenjuice raw bypass commands", async () => {
-    const home = await createTempDir();
-    process.env.FACTORY_HOME = home;
-
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "Execute",
-      cwd: "/repo",
-      tool_input: {
-        command: "/usr/local/bin/tokenjuice wrap --raw -- git status",
-      },
-      tool_response: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
-    });
-
-    const { code, output } = await captureStdout(() => runDroidPostToolUseHook(payload));
-    const debug = JSON.parse(await readFile(join(home, "tokenjuice-hook.last.json"), "utf8")) as {
-      rewrote: boolean;
-      skipped?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-    expect(debug.rewrote).toBe(false);
-    expect(debug.skipped).toBe("explicit-raw-bypass");
+  it("keeps retired post-tool hooks silent without changing diagnostics or creating artifacts", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const diagnostic = join(home, "tokenjuice-hook.last.json");
+    await writeFile(diagnostic, "preserved diagnostic\n");
+    process.env.TOKENJUICE_STATS = "1";
+    process.env.TOKENJUICE_DROID_STORE = "true";
+    const noisy = { hook_event_name: "PostToolUse", tool_name: "Execute",
+      tool_input: { command: "find fixtures -type f" },
+      tool_response: Array.from({ length: 80 }, (_, i) => `fixtures/file-${i}.txt`).join("\n") };
+    for (const raw of ["{bad", "null", "[]", JSON.stringify(noisy), JSON.stringify({ ...noisy, exit_code: 7 })]) {
+      expect(await captureStdout(() => runDroidPostToolUseHook(raw))).toEqual({ code: 0, output: "{}\n" });
+    }
+    expect(await readFile(diagnostic, "utf8")).toBe("preserved diagnostic\n");
+    expect(await readdir(home)).toEqual(["tokenjuice-hook.last.json"]);
   });
 
   it("uninstall removes tokenjuice hooks but preserves other hooks", async () => {

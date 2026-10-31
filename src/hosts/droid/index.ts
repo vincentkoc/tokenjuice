@@ -1,15 +1,10 @@
-import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { lstat, readFile } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { homedir } from "node:os";
 
-import { readPositiveIntegerEnv } from "../../core/env.js";
-import { shouldRecordStats } from "../../core/artifacts.js";
-import { stripLeadingCdPrefix } from "../../core/command.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
-import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
+import { writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { type HooksSettings as FactorySettings, isRecord, sanitizeHooksSettings as sanitizeFactorySettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
@@ -28,16 +23,6 @@ export type UninstallDroidHookResult = {
 };
 
 export type DroidDoctorReport = HookCommandDoctorReport<"settingsPath">;
-
-type DroidPostToolUsePayload = {
-  hook_event_name?: unknown;
-  tool_name?: unknown;
-  tool_input?: {
-    command?: unknown;
-  };
-  tool_response?: unknown;
-  cwd?: unknown;
-};
 
 const TOKENJUICE_DROID_SUBCOMMAND = "droid-pre-tool-use";
 const TOKENJUICE_DROID_LEGACY_SUBCOMMAND = "droid-post-tool-use";
@@ -219,172 +204,12 @@ export async function doctorDroidHook(
   return { settingsPath, ...fields };
 }
 
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  let argv: string[];
-  try {
-    argv = parseShellWords(stripLeadingCdPrefix(command));
-  } catch {
-    return false;
-  }
-  if (argv.length < 3) {
-    return false;
-  }
-
-  const first = argv[0];
-  const wrapIndex = typeof first === "string" && isTokenjuiceExecutablePath(first) ? 1 : -1;
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  if (optionEndIndex === -1) {
-    return false;
-  }
-
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
+/** @deprecated Reinstall to migrate additive hooks to pre-tool wrapping. */
+export async function runDroidPostToolUseHook(_rawText: string): Promise<number> {
+  writeEmptyHookJsonLine();
+  return 0;
 }
 
-function shouldStoreFromEnv(): boolean {
-  const value = process.env.TOKENJUICE_DROID_STORE;
-  return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
-}
-
-function stringifyToolResponse(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    return value
-      .map((entry) => stringifyToolResponse(entry))
-      .filter(Boolean)
-      .join("\n");
-  }
-  if (isRecord(value)) {
-    for (const key of ["output", "text", "stdout", "stderr", "combinedText"]) {
-      const text = value[key];
-      if (typeof text === "string" && text) {
-        return text;
-      }
-    }
-    return JSON.stringify(value);
-  }
-  return String(value);
-}
-
-async function writeHookDebug(record: Record<string, unknown>): Promise<void> {
-  if (!shouldRecordStats()) {
-    return;
-  }
-  try {
-    const debugPath = join(getFactoryHome(), "tokenjuice-hook.last.json");
-    await mkdir(dirname(debugPath), { recursive: true });
-    await writeFile(debugPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
-  } catch {
-    // Optional diagnostics must not fail a hook or duplicate an already-written response.
-  }
-}
-
-export async function runDroidPostToolUseHook(rawText: string): Promise<number> {
-  let payload: DroidPostToolUsePayload;
-  try {
-    payload = JSON.parse(rawText) as DroidPostToolUsePayload;
-  } catch {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  const command = typeof payload.tool_input?.command === "string" ? payload.tool_input.command : undefined;
-  const debug: Record<string, unknown> = {
-    hookEvent: payload.hook_event_name,
-    toolName: payload.tool_name,
-    command,
-    rewrote: false,
-  };
-
-  if (payload.hook_event_name !== "PostToolUse") {
-    await writeHookDebug({ ...debug, skipped: "non-post-tool-use" });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-  if (payload.tool_name !== "Execute") {
-    await writeHookDebug({ ...debug, skipped: "non-execute" });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-  if (typeof command !== "string" || !command.trim()) {
-    await writeHookDebug({ ...debug, skipped: "missing-command" });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  const visibleText = stringifyToolResponse(payload.tool_response);
-  if (!visibleText.trim()) {
-    await writeHookDebug({ ...debug, skipped: "empty-tool-response" });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_DROID_MAX_INLINE_CHARS");
-
-  if (commandRequestsTokenjuiceRawBypass(command)) {
-    await writeHookDebug({ ...debug, skipped: "explicit-raw-bypass" });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  try {
-    const outcome = await compactBashResult({
-      source: "droid",
-      command,
-      visibleText,
-      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-      inspectionPolicy: "allow-safe-inventory",
-      storeRaw: shouldStoreFromEnv(),
-      metadata: { source: "droid-post-tool-use" },
-      genericFallbackMinSavedChars: 120,
-      genericFallbackMaxRatio: 0.75,
-      skipGenericFallbackForCompoundCommands: true,
-    });
-
-    if (outcome.result) {
-      debug.rawChars = outcome.result.stats.rawChars;
-      debug.reducedChars = outcome.result.stats.reducedChars;
-      debug.matchedReducer = outcome.result.classification.matchedReducer;
-    }
-
-    if (outcome.action === "keep") {
-      await writeHookDebug({ ...debug, skipped: outcome.reason });
-      writeEmptyHookJsonLine();
-      return 0;
-    }
-
-    writeHookJsonLine({
-      suppressOutput: true,
-      hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        additionalContext: buildCompactedOutputContext(outcome.result.inlineText),
-      },
-    });
-    await writeHookDebug({ ...debug, rewrote: true });
-    return 0;
-  } catch (error) {
-    await writeHookDebug({
-      ...debug,
-      skipped: "hook-error",
-      error: error instanceof Error ? error.message : String(error),
-    });
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-}
-
-/** Rewrite only Execute commands; permission policy remains owned by Droid. */
 export async function runDroidPreToolUseHook(rawText: string, wrapLauncher = "tokenjuice"): Promise<number> {
   try {
     const payload: unknown = JSON.parse(rawText);

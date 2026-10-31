@@ -18,6 +18,9 @@ Trust the project and enable hooks in Qwen Code. `disableAllHooks: true` prevent
 the hook from running. Native Windows wrapping is unsupported; run both Qwen Code
 and tokenjuice inside WSL.
 
+Legacy post-tool entrypoints now return `{}` without adding context, writing
+diagnostics or storing artifacts. Reinstall to enable the supported pre-tool path.
+
 Reinstall after upgrading from the old `PostToolUse` integration. The installer
 removes tokenjuice's legacy entries and preserves unrelated settings and hooks.
 The old hook only added context and could not replace the original shell result.

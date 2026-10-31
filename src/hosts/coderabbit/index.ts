@@ -1,4 +1,4 @@
-import { lstat, realpath, rm } from "node:fs/promises";
+import { realpath, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
@@ -15,7 +15,7 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type CodeRabbitConfigOptions = {
   projectDir?: string;
@@ -98,18 +98,6 @@ async function getDefaultConfigPath(options: CodeRabbitConfigOptions = {}): Prom
 
 async function getDefaultAliasPath(options: CodeRabbitConfigOptions = {}): Promise<string> {
   return getExpectedConfigPath(await resolveProjectDir(options));
-}
-
-async function pathExistsWithoutReading(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveConfigPath(configPath?: string, options: CodeRabbitConfigOptions = {}): Promise<string> {
@@ -551,7 +539,7 @@ export async function doctorCodeRabbitConfig(
     resolvedConfigPath = await resolveConfigPath(configPath, options);
   } catch (error) {
     const aliasPath = configPath ?? (await getDefaultAliasPath(options));
-    if (!configPath && !(await pathExistsWithoutReading(aliasPath))) {
+    if (!configPath && !(await pathEntryExists(aliasPath))) {
       return {
         configPath: aliasPath,
         hasTokenjuiceMarker: false,

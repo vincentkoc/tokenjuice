@@ -3,7 +3,7 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
-import { backupPathExists } from "../shared/instruction-file.js";
+import { pathEntryExists } from "../shared/instruction-file.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -54,7 +54,7 @@ function readRestoreBackupSuffix(text: string): string | undefined {
 async function chooseMiniSweAgentBackupPath(configPath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${configPath}.bak` : `${configPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
+    if (!(await pathEntryExists(candidate))) {
       return candidate;
     }
   }

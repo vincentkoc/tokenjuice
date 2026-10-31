@@ -1,4 +1,4 @@
-import { lstat, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
@@ -23,7 +23,7 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
 
 export type GreptileRuleOptions = {
   projectDir?: string;
@@ -108,18 +108,6 @@ async function getDefaultAliasPath(options: GreptileRuleOptions = {}): Promise<s
   return getExpectedRulePath(await resolveProjectDir(options));
 }
 
-async function pathExistsWithoutReading(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function resolveRulePath(rulePath?: string, options: GreptileRuleOptions = {}): Promise<string> {
   if (rulePath) {
     const projectDir = await resolveProjectDir(options);
@@ -193,7 +181,7 @@ export async function doctorGreptileRule(
     resolvedRulePath = await resolveRulePath(rulePath, options);
   } catch (error) {
     const aliasPath = rulePath ?? (await getDefaultAliasPath(options));
-    if (!rulePath && !(await pathExistsWithoutReading(aliasPath))) {
+    if (!rulePath && !(await pathEntryExists(aliasPath))) {
       return {
         rulePath: aliasPath,
         hasTokenjuiceMarker: false,

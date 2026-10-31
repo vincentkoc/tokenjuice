@@ -159,9 +159,10 @@ export function collectGuidanceIssues(text: string, options: GuidanceIssueOption
   return issues;
 }
 
-export async function backupPathExists(backupPath: string): Promise<boolean> {
+/** Counts symlinks, including dangling ones, as existing entries. */
+export async function pathEntryExists(filePath: string): Promise<boolean> {
   try {
-    await lstat(backupPath);
+    await lstat(filePath);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

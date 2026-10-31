@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createSymlinkGuard } from "../shared/path-ancestors.js";
-import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
@@ -92,7 +92,7 @@ async function rejectPluginFileSidecarSymlinks(filePath: string): Promise<void> 
 async function chooseLocalCodeBackupPath(filePath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
+    if (!(await pathEntryExists(candidate))) {
       return candidate;
     }
   }

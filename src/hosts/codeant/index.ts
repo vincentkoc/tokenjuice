@@ -1,4 +1,4 @@
-import { lstat, realpath, rm } from "node:fs/promises";
+import { realpath, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
@@ -17,6 +17,7 @@ import {
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 import {
+  pathEntryExists,
   assertSafeInstructionBackupPath,
   collectGuidanceIssues,
   readInstructionFile,
@@ -102,18 +103,6 @@ async function getDefaultInstructionsPath(options: CodeAntInstructionsOptions = 
 
 async function getDefaultAliasPath(options: CodeAntInstructionsOptions = {}): Promise<string> {
   return getExpectedInstructionsPath(await resolveProjectDir(options));
-}
-
-async function instructionsArtifactExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveInstructionsPath(
@@ -262,7 +251,7 @@ export async function doctorCodeAntInstructions(
     resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   } catch (error) {
     const aliasPath = instructionsPath ?? (await getDefaultAliasPath(options));
-    if (!instructionsPath && !(await instructionsArtifactExists(aliasPath))) {
+    if (!instructionsPath && !(await pathEntryExists(aliasPath))) {
       return {
         instructionsPath: aliasPath,
         hasTokenjuiceMarker: false,

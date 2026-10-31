@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { backupPathExists } from "../shared/instruction-file.js";
+import { pathEntryExists } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -71,7 +71,7 @@ function readRestoreBackupSuffix(text: string): string | undefined {
 async function chooseMcpAgentBackupPath(agentPath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${agentPath}.bak` : `${agentPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
+    if (!(await pathEntryExists(candidate))) {
       return candidate;
     }
   }

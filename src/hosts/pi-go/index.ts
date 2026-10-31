@@ -1,7 +1,7 @@
 import { realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { pathEntryExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -80,7 +80,7 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
 async function choosePiGoBackupPath(skillPath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${skillPath}.bak` : `${skillPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
+    if (!(await pathEntryExists(candidate))) {
       return candidate;
     }
   }

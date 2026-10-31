@@ -2,7 +2,7 @@ import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { readStringField } from "../../core/record-fields.js";
-import { backupPathExists } from "../shared/instruction-file.js";
+import { pathEntryExists } from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -86,18 +86,18 @@ async function assertNoMuxHookSymlink(hookPath: string, operation: string): Prom
 
 async function chooseMuxBackupPath(hookPath: string): Promise<string> {
   const primaryBackupPath = `${hookPath}.bak`;
-  if (!(await backupPathExists(primaryBackupPath))) {
+  if (!(await pathEntryExists(primaryBackupPath))) {
     return primaryBackupPath;
   }
 
   const secondaryBackupPath = `${hookPath}${TOKENJUICE_MUX_REINSTALL_BACKUP_SUFFIX}`;
-  if (!(await backupPathExists(secondaryBackupPath))) {
+  if (!(await pathEntryExists(secondaryBackupPath))) {
     return secondaryBackupPath;
   }
 
   for (let index = 1; ; index += 1) {
     const backupPath = `${hookPath}.tokenjuice-${index}.bak`;
-    if (!(await backupPathExists(backupPath))) {
+    if (!(await pathEntryExists(backupPath))) {
       return backupPath;
     }
   }

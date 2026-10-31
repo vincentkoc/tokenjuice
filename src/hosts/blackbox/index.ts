@@ -1,4 +1,4 @@
-import { lstat, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
@@ -6,7 +6,7 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
@@ -105,18 +105,6 @@ async function getDefaultAliasPath(options: BlackboxSkillOptions = {}): Promise<
   return getExpectedSkillPath(await resolveProjectDir(options));
 }
 
-async function skillArtifactExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function resolveSkillPath(skillPath?: string, options: BlackboxSkillOptions = {}): Promise<string> {
   if (skillPath) {
     const projectDir = await resolveCanonicalProjectDir(options);
@@ -177,7 +165,7 @@ export async function doctorBlackboxSkill(
     resolvedSkillPath = await resolveSkillPath(skillPath, options);
   } catch (error) {
     const aliasPath = skillPath ?? (await getDefaultAliasPath(options));
-    if (!skillPath && !(await skillArtifactExists(aliasPath))) {
+    if (!skillPath && !(await pathEntryExists(aliasPath))) {
       return {
         skillPath: aliasPath,
         hasTokenjuiceMarker: false,

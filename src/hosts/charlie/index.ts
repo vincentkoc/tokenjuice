@@ -1,4 +1,4 @@
-import { lstat, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
@@ -23,7 +23,7 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
 
 export type CharlieInstructionsOptions = {
   projectDir?: string;
@@ -95,18 +95,6 @@ async function getDefaultAliasPath(options: CharlieInstructionsOptions = {}): Pr
   return getExpectedInstructionsPath(await resolveProjectDir(options));
 }
 
-async function instructionsArtifactExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function resolveInstructionsPath(
   instructionsPath?: string,
   options: CharlieInstructionsOptions = {},
@@ -164,7 +152,7 @@ export async function doctorCharlieInstructions(
     resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   } catch (error) {
     const aliasPath = instructionsPath ?? (await getDefaultAliasPath(options));
-    if (!instructionsPath && !(await instructionsArtifactExists(aliasPath))) {
+    if (!instructionsPath && !(await pathEntryExists(aliasPath))) {
       return {
         instructionsPath: aliasPath,
         hasTokenjuiceMarker: false,

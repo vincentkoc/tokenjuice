@@ -4,12 +4,15 @@ import { join, resolve } from "node:path";
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  collectTokenjuiceGuidanceIssues,
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, installManagedInstructionFile } from "../shared/instruction-file.js";
+import {
+  readInstructionFile,
+  removeInstructionFile,
+  installManagedInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -140,8 +143,10 @@ export async function doctorAmazonQRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Amazon Q rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER,
         missingIssue: "configured Amazon Q rule file is missing the tokenjuice ownership marker",
@@ -150,23 +155,11 @@ export async function doctorAmazonQRule(
         requiredText: TOKENJUICE_AMAZON_Q_RULE_MARKER,
         missingIssue: "configured Amazon Q rule file does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Amazon Q rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Amazon Q rule file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: TOKENJUICE_AMAZON_Q_RESOURCE_GLOB,
         missingIssue: "configured Amazon Q rule file is missing resource-loading guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Amazon Q rule file still suggests the full escape hatch",
       },
     ],
   });

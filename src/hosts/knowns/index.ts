@@ -12,12 +12,7 @@ import {
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -26,7 +21,6 @@ import {
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  collectGuidanceIssues,
   readInstructionFile,
 } from "../shared/instruction-file.js";
 
@@ -166,29 +160,18 @@ export async function doctorKnownsInstructions(
   const structureIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_KNOWNS_BLOCK_CONFIG)
     ? ["configured Knowns instructions have unmatched tokenjuice markers"]
     : [];
-  const guidanceIssues = collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_KNOWNS_BLOCK_CONFIG), {
-    required: [
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_KNOWNS_BLOCK_CONFIG), {
+    configuredLabel: "Knowns instructions",
+    additionalRequired: [
       {
         requiredText: "tokenjuice terminal output compaction",
         missingIssue: "configured Knowns instructions do not look like the tokenjuice instructions",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Knowns instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Knowns instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "Knowns uses this KNOWNS.md guidance",
         missingIssue: "configured Knowns instructions are missing KNOWNS.md guidance context",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Knowns instructions still suggest the full escape hatch",
       },
     ],
   });

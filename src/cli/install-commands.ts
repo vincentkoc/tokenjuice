@@ -1,3 +1,4 @@
+import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
 import { installQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -117,17 +118,36 @@ function formatPlandexLoadCommand(conventionPath: string): string {
   return `plandex load ${shellQuote(loadPath)}`;
 }
 
-const installAdalCommand = createHostCommand(() => installAdalInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; AdaL CLI still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor adal" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("adal", "instructions", details));
+function createFileInstallCommand<PathKey extends string>(
+  run: () => Promise<WriteInstructionFileResult<PathKey>>,
+  options: {
+    target: string;
+    noun: string;
+    pathLabel: string;
+    pathKey: PathKey;
+    beta: string;
+  },
+): HostCommandHandler {
+  return createHostCommand(run, (result) => {
+    const details = [
+      { label: options.pathLabel, value: result[options.pathKey] },
+      { label: "Beta", value: options.beta },
+      { label: "Verify", value: `tokenjuice doctor ${options.target}` },
+      { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+    ];
+    if (result.backupPath) {
+      details.push({ label: "Backup", value: result.backupPath });
+    }
+    process.stdout.write(formatInstallSuccess(options.target, options.noun, details));
+  });
+}
+
+const installAdalCommand = createFileInstallCommand(() => installAdalInstructions(), {
+  target: "adal",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; AdaL CLI still owns command execution",
 });
 
 const installAetherCommand = createHostCommand(() => installAetherPrompt(), (result) => {
@@ -162,17 +182,12 @@ const installAiderCommand = createHostCommand(() => installAiderConvention(), (r
   process.stdout.write(formatInstallSuccess("aider", "convention", details));
 });
 
-const installAictlCommand = createHostCommand(() => installAictlInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "AICTL.md project prompt guidance; aictl still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor aictl" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("aictl", "instructions", details));
+const installAictlCommand = createFileInstallCommand(() => installAictlInstructions(), {
+  target: "aictl",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "AICTL.md project prompt guidance; aictl still owns command execution",
 });
 
 const installAiMemoryProtocolCommand = createHostCommand(() => installAiMemoryProtocolMemory(), (result) => {
@@ -262,17 +277,12 @@ const installAgentsCliCommand = createHostCommand(() => installAgentsCliMemory()
   process.stdout.write(formatInstallSuccess("agents-cli", "memory", details));
 });
 
-const installAgentsMdCommand = createHostCommand(() => installAgentsMdInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "generic AGENTS.md guidance; the active agent still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor agents-md" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("agents-md", "instructions", details));
+const installAgentsMdCommand = createFileInstallCommand(() => installAgentsMdInstructions(), {
+  target: "agents-md",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "generic AGENTS.md guidance; the active agent still owns command execution",
 });
 
 const installAgentsgeCommand = createHostCommand(() => installAgentsGeRule(), (result) => {
@@ -374,17 +384,12 @@ const installAugmentCommand = createHostCommand(() => installAugmentRule(), (res
   process.stdout.write(formatInstallSuccess("augment", "rule", details));
 });
 
-const installAvanteCommand = createHostCommand(() => installAvanteInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Avante still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor avante" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("avante", "instructions", details));
+const installAvanteCommand = createFileInstallCommand(() => installAvanteInstructions(), {
+  target: "avante",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Avante still owns command execution",
 });
 
 const installBazCommand = createHostCommand(() => installBazSkill(), (result) => {
@@ -456,17 +461,12 @@ const installClawdbotCommand = createHostCommand(() => installClawdbotSkill(), (
   process.stdout.write(formatInstallSuccess("clawdbot", "skill", details));
 });
 
-const installBobCommand = createHostCommand(() => installBobInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; IBM Bob still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor bob" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("bob", "instructions", details));
+const installBobCommand = createFileInstallCommand(() => installBobInstructions(), {
+  target: "bob",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; IBM Bob still owns command execution",
 });
 
 const installBuilderCommand = createHostCommand(() => installBuilderRule(), (result) => {
@@ -482,17 +482,12 @@ const installBuilderCommand = createHostCommand(() => installBuilderRule(), (res
   process.stdout.write(formatInstallSuccess("builder", "rule", details));
 });
 
-const installCharlieCommand = createHostCommand(() => installCharlieInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "AGENTS.md-based guidance; Charlie still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor charlie" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("charlie", "instructions", details));
+const installCharlieCommand = createFileInstallCommand(() => installCharlieInstructions(), {
+  target: "charlie",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "AGENTS.md-based guidance; Charlie still owns command execution",
 });
 
 const installCodexCommand = createHostCommand((args) => installCodexHook(undefined, {
@@ -545,43 +540,28 @@ const installClineCommand = createHostCommand((args) => installClineHook(undefin
   process.stdout.write(formatInstallSuccess("cline", "hook", details));
 });
 
-const installCodeantCommand = createHostCommand(() => installCodeAntInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instructions-based guidance; CodeAnt still owns review and fixes" },
-    { label: "Verify", value: "tokenjuice doctor codeant" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("codeant", "instructions", details));
+const installCodeantCommand = createFileInstallCommand(() => installCodeAntInstructions(), {
+  target: "codeant",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instructions-based guidance; CodeAnt still owns review and fixes",
 });
 
-const installCodebuffCommand = createHostCommand(() => installCodebuffInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Codebuff still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor codebuff" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("codebuff", "instructions", details));
+const installCodebuffCommand = createFileInstallCommand(() => installCodebuffInstructions(), {
+  target: "codebuff",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Codebuff still owns command execution",
 });
 
-const installCodegenCommand = createHostCommand(() => installCodegenInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "rule-file guidance; Codegen still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor codegen" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("codegen", "instructions", details));
+const installCodegenCommand = createFileInstallCommand(() => installCodegenInstructions(), {
+  target: "codegen",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "rule-file guidance; Codegen still owns command execution",
 });
 
 const installCoderAgentsCommand = createHostCommand(() => installCoderAgentsSkill(), (result) => {
@@ -660,17 +640,12 @@ const installCursorCommand = createHostCommand((args) => installCursorHook(undef
   process.stdout.write(formatInstallSuccess("cursor", "hook", details));
 });
 
-const installDeepagentsCommand = createHostCommand(() => installDeepAgentsInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Deep Agents Code still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor deepagents" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("deepagents", "instructions", details));
+const installDeepagentsCommand = createFileInstallCommand(() => installDeepAgentsInstructions(), {
+  target: "deepagents",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Deep Agents Code still owns command execution",
 });
 
 const installDevinCommand = createHostCommand((args) => installDevinHook(undefined, { local: args.local }), (result, args) => {
@@ -754,17 +729,12 @@ const installFirebaseStudioCommand = createHostCommand(() => installFirebaseStud
   process.stdout.write(formatInstallSuccess("firebase-studio", "rules", details));
 });
 
-const installForgecodeCommand = createHostCommand(() => installForgeCodeInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "ForgeCode AGENTS.md guidance; ForgeCode still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor forgecode" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("forgecode", "instructions", details));
+const installForgecodeCommand = createFileInstallCommand(() => installForgeCodeInstructions(), {
+  target: "forgecode",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "ForgeCode AGENTS.md guidance; ForgeCode still owns command execution",
 });
 
 const installGeminiCliCommand = createHostCommand((args) => installGeminiCliHook(undefined, { local: args.local }), (result, args) => {
@@ -808,43 +778,28 @@ const installGrokCliCommand = createHostCommand((args) => installGrokCliHook(und
   process.stdout.write(formatInstallSuccess("grok-cli", "hook", details));
 });
 
-const installGptmeCommand = createHostCommand(() => installGptmeInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; gptme still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor gptme" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("gptme", "instructions", details));
+const installGptmeCommand = createFileInstallCommand(() => installGptmeInstructions(), {
+  target: "gptme",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; gptme still owns command execution",
 });
 
-const installJean2Command = createHostCommand(() => installJean2Instructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-file guidance; Jean2 still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor jean2" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("jean2", "instructions", details));
+const installJean2Command = createFileInstallCommand(() => installJean2Instructions(), {
+  target: "jean2",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-file guidance; Jean2 still owns command execution",
 });
 
-const installGrokBuildCommand = createHostCommand(() => installGrokBuildInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Grok Build still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor grok-build" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("grok-build", "instructions", details));
+const installGrokBuildCommand = createFileInstallCommand(() => installGrokBuildInstructions(), {
+  target: "grok-build",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Grok Build still owns command execution",
 });
 
 const installGrokBotCommand = createHostCommand(() => installGrokBotRule(), (result) => {
@@ -926,43 +881,28 @@ const installJetbrainsAiCommand = createHostCommand(() => installJetBrainsAiRule
   process.stdout.write(formatInstallSuccess("jetbrains-ai", "rule", details));
 });
 
-const installJunieCommand = createHostCommand(() => installJunieInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Junie still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor junie" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("junie", "instructions", details));
+const installJunieCommand = createFileInstallCommand(() => installJunieInstructions(), {
+  target: "junie",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Junie still owns command execution",
 });
 
-const installJulesCommand = createHostCommand(() => installJulesInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Jules still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor jules" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("jules", "instructions", details));
+const installJulesCommand = createFileInstallCommand(() => installJulesInstructions(), {
+  target: "jules",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Jules still owns command execution",
 });
 
-const installLeanctlCommand = createHostCommand(() => installLeanCtlInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "project instruction guidance; LeanCTL still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor leanctl" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("leanctl", "instructions", details));
+const installLeanctlCommand = createFileInstallCommand(() => installLeanCtlInstructions(), {
+  target: "leanctl",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "project instruction guidance; LeanCTL still owns command execution",
 });
 
 const installKimiCommand = createHostCommand((args) => installKimiHook(undefined, { local: args.local }), (result, args) => {
@@ -1042,17 +982,12 @@ const installMcpAgentCommand = createHostCommand(() => installMcpAgentDefinition
   process.stdout.write(formatInstallSuccess("mcp-agent", "agent", details));
 });
 
-const installMistralVibeCommand = createHostCommand(() => installMistralVibeInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Mistral Vibe still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor mistral-vibe" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("mistral-vibe", "instructions", details));
+const installMistralVibeCommand = createFileInstallCommand(() => installMistralVibeInstructions(), {
+  target: "mistral-vibe",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Mistral Vibe still owns command execution",
 });
 
 const installMiniSweAgentCommand = createHostCommand(() => installMiniSweAgentConfig(), (result) => {
@@ -1110,30 +1045,20 @@ const installMuxCommand = createHostCommand((args) => installMuxHook(undefined, 
   process.stdout.write(formatInstallSuccess("mux", "hook", details));
 });
 
-const installNovakitCommand = createHostCommand(() => installNovaKitInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "NOVAKIT.md guidance; NovaKit still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor novakit" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("novakit", "instructions", details));
+const installNovakitCommand = createFileInstallCommand(() => installNovaKitInstructions(), {
+  target: "novakit",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "NOVAKIT.md guidance; NovaKit still owns command execution",
 });
 
-const installKnownsCommand = createHostCommand(() => installKnownsInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "KNOWNS.md guidance; Knowns still owns MCP/project memory" },
-    { label: "Verify", value: "tokenjuice doctor knowns" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("knowns", "instructions", details));
+const installKnownsCommand = createFileInstallCommand(() => installKnownsInstructions(), {
+  target: "knowns",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "KNOWNS.md guidance; Knowns still owns MCP/project memory",
 });
 
 const installOnaCommand = createHostCommand(() => installOnaSkill(), (result) => {
@@ -1149,17 +1074,12 @@ const installOnaCommand = createHostCommand(() => installOnaSkill(), (result) =>
   process.stdout.write(formatInstallSuccess("ona", "skill", details));
 });
 
-const installWarpCommand = createHostCommand(() => installWarpInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Warp still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor warp" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("warp", "instructions", details));
+const installWarpCommand = createFileInstallCommand(() => installWarpInstructions(), {
+  target: "warp",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Warp still owns command execution",
 });
 
 const installOpenhandsCommand: HostCommandHandler = async (args) => {
@@ -1167,17 +1087,12 @@ const installOpenhandsCommand: HostCommandHandler = async (args) => {
   return 0;
 };
 
-const installOpenInterpreterCommand = createHostCommand(() => installOpenInterpreterInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Open Interpreter still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor open-interpreter" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("open-interpreter", "instructions", details));
+const installOpenInterpreterCommand = createFileInstallCommand(() => installOpenInterpreterInstructions(), {
+  target: "open-interpreter",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Open Interpreter still owns command execution",
 });
 
 const installOpenwebuiCommand = createHostCommand(() => installOpenWebUITool(), (result) => {
@@ -1207,43 +1122,28 @@ const installPlandexCommand = createHostCommand(() => installPlandexConvention()
   process.stdout.write(formatInstallSuccess("plandex", "convention", details));
 });
 
-const installAnteCommand = createHostCommand(() => installAnteInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Ante still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor ante" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("ante", "instructions", details));
+const installAnteCommand = createFileInstallCommand(() => installAnteInstructions(), {
+  target: "ante",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Ante still owns command execution",
 });
 
-const installQoderCommand = createHostCommand(() => installQoderInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Qoder still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor qoder" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("qoder", "instructions", details));
+const installQoderCommand = createFileInstallCommand(() => installQoderInstructions(), {
+  target: "qoder",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Qoder still owns command execution",
 });
 
-const installReplitCommand = createHostCommand(() => installReplitInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Replit Agent still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor replit" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("replit", "instructions", details));
+const installReplitCommand = createFileInstallCommand(() => installReplitInstructions(), {
+  target: "replit",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Replit Agent still owns command execution",
 });
 
 const installQoderCliCommand = createHostCommand((args) => installQoderHook(undefined, { local: args.local }), (result, args) => {
@@ -1357,17 +1257,12 @@ const installRooCommand = createHostCommand(() => installRooInstructions(), (res
   process.stdout.write(formatInstallSuccess("roo", "rules", details));
 });
 
-const installRovoCommand = createHostCommand(() => installRovoInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Rovo Dev CLI still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor rovo" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("rovo", "instructions", details));
+const installRovoCommand = createFileInstallCommand(() => installRovoInstructions(), {
+  target: "rovo",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Rovo Dev CLI still owns command execution",
 });
 
 const installRulerCommand = createHostCommand(() => installRulerRule(), (result) => {
@@ -1384,17 +1279,12 @@ const installRulerCommand = createHostCommand(() => installRulerRule(), (result)
   process.stdout.write(formatInstallSuccess("ruler", "rule", details));
 });
 
-const installTabnineCommand = createHostCommand(() => installTabnineInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-based guidance; Tabnine CLI still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor tabnine" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("tabnine", "instructions", details));
+const installTabnineCommand = createFileInstallCommand(() => installTabnineInstructions(), {
+  target: "tabnine",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; Tabnine CLI still owns command execution",
 });
 
 const installTabbyCommand = createHostCommand(() => installTabbySystemPrompt(), (result) => {
@@ -1423,17 +1313,12 @@ const installTraeCommand = createHostCommand(() => installTraeRule(), (result) =
   process.stdout.write(formatInstallSuccess("trae", "rule", details));
 });
 
-const installUipathCommand = createHostCommand(() => installUiPathInstructions(), (result) => {
-  const details = [
-    { label: "Instructions", value: result.instructionsPath },
-    { label: "Beta", value: "instruction-file guidance; the active coding agent still owns command execution" },
-    { label: "Verify", value: "tokenjuice doctor uipath" },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("uipath", "instructions", details));
+const installUipathCommand = createFileInstallCommand(() => installUiPathInstructions(), {
+  target: "uipath",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-file guidance; the active coding agent still owns command execution",
 });
 
 const installVscodeCopilotCommand = createHostCommand((args) => installVscodeCopilotHook(undefined, { local: args.local }), (result, args) => {

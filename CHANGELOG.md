@@ -5,6 +5,8 @@
 ### Fixes
 
 - Document the external OpenClaw plugin installation step before enabling it, replacing the outdated bundled-plugin instructions.
+- Add a Qoder CLI native-hook lifecycle API with synchronous Bash replacement, scoped removal and configuration diagnostics.
+
 - Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
 - Parse guarded setup commands from hook input without regular-expression backtracking.

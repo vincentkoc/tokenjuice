@@ -15,7 +15,7 @@ function changed(file: SettingsFile): Error {
 }
 
 async function readTarget(targetPath: string): Promise<{ data: Buffer; metadata: Stats }> {
-  const handle = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  const handle = await open(targetPath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
   try {
     const metadata = await handle.stat();
     if (!metadata.isFile()) {
@@ -85,7 +85,7 @@ export async function readSettingsFile(path: string): Promise<SettingsFile> {
 
 type StagedFile = { directory: string; path: string };
 
-async function stageFile(parent: string, data: Buffer, metadata?: Stats): Promise<StagedFile> {
+async function stageFile(parent: string, data: Buffer, metadata?: Stats, mode?: number): Promise<StagedFile> {
   const directory = await mkdtemp(join(parent, ".tokenjuice-settings-"));
   const path = join(directory, "write");
   try {
@@ -97,7 +97,9 @@ async function stageFile(parent: string, data: Buffer, metadata?: Stats): Promis
         if (staged.uid !== metadata.uid || staged.gid !== metadata.gid) {
           await handle.chown(metadata.uid, metadata.gid);
         }
-        await handle.chmod(metadata.mode & 0o7777);
+      }
+      if (mode !== undefined || metadata) {
+        await handle.chmod(mode ?? (metadata!.mode & 0o7777));
       }
     } finally {
       await handle.close();
@@ -113,6 +115,7 @@ export async function writeSettingsFile(
   original: SettingsFile,
   text: string,
   backup?: "replace" | "preserve",
+  options: { mode?: number } = {},
 ): Promise<string | undefined> {
   let file = original;
   if (!file.metadata) {
@@ -120,7 +123,7 @@ export async function writeSettingsFile(
     file = { ...file, targetPath: join(await realpath(dirname(file.logicalPath)), basename(file.logicalPath)) };
   }
   await assertUnchanged(file);
-  const staged = await stageFile(dirname(file.targetPath), Buffer.from(text), file.metadata);
+  const staged = await stageFile(dirname(file.targetPath), Buffer.from(text), file.metadata, options.mode);
   let stagedBackup: StagedFile | undefined;
   try {
     let backupPath: string | undefined;
@@ -172,4 +175,31 @@ export async function writeSettingsFile(
       await rm(stagedBackup.directory, { recursive: true, force: true });
     }
   }
+}
+
+export async function writeSettingsBackup(file: SettingsFile, path: string, mode?: number): Promise<void> {
+  if (!file.data) {
+    throw new Error(`cannot back up absent settings: ${file.path}`);
+  }
+  await assertUnchanged(file);
+  const parent = await realpath(dirname(path));
+  const staged = await stageFile(parent, file.data, file.metadata, mode);
+  try {
+    await assertUnchanged(file);
+    if (await realpath(dirname(path)) !== parent) {
+      throw changed(file);
+    }
+    await link(staged.path, join(parent, basename(path)));
+  } finally {
+    await rm(staged.directory, { recursive: true, force: true });
+  }
+}
+
+export async function removeSettingsFile(file: SettingsFile): Promise<boolean> {
+  if (!file.metadata) {
+    return false;
+  }
+  await assertUnchanged(file);
+  await rm(file.targetPath);
+  return true;
 }

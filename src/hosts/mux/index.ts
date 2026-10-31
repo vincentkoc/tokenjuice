@@ -1,4 +1,4 @@
-import { chmod, lstat, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
@@ -14,6 +14,7 @@ import {
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
+import { readSettingsFile, removeSettingsFile, writeSettingsBackup, writeSettingsFile } from "../shared/settings-file.js";
 
 export type MuxHookCommandOptions = TokenjuiceHookCommandOptions & {
   projectDir?: string;
@@ -77,19 +78,6 @@ async function assertNoMuxHookSymlink(hookPath: string, operation: string): Prom
   const symlink = await findMuxHookSymlink(hookPath);
   if (symlink) {
     throw new Error(`cannot safely ${operation} Mux hook through symlinked ${symlink.label} ${symlink.path}; remove the symlink, then rerun tokenjuice ${operation} mux`);
-  }
-}
-
-async function assertNoMuxBackupSymlink(backupPath: string): Promise<void> {
-  try {
-    const details = await lstat(backupPath);
-    if (details.isSymbolicLink()) {
-      throw new Error(`cannot safely install Mux hook through symlinked backup file ${backupPath}; remove the symlink, then rerun tokenjuice install mux`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
   }
 }
 
@@ -226,35 +214,34 @@ async function writeMuxHookFile(hookPath: string, command: string): Promise<{ ba
   await assertNoMuxHookSymlink(hookPath, "install");
 
   let backupPath: string | undefined;
-  let existing = "";
-  let existingMode: number | undefined;
-  let existingExists = false;
-  try {
-    existingMode = (await stat(hookPath)).mode;
-    existing = await readFile(hookPath, "utf8");
-    existingExists = true;
+  const file = await readSettingsFile(hookPath);
+  const existing = file.data?.toString("utf8") ?? "";
+  const mode = file.metadata ? executableModeForExistingHook(file.metadata.mode) : 0o755;
+  const nextScript = upsertTokenjuiceBlock(existing, command);
+  await assertNoMuxHookSymlink(hookPath, "install");
+  if (file.metadata) {
     if (hasUnsupportedExistingHook(existing)) {
       throw new Error(`cannot safely install Mux hook over non-bash ${hookPath}; convert it to a bash hook or remove it, then rerun tokenjuice install mux`);
     }
-    const nextScript = upsertTokenjuiceBlock(existing, command);
     if (existing === nextScript) {
-      await chmod(hookPath, executableModeForExistingHook(existingMode ?? 0o755));
+      await writeSettingsFile(file, nextScript, undefined, { mode });
       return {};
     }
-    backupPath = await chooseMuxBackupPath(hookPath);
-    await assertNoMuxBackupSymlink(backupPath);
-    const backupMode = backupModeForExistingHook(existingMode ?? 0o600);
-    await writeFile(backupPath, existing, { encoding: "utf8", mode: backupMode });
-    await chmod(backupPath, backupMode);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT" || existingExists) {
-      throw error;
+    for (;;) {
+      backupPath = await chooseMuxBackupPath(hookPath);
+      try {
+        await writeSettingsBackup(file, backupPath, backupModeForExistingHook(file.metadata.mode));
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+          throw error;
+        }
+      }
     }
   }
 
-  await mkdir(dirname(hookPath), { recursive: true });
-  await writeFile(hookPath, upsertTokenjuiceBlock(existing, command), "utf8");
-  await chmod(hookPath, existingMode === undefined ? 0o755 : executableModeForExistingHook(existingMode));
+  await assertNoMuxHookSymlink(hookPath, "install");
+  await writeSettingsFile(file, nextScript, undefined, { mode });
   return backupPath ? { backupPath } : {};
 }
 
@@ -279,23 +266,24 @@ export async function uninstallMuxHook(
   const resolvedHookPath = hookPath ?? (await getDefaultHookPath(options));
   await assertNoMuxHookSymlink(resolvedHookPath, "uninstall");
 
-  let existing = "";
-  let existingMode = 0o755;
+  let file;
   try {
-    existingMode = (await stat(resolvedHookPath)).mode & 0o777;
-    existing = await readFile(resolvedHookPath, "utf8");
+    file = await readSettingsFile(resolvedHookPath);
   } catch {
     return { hookPath: resolvedHookPath, removed: false };
   }
 
-  const removed = removeTokenjuiceBlock(existing);
+  if (!file.metadata || !file.data) {
+    return { hookPath: resolvedHookPath, removed: false };
+  }
+  const removed = removeTokenjuiceBlock(file.data.toString("utf8"));
   if (removed.removed) {
+    await assertNoMuxHookSymlink(resolvedHookPath, "uninstall");
     const remainingWithoutShebang = removed.text.replace(/^#![^\n]*\n?/u, "").trim();
     if (remainingWithoutShebang) {
-      await writeFile(resolvedHookPath, `${removed.text.trimEnd()}\n`, "utf8");
-      await chmod(resolvedHookPath, existingMode);
+      await writeSettingsFile(file, `${removed.text.trimEnd()}\n`, undefined, { mode: file.metadata.mode & 0o777 });
     } else {
-      await rm(resolvedHookPath, { force: true });
+      await removeSettingsFile(file);
     }
     return { hookPath: resolvedHookPath, removed: true };
   }

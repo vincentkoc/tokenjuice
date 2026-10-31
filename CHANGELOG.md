@@ -4,6 +4,7 @@
 
 ### Fixes
 
+- Publish Mux hook updates atomically from checked file snapshots, preserve executable permissions, and reserve backups without overwriting concurrent files.
 - Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
 - Parse guarded setup commands from hook input without regular-expression backtracking.

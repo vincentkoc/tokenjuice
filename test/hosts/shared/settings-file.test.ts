@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readSettingsFile, writeSettingsFile } from "../../../src/hosts/shared/settings-file.js";
+import { readSettingsFile, removeSettingsFile, writeSettingsBackup, writeSettingsFile } from "../../../src/hosts/shared/settings-file.js";
 
 const directories: string[] = [];
 
@@ -19,6 +19,45 @@ async function fixture(): Promise<string> {
 }
 
 describe("settings snapshots", () => {
+  it("applies an explicit publish mode without changing the snapshot check", async () => {
+    const directory = await fixture();
+    const path = join(directory, "hook");
+    await writeFile(path, "original", { mode: 0o600 });
+    const file = await readSettingsFile(path);
+    await writeSettingsFile(file, "updated", undefined, { mode: 0o700 });
+    expect(await readFile(path, "utf8")).toBe("updated");
+    if (process.platform !== "win32") {
+      expect((await stat(path)).mode & 0o777).toBe(0o700);
+    }
+    await expect(writeSettingsFile(file, "stale", undefined, { mode: 0o755 })).rejects.toThrow("settings changed");
+  });
+
+  it("reserves backups exclusively and never replaces an existing backup", async () => {
+    const directory = await fixture();
+    const path = join(directory, "hook");
+    const backup = `${path}.bak`;
+    await writeFile(path, "original");
+    const file = await readSettingsFile(path);
+    await writeFile(backup, "concurrent backup");
+    await expect(writeSettingsBackup(file, backup, 0o600)).rejects.toMatchObject({ code: "EEXIST" });
+    expect(await readFile(backup, "utf8")).toBe("concurrent backup");
+    await writeSettingsBackup(file, `${backup}.1`, 0o600);
+    expect(await readFile(`${backup}.1`, "utf8")).toBe("original");
+    expect((await readdir(directory)).sort()).toEqual(["hook", "hook.bak", "hook.bak.1"]);
+  });
+
+  it("refuses to delete a changed snapshot and removes an unchanged file", async () => {
+    const directory = await fixture();
+    const path = join(directory, "hook");
+    await writeFile(path, "original");
+    const file = await readSettingsFile(path);
+    await writeFile(path, "concurrent edit");
+    await expect(removeSettingsFile(file)).rejects.toThrow("settings changed");
+    expect(await readFile(path, "utf8")).toBe("concurrent edit");
+    expect(await removeSettingsFile(await readSettingsFile(path))).toBe(true);
+    expect(await removeSettingsFile(await readSettingsFile(path))).toBe(false);
+  });
+
   it("creates absent settings privately without using a pre-existing .tmp sidecar", async () => {
     const directory = await fixture();
     const settingsPath = join(directory, "nested", "settings.json");

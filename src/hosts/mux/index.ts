@@ -14,7 +14,7 @@ import {
   pathExists,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
-import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 import { readSettingsFile, removeSettingsFile, writeSettingsBackup, writeSettingsFile } from "../shared/settings-file.js";
@@ -34,17 +34,7 @@ export type UninstallMuxHookResult = {
   removed: boolean;
 };
 
-export type MuxDoctorReport = {
-  hookPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type MuxDoctorReport = HookCommandDoctorReport<"hookPath">;
 
 const TOKENJUICE_MUX_SUBCOMMAND = "mux-post-tool-use";
 const TOKENJUICE_MUX_FIX_COMMAND = "tokenjuice install mux";

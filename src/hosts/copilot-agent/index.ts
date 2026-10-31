@@ -1,6 +1,7 @@
 import { readdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -38,17 +39,7 @@ export type UninstallCopilotAgentHookResult = {
   deletedFile: boolean;
 };
 
-export type CopilotAgentDoctorReport = {
-  hooksPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type CopilotAgentDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
 type CopilotAgentPostToolUsePayload = {
   hook_event_name?: unknown;

@@ -5,7 +5,7 @@ import { readStringField } from "../../core/record-fields.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
-import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
@@ -25,17 +25,7 @@ export type UninstallQwenCodeHookResult = {
   removed: number;
 };
 
-export type QwenCodeDoctorReport = {
-  settingsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type QwenCodeDoctorReport = HookCommandDoctorReport<"settingsPath">;
 
 type QwenCodeSettings = Record<string, unknown> & {
   hooks: Record<string, unknown>;

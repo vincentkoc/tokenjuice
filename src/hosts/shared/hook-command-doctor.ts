@@ -1,6 +1,8 @@
 import { realpath } from "node:fs/promises";
 import { isAbsolute } from "node:path";
 
+import type { InstructionDoctorReportFields, PathDoctorReport } from "./instruction-doctor.js";
+
 import {
   findMissingHookCommandPaths,
   isExecutableFile,
@@ -29,18 +31,12 @@ export type HookCommandInspection = {
   packageVersionMismatch?: HookCommandPackageVersionMismatch;
 };
 
-type HookCommandDoctorStatus = "ok" | "broken" | "disabled";
-
-export type HookCommandDoctorFields = {
-  status: HookCommandDoctorStatus;
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
+export type HookCommandDoctorFields = InstructionDoctorReportFields & {
   expectedCommand: string;
   detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
+
+export type HookCommandDoctorReport<PathKey extends string> = PathDoctorReport<PathKey> & Pick<HookCommandDoctorFields, "expectedCommand" | "detectedCommand">;
 
 function extractHomebrewCellarVersion(path: string): string | undefined {
   const normalized = path.replace(/\\/gu, "/");

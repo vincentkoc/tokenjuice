@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { isSetupWrapperSegment, splitTopLevelCommandChain, tokenizeCommand } from "../../core/command.js";
 import { extractHookCommandPaths } from "../shared/hook-command.js";
 import {
@@ -45,17 +46,7 @@ export type UninstallDevinHookResult = {
   deletedFile: boolean;
 };
 
-export type DevinDoctorReport = {
-  hooksPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type DevinDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
 const TOKENJUICE_DEVIN_SUBCOMMAND = "devin-pre-tool-use";
 const TOKENJUICE_DEVIN_FIX_COMMAND = "tokenjuice install devin";

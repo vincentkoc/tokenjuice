@@ -3,6 +3,7 @@ import { access, mkdir, readFile, rename, rm } from "node:fs/promises";
 import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { extractHookCommandPaths, parseShellWords, shellQuote } from "../shared/hook-command.js";
 import {
@@ -37,17 +38,7 @@ export type UninstallVscodeCopilotHookResult = {
   deletedFile: boolean;
 };
 
-export type VscodeCopilotDoctorReport = {
-  hooksPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type VscodeCopilotDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
 type VscodeCopilotPreToolUsePayload = {
   hook_event_name?: unknown;

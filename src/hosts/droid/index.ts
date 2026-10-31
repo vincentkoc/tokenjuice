@@ -7,7 +7,7 @@ import { shouldRecordStats } from "../../core/artifacts.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
-import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
@@ -27,17 +27,7 @@ export type UninstallDroidHookResult = {
   removed: number;
 };
 
-export type DroidDoctorReport = {
-  settingsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type DroidDoctorReport = HookCommandDoctorReport<"settingsPath">;
 
 type FactorySettings = Record<string, unknown> & {
   hooks: Record<string, unknown>;

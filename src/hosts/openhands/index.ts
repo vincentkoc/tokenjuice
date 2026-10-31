@@ -7,7 +7,7 @@ import {
   buildTokenjuiceHookCommand,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
-import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
+import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
 
@@ -26,17 +26,7 @@ export type UninstallOpenHandsHookResult = {
   removed: number;
 };
 
-export type OpenHandsDoctorReport = {
-  hooksPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type OpenHandsDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
 type OpenHandsHooksConfig = Record<string, unknown> & {
   post_tool_use: unknown[];

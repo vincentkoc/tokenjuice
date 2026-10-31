@@ -92,7 +92,8 @@ describe("resolveEffectiveCommand", () => {
       if (resolveEffectiveCommand({ command: malformed })?.command === "pnpm test") throw new Error("malformed block stripped");
     `], { encoding: "utf8", timeout: 5000 });
     expect(child.error).toBeUndefined();
-    expect(child.status, child.stderr).toBe(0);
+    expect(child.stderr).toBe("");
+    expect(child.status).toBe(0);
   });
   it("skips leading setup segments and chooses the first substantive command", () => {
     expect(resolveEffectiveCommand({ command: "cd repo && swift test && rg failure src" })).toEqual({

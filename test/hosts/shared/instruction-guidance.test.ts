@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildTokenjuiceGuidanceBullets,
+  collectTokenjuiceGuidanceIssues,
   TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../../../src/hosts/shared/instruction-guidance.js";
@@ -23,5 +24,25 @@ describe("buildTokenjuiceGuidanceBullets", () => {
 
     expect(bullets[0]).toBe("- Prefer `tokenjuice wrap -- <command>` from custom host tools.");
     expect(bullets[2]).toContain(TOKENJUICE_RAW_COMMAND);
+  });
+});
+
+describe("collectTokenjuiceGuidanceIssues", () => {
+  it("keeps plural issue order and recognizes concrete full-output commands", () => {
+    expect(collectTokenjuiceGuidanceIssues("tokenjuice wrap --full -- npm test", {
+      configuredLabel: "example instructions",
+    })).toEqual([
+      "configured example instructions are missing tokenjuice wrap guidance",
+      "configured example instructions are missing the raw escape hatch",
+      "configured example instructions still suggest the full escape hatch",
+    ]);
+  });
+
+  it("keeps singular wording and accepts current guidance", () => {
+    const options = { configuredLabel: "example rule", singular: true };
+    expect(collectTokenjuiceGuidanceIssues(TOKENJUICE_RAW_COMMAND, options)).toEqual([
+      "configured example rule is missing tokenjuice wrap guidance",
+    ]);
+    expect(collectTokenjuiceGuidanceIssues(buildTokenjuiceGuidanceBullets().join("\n"), options)).toEqual([]);
   });
 });

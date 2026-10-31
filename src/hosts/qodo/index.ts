@@ -5,18 +5,13 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 import { getTomlStructureLines, isTomlTableHeader } from "../../core/toml-structure.js";
 
 type QodoConfigSnapshot = Awaited<ReturnType<typeof readInstructionFile>>;
@@ -490,23 +485,9 @@ export async function doctorQodoReviewConfig(
   const issues = [
     ...placementIssues,
     ...collisionIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Qodo review guidance is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Qodo review guidance is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Qodo review guidance still suggests the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+      configuredLabel: "Qodo review guidance",
+      singular: true,
     }),
   ];
 

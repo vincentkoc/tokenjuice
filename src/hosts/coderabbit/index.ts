@@ -5,18 +5,13 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type CodeRabbitConfigOptions = {
   projectDir?: string;
@@ -596,23 +591,9 @@ export async function doctorCodeRabbitConfig(
   ];
   const issues = [
     ...structuralIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured CodeRabbit review guidance is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured CodeRabbit review guidance is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured CodeRabbit review guidance still suggests the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+      configuredLabel: "CodeRabbit review guidance",
+      singular: true,
     }),
   ];
 

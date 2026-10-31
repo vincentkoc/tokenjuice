@@ -1,6 +1,8 @@
 import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
@@ -13,11 +15,7 @@ import {
   removeInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type BuilderRuleOptions = {
   projectDir?: string;
@@ -112,60 +110,36 @@ export async function doctorBuilderRule(
   options: BuilderRuleOptions = {},
 ): Promise<BuilderDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Builder rule is not installed"],
-        advisory: TOKENJUICE_BUILDER_ADVISORY,
-        fixCommand: TOKENJUICE_BUILDER_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceBuilderRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Builder rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_BUILDER_ADVISORY,
-        fixCommand: TOKENJUICE_BUILDER_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "Builder rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: "description: tokenjuice terminal output compaction",
-        missingIssue: "configured Builder rule file is missing description metadata",
-      },
-      {
-        requiredText: "alwaysApply: true",
-        missingIssue: "configured Builder rule file is missing alwaysApply metadata",
-      },
-      {
-        requiredText: TOKENJUICE_BUILDER_OWNERSHIP_MARKER,
-        missingIssue: "configured Builder rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_BUILDER_RULE_MARKER,
-        missingIssue: "configured Builder rule file does not look like the tokenjuice rule",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceBuilderRuleText,
+      missingIssue: "tokenjuice Builder rule is not installed",
+      unmanagedIssue: "tokenjuice Builder rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_BUILDER_ADVISORY,
       fixCommand: TOKENJUICE_BUILDER_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "Builder rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: "description: tokenjuice terminal output compaction",
+            missingIssue: "configured Builder rule file is missing description metadata",
+          },
+          {
+            requiredText: "alwaysApply: true",
+            missingIssue: "configured Builder rule file is missing alwaysApply metadata",
+          },
+          {
+            requiredText: TOKENJUICE_BUILDER_OWNERSHIP_MARKER,
+            missingIssue: "configured Builder rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_BUILDER_RULE_MARKER,
+            missingIssue: "configured Builder rule file does not look like the tokenjuice rule",
+          },
+        ],
+      }),
     }),
   };
 }

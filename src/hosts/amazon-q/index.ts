@@ -1,6 +1,8 @@
 import { rename } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
@@ -13,11 +15,7 @@ import {
   removeInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type AmazonQRuleOptions = {
   projectDir?: string;
@@ -119,58 +117,34 @@ export async function doctorAmazonQRule(
   options: AmazonQRuleOptions = {},
 ): Promise<AmazonQDoctorReport> {
   const resolvedRulePath = rulePath ?? await getDefaultRulePath(options);
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Amazon Q rule is not installed"],
-        advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
-        fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceAmazonQRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Amazon Q rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
-        fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "Amazon Q rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER,
-        missingIssue: "configured Amazon Q rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_RULE_MARKER,
-        missingIssue: "configured Amazon Q rule file does not look like the tokenjuice rule",
-      },
-    ],
-    additionalRequiredAfter: [
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_RESOURCE_GLOB,
-        missingIssue: "configured Amazon Q rule file is missing resource-loading guidance",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceAmazonQRuleText,
+      missingIssue: "tokenjuice Amazon Q rule is not installed",
+      unmanagedIssue: "tokenjuice Amazon Q rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
       fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "Amazon Q rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER,
+            missingIssue: "configured Amazon Q rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_RULE_MARKER,
+            missingIssue: "configured Amazon Q rule file does not look like the tokenjuice rule",
+          },
+        ],
+        additionalRequiredAfter: [
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_RESOURCE_GLOB,
+            missingIssue: "configured Amazon Q rule file is missing resource-loading guidance",
+          },
+        ],
+      }),
     }),
   };
 }

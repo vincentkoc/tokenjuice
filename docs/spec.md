@@ -81,6 +81,11 @@ host adapters choose an inspection policy before calling the shared compactor. t
 
 ## operating modes
 
+T3 Code delegates execution to provider agents. See the
+[provider configuration and verification guide](t3-code-integration.md) for its
+compatibility boundary; an underlying adapter passing does not qualify T3's
+provider propagation.
+
 ### reduce
 
 reduce text from stdin or a file:

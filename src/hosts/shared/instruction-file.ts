@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -156,4 +157,28 @@ export function collectGuidanceIssues(text: string, options: GuidanceIssueOption
     }
   }
   return issues;
+}
+
+export async function backupPathExists(backupPath: string): Promise<boolean> {
+  try {
+    await lstat(backupPath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+export async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
+  try {
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true });
+    throw error;
+  }
 }

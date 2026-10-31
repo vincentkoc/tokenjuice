@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, rename, rm, rmdir, writeFile } from "node:fs/promises";
+import { lstat, rename, rm, rmdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+
+import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
@@ -107,36 +108,12 @@ async function rejectPluginFileSidecarSymlinks(filePath: string): Promise<void> 
   await rejectPluginFileSymlink(`${filePath}.bak`);
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function chooseLocalCodeBackupPath(filePath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
     if (!(await backupPathExists(candidate))) {
       return candidate;
     }
-  }
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
   }
 }
 

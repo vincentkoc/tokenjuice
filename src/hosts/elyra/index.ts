@@ -1,6 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -85,36 +86,12 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.tmp`);
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function chooseElyraBackupPath(skillPath: string): Promise<string> {
   for (let index = 0; ; index += 1) {
     const candidate = index === 0 ? `${skillPath}.bak` : `${skillPath}.bak.${index}`;
     if (!(await backupPathExists(candidate))) {
       return candidate;
     }
-  }
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
   }
 }
 

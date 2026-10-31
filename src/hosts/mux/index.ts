@@ -1,6 +1,8 @@
 import { chmod, lstat, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { backupPathExists } from "../shared/instruction-file.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import { readBoundedTextFile } from "../../core/bounded-text-file.js";
@@ -90,18 +92,6 @@ async function assertNoMuxBackupSymlink(backupPath: string): Promise<void> {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
     }
-  }
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
   }
 }
 

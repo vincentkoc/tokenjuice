@@ -3,12 +3,8 @@ import {
   instructionDoctorStatusFromIssues,
   type InstructionDoctorReportFields,
 } from "./instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "./instruction-file.js";
-import {
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "./instruction-guidance.js";
+import { readInstructionFile } from "./instruction-file.js";
+import { collectTokenjuiceGuidanceIssues } from "./instruction-guidance.js";
 import {
   collectMarkerDelimitedBlockIssues,
   getMarkerDelimitedBlockText,
@@ -55,23 +51,9 @@ export async function doctorMarkerInstructions(
     ...(hasMalformedMarkers && (!options.malformedIssueOnlyWithoutMarkerIssues || markerIssues.length === 0) ? [
       options.malformedMarkerIssue ?? `configured ${configuredLabel} ${singular ? "has" : "have"} malformed tokenjuice markers`,
     ] : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, config), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: `configured ${configuredLabel} ${singular ? "is" : "are"} missing tokenjuice wrap guidance`,
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: `configured ${configuredLabel} ${singular ? "is" : "are"} missing the raw escape hatch`,
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: `configured ${configuredLabel} still ${singular ? "suggests" : "suggest"} the full escape hatch`,
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, config), {
+      configuredLabel,
+      singular,
     }),
   ];
 

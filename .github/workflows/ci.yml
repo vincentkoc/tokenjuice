@@ -246,3 +246,13 @@ jobs:
 
       - name: Verify Goose hints and model-visible tool results
         run: node scripts/goose-e2e.mjs "$RUNNER_TEMP/tokenjuice-goose/goose"
+
+      - name: Extract pinned Crush host
+        run: |
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/crush.tar.gz" https://github.com/charmbracelet/crush/releases/download/v0.99.0/crush_0.99.0_Linux_x86_64.tar.gz
+          printf '%s  %s\n' ec20f001028dfb7b6427225f0cf5215081275c8f09f45001a8535847cc4fd6ea "$RUNNER_TEMP/crush.tar.gz" | sha256sum --check --status
+          mkdir -p "$RUNNER_TEMP/tokenjuice-crush"
+          tar -xzf "$RUNNER_TEMP/crush.tar.gz" -C "$RUNNER_TEMP/tokenjuice-crush" --strip-components=1
+
+      - name: Verify Crush skill loading and model-visible tool results
+        run: node scripts/crush-e2e.mjs "$RUNNER_TEMP/tokenjuice-crush/crush"

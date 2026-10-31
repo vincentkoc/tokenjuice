@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type RovoInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallRovoInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallRovoInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallRovoInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallRovoInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type RovoDoctorReport = InstructionsDoctorReport;
 

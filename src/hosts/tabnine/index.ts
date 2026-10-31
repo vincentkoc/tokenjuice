@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type TabnineInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallTabnineInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallTabnineInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallTabnineInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallTabnineInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type TabnineDoctorReport = InstructionsDoctorReport;
 

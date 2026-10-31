@@ -7,21 +7,19 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type WarpInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallWarpInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallWarpInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallWarpInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallWarpInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type WarpDoctorReport = InstructionsDoctorReport;
 

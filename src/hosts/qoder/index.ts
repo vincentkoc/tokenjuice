@@ -20,21 +20,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type QoderInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallQoderInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallQoderInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallQoderInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallQoderInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type QoderDoctorReport = InstructionsDoctorReport;
 

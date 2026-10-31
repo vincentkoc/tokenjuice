@@ -12,21 +12,19 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type ZedInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallZedInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallZedInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallZedInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallZedInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type ZedDoctorReport = InstructionsDoctorReport;
 

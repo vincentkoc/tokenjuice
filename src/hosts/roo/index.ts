@@ -18,21 +18,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type RooInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallRooInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallRooInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallRooInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallRooInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type RooDoctorReport = InstructionsDoctorReport;
 

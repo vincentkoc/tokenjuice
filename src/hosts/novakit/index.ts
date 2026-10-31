@@ -23,21 +23,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type NovaKitInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallNovaKitInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallNovaKitInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallNovaKitInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallNovaKitInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type NovaKitDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

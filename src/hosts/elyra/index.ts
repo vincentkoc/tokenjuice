@@ -1,7 +1,7 @@
-import { realpath, rename, rm, writeFile } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 
-import { findAvailableBackupPath, writeTextFileWithoutBackup, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
@@ -13,6 +13,8 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
+
+import { createRestorableSkillCommands } from "../shared/restorable-skill.js";
 
 export type ElyraSkillOptions = {
   projectDir?: string;
@@ -179,37 +181,20 @@ function buildElyraSkill(
   ].join("\n");
 }
 
+const skillCommands = createRestorableSkillCommands({
+  buildSkill: buildElyraSkill,
+  isManagedText: isTokenjuiceElyraSkillText,
+  readRestoreBackupSuffix,
+  rejectSkillSymlink,
+  rejectInstallSidecarSymlinks,
+});
+
 export async function installElyraSkill(
   skillPath?: string,
   options: ElyraSkillOptions = {},
 ): Promise<InstallElyraSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  await rejectInstallSidecarSymlinks(resolvedSkillPath);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (existing.exists && isTokenjuiceElyraSkillText(existing.text)) {
-    const nextSkill = buildElyraSkill({ restoreBackupSuffix: readRestoreBackupSuffix(existing.text) });
-    if (existing.text === nextSkill) {
-      return { skillPath: resolvedSkillPath };
-    }
-    const result = await writeInstructionFile(resolvedSkillPath, nextSkill);
-    return {
-      skillPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await findAvailableBackupPath(resolvedSkillPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeTextFileWithoutBackup(
-      resolvedSkillPath,
-      buildElyraSkill({ restoreBackupSuffix: backupPath.slice(resolvedSkillPath.length) }),
-    );
-    return { skillPath: resolvedSkillPath, backupPath };
-  }
-
-  await writeTextFileWithoutBackup(resolvedSkillPath, buildElyraSkill());
-  return { skillPath: resolvedSkillPath };
+  return skillCommands.install(resolvedSkillPath);
 }
 
 export async function uninstallElyraSkill(
@@ -217,23 +202,7 @@ export async function uninstallElyraSkill(
   options: ElyraSkillOptions = {},
 ): Promise<UninstallElyraSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (!existing.exists || !isTokenjuiceElyraSkillText(existing.text)) {
-    return { skillPath: resolvedSkillPath, removed: false };
-  }
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedSkillPath}${restoreBackupSuffix}`;
-    await rejectSkillSymlink(backupPath);
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceElyraSkillText(backup.text)) {
-      await rm(resolvedSkillPath, { force: true });
-      await rename(backupPath, resolvedSkillPath);
-      return { skillPath: resolvedSkillPath, removed: true };
-    }
-  }
-  const result = await removeInstructionFile(resolvedSkillPath);
-  return { skillPath: result.filePath, removed: result.removed };
+  return skillCommands.uninstall(resolvedSkillPath);
 }
 
 export async function doctorElyraSkill(

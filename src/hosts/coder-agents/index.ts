@@ -1,7 +1,7 @@
-import { realpath, rename, rm, writeFile } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 
-import { findAvailableBackupPath, writeTextFileWithoutBackup, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
@@ -13,6 +13,8 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
+
+import { createRestorableSkillCommands } from "../shared/restorable-skill.js";
 
 export type CoderAgentsSkillOptions = {
   projectDir?: string;
@@ -110,37 +112,20 @@ function buildCoderAgentsSkill(
   ].join("\n");
 }
 
+const skillCommands = createRestorableSkillCommands({
+  buildSkill: buildCoderAgentsSkill,
+  isManagedText: isTokenjuiceCoderAgentsSkillText,
+  readRestoreBackupSuffix,
+  rejectSkillSymlink,
+  rejectInstallSidecarSymlinks,
+});
+
 export async function installCoderAgentsSkill(
   skillPath?: string,
   options: CoderAgentsSkillOptions = {},
 ): Promise<InstallCoderAgentsSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  await rejectInstallSidecarSymlinks(resolvedSkillPath);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (existing.exists && isTokenjuiceCoderAgentsSkillText(existing.text)) {
-    const nextSkill = buildCoderAgentsSkill({ restoreBackupSuffix: readRestoreBackupSuffix(existing.text) });
-    if (existing.text === nextSkill) {
-      return { skillPath: resolvedSkillPath };
-    }
-    const result = await writeInstructionFile(resolvedSkillPath, nextSkill);
-    return {
-      skillPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await findAvailableBackupPath(resolvedSkillPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeTextFileWithoutBackup(
-      resolvedSkillPath,
-      buildCoderAgentsSkill({ restoreBackupSuffix: backupPath.slice(resolvedSkillPath.length) }),
-    );
-    return { skillPath: resolvedSkillPath, backupPath };
-  }
-
-  await writeTextFileWithoutBackup(resolvedSkillPath, buildCoderAgentsSkill());
-  return { skillPath: resolvedSkillPath };
+  return skillCommands.install(resolvedSkillPath);
 }
 
 export async function uninstallCoderAgentsSkill(
@@ -148,23 +133,7 @@ export async function uninstallCoderAgentsSkill(
   options: CoderAgentsSkillOptions = {},
 ): Promise<UninstallCoderAgentsSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (!existing.exists || !isTokenjuiceCoderAgentsSkillText(existing.text)) {
-    return { skillPath: resolvedSkillPath, removed: false };
-  }
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedSkillPath}${restoreBackupSuffix}`;
-    await rejectSkillSymlink(backupPath);
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceCoderAgentsSkillText(backup.text)) {
-      await rm(resolvedSkillPath, { force: true });
-      await rename(backupPath, resolvedSkillPath);
-      return { skillPath: resolvedSkillPath, removed: true };
-    }
-  }
-  const result = await removeInstructionFile(resolvedSkillPath);
-  return { skillPath: result.filePath, removed: result.removed };
+  return skillCommands.uninstall(resolvedSkillPath);
 }
 
 export async function doctorCoderAgentsSkill(

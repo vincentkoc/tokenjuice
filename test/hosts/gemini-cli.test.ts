@@ -189,7 +189,7 @@ describe("gemini-cli hooks", () => {
     const response = JSON.parse(output);
     expect(code).toBe(0);
     expect(response.hookSpecificOutput.hookEventName).toBe("BeforeTool");
-    expect(response.hookSpecificOutput.tool_input).toEqual({ ...toolInput, command: expect.stringContaining("wrap --source") });
+    expect(response.hookSpecificOutput.tool_input).toEqual({ ...toolInput, command: expect.stringContaining("wrap --keep-failures --source") });
     expect(response.hookSpecificOutput.tool_input.command).toContain("/bin/sh -lc");
     expect(response.hookSpecificOutput.tool_input.command).toContain("exit 7");
     expect(response.decision).toBeUndefined();

@@ -54,12 +54,14 @@ async function run(command, args, timeout = 90_000) {
 }
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+const failureStderr = "failure-stderr\n";
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
   { id: "dialect", command: "values=(alpha beta); [[ ${values[1]} == beta ]] && printf '%s\\n' \"${values[1]}\"" },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
-  { id: "failure", command: `${quote(process.execPath)} -e ${quote("process.stdout.write('failure-output\\n'); process.stderr.write('failure-stderr\\n'); process.exit(7)")}` },
+  { id: "failure", command: `${quote(process.execPath)} -e ${quote(`process.stdout.write(${JSON.stringify(failureOutput)}); process.stderr.write(${JSON.stringify(failureStderr)}); process.exit(7);`)}` },
 ];
 
 function commandOutput(content) {
@@ -188,7 +190,10 @@ try {
   assert.equal(commandOutput(installed.get("dialect")), commandOutput(baseline.get("dialect")), "hook must retain native Bash syntax");
   const withoutPgid = (text) => text.replace(/\nProcess Group PGID: \d+(?=\n<\/untrusted_context>$)/u, "\nProcess Group PGID: <PGID>");
   assert.equal(withoutPgid(installed.get("raw")), withoutPgid(baseline.get("raw")), "raw bypass must preserve the native result apart from the process ID");
-  assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
+  assert.ok(installed.get("failure").includes(failureOutput.trimEnd()), "model must receive all 80 failure lines");
+  const rewriteNotice = "\n\n[System] Tool input parameters were modified by a hook before execution.";
+  assert.ok(installed.get("failure").endsWith(rewriteNotice), "host must retain its native input-rewrite notice");
+  assert.equal(withoutPgid(installed.get("failure").slice(0, -rewriteNotice.length)), withoutPgid(baseline.get("failure")), "failure must preserve native output/status apart from process ID and rewrite notice");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(installed.get("failure").includes("\nExit Code: 7\n"), "model must receive failure status");
   process.stdout.write(`${JSON.stringify({ ok: true, host: "gemini-cli", version, modelRequestsPerSession: modelRequests, results: [...installed.keys()] }, null, 2)}\n`);

@@ -300,9 +300,11 @@ async function runPreToolContracts(spec) {
     assert(exactResult.stdout === text && exactResult.stderr === "", `${spec.host}: exact read changed (${text.length} chars)`);
   }
 
-  const failure = `"${process.execPath}" -e 'process.stdout.write("out" + String.fromCharCode(10)); process.stderr.write("err" + String.fromCharCode(10)); process.exit(7)'`;
+  const failureStdout = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+  const failure = `"${process.execPath}" -e 'process.stdout.write(${JSON.stringify(failureStdout)}); process.stderr.write("err" + String.fromCharCode(10)); process.exit(7)'`;
   const failed = await execute(await rewrite(failure), [7]);
-  assert(failed.stdout.includes("out\n") && failed.stdout.includes("err\n"), `${spec.host}: lost stdout or stderr content`);
+  assert(failed.stdout === failureStdout, `${spec.host}: failed stdout changed`);
+  assert(failed.stderr === "err\n", `${spec.host}: failed stderr changed`);
 
   const secondPass = await invoke(payload(rewritten));
   assert(secondPass.stderr === "", `${spec.host}: second pass wrote stderr`);

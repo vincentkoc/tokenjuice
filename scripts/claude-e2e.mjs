@@ -52,11 +52,13 @@ async function run(command, args, timeout = 90_000) {
 }
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+const failureStderr = "failure-stderr\n";
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
-  { id: "failure", command: "printf 'failure-output\\n'; printf 'failure-stderr\\n' >&2; exit 7" },
+  { id: "failure", command: `${quote(process.execPath)} -e ${quote(`process.stdout.write(${JSON.stringify(failureOutput)}); process.stderr.write(${JSON.stringify(failureStderr)}); process.exit(7);`)}` },
 ];
 const text = (content) => typeof content === "string" ? content : content?.map((block) => block.text ?? "").join("");
 const observed = new Map();
@@ -164,10 +166,11 @@ try {
   assert.ok(listing.length < text(baseline.get("listing").content).length);
   assert.deepEqual(installed.get("exact"), baseline.get("exact"), "hook must preserve the host's native exact-read result");
   assert.deepEqual(installed.get("raw"), baseline.get("raw"), "raw bypass must preserve the native result");
-  // wrap adds its own exit marker; Claude still owns the protocol failure flag.
+  // Failed commands retain native streams and the host protocol failure flag.
   assert.equal(baseline.get("failure").is_error, true, "native failure fixture must fail");
   assert.equal(installed.get("failure").is_error, true, "host must retain the shell failure flag");
-  assert.ok(text(installed.get("failure").content).includes("failure-output"), "model must receive failure output");
+  assert.ok(text(installed.get("failure").content).includes(failureOutput.trimEnd()), "model must receive all 80 failure lines");
+  assert.deepEqual(installed.get("failure"), baseline.get("failure"), "automatic wrapping must preserve the native failed result");
   assert.ok(text(installed.get("failure").content).includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(text(installed.get("failure").content).includes("Exit code 7"), "model must receive shell failure status");
   process.stdout.write(`${JSON.stringify({ ok: true, host: "claude-code", version, modelRequestsPerSession: modelRequests, results: [...installed.keys()] }, null, 2)}\n`);

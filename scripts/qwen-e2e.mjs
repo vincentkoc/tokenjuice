@@ -53,12 +53,14 @@ async function run(command, args, timeout = 90_000) {
 }
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+const failureStderr = "failure-stderr\n";
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
   { id: "dialect", command: `values=(alpha beta); [[ \${values[1]} == beta ]] && ${quote(process.execPath)} -e 'console.log(process.argv[1])' "\${values[1]}"` },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
-  { id: "failure", command: `${quote(process.execPath)} -e ${quote("process.stdout.write('failure-output\\n'); process.stderr.write('failure-stderr\\n'); process.exit(7)")}` },
+  { id: "failure", command: `${quote(process.execPath)} -e ${quote(`process.stdout.write(${JSON.stringify(failureOutput)}); process.stderr.write(${JSON.stringify(failureStderr)}); process.exit(7);`)}` },
 ];
 function textContent(content) {
   if (typeof content === "string") return content;
@@ -202,7 +204,11 @@ try {
   assert.equal(commandOutput(installed.get("exact")), commandOutput(baseline.get("exact")), "hook must preserve the native exact read");
   assert.equal(commandOutput(installed.get("dialect")), commandOutput(baseline.get("dialect")), "hook must retain native Bash syntax");
   assert.equal(stableRawResult(installed.get("raw")), stableRawResult(baseline.get("raw")), "raw bypass must preserve the native result apart from its process group ID");
-  assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
+  assert.ok(installed.get("failure").includes(failureOutput.trimEnd()), "model must receive all 80 failure lines");
+  // Qwen displays the command actually executed, including the automatic wrapper.
+  const stableFailure = (content) => content.replace(/^Command: [^\n]*\n/u, "")
+    .replace(/(\nProcess Group PGID: )\d+$/u, "$1<runtime-pgid>");
+  assert.equal(stableFailure(installed.get("failure")), stableFailure(baseline.get("failure")), "failure must preserve native output/status apart from command label and process ID");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(installed.get("failure").includes("\nExit Code: 7\n"), "model must receive failure status");
   process.stdout.write(`${JSON.stringify({ ok: true, host: "qwen-code", version, modelRequestsPerSession: modelRequests, results: [...installed.keys()] }, null, 2)}\n`);

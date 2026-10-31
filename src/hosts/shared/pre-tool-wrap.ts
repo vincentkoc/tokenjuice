@@ -175,17 +175,17 @@ export async function buildWrapLauncherHookCommand(
  * Build the command the host should ask the agent to run — the original
  * command routed through `tokenjuice wrap` and the selected host shell:
  *
- *     <launcher-command> wrap -- <shell-path> -lc '<original>'
+ *     <launcher-command> wrap --keep-failures -- <shell-path> -lc '<original>'
  *
  * `wrapLauncher` comes from the PreToolUse hook's `--wrap-launcher` argv so
- * the dispatched binary matches the one the host installed.
+ * the dispatched binary matches the one the host installed. Automatic wrappers
+ * preserve failed stdout/stderr; only successful output is eligible for reduction.
  */
 export function buildWrappedCommand(params: {
   wrapLauncher: string;
   shellPath: string;
   command: string;
   source?: string;
-  keepFailures?: boolean;
   nodePath?: string;
 }): string {
   const nodePath = params.nodePath ?? process.execPath;
@@ -193,7 +193,7 @@ export function buildWrappedCommand(params: {
     ? `${posixShellQuote(nodePath)} ${posixShellQuote(params.wrapLauncher)}`
     : posixShellQuote(params.wrapLauncher);
   const sourceArgs = params.source ? ` --source ${posixShellQuote(params.source)}` : "";
-  return `${launcherCommand} wrap${params.keepFailures ? " --keep-failures" : ""}${sourceArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
+  return `${launcherCommand} wrap --keep-failures${sourceArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
 }
 
 /**

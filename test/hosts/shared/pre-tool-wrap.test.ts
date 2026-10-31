@@ -222,13 +222,13 @@ describe("buildWrapLauncherHookCommand", () => {
 });
 
 describe("buildWrappedCommand", () => {
-  it("emits `<launcher> wrap -- <shell> -lc '<command>'` for a bare launcher", () => {
+  it("emits `<launcher> wrap --keep-failures -- <shell> -lc '<command>'` for a bare launcher", () => {
     const wrapped = buildWrappedCommand({
       wrapLauncher: "/usr/local/bin/tokenjuice",
       shellPath: "/bin/bash",
       command: "git status --short",
     });
-    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap -- /bin/bash -lc 'git status --short'");
+    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --keep-failures -- /bin/bash -lc 'git status --short'");
   });
 
   it("dispatches a .js launcher through node", () => {
@@ -238,7 +238,7 @@ describe("buildWrappedCommand", () => {
       command: "echo hi",
       nodePath: "/usr/bin/node",
     });
-    expect(wrapped).toBe("/usr/bin/node /repo/dist/cli/main.js wrap -- /bin/bash -lc 'echo hi'");
+    expect(wrapped).toBe("/usr/bin/node /repo/dist/cli/main.js wrap --keep-failures -- /bin/bash -lc 'echo hi'");
   });
 
   it("adds a source tag before the wrapped shell command", () => {
@@ -248,7 +248,7 @@ describe("buildWrappedCommand", () => {
       command: "git status --short",
       source: "cursor",
     });
-    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --source cursor -- /bin/bash -lc 'git status --short'");
+    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --keep-failures --source cursor -- /bin/bash -lc 'git status --short'");
   });
 
   // Regression: buildWrappedCommand used to quote the `-lc` payload with
@@ -337,7 +337,7 @@ describe("buildWrappedCommand", () => {
     // original command's argv. (Semantic check done in tests that exercise
     // the full wrap hooks; here we just pin the currently-emitted shape so a
     // change triggers deliberate review.)
-    expect(wrapped).toBe(`/usr/local/bin/tokenjuice wrap -- /bin/bash -lc 'echo it'\\''s raining'`);
+    expect(wrapped).toBe(`/usr/local/bin/tokenjuice wrap --keep-failures -- /bin/bash -lc 'echo it'\\''s raining'`);
   });
 });
 

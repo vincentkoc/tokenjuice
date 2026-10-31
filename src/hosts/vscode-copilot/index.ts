@@ -525,7 +525,7 @@ export async function runVscodeCopilotPreToolUseHook(
     ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
     : shellQuote(wrapLauncher);
   const wrappedCommand =
-    `${launcherCommand} wrap --source ${TOKENJUICE_VSCODE_COPILOT_SOURCE} -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
+    `${launcherCommand} wrap --keep-failures --source ${TOKENJUICE_VSCODE_COPILOT_SOURCE} -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
 
   const updatedInput: Record<string, unknown> = {
     ...toolInput,

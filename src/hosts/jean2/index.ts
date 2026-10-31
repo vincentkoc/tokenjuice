@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,18 +52,7 @@ const TOKENJUICE_JEAN2_END = "<!-- tokenjuice:jean2 end -->";
 const TOKENJUICE_JEAN2_ADVISORY =
   "Jean2 support is beta and instruction-file based; Jean2 still owns command execution.";
 
-function getExplicitProjectDir(options: Jean2InstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.JEAN2_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: Jean2InstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("JEAN2_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: Jean2InstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

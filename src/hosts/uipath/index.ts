@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,18 +52,7 @@ const TOKENJUICE_UIPATH_END = "<!-- tokenjuice:uipath end -->";
 const TOKENJUICE_UIPATH_ADVISORY =
   "UiPath support is beta and instruction-file based; the active coding agent still owns command execution.";
 
-function getExplicitProjectDir(options: UiPathInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.UIPATH_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: UiPathInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("UIPATH_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: UiPathInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

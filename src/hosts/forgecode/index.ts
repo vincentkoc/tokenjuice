@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -56,18 +56,7 @@ const TOKENJUICE_FORGECODE_END = "<!-- tokenjuice:forgecode end -->";
 const TOKENJUICE_FORGECODE_ADVISORY =
   "ForgeCode support is beta and instruction-based; ForgeCode automatically loads project AGENTS.md guidance, but tokenjuice does not intercept tool output.";
 
-function getExplicitProjectDir(options: ForgeCodeInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.FORGECODE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: ForgeCodeInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("FORGECODE_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

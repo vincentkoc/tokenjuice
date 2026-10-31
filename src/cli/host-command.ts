@@ -3,6 +3,7 @@ import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
 export function createHostCommand<Result>(
   run: (args: ParsedArgs) => Promise<Result>,
   writeText: (result: Result, args: ParsedArgs) => void,
+  getExitCode: (result: Result) => number = () => 0,
 ): HostCommandHandler {
   return async (args) => {
     const result = await run(args);
@@ -11,6 +12,6 @@ export function createHostCommand<Result>(
     } else {
       writeText(result, args);
     }
-    return 0;
+    return getExitCode(result);
   };
 }

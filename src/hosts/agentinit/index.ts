@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -60,18 +60,7 @@ const TOKENJUICE_AGENTINIT_END = "<!-- tokenjuice:agentinit end -->";
 const TOKENJUICE_AGENTINIT_ADVISORY =
   "AgentInit support is beta and source-instruction based; run `agentinit sync` after install so generated agent files receive the guidance.";
 
-function getExplicitProjectDir(options: AgentInitInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTINIT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AgentInitInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTINIT_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

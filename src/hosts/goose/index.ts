@@ -1,7 +1,7 @@
 import { readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
+import { hasGitMetadata, createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -57,18 +57,7 @@ const TOKENJUICE_GOOSE_ADVISORY = "Goose support is beta and hints-based; it gui
 const GOOSE_HINTS_FILENAME = ".goosehints";
 const GOOSE_HINTS_SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
 
-function getExplicitProjectDir(options: GooseHintsOptions = {}): string | undefined {
-  return options.projectDir || process.env.GOOSE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: GooseHintsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("GOOSE_PROJECT_DIR");
 
 async function canonicalPath(path: string): Promise<string> {
   try {

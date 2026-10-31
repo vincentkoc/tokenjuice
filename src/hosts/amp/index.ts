@@ -1,7 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
+import { hasGitMetadata, createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -61,14 +61,7 @@ function getExplicitProjectDir(options: AmpInstructionsOptions = {}): string | u
   return options.projectDir || process.env.AMP_PROJECT_DIR;
 }
 
-async function resolveProjectDir(options: AmpInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AMP_PROJECT_DIR");
 
 type ParentInstructionSearchOptions = {
   includeShadowedFallbacks?: boolean;

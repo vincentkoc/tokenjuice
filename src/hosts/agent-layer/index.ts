@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -46,10 +46,6 @@ const TOKENJUICE_AGENT_LAYER_UNINITIALIZED_ISSUE =
   "Agent Layer project is not initialized; run `al init` before installing tokenjuice instructions";
 const AGENT_LAYER_REQUIRED_PROJECT_FILES = [".agent-layer/config.toml", ".agent-layer/al.version"] as const;
 
-function getExplicitProjectDir(options: AgentLayerInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENT_LAYER_PROJECT_DIR;
-}
-
 async function pathExists(path: string): Promise<boolean> {
   try {
     await stat(path);
@@ -62,14 +58,7 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function resolveProjectDir(options: AgentLayerInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENT_LAYER_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: AgentLayerInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".agent-layer", "instructions", "tokenjuice.md");

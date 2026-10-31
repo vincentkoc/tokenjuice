@@ -5,7 +5,10 @@
 ### Fixes
 
 - Document the external OpenClaw plugin installation step before enabling it, replacing the outdated bundled-plugin instructions.
+- Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
+- Parse guarded setup commands from hook input without regular-expression backtracking.
+
 - Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
 - Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.

@@ -23,3 +23,14 @@ export async function findGitRoot(startDir: string): Promise<string | undefined>
     current = parent;
   }
 }
+
+export function createProjectDirResolver(environmentKey: string) {
+  return async (options: { projectDir?: string } = {}): Promise<string> => {
+    const explicitProjectDir = options.projectDir || process.env[environmentKey];
+    if (explicitProjectDir) {
+      return resolve(explicitProjectDir);
+    }
+
+    return (await findGitRoot(process.cwd())) ?? process.cwd();
+  };
+}

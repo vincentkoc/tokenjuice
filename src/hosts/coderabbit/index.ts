@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -49,18 +49,7 @@ const TOKENJUICE_CODERABBIT_END = "# tokenjuice:coderabbit end";
 const TOKENJUICE_CODERABBIT_ADVISORY =
   "CodeRabbit support is beta and path-instruction based; CodeRabbit still owns pull-request review, tools, and comment delivery.";
 
-function getExplicitProjectDir(options: CodeRabbitConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.CODERABBIT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: CodeRabbitConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("CODERABBIT_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

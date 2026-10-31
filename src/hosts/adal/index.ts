@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,18 +52,7 @@ const TOKENJUICE_ADAL_END = "<!-- tokenjuice:adal end -->";
 const TOKENJUICE_ADAL_ADVISORY =
   "AdaL CLI support is beta and instruction-based; AdaL reads project AGENTS.md context but still owns command execution.";
 
-function getExplicitProjectDir(options: AdalInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.ADAL_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AdalInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("ADAL_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: AdalInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

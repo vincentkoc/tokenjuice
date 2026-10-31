@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_BOB_BEGIN = "<!-- tokenjuice:bob begin -->";
 const TOKENJUICE_BOB_END = "<!-- tokenjuice:bob end -->";
 const TOKENJUICE_BOB_ADVISORY = "IBM Bob support is beta and instruction-based; it guides command usage through project AGENTS.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: BobInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.BOB_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: BobInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("BOB_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: BobInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

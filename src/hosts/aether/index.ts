@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -145,10 +145,6 @@ function agentOwnershipSignature(agent: Record<string, unknown>): string {
   return createHash("sha256").update(descriptor).digest("hex");
 }
 
-function getExplicitProjectDir(options: AetherPromptOptions = {}): string | undefined {
-  return options.projectDir || process.env.AETHER_PROJECT_DIR;
-}
-
 async function pathExists(path: string): Promise<boolean> {
   try {
     await stat(path);
@@ -182,14 +178,7 @@ async function chooseAetherBackupPath(filePath: string): Promise<string> {
   }
 }
 
-async function resolveProjectDir(options: AetherPromptOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AETHER_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

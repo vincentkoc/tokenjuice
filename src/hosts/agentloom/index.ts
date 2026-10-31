@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -67,18 +67,7 @@ function parseLeadingFrontmatter(text: string): Map<string, string> | undefined 
   return fields;
 }
 
-function getExplicitProjectDir(options: AgentloomRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTLOOM_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AgentloomRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTLOOM_PROJECT_DIR");
 
 async function getDefaultRulePath(options: AgentloomRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".agents", "rules", "tokenjuice-agentloom.md");

@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -99,18 +99,7 @@ async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: str
   }
 }
 
-function getExplicitProjectDir(options: McpAgentDefinitionOptions = {}): string | undefined {
-  return options.projectDir || process.env.MCP_AGENT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: McpAgentDefinitionOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("MCP_AGENT_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

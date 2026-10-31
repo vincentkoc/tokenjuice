@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stdin as inputStdin } from "node:process";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import packageJson from "../../package.json" with { type: "json" };
 
 import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts } from "../core/artifacts.js";
 import { shouldRecordStats } from "../core/artifacts.js";
+import { readBoundedTextFile } from "../core/bounded-text-file.js";
 import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
 import type { StatsSourceReport } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
@@ -557,12 +558,12 @@ async function readTextInput(file: string | undefined, maxBytes = DEFAULT_MAX_IN
     return await readStdin(maxBytes);
   }
 
-  const details = await stat(file);
-  if (details.size > maxBytes) {
+  const text = await readBoundedTextFile(file, maxBytes);
+  if (text === null) {
     throw new Error(`${file} exceeds max input size of ${maxBytes} bytes`);
   }
 
-  return await readFile(file, "utf8");
+  return text;
 }
 
 function emit(format: Format, value: unknown, text: string, exactText = false): void {

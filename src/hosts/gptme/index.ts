@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_GPTME_BEGIN = "<!-- tokenjuice:gptme begin -->";
 const TOKENJUICE_GPTME_END = "<!-- tokenjuice:gptme end -->";
 const TOKENJUICE_GPTME_ADVISORY = "gptme support is beta and instruction-based; it guides command usage through project AGENTS.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: GptmeInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.GPTME_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: GptmeInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("GPTME_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: GptmeInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "AGENTS.md");

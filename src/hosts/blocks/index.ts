@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -44,18 +44,7 @@ const TOKENJUICE_BLOCKS_SKILL_MARKER = "# tokenjuice terminal output compaction"
 const TOKENJUICE_BLOCKS_ADVISORY =
   "Blocks support is beta and skill-based; Blocks discovers .agents/skills/tokenjuice-blocks/SKILL.md in workspace sessions, but tokenjuice does not intercept shell output.";
 
-function getExplicitProjectDir(options: BlocksSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.BLOCKS_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: BlocksSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("BLOCKS_PROJECT_DIR");
 
 async function resolveCanonicalProjectDir(options: BlocksSkillOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);

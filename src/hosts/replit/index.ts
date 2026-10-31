@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_REPLIT_BEGIN = "<!-- tokenjuice:replit begin -->";
 const TOKENJUICE_REPLIT_END = "<!-- tokenjuice:replit end -->";
 const TOKENJUICE_REPLIT_ADVISORY = "Replit support is beta and instruction-based; Agent reads root replit.md for project context, but still owns command execution and may update that file as project knowledge changes.";
 
-function getExplicitProjectDir(options: ReplitInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.REPLIT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: ReplitInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("REPLIT_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: ReplitInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), "replit.md");

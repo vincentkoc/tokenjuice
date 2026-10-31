@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -44,18 +44,7 @@ const TOKENJUICE_STAGEWISE_SKILL_MARKER = "# tokenjuice terminal output compacti
 const TOKENJUICE_STAGEWISE_ADVISORY =
   "Stagewise support is beta and skill-based; Stagewise discovers .stagewise/skills/tokenjuice/SKILL.md in workspace sessions, but tokenjuice does not intercept shell output.";
 
-function getExplicitProjectDir(options: StagewiseSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.STAGEWISE_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: StagewiseSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("STAGEWISE_PROJECT_DIR");
 
 async function resolveCanonicalProjectDir(options: StagewiseSkillOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);

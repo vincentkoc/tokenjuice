@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -56,18 +56,7 @@ const TOKENJUICE_AGENTS_MD_END = "<!-- tokenjuice:agents-md end -->";
 const TOKENJUICE_AGENTS_MD_ADVISORY =
   "AGENTS.md support is beta and instruction-based; it guides agents that read AGENTS.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: AgentsMdInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTS_MD_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: AgentsMdInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTS_MD_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

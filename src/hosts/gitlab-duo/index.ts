@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -52,18 +52,7 @@ const TOKENJUICE_GITLAB_DUO_END = "<!-- tokenjuice:gitlab-duo end -->";
 const TOKENJUICE_GITLAB_DUO_ADVISORY =
   "GitLab Duo support is beta and custom-rules based; Duo still owns command execution.";
 
-function getExplicitProjectDir(options: GitLabDuoRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.GITLAB_DUO_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: GitLabDuoRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("GITLAB_DUO_PROJECT_DIR");
 
 async function getDefaultRulePath(options: GitLabDuoRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".gitlab", "duo", "chat-rules.md");

@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -56,18 +56,7 @@ const TOKENJUICE_NOVAKIT_END = "<!-- tokenjuice:novakit end -->";
 const TOKENJUICE_NOVAKIT_ADVISORY =
   "NovaKit support is beta and instruction-based; NovaKit loads NOVAKIT.md context files, but tokenjuice does not intercept tool output.";
 
-function getExplicitProjectDir(options: NovaKitInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.NOVAKIT_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: NovaKitInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("NOVAKIT_PROJECT_DIR");
 
 function isInsideOrEqual(parentDir: string, childPath: string): boolean {
   const relativePath = relative(parentDir, childPath);

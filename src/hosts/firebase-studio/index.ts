@@ -1,6 +1,6 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   getMarkerDelimitedBlockText,
@@ -51,18 +51,7 @@ const TOKENJUICE_FIREBASE_STUDIO_BEGIN = "<!-- tokenjuice:firebase-studio begin 
 const TOKENJUICE_FIREBASE_STUDIO_END = "<!-- tokenjuice:firebase-studio end -->";
 const TOKENJUICE_FIREBASE_STUDIO_ADVISORY = "Firebase Studio support is beta and instruction-based; Gemini in Firebase chat prioritizes .idx/airules.md, but still owns command execution.";
 
-function getExplicitProjectDir(options: FirebaseStudioRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.FIREBASE_STUDIO_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: FirebaseStudioRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("FIREBASE_STUDIO_PROJECT_DIR");
 
 async function getDefaultRulePath(options: FirebaseStudioRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".idx", "airules.md");

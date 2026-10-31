@@ -3,7 +3,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
 
-import { findGitRoot } from "../shared/project-root.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -83,18 +83,7 @@ function hasMalformedLegacyMarkerStructure(text: string, completeBlockCount: num
   return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
 }
 
-function getExplicitProjectDir(options: OnaSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.ONA_PROJECT_DIR;
-}
-
-async function resolveProjectDir(options: OnaSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("ONA_PROJECT_DIR");
 
 async function resolveCanonicalProjectDir(options: OnaSkillOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);

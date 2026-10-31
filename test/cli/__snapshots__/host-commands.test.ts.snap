@@ -5652,83 +5652,75 @@ exit 0
 
 exports[`host CLI commands > install, doctor, and uninstall kimi 1`] = `
 "$ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Kimi
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install kimi
-[stdout] success: kimi hook installed successfully
-
-  Config      : <SANDBOX>/home/.kimi/config.toml
-  Command     : <NODE> '<LAUNCHER>' kimi-post-tool-use
-  Beta        : PostToolUse Shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor kimi
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' kimi-post-tool-use
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta and injects compacted context after Shell tool output without suppressing the original result.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor kimi --format json
 [stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
-  "status": "ok",
+  "configPath": "<SANDBOX>/home/.kimi-code/config.toml",
+  "status": "disabled",
+  "hasTokenjuiceMarker": false,
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Kimi support is beta and injects compacted context after Shell tool output without suppressing the original result."
+    "Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install kimi",
-  "expectedCommand": "<NODE> '<LAUNCHER>' kimi-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' kimi-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": [],
-  "hasTokenjuiceMarker": true
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.kimi-code/config.toml"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.kimi-code/config.toml"
+  ]
 }
 exit 0
 
 $ tokenjuice install kimi --format json
-[stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
-  "backupPath": "<SANDBOX>/home/.kimi/config.toml.bak",
-  "command": "<NODE> '<LAUNCHER>' kimi-post-tool-use"
-}
-exit 0
+throws Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall kimi
-[stdout] removed kimi entries: 1
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] removed kimi entries: 0
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] enable: tokenjuice install kimi
 exit 0
 
 $ tokenjuice uninstall kimi --format json
 [stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
+  "configPath": "<SANDBOX>/home/.kimi-code/config.toml",
   "removed": 0
 }
 exit 0
 
 $ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Kimi
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -9106,10 +9098,10 @@ exit 0
 
 exports[`host CLI commands > rejects unknown or missing targets 1`] = `
 "$ tokenjuice install not-a-host
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice install
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall not-a-host
 throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder

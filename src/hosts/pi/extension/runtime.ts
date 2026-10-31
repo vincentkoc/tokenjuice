@@ -5,8 +5,7 @@ import {
   shouldSkipCommand,
 } from "../../../core/integrations/compact-bash-result.js";
 
-import type { Pi, PiContext, PiToolResultEvent } from "./pi-types.js";
-import { isRecord } from "./pi-types.js";
+import { type Pi, type PiContext, type PiToolResultEvent, isRecord } from "./pi-types.js";
 import { getAutoCompactionEnabled } from "./settings.js";
 import { buildTokenjuiceStatusMessage, buildTokenjuiceStatusSnapshot } from "./status.js";
 import { showTokenjuiceStatusPanel } from "./status-panel.js";

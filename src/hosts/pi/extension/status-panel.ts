@@ -1,6 +1,5 @@
 import type { PiContext, PiTheme } from "./pi-types.js";
-import type { TokenjuiceStatusSnapshot } from "./status.js";
-import { formatCompactNumber } from "./status.js";
+import { type TokenjuiceStatusSnapshot, formatCompactNumber } from "./status.js";
 
 const ANSI_SGR_PATTERN = new RegExp("\\u001B\\[[0-9;]*m", "g");
 

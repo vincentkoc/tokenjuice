@@ -1,5 +1,4 @@
-import { getAvailableHookIntegrationNames, getInstalledHookIntegrations } from "../hosts/shared/hook-doctor.js";
-import type { HookDoctorReport } from "../hosts/shared/hook-doctor.js";
+import { getAvailableHookIntegrationNames, getInstalledHookIntegrations, type HookDoctorReport } from "../hosts/shared/hook-doctor.js";
 
 type IntegrationDoctorReport = HookDoctorReport["integrations"][keyof HookDoctorReport["integrations"]];
 

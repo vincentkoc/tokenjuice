@@ -3,9 +3,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createSymlinkGuard } from "../shared/path-ancestors.js";
-import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,

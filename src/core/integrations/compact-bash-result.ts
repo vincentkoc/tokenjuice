@@ -6,14 +6,13 @@ import {
   tokenizeCommand,
   unwrapShellRunner,
 } from "../command.js";
-import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv } from "../inventory-safety.js";
+import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv, type InspectionCommandPolicy, type InspectionCommandSkipReason } from "../inventory-safety.js";
 import { readNoOmissionFromEnv } from "../env.js";
 import { shouldRecordStats, storeArtifact } from "../artifacts.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
-import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../inventory-safety.js";
 
 export type CompactBashResultInput = {
   source: "claude-code" | "cline" | "codex" | "command-code" | "copilot-agent" | "copilot-cli" | "deepseek-harness" | "droid" | "gemini-cli" | "grok-cli" | "kimi" | "mux" | "openclaw" | "openhands" | "opencode" | "pi" | "qoder" | "qwen-code";

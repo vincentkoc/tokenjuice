@@ -20,8 +20,8 @@ import {
   loadCopilotHooksConfigWithBackup,
   readCopilotHooksConfig,
   writeCopilotHooksConfigAtomic,
+  type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
-import type { CopilotHooksConfig } from "../shared/hooks-json-file.js";
 
 export type CopilotAgentHookCommandOptions = TokenjuiceHookCommandOptions & {
   projectDir?: string;

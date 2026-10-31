@@ -15,13 +15,9 @@ import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
 import { isNodeExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildTokenjuiceHookCommand, isExecutableFile } from "../shared/host-command.js";
-import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
+import { inspectTokenjuiceHookCommand, type HookCommandPackageVersionMismatch, type HookCommandRuntimeMismatch } from "../shared/hook-command-doctor.js";
 
 import type { ToolExecutionInput } from "../../types.js";
-import type {
-  HookCommandPackageVersionMismatch,
-  HookCommandRuntimeMismatch,
-} from "../shared/hook-command-doctor.js";
 
 type CodexHookCommand = Record<string, unknown> & {
   type?: string;

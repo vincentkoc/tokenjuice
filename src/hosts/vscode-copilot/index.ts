@@ -14,8 +14,8 @@ import {
   readCopilotHooksConfig,
   sanitizeCopilotHooksConfig,
   writeCopilotHooksConfigAtomic,
+  type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
-import type { CopilotHooksConfig } from "../shared/hooks-json-file.js";
 
 type VscodeCopilotHooksConfig = CopilotHooksConfig;
 

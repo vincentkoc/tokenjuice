@@ -6,11 +6,9 @@ import { stdin as inputStdin } from "node:process";
 import { fileURLToPath } from "node:url";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts } from "../core/artifacts.js";
-import { shouldRecordStats } from "../core/artifacts.js";
+import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, shouldRecordStats } from "../core/artifacts.js";
 import { readBoundedTextFile } from "../core/bounded-text-file.js";
-import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
-import type { StatsSourceReport } from "../core/analysis.js";
+import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts, type StatsSourceReport } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { readNoOmissionFromEnv } from "../core/env.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";

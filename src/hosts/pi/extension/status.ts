@@ -1,5 +1,4 @@
-import type { PiContext } from "./pi-types.js";
-import { isRecord } from "./pi-types.js";
+import { type PiContext, isRecord } from "./pi-types.js";
 
 export type TokenjuiceStatusSnapshot = {
   manualEnabled: boolean;

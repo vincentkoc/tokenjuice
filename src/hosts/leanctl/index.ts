@@ -6,6 +6,10 @@ import {
   type WriteInstructionFileResult,
   findAvailableBackupPath,
   writeTextFileWithoutBackup,
+  collectGuidanceIssues,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
 } from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
@@ -13,7 +17,6 @@ import { createProjectInstructionPathResolver, createSymlinkGuard } from "../sha
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,

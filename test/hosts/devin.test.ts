@@ -180,6 +180,10 @@ describe("devin hook", () => {
     expect(doctor.status).toBe("ok");
   });
 
+  it.each(["null", "[]", "true", "42", "{bad"])("keeps non-object input %s silent", async (raw) => {
+    expect(await captureStdout(() => runDevinPreToolUseHook(raw))).toEqual({ code: 0, output: "" });
+  });
+
   it("rewrites Devin exec commands through tokenjuice wrap", async () => {
     process.env.TOKENJUICE_DEVIN_SHELL = "sh";
     const payload = JSON.stringify({

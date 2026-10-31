@@ -203,15 +203,15 @@ export function buildWrappedCommand(params: {
  *   `tokenjuice wrap ...`                     — bare executable on PATH
  *   `/abs/path/to/tokenjuice wrap ...`        — absolute launcher (pnpm link,
  *                                               homebrew, etc.)
- *   `node /some/dist/cli/main.js ... wrap`    — node-dispatched local build
+ *   `node /some/dist/cli/main.js wrap ...`    — node-dispatched local build
  *
  * Avoids double-wrapping when a tool call is already routed through tokenjuice
  * (e.g. the user invoked `tokenjuice wrap --raw -- <cmd>` explicitly).
  */
-export function commandAlreadyWrapped(command: string): boolean {
-  // PreToolUse hosts execute this command through a POSIX shell, including
-  // Bash-compatible shells on Windows.
-  const argv = parseShellWords(stripLeadingCdPrefix(command), "linux");
+export function commandAlreadyWrapped(command: string, platform: NodeJS.Platform = "linux"): boolean {
+  // Most adapters use POSIX shells even on Windows; native PowerShell callers
+  // select Windows parsing to preserve backslashes in executable paths.
+  const argv = parseShellWords(stripLeadingCdPrefix(command), platform);
   if (argv.length < 2) {
     return false;
   }
@@ -228,7 +228,7 @@ export function commandAlreadyWrapped(command: string): boolean {
     && isNodeExecutablePath(first)
     && typeof second === "string"
     && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
+    && argv[2] === "wrap"
   ) {
     return true;
   }

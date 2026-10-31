@@ -759,3 +759,4 @@ export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } fr
 export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructions } from "./hosts/ante/index.js";
 export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";
 export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/qoder/hook-install.js";
+export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";

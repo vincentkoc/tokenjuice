@@ -26,6 +26,7 @@
 - Warn when the visible Goose context filename configuration excludes installed `.goosehints`, and document its Developer extension prerequisite.
 
 - Expose native Qoder CLI hook installation, doctor and uninstall as `qoder-cli`, retaining the existing `qoder` instruction target.
+- Add a DeepSeek Harness native Bash post-execute plugin that compacts model-facing content while preserving canonical values and downstream policy decisions.
 
 ### Maintenance
 

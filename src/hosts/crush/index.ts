@@ -2,7 +2,7 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { buildInstructionDoctorReportFields, instructionDoctorStatusFromIssues } from "../shared/instruction-doctor.js";
+import { type PathDoctorReport, buildInstructionDoctorReportFields, instructionDoctorStatusFromIssues } from "../shared/instruction-doctor.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type CrushSkillOptions = {
@@ -19,15 +19,7 @@ export type UninstallCrushSkillResult = {
   removed: boolean;
 };
 
-export type CrushDoctorReport = {
-  skillPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type CrushDoctorReport = PathDoctorReport<"skillPath">;
 
 const TOKENJUICE_CRUSH_FIX_COMMAND = "tokenjuice install crush";
 const TOKENJUICE_CRUSH_MARKER = "tokenjuice terminal output compaction";

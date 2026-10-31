@@ -17,7 +17,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
-import { buildInstructionDoctorReportFields } from "../shared/instruction-doctor.js";
+import { type PathDoctorReport, buildInstructionDoctorReportFields } from "../shared/instruction-doctor.js";
 import {
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
@@ -52,16 +52,9 @@ export type UninstallOnaInstructionsResult = UninstallOnaSkillResult & {
   instructionsPath: string;
 };
 
-export type OnaDoctorReport = {
-  skillPath: string;
+export type OnaDoctorReport = PathDoctorReport<"skillPath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_ONA_FIX_COMMAND = "tokenjuice install ona";

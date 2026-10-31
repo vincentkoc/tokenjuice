@@ -122,3 +122,9 @@ jobs:
 
       - name: Verify CodeBuddy model-visible tool results
         run: node scripts/codebuddy-e2e.mjs "$RUNNER_TEMP/tokenjuice-codebuddy/node_modules/@tencent-ai/codebuddy-code/bin/codebuddy"
+
+      - name: Install pinned Droid host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-droid" --ignore-scripts --no-audit --no-fund droid@1.1.0
+
+      - name: Verify Droid model-visible tool results
+        run: node scripts/droid-e2e.mjs "$RUNNER_TEMP/tokenjuice-droid/node_modules/droid/bin/droid"

@@ -22,6 +22,13 @@ The wrapper uses `TOKENJUICE_DROID_SHELL`, then `SHELL`, then `bash` or `sh`.
 Commands already using `tokenjuice wrap` are left alone, including the explicit
 escape hatch `tokenjuice wrap --raw -- <command>`.
 
+In Droid 1.1.0 headless sessions, the host requires `--auto high` for commands
+rewritten by this hook; `--auto low` and `--auto medium` reject them before
+execution. Review the scope of a headless run before choosing its autonomy
+level. tokenjuice leaves permission decisions to Droid and does not approve
+the rewritten command. The [native session test](integration-playbook.md#droid-session-acceptance)
+checks both the rejection at Low autonomy and output delivery at High autonomy.
+
 Install, doctor and uninstall select an existing `~/.factory/hooks.json`, then
 the legacy `~/.factory/hooks/hooks.json`, otherwise the `hooks` key in
 `~/.factory/settings.json`. Standalone files use an event map without an outer

@@ -268,6 +268,28 @@ silently ignores `modifiedInput`. Permission decisions remain with CodeBuddy.
 This validates config discovery, hook execution, command rewriting, and
 model-visible delivery, rather than remote provider availability or reasoning.
 
+### Droid session acceptance
+
+`node scripts/droid-e2e.mjs /path/to/droid` runs the native CLI in a disposable
+home/workspace. CI pins `droid@1.1.0`. A custom model in `settings.json` points
+to a loopback OpenAI-compatible endpoint; no account credentials are passed
+through. Automatic updates are disabled and `DO_NOT_TRACK` is set.
+
+The endpoint requests real Execute commands before and after hook installation
+and checks results in subsequent model requests: listing compaction, exact
+file bytes including whitespace, raw bypass, and failing-command stdout,
+stderr and exit status. Native tool events must retain their success/error
+flags and agree with the results delivered to the model. Droid appends a
+process-exit marker; the exact-read assertion keeps that native envelope.
+
+The fixture also checks that Low autonomy rejects the rewritten command before
+execution. Droid 1.1.0 requires High autonomy for this input rewrite, so the
+installed session uses `--auto high` with only fixed disposable-fixture
+commands. The hook does not grant permission and the fixture does not disable
+host permission checks. This validates config discovery, hook execution,
+command rewriting and model-visible delivery; remote provider availability
+and model reasoning remain outside this fixture.
+
 ## qualify the support claim
 
 Use [adapter support and verification](adapter-support-matrix.md) to distinguish

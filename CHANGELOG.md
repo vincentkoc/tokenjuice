@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Document Droid 1.1.0's High autonomy requirement for headless pre-tool command rewrites, verified through native sessions.
+
 - Send CodeBuddy pre-tool command rewrites through the runtime-supported `updatedInput` field so installed hooks compact Bash output.
 - Add QoderWork terminal guidance skill installation, diagnostics and owned-file removal at its documented user skill path.
 - Add explicit OpenCode V2 plugin directory installation, diagnostics and owned-file removal without changing the V1 target.

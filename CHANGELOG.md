@@ -5,6 +5,7 @@
 ### Fixes
 
 - Route Gemini CLI shell commands through pre-tool wrapping so compacted successes retain native status; migrate legacy result-blocking hooks and honor `GEMINI_CLI_HOME`.
+- Keep Qwen Code shell wrapping on native Bash instead of the login `SHELL`, preserving Bash commands for fish and other non-Bash login shells.
 
 - Document Droid 1.1.0's High autonomy requirement for headless pre-tool command rewrites, verified through native sessions.
 - Route Qwen Code shell commands through pre-tool wrapping so compacted output reaches the model; migrate legacy context-only hooks on reinstall and verify native sessions in CI.

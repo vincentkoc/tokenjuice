@@ -28,7 +28,8 @@ const env = {
   DO_NOT_TRACK: "1",
   TOKENJUICE_STATS: "0",
   TOKENJUICE_ARTIFACT_DIR: join(root, "artifacts"),
-  SHELL: "/bin/bash",
+  // Qwen Code uses Bash regardless of the user's login shell.
+  SHELL: process.execPath,
 };
 
 async function run(command, args, timeout = 90_000) {
@@ -55,6 +56,7 @@ const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
+  { id: "dialect", command: "values=(alpha beta); [[ ${values[1]} == beta ]] && printf '%s\\n' \"${values[1]}\"" },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
   { id: "failure", command: `${quote(process.execPath)} -e ${quote("process.stdout.write('failure-output\\n'); process.stderr.write('failure-stderr\\n'); process.exit(7)")}` },
 ];
@@ -183,6 +185,7 @@ try {
     assert.deepEqual(new Set(entries), expectedEntries, `${id}: native fixture must retain every file`);
   }
   assert.equal(commandOutput(baseline.get("exact")), exact.trim(), "native exact read must contain the fixture");
+  assert.equal(commandOutput(baseline.get("dialect")), "beta", "native Bash syntax must execute independently of SHELL");
   await run(process.execPath, [cli, "install", "qwen-code", "--local"]);
   const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "qwen-code", "--format", "json"])).stdout);
   assert.equal(doctor.status, "ok");
@@ -191,6 +194,7 @@ try {
   assert.ok(commandOutput(listing).includes("80 matches"), "installed hook must compact the real shell listing before model delivery");
   assert.ok(commandOutput(listing).length < commandOutput(baseline.get("listing")).length);
   assert.equal(commandOutput(installed.get("exact")), commandOutput(baseline.get("exact")), "hook must preserve the native exact read");
+  assert.equal(commandOutput(installed.get("dialect")), commandOutput(baseline.get("dialect")), "hook must retain native Bash syntax");
   assert.deepEqual(installed.get("raw"), baseline.get("raw"), "raw bypass must preserve the native result");
   assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");

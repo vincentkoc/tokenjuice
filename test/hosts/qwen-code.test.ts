@@ -209,6 +209,15 @@ describe("qwen-code hooks", () => {
     })))).toEqual({ code: 0, output: "{}\n" });
   });
 
+  it("uses native Bash regardless of the user's login shell", async () => {
+    delete process.env.TOKENJUICE_QWEN_CODE_SHELL;
+    process.env.SHELL = process.execPath;
+    const { output } = await captureStdout(() => runQwenCodePreToolUseHook(JSON.stringify({
+      hook_event_name: "PreToolUse", tool_name: "run_shell_command", tool_input: { command: "values=(alpha beta); echo ${values[1]}" },
+    })));
+    expect(JSON.parse(output).hookSpecificOutput.updatedInput.command).toMatch(/\/bash -lc/u);
+  });
+
   it("requires WSL for native Windows wrapping", async () => {
     Object.defineProperty(process, "platform", { value: "win32", configurable: true });
     await expect(installQwenCodeHook(undefined, { local: true })).rejects.toThrow("WSL");

@@ -362,7 +362,7 @@ export async function runQwenCodePreToolUseHook(rawText: string, wrapLauncher = 
       return 0;
     }
     const shellPath = await resolveHostShell([
-      process.env.TOKENJUICE_QWEN_CODE_SHELL, process.env.SHELL, "bash", "sh",
+      process.env.TOKENJUICE_QWEN_CODE_SHELL, "bash",
     ]);
     if (!shellPath) {
       writeEmptyHookJsonLine();

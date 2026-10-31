@@ -5,6 +5,7 @@
 ### Fixes
 
 - Retire Kimi automatic compaction because current observation-only hooks cannot replace model output; preserve legacy cleanup and validate explicit wrapping with native Kimi Code CLI 2.4.1.
+- Preserve original Codex Bash results when hook payloads omit exit status, avoiding duplicate summaries and lost failure metadata; replace eligible status-bearing results through supported hook feedback and add native 0.166.0 acceptance coverage.
 
 - Route Gemini CLI shell commands through pre-tool wrapping so compacted successes retain native status; migrate legacy result-blocking hooks and honor `GEMINI_CLI_HOME`.
 - Keep Qwen Code shell wrapping on native Bash instead of the login `SHELL`, preserving Bash commands for fish and other non-Bash login shells.

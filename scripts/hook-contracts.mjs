@@ -160,8 +160,8 @@ async function runCodexContracts() {
 
   assert(hook.stderr === "", `expected Codex hook stderr to stay empty, got ${hook.stderr}`);
   const output = JSON.parse(hook.stdout);
-  const additionalContext = output.hookSpecificOutput?.additionalContext;
-  assert(output.hookSpecificOutput?.hookEventName === "PostToolUse", "expected Codex PostToolUse output");
+  const additionalContext = output.stopReason;
+  assert(output.continue === false, "Codex must replace the original result without rejecting nested tools");
   assert(typeof additionalContext === "string", "expected Codex additionalContext");
   const observationPrefix = "<tokenjuice_compacted_tool_observation>\n";
   const observationSuffix = "\n</tokenjuice_compacted_tool_observation>";
@@ -190,7 +190,7 @@ async function runCodexContracts() {
   const authoritativePayload = postToolUsePayload("git log --oneline", logText);
   const authoritativeHook = await invoke(authoritativePayload);
   const authoritativeOutput = JSON.parse(authoritativeHook.stdout);
-  const authoritativeContext = authoritativeOutput.hookSpecificOutput?.additionalContext;
+  const authoritativeContext = authoritativeOutput.stopReason;
   assert(typeof authoritativeContext === "string", "expected authoritative Codex context");
   const authoritativeObservation = JSON.parse(
     authoritativeContext.slice(observationPrefix.length, -observationSuffix.length),
@@ -201,7 +201,7 @@ async function runCodexContracts() {
   );
   assert(authoritativeObservation.recoveryReference === undefined, "must not claim raw recovery without storage");
   const storedHook = await invoke(authoritativePayload, { ...hookEnv, TOKENJUICE_CODEX_STORE: "1" });
-  const storedContext = JSON.parse(storedHook.stdout).hookSpecificOutput?.additionalContext;
+  const storedContext = JSON.parse(storedHook.stdout).stopReason;
   assert(typeof storedContext === "string", "expected stored Codex observation");
   const storedObservation = JSON.parse(storedContext.slice(observationPrefix.length, -observationSuffix.length));
   const recovery = storedObservation.recoveryReference;

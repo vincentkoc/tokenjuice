@@ -104,6 +104,11 @@ jobs:
 
       - name: Verify Kimi Code model-visible tool results
         run: node scripts/kimi-e2e.mjs "$RUNNER_TEMP/tokenjuice-kimi/node_modules/@moonshot-ai/kimi-code/dist/main.mjs"
+      - name: Install pinned Codex host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-codex" --ignore-scripts --no-audit --no-fund @openai/codex@0.166.0
+
+      - name: Verify Codex model-visible tool results
+        run: node scripts/codex-e2e.mjs "$RUNNER_TEMP/tokenjuice-codex/node_modules/.bin/codex"
 
       - name: Install pinned Gemini CLI host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-gemini" --ignore-scripts --no-audit --no-fund @google/gemini-cli@0.66.0

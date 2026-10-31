@@ -933,10 +933,9 @@ function buildCodexReplacementOutput(
   }
   return {
     payload: {
-      hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        additionalContext: feedback.text,
-      },
+      // Stop delivery of the original result without rejecting code-mode tool calls.
+      continue: false,
+      stopReason: feedback.text,
     },
     truncated: feedback.truncated,
   };
@@ -1485,6 +1484,19 @@ export async function runCodexPostToolUseHook(
     return 0;
   }
 
+  // Native Codex 0.166 omits status from Bash hook payloads. Replacing those
+  // results would discard the exit status that Codex adds for the model later.
+  if (exitCode === undefined) {
+    await recordImmediateHookStats(executionInput, combinedText, storeRaw);
+    await writeDebug({
+      ...debug,
+      ...buildImmediateSkipStats(combinedText),
+      deliveryMode: "original-only",
+      skipped: "missing-exit-code",
+    });
+    return 0;
+  }
+
   const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_CODEX_MAX_INLINE_CHARS");
 
   try {
@@ -1543,7 +1555,7 @@ export async function runCodexPostToolUseHook(
     await writeDebug({
       ...debug,
       rewrote: true,
-      deliveryMode: "original-plus-additional-context",
+      deliveryMode: "replacement-feedback",
       measurement: "pre-delivery-summary-characters",
       feedbackTruncated: replacement.truncated,
     });

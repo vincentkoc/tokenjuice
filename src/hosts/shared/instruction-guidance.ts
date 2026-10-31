@@ -10,6 +10,7 @@ export function collectTokenjuiceGuidanceIssues(
     configuredLabel: string;
     singular?: boolean;
     additionalRequired?: GuidanceIssueOptions["required"];
+    additionalRequiredAfter?: GuidanceIssueOptions["required"];
   },
 ): string[] {
   const { configuredLabel, singular = false } = options;
@@ -24,6 +25,7 @@ export function collectTokenjuiceGuidanceIssues(
         requiredText: TOKENJUICE_RAW_COMMAND,
         missingIssue: `configured ${configuredLabel} ${singular ? "is" : "are"} missing the raw escape hatch`,
       },
+      ...(options.additionalRequiredAfter ?? []),
     ],
     forbidden: [
       {

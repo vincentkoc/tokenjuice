@@ -14,18 +14,13 @@ import {
   removeMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AgentlinkInstructionsOptions = {
   projectDir?: string;
@@ -290,25 +285,12 @@ export async function doctorAgentlinkInstructions(
           "configured Agentlink instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install agentlink",
         ]
       : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTLINK_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Agentlink instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Agentlink instructions are missing the raw escape hatch",
-        },
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTLINK_BLOCK_CONFIG), {
+      configuredLabel: "Agentlink instructions",
+      additionalRequiredAfter: [
         {
           requiredText: "agentlink sync",
           missingIssue: "configured Agentlink instructions are missing sync guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Agentlink instructions still suggest the full escape hatch",
         },
       ],
     }),

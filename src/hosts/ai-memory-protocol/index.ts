@@ -10,18 +10,13 @@ import {
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { shellQuote } from "../shared/hook-command.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type AiMemoryProtocolOptions = {
   memoryDir?: string;
@@ -425,29 +420,19 @@ export async function doctorAiMemoryProtocolMemory(
   const issues = [
     ...markerIssues,
     ...malformedMarkerIssues,
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG), {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG), {
+      configuredLabel: "AI Memory Protocol memory",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_AI_MEMORY_PROTOCOL_ID,
           missingIssue: "configured AI Memory Protocol memory is missing the tokenjuice preference id",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured AI Memory Protocol memory is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured AI Memory Protocol memory is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: "memory rebuild",
           missingIssue: "configured AI Memory Protocol memory is missing rebuild guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured AI Memory Protocol memory still suggests the full escape hatch",
         },
       ],
     }),

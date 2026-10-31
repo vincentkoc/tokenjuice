@@ -14,18 +14,13 @@ import {
   removeMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AnywhereAgentsInstructionsOptions = {
   projectDir?: string;
@@ -230,25 +225,12 @@ export async function doctorAnywhereAgentsInstructions(
           "configured anywhere-agents instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install anywhere-agents",
         ]
       : []),
-    ...collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured anywhere-agents instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured anywhere-agents instructions are missing the raw escape hatch",
-        },
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG), {
+      configuredLabel: "anywhere-agents instructions",
+      additionalRequiredAfter: [
         {
           requiredText: "run `anywhere-agents`",
           missingIssue: "configured anywhere-agents instructions are missing sync guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured anywhere-agents instructions still suggest the full escape hatch",
         },
       ],
     }),

@@ -57,4 +57,19 @@ describe("collectTokenjuiceGuidanceIssues", () => {
       "configured example rule is missing the raw escape hatch",
     ]);
   });
+
+  it("keeps trailing requirements after wrap/raw and before forbidden commands", () => {
+    expect(collectTokenjuiceGuidanceIssues("tokenjuice wrap --full -- npm test", {
+      configuredLabel: "example rule",
+      singular: true,
+      additionalRequired: [{ requiredText: "activation: always_on", missingIssue: "missing activation" }],
+      additionalRequiredAfter: [{ requiredText: "host context", missingIssue: "missing context" }],
+    })).toEqual([
+      "missing activation",
+      "configured example rule is missing tokenjuice wrap guidance",
+      "configured example rule is missing the raw escape hatch",
+      "missing context",
+      "configured example rule still suggests the full escape hatch",
+    ]);
+  });
 });

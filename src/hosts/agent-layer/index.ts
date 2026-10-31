@@ -2,8 +2,17 @@ import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { pathTargetExists as pathExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  pathTargetExists as pathExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -153,29 +162,18 @@ export async function doctorAgentLayerInstructions(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Agent Layer instructions",
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_AGENT_LAYER_INSTRUCTIONS_MARKER,
         missingIssue: "configured Agent Layer instructions do not look like the tokenjuice instructions",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Agent Layer instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Agent Layer instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "al sync",
         missingIssue: "configured Agent Layer instructions are missing sync guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Agent Layer instructions still suggest the full escape hatch",
       },
     ],
   });

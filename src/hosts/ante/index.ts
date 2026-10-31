@@ -4,12 +4,11 @@ import { dirname, join, resolve } from "node:path";
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -102,24 +101,14 @@ const TOKENJUICE_ANTE_BLOCK_CONFIG = {
   preserveSurroundingText: true,
 };
 
+const markerInstructions = createMarkerInstructionCommands("ante", TOKENJUICE_ANTE_BLOCK_CONFIG);
+
 export async function installAnteInstructions(
   instructionsPath?: string,
   options: AnteInstructionsOptions = {},
 ): Promise<InstallAnteInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANTE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install ante`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallAnteInstructions(
@@ -127,16 +116,7 @@ export async function uninstallAnteInstructions(
   options: AnteInstructionsOptions = {},
 ): Promise<UninstallAnteInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANTE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall ante`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_ANTE_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorAnteInstructions(

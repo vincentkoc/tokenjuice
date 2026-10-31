@@ -3,12 +3,11 @@ import { join, resolve } from "node:path";
 import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -84,24 +83,14 @@ const TOKENJUICE_GROK_BUILD_BLOCK_CONFIG = {
   block: TOKENJUICE_GROK_BUILD_BLOCK,
 };
 
+const markerInstructions = createMarkerInstructionCommands("grok-build", TOKENJUICE_GROK_BUILD_BLOCK_CONFIG);
+
 export async function installGrokBuildInstructions(
   instructionsPath?: string,
   options: GrokBuildInstructionsOptions = {},
 ): Promise<InstallGrokBuildInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install grok-build`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallGrokBuildInstructions(
@@ -109,16 +98,7 @@ export async function uninstallGrokBuildInstructions(
   options: GrokBuildInstructionsOptions = {},
 ): Promise<UninstallGrokBuildInstructionsResult> {
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall grok-build`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_GROK_BUILD_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorGrokBuildInstructions(

@@ -6,12 +6,11 @@ import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from ".
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
   getMarkerDelimitedBlockText,
   hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
@@ -115,25 +114,15 @@ const TOKENJUICE_AGENTS_MD_BLOCK_CONFIG = {
   block: TOKENJUICE_AGENTS_MD_BLOCK,
 };
 
+const markerInstructions = createMarkerInstructionCommands("agents-md", TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
+
 export async function installAgentsMdInstructions(
   instructionsPath?: string,
   options: AgentsMdInstructionsOptions = {},
 ): Promise<InstallAgentsMdInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install agents-md`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallAgentsMdInstructions(
@@ -141,16 +130,7 @@ export async function uninstallAgentsMdInstructions(
   options: AgentsMdInstructionsOptions = {},
 ): Promise<UninstallAgentsMdInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall agents-md`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorAgentsMdInstructions(

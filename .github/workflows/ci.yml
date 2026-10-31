@@ -107,6 +107,11 @@ jobs:
       - name: Install pinned Codex host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-codex" --ignore-scripts --no-audit --no-fund @openai/codex@0.166.0
 
+      - name: Install Codex sandbox dependency
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+
       - name: Verify Codex model-visible tool results
         run: node scripts/codex-e2e.mjs "$RUNNER_TEMP/tokenjuice-codex/node_modules/.bin/codex"
 

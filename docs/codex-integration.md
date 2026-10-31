@@ -38,6 +38,9 @@ pnpm build
 node scripts/codex-e2e.mjs /path/to/codex
 ```
 
+On Linux, install the distribution's `bubblewrap` package first. Codex uses the
+first `bwrap` on `PATH`; see its [sandbox setup guide](https://learn.chatgpt.com/docs/sandboxing).
+
 The fixture runs pinned Codex CLI 0.166.0 against a loopback Responses API endpoint
 in a disposable home and project. It captures the next model request after each
 real shell command, comparing baseline and installed sessions for a complete

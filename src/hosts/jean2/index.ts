@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type Jean2InstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallJean2InstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallJean2InstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallJean2InstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallJean2InstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type Jean2DoctorReport = InstructionsDoctorReport;
 

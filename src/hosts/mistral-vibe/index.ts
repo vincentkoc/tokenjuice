@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type MistralVibeInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallMistralVibeInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallMistralVibeInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallMistralVibeInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallMistralVibeInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type MistralVibeDoctorReport = InstructionsDoctorReport;
 

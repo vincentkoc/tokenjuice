@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type GptmeInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallGptmeInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallGptmeInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallGptmeInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallGptmeInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type GptmeDoctorReport = InstructionsDoctorReport;
 

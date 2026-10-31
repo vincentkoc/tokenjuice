@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type JulesInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallJulesInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallJulesInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallJulesInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallJulesInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type JulesDoctorReport = InstructionsDoctorReport;
 

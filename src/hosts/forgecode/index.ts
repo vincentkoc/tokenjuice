@@ -23,21 +23,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type ForgeCodeInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallForgeCodeInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallForgeCodeInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallForgeCodeInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallForgeCodeInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type ForgeCodeDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

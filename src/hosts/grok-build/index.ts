@@ -20,21 +20,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type GrokBuildInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallGrokBuildInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallGrokBuildInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallGrokBuildInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallGrokBuildInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type GrokBuildDoctorReport = InstructionsDoctorReport;
 

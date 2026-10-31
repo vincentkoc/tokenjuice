@@ -23,21 +23,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type KnownsInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallKnownsInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallKnownsInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallKnownsInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallKnownsInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type KnownsDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

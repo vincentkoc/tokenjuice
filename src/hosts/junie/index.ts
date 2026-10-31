@@ -12,21 +12,19 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type JunieInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallJunieInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallJunieInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallJunieInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallJunieInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type JunieDoctorReport = InstructionsDoctorReport;
 

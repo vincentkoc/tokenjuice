@@ -1,7 +1,12 @@
 import { realpath, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  findAvailableBackupPath,
+  writeTextFileWithoutBackup,
+} from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
@@ -19,15 +24,9 @@ export type LeanCtlInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallLeanCtlInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallLeanCtlInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallLeanCtlInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallLeanCtlInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type LeanCtlDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

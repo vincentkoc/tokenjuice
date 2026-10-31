@@ -312,6 +312,7 @@ direct payload:
 - [pi-go integration](docs/pi-go-integration.md)
 - [Plandex integration](docs/plandex-integration.md)
 - [Qodo integration](docs/qodo-integration.md)
+- [WorkBuddy desktop skill](docs/workbuddy-integration.md)
 - [Qoder integration](docs/qoder-integration.md)
 - [Qwen Code integration](docs/qwen-code-integration.md)
 - [Replit integration](docs/replit-integration.md)

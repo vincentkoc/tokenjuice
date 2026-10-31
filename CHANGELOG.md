@@ -35,6 +35,8 @@
 
 - Document QClaw migration to WorkBuddy and the boundary between account migration and tokenjuice host support.
 
+- Provide a portable WorkBuddy desktop guidance skill with localized metadata and explicit manual-import/runtime verification steps.
+
 ### Breaking changes
 
 - Require Node.js 22 or newer (`engines.node` is now `>=22`). Node.js 20 reached end of life in April 2026.

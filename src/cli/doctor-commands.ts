@@ -1,3 +1,4 @@
+import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -118,17 +119,29 @@ function createDoctorCommand<Report extends { status: string }>(
   return createHostCommand(run, writeText, (report) => report.status === "broken" ? 1 : 0);
 }
 
+function createFileDoctorCommand<PathKey extends string>(
+  label: string,
+  pathKey: PathKey,
+  run: () => Promise<PathDoctorReport<PathKey>>,
+  showMissingPaths = false,
+): HostCommandHandler {
+  return createDoctorCommand(run, (report) => {
+    process.stdout.write(`${label} path: ${report[pathKey]}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    writeDoctorList("issues", report.issues);
+    if (showMissingPaths) {
+      writeDoctorList("missing paths", report.missingPaths);
+    }
+    writeDoctorList("advisories", report.advisories);
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+  });
+}
+
 const doctorHooksCommand = createDoctorCommand((args) => doctorInstalledHooks({ local: args.local }), (report) => {
   process.stdout.write(formatHookDoctorReport(report));
 });
 
-const doctorAdalCommand = createDoctorCommand(() => doctorAdalInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAdalCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAdalInstructions());
 
 const doctorAetherCommand = createDoctorCommand(() => doctorAetherPrompt(), (report) => {
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
@@ -148,14 +161,7 @@ const doctorAiderCommand = createDoctorCommand(() => doctorAiderConvention(), (r
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorAictlCommand = createDoctorCommand(() => doctorAictlInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAictlCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAictlInstructions(), true);
 
 const doctorAiMemoryProtocolCommand = createDoctorCommand(() => doctorAiMemoryProtocolMemory(), (report) => {
   process.stdout.write(`memory path: ${report.memoryPath}\n`);
@@ -166,13 +172,7 @@ const doctorAiMemoryProtocolCommand = createDoctorCommand(() => doctorAiMemoryPr
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorAgentLayerCommand = createDoctorCommand(() => doctorAgentLayerInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAgentLayerCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAgentLayerInstructions());
 
 const doctorAgentinitCommand = createDoctorCommand(() => doctorAgentInitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
@@ -209,13 +209,7 @@ const doctorAgentsCliCommand = createDoctorCommand(() => doctorAgentsCliMemory()
   process.stdout.write(`sync: ${report.syncCommand}\n`);
 });
 
-const doctorAgentsMdCommand = createDoctorCommand(() => doctorAgentsMdInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAgentsMdCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAgentsMdInstructions());
 
 const doctorAgentsgeCommand = createDoctorCommand(() => doctorAgentsGeRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -243,13 +237,7 @@ const doctorAmazonQCommand = createDoctorCommand(() => doctorAmazonQRule(), (rep
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorAmpCommand = createDoctorCommand(() => doctorAmpInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAmpCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAmpInstructions());
 
 const doctorAntigravityCommand = createDoctorCommand(() => doctorAntigravityRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -276,13 +264,7 @@ const doctorAugmentCommand = createDoctorCommand(() => doctorAugmentRule(), (rep
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorAvanteCommand = createDoctorCommand(() => doctorAvanteInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAvanteCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAvanteInstructions());
 
 const doctorBazCommand = createDoctorCommand(() => doctorBazSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
@@ -330,13 +312,7 @@ const doctorClawdbotCommand = createDoctorCommand(() => doctorClawdbotSkill(), (
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorBobCommand = createDoctorCommand(() => doctorBobInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorBobCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorBobInstructions());
 
 const doctorBuilderCommand = createDoctorCommand(() => doctorBuilderRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -346,13 +322,7 @@ const doctorBuilderCommand = createDoctorCommand(() => doctorBuilderRule(), (rep
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorCharlieCommand = createDoctorCommand(() => doctorCharlieInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorCharlieCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCharlieInstructions());
 
 const doctorCodexCommand = createDoctorCommand((args) => doctorCodexHook(undefined, {
     local: args.local,
@@ -426,33 +396,12 @@ const doctorPlandexCommand = createDoctorCommand(() => doctorPlandexConvention()
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorAnteCommand = createDoctorCommand(() => doctorAnteInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorAnteCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAnteInstructions(), true);
 
 
-const doctorQoderCommand = createDoctorCommand(() => doctorQoderInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorQoderCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorQoderInstructions(), true);
 
-const doctorReplitCommand = createDoctorCommand(() => doctorReplitInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorReplitCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorReplitInstructions(), true);
 
 const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
@@ -530,13 +479,7 @@ const doctorCursorCommand = createDoctorCommand((args) => doctorCursorHook(undef
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorDeepagentsCommand = createDoctorCommand(() => doctorDeepAgentsInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorDeepagentsCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorDeepAgentsInstructions());
 
 const doctorDevinCommand = createDoctorCommand((args) => doctorDevinHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
@@ -608,14 +551,7 @@ const doctorFirebaseStudioCommand = createDoctorCommand(() => doctorFirebaseStud
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorForgecodeCommand = createDoctorCommand(() => doctorForgeCodeInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorForgecodeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorForgeCodeInstructions(), true);
 
 const doctorGeminiCliCommand = createDoctorCommand((args) => doctorGeminiCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
@@ -652,30 +588,11 @@ const doctorGrokCliCommand = createDoctorCommand((args) => doctorGrokCliHook(und
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorGptmeCommand = createDoctorCommand(() => doctorGptmeInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorGptmeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGptmeInstructions());
 
-const doctorJean2Command = createDoctorCommand(() => doctorJean2Instructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorJean2Command = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJean2Instructions());
 
-const doctorGrokBuildCommand = createDoctorCommand(() => doctorGrokBuildInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorGrokBuildCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGrokBuildInstructions(), true);
 
 const doctorGrokBotCommand = createDoctorCommand(() => doctorGrokBotRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -729,29 +646,11 @@ const doctorJetbrainsAiCommand = createDoctorCommand(() => doctorJetBrainsAiRule
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorJunieCommand = createDoctorCommand(() => doctorJunieInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorJunieCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJunieInstructions());
 
-const doctorJulesCommand = createDoctorCommand(() => doctorJulesInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorJulesCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJulesInstructions());
 
-const doctorLeanctlCommand = createDoctorCommand(() => doctorLeanCtlInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorLeanctlCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorLeanCtlInstructions());
 
 const doctorKimiCommand = createDoctorCommand((args) => doctorKimiHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
@@ -831,13 +730,7 @@ const doctorStagewiseCommand = createDoctorCommand(() => doctorStagewiseSkill(),
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorOpenInterpreterCommand = createDoctorCommand(() => doctorOpenInterpreterInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorOpenInterpreterCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorOpenInterpreterInstructions());
 
 async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   if (args.printInstructions) {
@@ -864,13 +757,7 @@ async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   return report.status === "broken" ? 1 : 0;
 }
 
-const doctorZedCommand = createDoctorCommand(() => doctorZedInstructions(), (report) => {
-  process.stdout.write(`rules path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorZedCommand = createFileDoctorCommand("rules", "instructionsPath", () => doctorZedInstructions());
 
 const doctorZencoderCommand = createDoctorCommand(() => doctorZencoderRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -880,21 +767,9 @@ const doctorZencoderCommand = createDoctorCommand(() => doctorZencoderRule(), (r
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorRooCommand = createDoctorCommand(() => doctorRooInstructions(), (report) => {
-  process.stdout.write(`rules path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorRooCommand = createFileDoctorCommand("rules", "instructionsPath", () => doctorRooInstructions());
 
-const doctorRovoCommand = createDoctorCommand(() => doctorRovoInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorRovoCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorRovoInstructions());
 
 const doctorRulerCommand = createDoctorCommand(() => doctorRulerRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -904,13 +779,7 @@ const doctorRulerCommand = createDoctorCommand(() => doctorRulerRule(), (report)
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorTabnineCommand = createDoctorCommand(() => doctorTabnineInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorTabnineCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorTabnineInstructions());
 
 const doctorTabbyCommand = createDoctorCommand(() => doctorTabbySystemPrompt(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
@@ -928,13 +797,7 @@ const doctorTraeCommand = createDoctorCommand(() => doctorTraeRule(), (report) =
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorUipathCommand = createDoctorCommand(() => doctorUiPathInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorUipathCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorUiPathInstructions());
 
 const doctorKiloCommand = createDoctorCommand(() => doctorKiloRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
@@ -945,14 +808,7 @@ const doctorKiloCommand = createDoctorCommand(() => doctorKiloRule(), (report) =
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorMistralVibeCommand = createDoctorCommand(() => doctorMistralVibeInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorMistralVibeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorMistralVibeInstructions(), true);
 
 const doctorMuxCommand = createDoctorCommand((args) => doctorMuxHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hook path: ${report.hookPath}\n`);
@@ -967,23 +823,9 @@ const doctorMuxCommand = createDoctorCommand((args) => doctorMuxHook(undefined, 
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorNovakitCommand = createDoctorCommand(() => doctorNovaKitInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorNovakitCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorNovaKitInstructions(), true);
 
-const doctorKnownsCommand = createDoctorCommand(() => doctorKnownsInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorKnownsCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorKnownsInstructions(), true);
 
 const doctorOnaCommand = createDoctorCommand(() => doctorOnaSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
@@ -993,14 +835,7 @@ const doctorOnaCommand = createDoctorCommand(() => doctorOnaSkill(), (report) =>
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorWarpCommand = createDoctorCommand(() => doctorWarpInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("missing paths", report.missingPaths);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorWarpCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorWarpInstructions(), true);
 
 const doctorKiroCommand = createDoctorCommand(() => doctorKiroSteering(), (report) => {
   process.stdout.write(`steering path: ${report.steeringPath}\n`);
@@ -1068,29 +903,11 @@ const doctorClineCommand = createDoctorCommand((args) => doctorClineHook(undefin
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
-const doctorCodebuffCommand = createDoctorCommand(() => doctorCodebuffInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorCodebuffCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodebuffInstructions());
 
-const doctorCodeantCommand = createDoctorCommand(() => doctorCodeAntInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorCodeantCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodeAntInstructions());
 
-const doctorCodegenCommand = createDoctorCommand(() => doctorCodegenInstructions(), (report) => {
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  writeDoctorList("issues", report.issues);
-  writeDoctorList("advisories", report.advisories);
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-});
+const doctorCodegenCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodegenInstructions());
 
 const doctorCoderAgentsCommand = createDoctorCommand(() => doctorCoderAgentsSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);

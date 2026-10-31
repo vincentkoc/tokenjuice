@@ -56,14 +56,7 @@ export async function isExecutableFile(path: string): Promise<boolean> {
   }
 }
 
-export async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { pathExists } from "./host-command.js";
 
 /**
  * Walk `PATH` and return the first executable `tokenjuice` (or Windows

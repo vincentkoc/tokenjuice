@@ -1,10 +1,9 @@
-import { stat } from "node:fs/promises";
 import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathTargetExists as pathExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -38,18 +37,6 @@ const TOKENJUICE_AGENT_LAYER_ADVISORY =
 const TOKENJUICE_AGENT_LAYER_UNINITIALIZED_ISSUE =
   "Agent Layer project is not initialized; run `al init` before installing tokenjuice instructions";
 const AGENT_LAYER_REQUIRED_PROJECT_FILES = [".agent-layer/config.toml", ".agent-layer/al.version"] as const;
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
 
 const resolveProjectDir = createProjectDirResolver("AGENT_LAYER_PROJECT_DIR");
 

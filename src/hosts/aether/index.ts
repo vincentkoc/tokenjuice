@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { findAvailableBackupPath, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
@@ -9,7 +9,7 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathTargetExists as pathExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
@@ -140,18 +140,6 @@ function agentOwnershipDescriptor(agent: Record<string, unknown>): Record<string
 function agentOwnershipSignature(agent: Record<string, unknown>): string {
   const descriptor = JSON.stringify(canonicalizeJson(agentOwnershipDescriptor(agent)));
   return createHash("sha256").update(descriptor).digest("hex");
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 const resolveProjectDir = createProjectDirResolver("AETHER_PROJECT_DIR");

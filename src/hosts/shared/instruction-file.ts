@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export type InstructionFileSnapshot = {
@@ -163,6 +163,19 @@ export function collectGuidanceIssues(text: string, options: GuidanceIssueOption
 export async function pathEntryExists(filePath: string): Promise<boolean> {
   try {
     await lstat(filePath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/** Follows symlinks and propagates errors other than ENOENT. */
+export async function pathTargetExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {

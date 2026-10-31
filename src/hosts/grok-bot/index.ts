@@ -1,6 +1,8 @@
 import { constants } from "node:fs";
-import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm, stat } from "node:fs/promises";
+import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -87,29 +89,6 @@ function inspectFrontmatter(text: string): {
 
 function getExplicitProjectDir(options: GrokBotRuleOptions = {}): string | undefined {
   return options.projectDir || process.env.GROK_BOT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: GrokBotRuleOptions = {}): Promise<string> {

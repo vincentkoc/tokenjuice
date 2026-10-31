@@ -1,5 +1,7 @@
-import { readdir, rm, stat } from "node:fs/promises";
+import { readdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import { stripLeadingCdPrefix, stripLeadingEnvAssignments } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
@@ -88,29 +90,6 @@ async function buildCopilotAgentHookCommand(
 
 function getExplicitProjectDir(options: CopilotAgentHookCommandOptions = {}): string | undefined {
   return options.projectDir || process.env.COPILOT_AGENT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 
 const repoRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 const distCliPath = join(repoRoot, "dist", "cli", "main.js");
-const tempRoot = await mkdtemp(join(tmpdir(), "tokenjuice-host-e2e-"));
+const tempRoot = await mkdtemp(join(tmpdir(), "tokenjuice hook contracts '-"));
 
 function fail(message) {
   throw new Error(message);
@@ -50,7 +50,15 @@ function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
-      env: { ...process.env, ...env },
+      env: {
+        PATH: `${dirname(process.execPath)}:/usr/bin:/bin`,
+        HOME: tempRoot,
+        XDG_CONFIG_HOME: join(tempRoot, "config"),
+        SHELL: "/bin/bash",
+        TOKENJUICE_ARTIFACT_DIR: join(tempRoot, "artifacts"),
+        TOKENJUICE_STATS: "0",
+        ...env,
+      },
       stdio: ["pipe", "pipe", "pipe"],
     });
     let stdout = "";
@@ -87,6 +95,9 @@ function run(command, args, options = {}) {
       resolve({ code: exitCode, stdout, stderr });
     });
 
+    child.stdin.on("error", (error) => {
+      if (error.code !== "EPIPE") reject(error);
+    });
     if (input !== undefined) {
       child.stdin.end(input);
     } else {
@@ -103,17 +114,10 @@ async function assertFile(path, hint) {
   }
 }
 
-async function runCodexE2E() {
+async function runCodexContracts() {
   const codexHome = join(tempRoot, "codex-home");
-  const schemaDir = join(tempRoot, "codex-app-server-schema");
   await mkdir(codexHome, { recursive: true });
   await writeFile(join(codexHome, "config.toml"), "[features]\ncodex_hooks = true\n", "utf8");
-
-  const version = await run("codex", ["--version"]);
-  await run("codex", ["app-server", "generate-json-schema", "--experimental", "--out", schemaDir], {
-    env: { CODEX_HOME: codexHome },
-  });
-  await assertFile(join(schemaDir, "v2", "CommandExecParams.json"));
 
   await run(process.execPath, [distCliPath, "install", "codex", "--local"], {
     env: { CODEX_HOME: codexHome },
@@ -136,6 +140,8 @@ async function runCodexE2E() {
     TOKENJUICE_NO_OMISSION: "",
   };
 
+  const installed = await readInstalledHook(join(codexHome, "hooks.json"), "PostToolUse");
+  const invoke = (input, env = hookEnv) => run("/bin/sh", ["-c", installed], { env, input });
   const payload = postToolUsePayload(
     "git status",
     [
@@ -150,10 +156,7 @@ async function runCodexE2E() {
       "no changes added to commit",
     ].join("\n"),
   );
-  const hook = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
-    env: hookEnv,
-    input: payload,
-  });
+  const hook = await invoke(payload);
 
   assert(hook.stderr === "", `expected Codex hook stderr to stay empty, got ${hook.stderr}`);
   const output = JSON.parse(hook.stdout);
@@ -180,16 +183,12 @@ async function runCodexE2E() {
   );
   assert(!hook.stdout.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
 
-  const authoritativeHook = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
-    env: hookEnv,
-    input: postToolUsePayload(
-      "git log --oneline",
-      Array.from(
-        { length: 40 },
-        (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
-      ).join("\n"),
-    ),
-  });
+  const logText = Array.from(
+    { length: 40 },
+    (_, index) => `${(index + 1).toString(16).padStart(7, "a")} feat: commit ${index}`,
+  ).join("\n");
+  const authoritativePayload = postToolUsePayload("git log --oneline", logText);
+  const authoritativeHook = await invoke(authoritativePayload);
   const authoritativeOutput = JSON.parse(authoritativeHook.stdout);
   const authoritativeContext = authoritativeOutput.hookSpecificOutput?.additionalContext;
   assert(typeof authoritativeContext === "string", "expected authoritative Codex context");
@@ -200,32 +199,30 @@ async function runCodexE2E() {
     authoritativeObservation.authority === "authoritative-omission",
     "expected authoritative Codex omission label",
   );
-  assert(
-    authoritativeObservation.recoveryReference === "tokenjuice wrap --raw -- <command>",
-    "expected authoritative Codex omissions to retain a factual recovery reference",
-  );
+  assert(authoritativeObservation.recoveryReference === undefined, "must not claim raw recovery without storage");
+  const storedHook = await invoke(authoritativePayload, { ...hookEnv, TOKENJUICE_CODEX_STORE: "1" });
+  const storedContext = JSON.parse(storedHook.stdout).hookSpecificOutput?.additionalContext;
+  assert(typeof storedContext === "string", "expected stored Codex observation");
+  const storedObservation = JSON.parse(storedContext.slice(observationPrefix.length, -observationSuffix.length));
+  const recovery = storedObservation.recoveryReference;
+  assert(typeof recovery === "string" && /^tokenjuice cat [a-zA-Z0-9_-]+$/.test(recovery), "expected stored artifact recovery command");
+  const recovered = await run(process.execPath, [distCliPath, "cat", recovery.split(" ")[2]], { env: hookEnv });
+  assert(recovered.stdout === `${logText}\n`, "stored Codex raw output did not round-trip through cat");
 
   // Exercise the packaged CLI at both fail-open thresholds: compaction itself
   // is optional above 1 MiB, while stdin is drained above 16 MiB so Tokenjuice
   // exits cleanly instead of failing on oversized hook input.
-  const oversizedResponse = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
-    env: { CODEX_HOME: codexHome },
-    input: postToolUsePayload("bin/rails test", "x".repeat(1024 * 1024 + 1)),
-  });
+  const oversizedResponse = await invoke(postToolUsePayload("bin/rails test", "x".repeat(1024 * 1024 + 1)));
   assert(oversizedResponse.code === 0, `expected oversized Codex hook exit 0, got ${oversizedResponse.code}`);
   assert(oversizedResponse.stdout === "", "expected oversized Codex hook stdout to stay empty");
   assert(oversizedResponse.stderr === "", `expected oversized Codex hook stderr to stay empty, got ${oversizedResponse.stderr}`);
 
-  const overInputLimit = await run(process.execPath, [distCliPath, "codex-post-tool-use"], {
-    env: { CODEX_HOME: codexHome },
-    input: postToolUsePayload("bin/rails test", "x".repeat(16 * 1024 * 1024)),
-  });
+  const overInputLimit = await invoke(postToolUsePayload("bin/rails test", "x".repeat(16 * 1024 * 1024)));
   assert(overInputLimit.code === 0, `expected over-limit Codex hook exit 0, got ${overInputLimit.code}`);
   assert(overInputLimit.stdout === "", "expected over-limit Codex hook stdout to stay empty");
   assert(overInputLimit.stderr === "", `expected over-limit Codex hook stderr to stay empty, got ${overInputLimit.stderr}`);
 
   return {
-    version: version.stdout.trim(),
     doctor: report.status,
     exitCodes: {
       compacted: hook.code,
@@ -235,97 +232,96 @@ async function runCodexE2E() {
   };
 }
 
-async function runClaudeE2E() {
-  const claudeHome = join(tempRoot, "claude-home");
-  const shellPath = join(tempRoot, "claude-host-shell");
-  await mkdir(claudeHome, { recursive: true });
-  await writeFile(shellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-
-  const version = await run("claude", ["--version"]);
-  await run("claude", ["-p", "--help"]);
-
-  await run(process.execPath, [distCliPath, "install", "claude-code", "--local"], {
-    env: { CLAUDE_CONFIG_DIR: claudeHome, CLAUDE_HOME: claudeHome },
-  });
-  const doctor = await run(process.execPath, [distCliPath, "doctor", "claude-code", "--local", "--format", "json"], {
-    env: { CLAUDE_CONFIG_DIR: claudeHome, CLAUDE_HOME: claudeHome },
-  });
-  const report = JSON.parse(doctor.stdout);
-  assert(report.status === "ok", `expected Claude Code doctor status ok, got ${doctor.stdout}`);
-
-  const payload = preToolUsePayload("rg --files src/rules", {
-    shell: shellPath,
-    description: "List rule fixtures",
-    timeout: 120000,
-  });
-  const hook = await run(process.execPath, [distCliPath, "claude-code-pre-tool-use", "--wrap-launcher", distCliPath], {
-    env: { CLAUDE_CONFIG_DIR: claudeHome, CLAUDE_HOME: claudeHome },
-    input: payload,
-  });
-
-  assert(hook.stderr === "", `expected Claude Code hook stderr to stay empty, got ${hook.stderr}`);
-  const output = JSON.parse(hook.stdout);
-  const hookOutput = output.hookSpecificOutput;
-  assert(hookOutput?.hookEventName === "PreToolUse", "expected Claude Code PreToolUse output");
-  assert(hookOutput.permissionDecision === undefined, "Claude Code rewrite must not grant permission");
-  assert(hookOutput.updatedInput?.description === "List rule fixtures", "expected Claude Code to preserve tool input fields");
-  assert(hookOutput.updatedInput?.timeout === 120000, "expected Claude Code to preserve numeric tool input fields");
-  assert(hookOutput.updatedInput?.command?.includes("wrap --source claude-code --"), "expected Claude Code command to route through tokenjuice wrap");
-  assert(hookOutput.updatedInput?.command?.includes(shellPath), "expected Claude Code command to use host shell path");
-  assert(hookOutput.updatedInput?.command?.includes("rg --files src/rules"), "expected Claude Code command to preserve original command");
-
-  return {
-    version: version.stdout.trim(),
-    doctor: report.status,
-    exitCode: hook.code,
-  };
+// Read the on-disk command rather than reproducing the installer's launcher.
+async function readInstalledHook(path, event) {
+  const config = JSON.parse(await readFile(path, "utf8"));
+  const hooks = (config.hooks[event] ?? []).flatMap((entry) => entry.hooks ?? [entry]);
+  assert(hooks.length === 1, `expected one installed ${event} command in ${path}`);
+  assert(typeof hooks[0].command === "string", `missing installed command in ${path}`);
+  return hooks[0].command;
 }
 
-async function runCodeBuddyE2E() {
-  const codebuddyHome = join(tempRoot, "codebuddy-home");
-  const shellPath = join(tempRoot, "codebuddy-host-shell");
-  await mkdir(codebuddyHome, { recursive: true });
-  await writeFile(shellPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
+const preToolHosts = [
+  { host: "claude-code", dir: ".claude", file: "settings.json", envKey: "CLAUDE_CONFIG_DIR" },
+  { host: "codebuddy", dir: ".codebuddy", file: "settings.json", envKey: "CODEBUDDY_CONFIG_DIR", inputKey: "modifiedInput" },
+  { host: "cursor", dir: ".cursor", file: "hooks.json", envKey: "CURSOR_HOME", event: "preToolUse", tool: "Shell" },
+  { host: "vscode-copilot", dir: ".copilot/hooks", file: "tokenjuice-vscode.json", tool: "run_in_terminal" },
+];
 
-  const env = { CODEBUDDY_CONFIG_DIR: codebuddyHome, CODEBUDDY_HOME: codebuddyHome };
-  await run(process.execPath, [distCliPath, "install", "codebuddy", "--local"], { env });
-  const doctor = await run(process.execPath, [distCliPath, "doctor", "codebuddy", "--local", "--format", "json"], { env });
-  const report = JSON.parse(doctor.stdout);
-  assert(report.status === "ok", `expected CodeBuddy doctor status ok, got ${doctor.stdout}`);
-
-  const payload = preToolUsePayload("git status --short", {
-    shell: shellPath,
-    description: "Check working tree",
-  });
-  const hook = await run(process.execPath, [distCliPath, "codebuddy-pre-tool-use", "--wrap-launcher", distCliPath], {
-    env,
-    input: payload,
-  });
-
-  assert(hook.stderr === "", `expected CodeBuddy hook stderr to stay empty, got ${hook.stderr}`);
-  const output = JSON.parse(hook.stdout);
-  const hookOutput = output.hookSpecificOutput;
-  assert(hookOutput?.hookEventName === "PreToolUse", "expected CodeBuddy PreToolUse output");
-  assert(hookOutput.permissionDecision === undefined, "CodeBuddy rewrite must not grant permission");
-  assert(hookOutput.modifiedInput?.description === "Check working tree", "expected CodeBuddy to preserve tool input fields");
-  assert(hookOutput.modifiedInput?.command?.includes("wrap --source codebuddy --"), "expected CodeBuddy command to route through tokenjuice wrap");
-  assert(hookOutput.modifiedInput?.command?.includes(shellPath), "expected CodeBuddy command to use host shell path");
-  assert(hookOutput.modifiedInput?.command?.includes("git status --short"), "expected CodeBuddy command to preserve original command");
-
-  return {
-    doctor: report.status,
-    exitCode: hook.code,
+async function runPreToolContracts(spec) {
+  const home = join(tempRoot, spec.host);
+  const configDir = join(home, spec.dir);
+  const env = { HOME: home, ...(spec.envKey ? { [spec.envKey]: configDir } : {}) };
+  await mkdir(home, { recursive: true });
+  const cli = (args) => run(process.execPath, [distCliPath, ...args], { cwd: home, env });
+  await cli(["install", spec.host, "--local"]);
+  await cli(["install", spec.host, "--local"]);
+  const doctor = JSON.parse((await cli(["doctor", spec.host, "--local", "--format", "json"])).stdout);
+  assert(doctor.status === "ok", `${spec.host}: doctor failed: ${JSON.stringify(doctor)}`);
+  const configPath = join(configDir, spec.file);
+  const installed = await readInstalledHook(configPath, spec.event ?? "PreToolUse");
+  const invoke = (input) => run("/bin/sh", ["-c", installed], { cwd: home, env, input });
+  const payload = (command) => {
+    const value = JSON.parse(preToolUsePayload(command, { shell: "/bin/bash", description: "contract fixture", timeout: 120000 }));
+    value.tool_name = spec.tool ?? "Bash";
+    return JSON.stringify(value);
   };
+  const rewrite = async (command) => {
+    const hook = await invoke(payload(command));
+    assert(hook.stderr === "", `${spec.host}: unexpected hook stderr: ${hook.stderr}`);
+    const output = JSON.parse(hook.stdout);
+    const updated = spec.host === "cursor" ? output.updated_input : output.hookSpecificOutput?.[spec.inputKey ?? "updatedInput"];
+    assert(updated?.description === "contract fixture" && updated.timeout === 120000, `${spec.host}: lost input fields`);
+    assert(typeof updated.command === "string" && updated.command !== command, `${spec.host}: missing rewrite`);
+    return updated.command;
+  };
+  const execute = (command, ok = [0]) => run("/bin/bash", ["-c", command], { cwd: home, env, ok });
+
+  await mkdir(join(home, "files space"));
+  await Promise.all(Array.from({ length: 80 }, (_, i) => writeFile(join(home, "files space", `example-${i}.json`), "{}\n")));
+  const listing = "find 'files space' -type f";
+  const raw = await execute(listing);
+  const rewritten = await rewrite(listing);
+  const compacted = await execute(rewritten);
+  assert(compacted.stdout.length < raw.stdout.length, `${spec.host}: listing was not compacted`);
+  assert(compacted.stdout.includes("80 matches"), `${spec.host}: listing lost match count`);
+  assert(compacted.stdout.includes("files space/example-"), `${spec.host}: listing lost paths`);
+
+  // The output resembles a reducible inventory, but an exact file read must stay byte-for-byte raw.
+  const exact = `${raw.stdout}quote: ' " $ \`\n\n`;
+  for (const text of [exact, exact.trimEnd(), "", "\r\n"]) {
+    await writeFile(join(home, "exact content.txt"), text);
+    const exactResult = await execute(await rewrite("cat 'exact content.txt'"));
+    assert(exactResult.stdout === text && exactResult.stderr === "", `${spec.host}: exact read changed (${text.length} chars)`);
+  }
+
+  const failure = `"${process.execPath}" -e 'process.stdout.write("out" + String.fromCharCode(10)); process.stderr.write("err" + String.fromCharCode(10)); process.exit(7)'`;
+  const failed = await execute(await rewrite(failure), [7]);
+  assert(failed.stdout.includes("out\n") && failed.stdout.includes("err\n"), `${spec.host}: lost stdout or stderr content`);
+
+  const secondPass = await invoke(payload(rewritten));
+  assert(secondPass.stderr === "", `${spec.host}: second pass wrote stderr`);
+  assert(secondPass.stdout === "" || !JSON.parse(secondPass.stdout).hookSpecificOutput, `${spec.host}: double wrap`);
+  if (spec.host === "cursor") assert(!secondPass.stdout, "cursor: double wrap");
+  const malformed = await invoke("{broken");
+  assert(malformed.stderr === "" && (malformed.stdout === "" || malformed.stdout.trim() === "{}"), `${spec.host}: malformed input did not fail open`);
+
+  await cli(["uninstall", spec.host]);
+  const removed = JSON.parse(await readFile(configPath, "utf8").catch((error) => {
+    if (error.code === "ENOENT") return "{}";
+    throw error;
+  }));
+  const remaining = (removed.hooks?.[spec.event ?? "PreToolUse"] ?? []).flatMap((entry) => entry.hooks ?? [entry]);
+  assert(!remaining.some((entry) => entry.command === installed), `${spec.host}: uninstall left the hook command`);
+  return { doctor: doctor.status, listing: "compacted", exactRead: "preserved", failureExit: failed.code };
 }
 
 try {
+  assert(process.platform !== "win32", "hook contracts require POSIX shells; run on Linux, macOS, or WSL");
   await assertFile(distCliPath, "run `pnpm build` first");
-  const results = {
-    codex: await runCodexE2E(),
-    claudeCode: await runClaudeE2E(),
-    codebuddy: await runCodeBuddyE2E(),
-  };
-  process.stdout.write(`${JSON.stringify({ ok: true, results }, null, 2)}\n`);
+  const results = { codex: await runCodexContracts() };
+  for (const spec of preToolHosts) results[spec.host] = await runPreToolContracts(spec);
+  process.stdout.write(`${JSON.stringify({ ok: true, level: "installed-hook-contract", results }, null, 2)}\n`);
 } finally {
   await rm(tempRoot, { recursive: true, force: true });
 }

@@ -1,5 +1,6 @@
-import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -50,29 +51,6 @@ const TOKENJUICE_GROK_BUILD_ADVISORY = "Grok Build support is beta and instructi
 
 function getExplicitProjectDir(options: GrokBuildInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.GROK_BUILD_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: GrokBuildInstructionsOptions = {}): Promise<string> {

@@ -1,5 +1,7 @@
-import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -47,29 +49,6 @@ const TOKENJUICE_JETBRAINS_AI_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getProjectDir(options: JetBrainsAiRuleOptions = {}): string {
   return options.projectDir || process.env.JETBRAINS_AI_PROJECT_DIR || "";
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: JetBrainsAiRuleOptions = {}): Promise<string> {

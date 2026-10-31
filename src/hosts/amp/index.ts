@@ -1,5 +1,7 @@
-import { readdir, stat } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+
+import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -55,29 +57,6 @@ const AMP_SUBTREE_SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
 
 function getExplicitProjectDir(options: AmpInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.AMP_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: AmpInstructionsOptions = {}): Promise<string> {

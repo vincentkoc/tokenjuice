@@ -1,5 +1,7 @@
-import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -62,29 +64,6 @@ const COMPLIANCE_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_COMPL
 
 function getExplicitProjectDir(options: QodoReviewConfigOptions = {}): string | undefined {
   return options.projectDir || process.env.QODO_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: QodoReviewConfigOptions = {}): Promise<string> {

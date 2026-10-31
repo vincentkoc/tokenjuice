@@ -198,6 +198,12 @@ jobs:
       - name: Verify OpenCode V2 model-visible tool results
         run: node scripts/opencode-v2-e2e.mjs "$RUNNER_TEMP/tokenjuice-opencode-v2/node_modules/@opencode/cli-linux-x64/bin/opencode"
 
+      - name: Install pinned Copilot CLI host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-copilot-cli" --ignore-scripts --no-audit --no-fund @github/copilot-linux-x64@1.0.105
+
+      - name: Verify Copilot CLI model-visible tool results
+        run: node scripts/copilot-cli-e2e.mjs "$RUNNER_TEMP/tokenjuice-copilot-cli/node_modules/@github/copilot-linux-x64/copilot"
+
       - name: Install pinned Pi host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-pi" --ignore-scripts --no-audit --no-fund @earendil-works/pi-coding-agent@1.4.0
 

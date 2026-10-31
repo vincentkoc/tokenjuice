@@ -5,9 +5,8 @@ import { homedir } from "node:os";
 
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
-import { stripLeadingCdPrefix } from "../../core/command.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import { extractHookCommandPaths, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { compactCopilotCliResult } from "../../core/integrations/compact-copilot-cli-result.js";
+import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
 import {
   ensureHooksDir,
   findStrayTokenjuiceHookFiles,
@@ -40,37 +39,13 @@ export type UninstallCopilotCliHookResult = {
 
 export type CopilotCliDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
-// The Copilot CLI PostToolUse stdin payload is delivered in **camelCase**
-// (`toolName`, `toolArgs`, `toolResult`, `textResultForLlm`, `resultType`)
-// on live 1.0.35. Some historical fixtures and the design brief showed
-// snake_case keys, so we accept both and normalize here.
-type CopilotCliPostToolUsePayload = {
-  hook_event_name?: unknown;
-  hookEventName?: unknown;
-  tool_name?: unknown;
-  toolName?: unknown;
-  cwd?: unknown;
-  tool_input?: unknown;
-  toolInput?: unknown;
-  toolArgs?: unknown;
-  tool_result?: unknown;
-  toolResult?: unknown;
-  result_type?: unknown;
-  resultType?: unknown;
-  text_result_for_llm?: unknown;
-  textResultForLlm?: unknown;
-};
-
 const TOKENJUICE_COPILOT_CLI_FIX_COMMAND = "tokenjuice install copilot-cli";
 const TOKENJUICE_COPILOT_CLI_FILENAME = "tokenjuice-cli.json";
-const TOKENJUICE_COPILOT_CLI_MATCHER = "shell";
+const TOKENJUICE_COPILOT_CLI_MATCHER = "bash";
 const TOKENJUICE_COPILOT_CLI_SUBCOMMAND = "copilot-cli-post-tool-use";
 const TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS = 10;
 const TOKENJUICE_COPILOT_CLI_INSTRUCTIONS_ADVISORY =
   "paste the snippet from `tokenjuice doctor copilot-cli --print-instructions` into `.github/copilot-instructions.md` or `AGENTS.md` so the agent respects compacted output and knows when to prefix a command with `tokenjuice wrap --raw --`.";
-
-const GENERIC_FALLBACK_MIN_SAVED_CHARS = 120;
-const GENERIC_FALLBACK_MAX_RATIO = 0.75;
 
 const TOKENJUICE_COPILOT_CLI_INSTRUCTIONS_SNIPPET = `<!-- tokenjuice:copilot-cli BEGIN -->
 ## Terminal output compaction (tokenjuice)
@@ -221,19 +196,20 @@ function findTokenjuiceCopilotCliHook(config: CopilotCliHooksConfig): Record<str
   return undefined;
 }
 
-function collectTokenjuiceHookTimeoutWarnings(config: CopilotCliHooksConfig, fixCommand: string): string[] {
+function collectTokenjuiceHookWarnings(config: CopilotCliHooksConfig, fixCommand: string): string[] {
   const hook = findTokenjuiceCopilotCliHook(config);
   if (!hook) {
     return [];
   }
 
+  const issues: string[] = [];
   if (hook.timeoutSec !== TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS) {
-    return [
-      `configured copilot-cli tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS}s safety cap`,
-    ];
+    issues.push(`configured copilot-cli tokenjuice hook timeout is missing or stale; run ${fixCommand} to add the ${TOKENJUICE_COPILOT_CLI_HOOK_TIMEOUT_SECONDS}s safety cap`);
   }
-
-  return [];
+  if (hook.matcher !== TOKENJUICE_COPILOT_CLI_MATCHER) {
+    issues.push(`configured copilot-cli tokenjuice hook matcher is stale; run ${fixCommand} to match the bash tool`);
+  }
+  return issues;
 }
 
 export async function installCopilotCliHook(
@@ -370,7 +346,7 @@ export async function doctorCopilotCliHook(
   }
 
   const issues: string[] = [];
-  issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));
+  issues.push(...collectTokenjuiceHookWarnings(config, fixCommand));
   if (detectedCommand !== expectedCommand) {
     if (detectedCommand.includes("/Cellar/")) {
       issues.push("configured copilot-cli hook is pinned to a versioned Homebrew Cellar path");
@@ -400,158 +376,21 @@ export async function doctorCopilotCliHook(
   };
 }
 
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-
-  let wrapIndex = -1;
-  const first = argv[0];
-  const second = argv[1];
-
-  if (first === "tokenjuice") {
-    wrapIndex = 1;
-  } else if (
-    typeof first === "string"
-    && /(?:^|[\\/])node(?:\.exe)?$/iu.test(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    wrapIndex = 2;
-  }
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex === -1 ? undefined : optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
 function shouldStoreFromEnv(): boolean {
   const value = process.env.TOKENJUICE_COPILOT_CLI_STORE;
   return value === "1" || value === "true" || value === "TRUE" || value === "yes" || value === "YES";
 }
 
 export async function runCopilotCliPostToolUseHook(rawText: string): Promise<number> {
-  let payload: CopilotCliPostToolUsePayload;
   try {
-    payload = JSON.parse(rawText) as CopilotCliPostToolUsePayload;
-  } catch {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  // Only rewrite bash tool results. Matcher "shell" categorizes
-  // `toolName: "bash"` on the wire. Skip everything else.
-  // Live Copilot CLI 1.0.35 emits camelCase keys (`toolName`,
-  // `toolInput`/`toolArgs`, `toolResult`, `textResultForLlm`, `resultType`);
-  // the original design brief and captured fixture used snake_case. Accept
-  // both shapes.
-  const toolName = typeof payload.toolName === "string"
-    ? payload.toolName
-    : typeof payload.tool_name === "string"
-    ? payload.tool_name
-    : undefined;
-  if (toolName !== "bash") {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const toolInput = isRecord(payload.toolInput)
-    ? payload.toolInput
-    : isRecord(payload.toolArgs)
-    ? payload.toolArgs
-    : isRecord(payload.tool_input)
-    ? payload.tool_input
-    : undefined;
-  const command = toolInput && typeof toolInput.command === "string" ? toolInput.command : undefined;
-  if (!command || !command.trim()) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const toolResult = isRecord(payload.toolResult)
-    ? payload.toolResult
-    : isRecord(payload.tool_result)
-    ? payload.tool_result
-    : undefined;
-
-  const resultType = typeof payload.resultType === "string"
-    ? payload.resultType
-    : typeof payload.result_type === "string"
-    ? payload.result_type
-    : typeof toolResult?.resultType === "string"
-    ? toolResult.resultType
-    : typeof toolResult?.result_type === "string"
-    ? toolResult.result_type
-    : undefined;
-  // Only rewrite success output; failure/rejected/denied payloads pass
-  // through untouched so the agent still sees error context verbatim.
-  if (resultType && resultType !== "success") {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const combinedText = typeof payload.textResultForLlm === "string"
-    ? payload.textResultForLlm
-    : typeof payload.text_result_for_llm === "string"
-    ? payload.text_result_for_llm
-    : typeof toolResult?.textResultForLlm === "string"
-    ? toolResult.textResultForLlm
-    : typeof toolResult?.text_result_for_llm === "string"
-    ? toolResult.text_result_for_llm
-    : "";
-  if (!combinedText.trim()) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  if (commandRequestsTokenjuiceRawBypass(command)) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-
-  const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_COPILOT_CLI_MAX_INLINE_CHARS");
-
-  try {
-    const outcome = await compactBashResult({
-      source: "copilot-cli",
-      command,
-      visibleText: combinedText,
-      ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
-      ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
-      inspectionPolicy: "allow-safe-inventory",
+    const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_COPILOT_CLI_MAX_INLINE_CHARS");
+    const response = await compactCopilotCliResult(JSON.parse(rawText), {
+      ...(maxInlineChars !== undefined ? { maxInlineChars } : {}),
       storeRaw: shouldStoreFromEnv(),
-      metadata: { source: "copilot-cli-post-tool-use" },
-      genericFallbackMinSavedChars: GENERIC_FALLBACK_MIN_SAVED_CHARS,
-      genericFallbackMaxRatio: GENERIC_FALLBACK_MAX_RATIO,
-      skipGenericFallbackForCompoundCommands: true,
     });
-
-    if (outcome.action === "keep") {
-      process.stdout.write("{}\n");
-      return 0;
-    }
-
-    // Live Copilot CLI 1.0.35 speaks camelCase on the PostToolUse wire
-    // (observed via a `tee` trace of real invocations). We emit BOTH
-    // camelCase and snake_case keys to stay compatible across CLI versions
-    // — the bundle's Zod `.passthrough()` on hook output does not reject
-    // extra keys.
-    const modifiedResult: Record<string, unknown> = {
-      ...toolResult,
-      textResultForLlm: outcome.result.inlineText,
-      text_result_for_llm: outcome.result.inlineText,
-    };
-    const response: Record<string, unknown> = { modifiedResult };
-    process.stdout.write(`${JSON.stringify(response)}\n`);
-    return 0;
+    process.stdout.write(`${JSON.stringify(response ?? {})}\n`);
   } catch {
     process.stdout.write("{}\n");
-    return 0;
   }
+  return 0;
 }

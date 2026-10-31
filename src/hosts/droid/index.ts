@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
 import { shouldRecordStats } from "../../core/artifacts.js";
@@ -62,8 +62,29 @@ function getFactoryHome(): string {
   return process.env.FACTORY_HOME || join(homedir(), ".factory");
 }
 
-function getDefaultSettingsPath(): string {
-  return join(getFactoryHome(), "settings.json");
+async function getDefaultSettingsPath(): Promise<string> {
+  const home = getFactoryHome();
+  for (const path of [join(home, "hooks.json"), join(home, "hooks", "hooks.json")]) {
+    try {
+      // A dangling link is still configured; let the settings reader report it.
+      await lstat(path);
+      return path;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+  return join(home, "settings.json");
+}
+
+function parseFactorySettings(text: string | undefined, settingsPath: string): FactorySettings {
+  const raw = text === undefined ? undefined : JSON.parse(text) as unknown;
+  return sanitizeFactorySettings(basename(settingsPath) === "hooks.json" ? { hooks: raw } : raw);
+}
+
+function serializeFactorySettings(config: FactorySettings, settingsPath: string): string {
+  return `${JSON.stringify(basename(settingsPath) === "hooks.json" ? config.hooks : config, null, 2)}\n`;
 }
 
 function sanitizeFactorySettings(raw: unknown): FactorySettings {
@@ -79,7 +100,7 @@ function sanitizeFactorySettings(raw: unknown): FactorySettings {
 async function readFactorySettings(settingsPath: string): Promise<{ config: FactorySettings; exists: boolean }> {
   try {
     const rawText = await readFile(settingsPath, "utf8");
-    return { config: sanitizeFactorySettings(JSON.parse(rawText) as unknown), exists: true };
+    return { config: parseFactorySettings(rawText, settingsPath), exists: true };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { config: { hooks: {} }, exists: false };
@@ -158,18 +179,19 @@ function createDroidPreToolUseHook(command: string): Record<string, unknown> {
 }
 
 export async function installDroidHook(
-  settingsPath = getDefaultSettingsPath(),
+  settingsPath?: string,
   options: DroidHookCommandOptions = {},
 ): Promise<InstallDroidHookResult> {
   if (process.platform === "win32") {
     throw new Error("Droid pre-tool wrapping requires a POSIX shell; run Droid and tokenjuice in WSL.");
   }
+  settingsPath ??= await getDefaultSettingsPath();
   const settings = await readSettingsFile(settingsPath);
-  const config = sanitizeFactorySettings(settings.data ? JSON.parse(settings.data.toString("utf8")) as unknown : undefined);
+  const config = parseFactorySettings(settings.data?.toString("utf8"), settingsPath);
   const command = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_DROID_SUBCOMMAND, hostName: "droid" });
   removeTokenjuiceDroidHooks(config);
   config.hooks.PreToolUse = [...getHookGroups(config, "PreToolUse"), createDroidPreToolUseHook(command)];
-  const backupPath = await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`, "replace");
+  const backupPath = await writeSettingsFile(settings, serializeFactorySettings(config, settingsPath), "replace");
   return {
     settingsPath,
     ...(backupPath ? { backupPath } : {}),
@@ -178,24 +200,26 @@ export async function installDroidHook(
 }
 
 export async function uninstallDroidHook(
-  settingsPath = getDefaultSettingsPath(),
+  settingsPath?: string,
 ): Promise<UninstallDroidHookResult> {
+  settingsPath ??= await getDefaultSettingsPath();
   const settings = await readSettingsFile(settingsPath);
   if (!settings.data) {
     return { settingsPath, removed: 0 };
   }
-  const config = sanitizeFactorySettings(JSON.parse(settings.data.toString("utf8")) as unknown);
+  const config = parseFactorySettings(settings.data.toString("utf8"), settingsPath);
   const removed = removeTokenjuiceDroidHooks(config);
   if (removed > 0) {
-    await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`);
+    await writeSettingsFile(settings, serializeFactorySettings(config, settingsPath));
   }
   return { settingsPath, removed };
 }
 
 export async function doctorDroidHook(
-  settingsPath = getDefaultSettingsPath(),
+  settingsPath?: string,
   options: DroidHookCommandOptions = {},
 ): Promise<DroidDoctorReport> {
+  settingsPath ??= await getDefaultSettingsPath();
   const expectedCommand = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_DROID_SUBCOMMAND, hostName: "droid" });
   const { config, exists } = await readFactorySettings(settingsPath);
   const detectedCommand = exists ? findTokenjuiceDroidHookCommand(config) : undefined;

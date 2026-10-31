@@ -82,6 +82,46 @@ const noisyPayload = {
 };
 
 describe("droid hooks", () => {
+  it.each(["hooks.json", "hooks/hooks.json"])("uses the standalone %s event map ahead of settings.json", async (relativePath) => {
+    const home = process.env.FACTORY_HOME!;
+    const hooksPath = join(home, relativePath);
+    await mkdir(join(home, "hooks"), { recursive: true });
+    const settingsPath = join(home, "settings.json");
+    const settingsText = JSON.stringify({ model: "custom", hooks: { PreToolUse: [{ hooks: [{ command: "settings-only" }] }] } });
+    await writeFile(settingsPath, settingsText);
+    const existing = { SessionStart: [{ hooks: [{ type: "command", command: "other-hook" }] }], PostToolUse: [{
+      matcher: "Execute", hooks: [{ type: "command", command: "tokenjuice droid-post-tool-use" }],
+    }] };
+    await writeFile(hooksPath, JSON.stringify(existing));
+    const launcherPath = join(home, "tokenjuice");
+    await writeFile(launcherPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const options = { binaryPath: launcherPath, local: true };
+
+    const installed = await installDroidHook(undefined, options);
+    expect(installed.settingsPath).toBe(hooksPath);
+    expect(JSON.parse(await readFile(installed.backupPath!, "utf8"))).toEqual(existing);
+    const config = JSON.parse(await readFile(hooksPath, "utf8"));
+    expect(config.hooks).toBeUndefined();
+    expect(config.SessionStart).toEqual(existing.SessionStart);
+    expect(config.PostToolUse).toBeUndefined();
+    expect(config.PreToolUse[0].matcher).toBe("Execute");
+    expect(await readFile(settingsPath, "utf8")).toBe(settingsText);
+    expect(await doctorDroidHook(undefined, options)).toMatchObject({ settingsPath: hooksPath, status: "ok" });
+    expect(await uninstallDroidHook()).toEqual({ settingsPath: hooksPath, removed: 1 });
+    expect(JSON.parse(await readFile(hooksPath, "utf8"))).toEqual({ SessionStart: existing.SessionStart });
+    expect((await doctorDroidHook(undefined, options)).status).toBe("disabled");
+  });
+
+  it("does not report a shadowed settings.json hook as active", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const options = { binaryPath: "/opt/tokenjuice", local: true };
+    await installDroidHook(undefined, options);
+    await mkdir(join(home, "hooks"));
+    await writeFile(join(home, "hooks", "hooks.json"), "{}");
+    await writeFile(join(home, "hooks.json"), "{}");
+    expect(await doctorDroidHook(undefined, options)).toMatchObject({ settingsPath: join(home, "hooks.json"), status: "disabled" });
+  });
+
   it("does not install or run POSIX wrappers on native Windows", async () => {
     Object.defineProperty(process, "platform", { value: "win32", configurable: true });
     await expect(installDroidHook(undefined, { binaryPath: "/opt/tokenjuice", local: true }))

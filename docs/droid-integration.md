@@ -22,8 +22,14 @@ The wrapper uses `TOKENJUICE_DROID_SHELL`, then `SHELL`, then `bash` or `sh`.
 Commands already using `tokenjuice wrap` are left alone, including the explicit
 escape hatch `tokenjuice wrap --raw -- <command>`.
 
-The installer currently writes the legacy `~/.factory/settings.json` hook key.
-Factory only reads it when `~/.factory/hooks.json` is absent. Check the effective
-configuration in Droid's `/hooks` panel before use if you have that file.
+Install, doctor and uninstall select an existing `~/.factory/hooks.json`, then
+the legacy `~/.factory/hooks/hooks.json`, otherwise the `hooks` key in
+`~/.factory/settings.json`. Standalone files use an event map without an outer
+`hooks` key. `FACTORY_HOME` overrides `~/.factory`.
+
+Only the selected file is changed. A hook in a shadowed settings file is not
+reported as active. If you later remove a standalone file, inspect the fallback
+settings for older hooks. Restart Droid or review external changes in `/hooks`
+before relying on the updated configuration.
 
 Contract: [Factory hooks](https://docs.factory.com/harness/hooks).

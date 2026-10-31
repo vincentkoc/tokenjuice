@@ -184,7 +184,7 @@ try {
   const removed = (await runHost(["--profile", "headless", "--dump-config"])).stdout;
   assert.equal(removed, baselineConfig, "removal must restore the native baseline composition");
   const manifest = JSON.parse(await readFile(join(env.DSH_HOME, "profiles", "headless", "package.json"), "utf8"));
-  assert.equal(manifest.dependencies["tokenjuice-deepseek-harness"], undefined);
+  assert.equal(manifest.dependencies?.["tokenjuice-deepseek-harness"], undefined);
   console.log(JSON.stringify({ ok: true, host: "deepseek-harness", version, modelRequests, results: [...installed.keys()] }));
 } finally {
   server.closeAllConnections();

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -12,7 +12,8 @@ afterEach(async () => {
   await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 async function sandbox() {
-  const dir = await mkdtemp(join(tmpdir(), "tokenjuice-ante-test-"));
+  // process.cwd() resolves macOS's temporary-directory symlink after chdir.
+  const dir = await realpath(await mkdtemp(join(tmpdir(), "tokenjuice-ante-test-")));
   dirs.push(dir);
   return dir;
 }

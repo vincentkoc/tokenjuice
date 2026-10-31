@@ -1,5 +1,5 @@
 import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 export async function realpathExistingAncestor(path: string): Promise<string> {
   let current = path;
@@ -81,5 +81,32 @@ export function createSymlinkGuard<Args extends unknown[] = []>(
       }
       throw error;
     }
+  };
+}
+
+export function createProjectInstructionPathResolver(
+  label: string,
+  rejectSymlink: (filePath: string) => Promise<void>,
+) {
+  return async (filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> => {
+    const resolvedPath = resolve(filePath);
+    if (projectDir !== realProjectDir) {
+      throw new Error(`cannot use ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
+    }
+    const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
+    if (!isInsideOrEqual(realProjectDir, realParentDir)) {
+      throw new Error(
+        `cannot use ${label} ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
+      );
+    }
+
+    await rejectSymlink(projectDir);
+    await rejectSymlinkPathComponents(
+      resolvedPath,
+      projectDir,
+      `cannot use ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+    );
+    await rejectSymlink(resolvedPath);
+    return resolvedPath;
   };
 }

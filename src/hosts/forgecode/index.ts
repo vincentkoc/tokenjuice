@@ -1,7 +1,7 @@
 import { realpath } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -60,27 +60,10 @@ async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.tmp`);
 }
 
-async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use ForgeCode instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use ForgeCode instructions ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectInstructionSymlink(projectDir);
-  await rejectSymlinkPathComponents(
-    resolvedPath,
-    projectDir,
-    `cannot use ForgeCode instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
-  );
-  await rejectInstructionSymlink(resolvedPath);
-  return resolvedPath;
-}
+const resolveSafeProjectInstructionsPath = createProjectInstructionPathResolver(
+  "ForgeCode instructions",
+  rejectInstructionSymlink,
+);
 
 async function getDefaultInstructionsPath(options: ForgeCodeInstructionsOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);

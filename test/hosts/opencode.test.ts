@@ -410,7 +410,7 @@ describe("opencode runtime hook", () => {
         },
         output,
       ),
-    ).rejects.toThrow(/failed to stat bash full output file/);
+    ).rejects.toThrow(/failed to read bash full output file/);
   });
 
   it("skips compaction when the truncated outputPath is oversized", async () => {

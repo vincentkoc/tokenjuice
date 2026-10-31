@@ -3,6 +3,7 @@ import { dirname, join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
 
+import { readBoundedTextFile } from "../../core/bounded-text-file.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -361,11 +362,11 @@ async function readJsonFile(path: string | undefined): Promise<unknown> {
     return undefined;
   }
   try {
-    const details = await stat(path);
-    if (!details.isFile() || details.size > MAX_MUX_HOOK_JSON_BYTES) {
+    const text = await readBoundedTextFile(path, MAX_MUX_HOOK_JSON_BYTES, { regularFileOnly: true });
+    if (text === null) {
       return undefined;
     }
-    return JSON.parse(await readFile(path, "utf8")) as unknown;
+    return JSON.parse(text) as unknown;
   } catch {
     return undefined;
   }

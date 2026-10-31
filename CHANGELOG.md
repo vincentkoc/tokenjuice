@@ -4,6 +4,7 @@
 
 ### Fixes
 
+- Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
 - Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.

@@ -951,7 +951,7 @@ describe("installPiExtension", () => {
         },
         fakeCtx,
       ),
-    ).rejects.toThrow(`tokenjuice failed to stat bash full output file ${missingOutputPath}`);
+    ).rejects.toThrow(`tokenjuice failed to read bash full output file ${missingOutputPath}`);
     expect(await readOptional(markerPath)).toBeUndefined();
   });
 

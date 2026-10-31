@@ -10,6 +10,7 @@
 - Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
 - Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.
+- Add the Qoder synchronous post-tool runtime entrypoint for compacting successful foreground Bash output while preserving its response envelope.
 
 - Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.
 - Route Droid Execute commands through pre-tool wrapping so compacted output replaces noisy terminal output; migrate legacy tokenjuice post-tool entries on reinstall.

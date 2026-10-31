@@ -46,6 +46,15 @@ describe("Qoder CLI native target", () => {
     expect((await json(["uninstall", "qoder-cli"])).value.removed).toBe(0);
   });
 
+  it("reports malformed settings as broken JSON without aborting diagnostics", async () => {
+    const installed = await json(["install", "qoder-cli", "--local"]);
+    await writeFile(installed.value.settingsPath, "{broken");
+    const report = await json(["doctor", "qoder-cli", "--local"]);
+    expect(report.code).toBe(1);
+    expect(report.value.status).toBe("broken");
+    expect(report.value.issues).toHaveLength(1);
+  });
+
   it("returns a failing doctor status for asynchronous replacement hooks", async () => {
     const installed = await json(["install", "qoder-cli", "--local"]);
     const settings = JSON.parse(await readFile(installed.value.settingsPath, "utf8"));

@@ -80,7 +80,16 @@ export async function uninstallQoderHook(path?: string) {
 export async function doctorQoderHook(path?: string, options: TokenjuiceHookCommandOptions = {}) {
   const resolved = settingsPath(path);
   const expectedCommand = await buildTokenjuiceHookCommand(SUBCOMMAND, "Qoder CLI", options);
-  const { config } = await load(resolved);
+  let config: Settings;
+  try {
+    config = (await load(resolved)).config;
+  } catch (error) {
+    return { settingsPath: resolved, status: "broken" as const,
+      issues: [error instanceof Error ? error.message : String(error)],
+      advisories: [ADVISORY], fixCommand: FIX_COMMAND, expectedCommand,
+      checkedPaths: [resolved], missingPaths: [] as string[],
+    };
+  }
   const entries = groups(config).flatMap((group) => isRecord(group) && Array.isArray(group.hooks)
     ? group.hooks.filter(owned).map((hook) => ({ group, hook })) : []);
   const fields = await buildHookCommandDoctorFields({

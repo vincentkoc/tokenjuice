@@ -193,7 +193,7 @@ jobs:
       - name: Publish release from Release Drafter
         if: steps.existing_release.outputs.found != '1'
         id: release_drafter
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7
         with:
           publish: true
           tag: ${{ env.RELEASE_TAG }}

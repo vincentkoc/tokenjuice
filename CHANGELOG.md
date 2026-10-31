@@ -7,6 +7,7 @@
 - Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
 - Parse guarded setup commands from hook input without regular-expression backtracking.
+- Add Antigma Ante project instruction installation, doctor and uninstall, preserving the active CLAUDE.md fallback where applicable.
 
 - Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
 - Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.

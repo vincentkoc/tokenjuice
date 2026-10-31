@@ -88,6 +88,7 @@ import { uninstallPiGoSkill } from "../hosts/pi-go/index.js";
 import { uninstallPlandexConvention } from "../hosts/plandex/index.js";
 import { uninstallQodoReviewConfig } from "../hosts/qodo/index.js";
 import { uninstallQoderInstructions } from "../hosts/qoder/index.js";
+import { uninstallAnteInstructions } from "../hosts/ante/index.js";
 import { uninstallQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { uninstallReplitInstructions } from "../hosts/replit/index.js";
 import { uninstallRooInstructions } from "../hosts/roo/index.js";
@@ -618,6 +619,12 @@ const uninstallPlandexCommand = createHostCommand(() => uninstallPlandexConventi
   process.stdout.write("enable: tokenjuice install plandex\n");
 });
 
+const uninstallAnteCommand = createHostCommand(() => uninstallAnteInstructions(), (result) => {
+  process.stdout.write(`removed ante instructions: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
+  process.stdout.write("enable: tokenjuice install ante\n");
+});
+
 const uninstallQoderCommand = createHostCommand(() => uninstallQoderInstructions(), (result) => {
   process.stdout.write(`removed qoder instructions: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`instructions path: ${result.instructionsPath}\n`);
@@ -844,6 +851,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["pi", uninstallPiCommand],
   ["opencode", uninstallOpencodeCommand],
   ["plandex", uninstallPlandexCommand],
+  ["ante", uninstallAnteCommand],
   ["qoder", uninstallQoderCommand],
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],

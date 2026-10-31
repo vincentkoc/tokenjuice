@@ -755,3 +755,6 @@ export type {
   UninstallDevinHookResult,
 } from "./hosts/devin/index.js";
 export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } from "./core/analysis.js";
+
+export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructions } from "./hosts/ante/index.js";
+export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";

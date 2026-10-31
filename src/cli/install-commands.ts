@@ -88,6 +88,7 @@ import { installPiGoSkill } from "../hosts/pi-go/index.js";
 import { installPlandexConvention } from "../hosts/plandex/index.js";
 import { installQodoReviewConfig } from "../hosts/qodo/index.js";
 import { installQoderInstructions } from "../hosts/qoder/index.js";
+import { installAnteInstructions } from "../hosts/ante/index.js";
 import { installQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { installReplitInstructions } from "../hosts/replit/index.js";
 import { installRooInstructions } from "../hosts/roo/index.js";
@@ -1220,6 +1221,19 @@ const installPlandexCommand = createHostCommand(() => installPlandexConvention()
   process.stdout.write(formatInstallSuccess("plandex", "convention", details));
 });
 
+const installAnteCommand = createHostCommand(() => installAnteInstructions(), (result) => {
+  const details = [
+    { label: "Instructions", value: result.instructionsPath },
+    { label: "Beta", value: "instruction-based guidance; Ante still owns command execution" },
+    { label: "Verify", value: "tokenjuice doctor ante" },
+    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+  ];
+  if (result.backupPath) {
+    details.push({ label: "Backup", value: result.backupPath });
+  }
+  process.stdout.write(formatInstallSuccess("ante", "instructions", details));
+});
+
 const installQoderCommand = createHostCommand(() => installQoderInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
@@ -1576,6 +1590,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["openinterpreter", installOpenInterpreterCommand],
   ["openwebui", installOpenwebuiCommand],
   ["plandex", installPlandexCommand],
+  ["ante", installAnteCommand],
   ["qoder", installQoderCommand],
   ["replit", installReplitCommand],
   ["replit-agent", installReplitCommand],

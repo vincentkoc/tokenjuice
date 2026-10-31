@@ -87,6 +87,7 @@ import { doctorPiGoSkill } from "../hosts/pi-go/index.js";
 import { doctorPlandexConvention } from "../hosts/plandex/index.js";
 import { doctorQodoReviewConfig } from "../hosts/qodo/index.js";
 import { doctorQoderInstructions } from "../hosts/qoder/index.js";
+import { doctorAnteInstructions } from "../hosts/ante/index.js";
 import { doctorQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorReplitInstructions } from "../hosts/replit/index.js";
 import { doctorRooInstructions } from "../hosts/roo/index.js";
@@ -412,6 +413,16 @@ const doctorPlandexCommand = createDoctorCommand(() => doctorPlandexConvention()
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
+
+const doctorAnteCommand = createDoctorCommand(() => doctorAnteInstructions(), (report) => {
+  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 
 const doctorQoderCommand = createDoctorCommand(() => doctorQoderInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
@@ -1120,6 +1131,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pigo", doctorPiGoCommand],
   ["opencode", doctorOpencodeCommand],
   ["plandex", doctorPlandexCommand],
+  ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],

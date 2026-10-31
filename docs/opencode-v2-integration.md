@@ -40,9 +40,32 @@ installation and doctor checks.
 Restart the V2 server and start a fresh session. Inspect plugin status for
 `tokenjuice`, then check a successful noisy command in the next model request,
 an exact read, an explicit raw wrapper and a failure. Doctor checks local bundle
-content, not server loading or execution. An installed-bundle contract imports the generated entrypoint outside the source
-tree and checks registration, coherent replacement, raw/failure preservation and
-removal. This validates tokenjuice packaging, not the vendor loader or model
-request. Real V2 acceptance remains unqualified.
+content, not server loading or execution. An installed-bundle contract imports
+the generated entrypoint outside the source tree and checks registration,
+coherent replacement, raw/failure preservation and removal.
+
+## Native acceptance
+
+```sh
+pnpm build
+node scripts/opencode-v2-e2e.mjs /path/to/opencode
+```
+
+The fixture uses native **v2.0.18**, with baseline and installed-plugin sessions
+in an isolated home and disposable Git repository. Each `opencode run
+--standalone` invocation owns a private server. A loopback Chat Completions
+endpoint supplies fixed `shell` calls and captures the next model request.
+No real credentials or user settings are used.
+
+The installed plugin must shorten Git status containing 80 modified files.
+Exact reads retain CRLF and trailing newlines; inventory commands, explicit raw
+wrapping and large failed output remain identical to baseline. Explicit wrapping
+also shortens output. Native CLI events must agree with the model-facing content
+and preserve exit status 7, all 80 failure lines, stderr and the host's exit
+notice. This establishes native plugin discovery and model-visible replacement
+for the pinned host, beyond the separate installed-bundle contract.
+
+Remote provider availability, other versions, interactive permissions and
+propagation into an existing shared or T3 server remain unqualified.
 V1 hooks do not run under V2; see the [official migration guide](https://dev.opencode.ai/v2/docs/build/plugins/migrate-v1).
 After verifying V2, `tokenjuice uninstall opencode` can remove the old V1 file.

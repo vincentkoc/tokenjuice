@@ -1,5 +1,6 @@
-import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -50,29 +51,6 @@ const TOKENJUICE_CODEBUFF_ADVISORY = "Codebuff support is beta and instruction-b
 
 function getExplicitProjectDir(options: CodebuffInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.CODEBUFF_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: CodebuffInstructionsOptions = {}): Promise<string> {

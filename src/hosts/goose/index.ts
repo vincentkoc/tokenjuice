@@ -1,5 +1,7 @@
-import { readdir, realpath, stat } from "node:fs/promises";
+import { readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+
+import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -55,29 +57,6 @@ const GOOSE_HINTS_SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
 
 function getExplicitProjectDir(options: GooseHintsOptions = {}): string | undefined {
   return options.projectDir || process.env.GOOSE_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: GooseHintsOptions = {}): Promise<string> {

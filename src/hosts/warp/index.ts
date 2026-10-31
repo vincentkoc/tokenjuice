@@ -1,5 +1,7 @@
 import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -58,24 +60,6 @@ async function pathExists(path: string): Promise<boolean> {
     return true;
   } catch {
     return false;
-  }
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  return await pathExists(join(dir, ".git"));
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
   }
 }
 

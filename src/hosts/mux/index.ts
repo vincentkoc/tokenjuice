@@ -1,6 +1,8 @@
 import { chmod, lstat, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { findGitRoot } from "../shared/project-root.js";
+
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import {
   buildTokenjuiceHookCommand,
@@ -123,29 +125,6 @@ async function chooseMuxBackupPath(hookPath: string): Promise<string> {
 
 function getProjectDir(options: MuxHookCommandOptions = {}): string {
   return options.projectDir || process.env.MUX_PROJECT_DIR || "";
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: MuxHookCommandOptions = {}): Promise<string> {

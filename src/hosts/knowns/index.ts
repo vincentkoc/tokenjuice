@@ -1,5 +1,7 @@
-import { lstat, realpath, stat } from "node:fs/promises";
+import { lstat, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   collectMarkerDelimitedBlockIssues,
@@ -52,29 +54,6 @@ const TOKENJUICE_KNOWNS_ADVISORY =
 
 function getExplicitProjectDir(options: KnownsInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.KNOWNS_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: KnownsInstructionsOptions = {}): Promise<string> {

@@ -1,5 +1,7 @@
-import { lstat, realpath, rm, stat } from "node:fs/promises";
+import { lstat, realpath, rm } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -63,29 +65,6 @@ const TOKENJUICE_CODEANT_ADVISORY =
 
 function getExplicitProjectDir(options: CodeAntInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.CODEANT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: CodeAntInstructionsOptions = {}): Promise<string> {

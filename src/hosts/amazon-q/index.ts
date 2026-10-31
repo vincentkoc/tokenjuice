@@ -1,5 +1,7 @@
-import { mkdir, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
   buildTokenjuiceGuidanceBullets,
@@ -47,29 +49,6 @@ const TOKENJUICE_AMAZON_Q_ADVISORY =
 
 function getExplicitProjectDir(options: AmazonQRuleOptions = {}): string | undefined {
   return options.projectDir || process.env.AMAZON_Q_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: AmazonQRuleOptions = {}): Promise<string> {

@@ -261,7 +261,8 @@ export function parseCodexFeatureFlag(
   const scopedRe = new RegExp(`^\\s*(${escapedKeys})\\s*=\\s*(true|false)\\b`, "u");
 
   for (const rawLine of lines) {
-    const line = rawLine.replace(/#.*$/u, "");
+    const commentStart = rawLine.indexOf("#");
+    const line = commentStart === -1 ? rawLine : rawLine.slice(0, commentStart);
     const header = /^\s*\[([^\]]+)\]/u.exec(line);
     if (header) {
       currentTablePath = header[1]!

@@ -171,7 +171,7 @@ function getKimiHookBlock(text: string): string {
 
 function findTokenjuiceKimiHookCommand(text: string): string | undefined {
   const block = getKimiHookBlock(text);
-  const match = /^\s*command\s*=\s*("(?:\\.|[^"])*")\s*$/mu.exec(block);
+  const match = /^\s*command\s*=\s*("(?:\\.|[^"\\])*")\s*$/mu.exec(block);
   if (!match?.[1]) {
     return undefined;
   }

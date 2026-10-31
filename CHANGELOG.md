@@ -4,6 +4,7 @@
 
 ### Fixes
 
+- Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.
 
 - Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.

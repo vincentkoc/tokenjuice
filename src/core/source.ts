@@ -3,17 +3,30 @@ import type { ToolExecutionInput } from "../types.js";
 export const UNKNOWN_ARTIFACT_SOURCE = "unknown";
 const DEFAULT_CLI_ARTIFACT_SOURCE = "cli";
 
+function trimHyphens(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (value[start] === "-") {
+    start += 1;
+  }
+  while (end > start && value[end - 1] === "-") {
+    end -= 1;
+  }
+  return value.slice(start, end);
+}
+
 export function normalizeArtifactSource(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
 
-  const source = value
-    .trim()
-    .toLowerCase()
-    .replace(/[_\s]+/gu, "-")
-    .replace(/[^a-z0-9.-]+/gu, "-")
-    .replace(/^-+|-+$/gu, "");
+  const source = trimHyphens(
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[_\s]+/gu, "-")
+      .replace(/[^a-z0-9.-]+/gu, "-"),
+  );
 
   if (!source) {
     return null;

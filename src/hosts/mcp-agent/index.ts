@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { backupPathExists } from "../shared/instruction-file.js";
 
-import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -91,19 +91,9 @@ async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: str
 
 const resolveProjectDir = createProjectDirResolver("MCP_AGENT_PROJECT_DIR");
 
-async function rejectDefinitionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use mcp-agent definition ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectDefinitionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use mcp-agent definition ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectDefinitionSymlink(`${filePath}.bak`);

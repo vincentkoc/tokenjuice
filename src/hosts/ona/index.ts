@@ -6,7 +6,7 @@ import {
   parseSimpleYamlFrontmatter,
   stripYamlComment,
 } from "../../core/simple-yaml-frontmatter.js";
-import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -102,19 +102,9 @@ async function resolveCanonicalInstructionPath(filePath: string): Promise<string
   return join(existingAncestor.realPath, relative(existingAncestor.path, resolvedPath));
 }
 
-async function rejectSkillSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Ona skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSkillSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Ona skill ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function isSymlink(filePath: string): Promise<boolean> {
   try {

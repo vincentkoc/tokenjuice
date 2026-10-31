@@ -1,7 +1,8 @@
-import { lstat, rename, rm, rmdir, writeFile } from "node:fs/promises";
+import { rename, rm, rmdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import { createSymlinkGuard } from "../shared/path-ancestors.js";
 import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -69,19 +70,9 @@ function getIndexPath(options: LocalCodePluginOptions = {}): string {
   return join(getPluginDir(options), "index.js");
 }
 
-async function rejectPluginDirectorySymlink(pluginDir: string): Promise<void> {
-  try {
-    const stats = await lstat(pluginDir);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use LocalCode plugin directory ${pluginDir}; tokenjuice will not write through plugin directory symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectPluginDirectorySymlink = createSymlinkGuard(
+  (pluginDir) => `cannot use LocalCode plugin directory ${pluginDir}; tokenjuice will not write through plugin directory symlinks`,
+);
 
 async function rejectPluginDirectorySymlinks(options: LocalCodePluginOptions = {}): Promise<void> {
   const localCodeHome = getLocalCodeHome(options);
@@ -90,19 +81,9 @@ async function rejectPluginDirectorySymlinks(options: LocalCodePluginOptions = {
   }
 }
 
-async function rejectPluginFileSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use LocalCode plugin file ${filePath}; tokenjuice will not read or write through plugin file symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectPluginFileSymlink = createSymlinkGuard(
+  (filePath) => `cannot use LocalCode plugin file ${filePath}; tokenjuice will not read or write through plugin file symlinks`,
+);
 
 async function rejectPluginFileSidecarSymlinks(filePath: string): Promise<void> {
   await rejectPluginFileSymlink(`${filePath}.bak`);

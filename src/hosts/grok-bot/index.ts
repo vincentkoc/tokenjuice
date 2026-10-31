@@ -2,7 +2,7 @@ import { constants } from "node:fs";
 import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -101,18 +101,9 @@ async function resolveProjectDir(options: GrokBotRuleOptions = {}): Promise<stri
   return (await findGitRoot(process.cwd())) ?? process.cwd();
 }
 
-async function rejectSymlink(filePath: string): Promise<void> {
-  try {
-    if ((await lstat(filePath)).isSymbolicLink()) {
-      throw new Error(`cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`,
+);
 
 async function rejectHardlink(filePath: string): Promise<void> {
   try {

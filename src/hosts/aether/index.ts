@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 
 import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
-import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -170,19 +170,9 @@ async function chooseAetherBackupPath(filePath: string): Promise<string> {
 
 const resolveProjectDir = createProjectDirResolver("AETHER_PROJECT_DIR");
 
-async function rejectAetherPathSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Aether source ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectAetherPathSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Aether source ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectAetherPathSymlink(`${filePath}.bak`);

@@ -1,7 +1,7 @@
 import { lstat, realpath, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -71,19 +71,9 @@ function getExpectedInstructionsPath(projectDir: string): string {
   return join(projectDir, ".codeant", "instructions.json");
 }
 
-async function rejectInstructionsSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use CodeAnt instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionsSymlink = createSymlinkGuard(
+  (filePath) => `cannot use CodeAnt instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);

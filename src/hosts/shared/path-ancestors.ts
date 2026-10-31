@@ -65,3 +65,21 @@ export async function rejectSymlinkPathComponents(
     }
   }
 }
+
+export function createSymlinkGuard<Args extends unknown[] = []>(
+  errorMessage: (filePath: string, ...args: Args) => string,
+) {
+  return async (filePath: string, ...args: Args): Promise<void> => {
+    try {
+      const stats = await lstat(filePath);
+      if (stats.isSymbolicLink()) {
+        throw new Error(errorMessage(filePath, ...args));
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+  };
+}

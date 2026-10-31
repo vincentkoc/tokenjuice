@@ -1,7 +1,7 @@
-import { lstat, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
@@ -67,19 +67,9 @@ const TOKENJUICE_BITO_ADVISORY =
 
 const resolveProjectDir = createProjectDirResolver("BITO_PROJECT_DIR");
 
-async function rejectInstructionSymlink(filePath: string, label: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath, label: string) => `cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function resolveSafeProjectPath(filePath: string, projectDir: string, realProjectDir: string, label: string): Promise<string> {
   const resolvedPath = resolve(filePath);

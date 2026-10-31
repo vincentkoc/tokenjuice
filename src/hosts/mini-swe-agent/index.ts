@@ -3,9 +3,19 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
-import { findAvailableBackupPath, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  findAvailableBackupPath,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_RAW_COMMAND,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
@@ -192,8 +202,10 @@ export async function doctorMiniSweAgentConfig(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "mini-SWE-agent config",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_MINI_SWE_AGENT_MARKER,
         missingIssue: "configured mini-SWE-agent config does not look like the tokenjuice fragment",
@@ -202,23 +214,11 @@ export async function doctorMiniSweAgentConfig(
         requiredText: "observation_template",
         missingIssue: "configured mini-SWE-agent config is missing observation template wiring",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured mini-SWE-agent config is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured mini-SWE-agent config is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "mini -c mini.yaml -c .mini-swe-agent/tokenjuice.yaml",
         missingIssue: "configured mini-SWE-agent config is missing load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured mini-SWE-agent config still suggests the full escape hatch",
       },
     ],
   });

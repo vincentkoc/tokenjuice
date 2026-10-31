@@ -5,8 +5,13 @@ import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAnces
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -180,8 +185,10 @@ export async function doctorBlackboxSkill(
   }
 
   const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_BLACKBOX_OWNERSHIP_MARKER);
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Blackbox skill",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: "name: tokenjuice",
         missingIssue: "configured Blackbox skill is missing the required tokenjuice skill name",
@@ -198,23 +205,11 @@ export async function doctorBlackboxSkill(
         requiredText: TOKENJUICE_BLACKBOX_SKILL_MARKER,
         missingIssue: "configured Blackbox skill does not look like the tokenjuice skill",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Blackbox skill is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Blackbox skill is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".blackbox/skills/tokenjuice/SKILL.md",
         missingIssue: "configured Blackbox skill is missing workspace skill path guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Blackbox skill still suggests the full escape hatch",
       },
     ],
   });

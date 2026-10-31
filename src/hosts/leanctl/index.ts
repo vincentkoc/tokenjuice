@@ -6,7 +6,6 @@ import {
   type WriteInstructionFileResult,
   findAvailableBackupPath,
   writeTextFileWithoutBackup,
-  collectGuidanceIssues,
   readInstructionFile,
   removeInstructionFile,
   writeInstructionFile,
@@ -16,7 +15,7 @@ import { createProjectInstructionPathResolver, createSymlinkGuard } from "../sha
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -210,8 +209,9 @@ export async function doctorLeanCtlInstructions(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "LeanCTL instructions",
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_LEANCTL_OWNERSHIP_MARKER,
         missingIssue: "configured LeanCTL instructions are missing the tokenjuice ownership marker",
@@ -220,23 +220,11 @@ export async function doctorLeanCtlInstructions(
         requiredText: TOKENJUICE_LEANCTL_INSTRUCTIONS_MARKER,
         missingIssue: "configured LeanCTL instructions do not look like the tokenjuice instructions",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured LeanCTL instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured LeanCTL instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".leanctl/instructions.md",
         missingIssue: "configured LeanCTL instructions are missing project instruction path guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured LeanCTL instructions still suggest the full escape hatch",
       },
     ],
   });

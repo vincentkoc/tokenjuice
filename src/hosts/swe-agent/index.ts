@@ -3,9 +3,19 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
-import { findAvailableBackupPath, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  findAvailableBackupPath,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_RAW_COMMAND,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
@@ -178,8 +188,10 @@ export async function doctorSweAgentConfig(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "SWE-agent config",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_SWE_AGENT_MARKER,
         missingIssue: "configured SWE-agent config does not look like the tokenjuice fragment",
@@ -196,23 +208,11 @@ export async function doctorSweAgentConfig(
         requiredText: "next_step_truncated_observation_template",
         missingIssue: "configured SWE-agent config is missing truncated observation template wiring",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured SWE-agent config is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured SWE-agent config is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: TOKENJUICE_SWE_AGENT_LOAD_COMMAND,
         missingIssue: "configured SWE-agent config is missing load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured SWE-agent config still suggests the full escape hatch",
       },
     ],
   });

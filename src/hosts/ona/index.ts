@@ -10,13 +10,13 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import { type PathDoctorReport, buildInstructionDoctorReportFields } from "../shared/instruction-doctor.js";
 import {
   collectMarkerDelimitedBlockIssues,
@@ -400,8 +400,10 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
     ...(!frontmatter.hasValidYaml ? ["configured Ona skill has invalid discovery frontmatter"] : []),
     ...(!frontmatter.hasName ? ["configured Ona skill is missing the required tokenjuice skill name"] : []),
     ...(!frontmatter.hasDescription ? ["configured Ona skill is missing discovery frontmatter"] : []),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "Ona skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_ONA_OWNERSHIP_MARKER,
           missingIssue: "configured Ona skill is missing the tokenjuice ownership marker",
@@ -410,23 +412,11 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
           requiredText: TOKENJUICE_ONA_SKILL_MARKER,
           missingIssue: "configured Ona skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Ona skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Ona skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: TOKENJUICE_ONA_SKILL_PATH,
           missingIssue: "configured Ona skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Ona skill still suggests the full escape hatch",
         },
       ],
     }),

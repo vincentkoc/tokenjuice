@@ -1,13 +1,13 @@
 import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -204,8 +204,10 @@ export async function doctorEcaSkill(
     ...(existing.text.startsWith(`${TOKENJUICE_ECA_FRONTMATTER}\n`)
       ? []
       : ["configured eca skill is missing leading discovery frontmatter"]),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "eca skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_ECA_OWNERSHIP_MARKER,
           missingIssue: "configured eca skill is missing the tokenjuice ownership marker",
@@ -222,23 +224,11 @@ export async function doctorEcaSkill(
           requiredText: TOKENJUICE_ECA_SKILL_MARKER,
           missingIssue: "configured eca skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured eca skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured eca skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: ".eca/skills/tokenjuice/SKILL.md",
           missingIssue: "configured eca skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured eca skill still suggests the full escape hatch",
         },
       ],
     }),

@@ -40,6 +40,9 @@ installation and doctor checks.
 Restart the V2 server and start a fresh session. Inspect plugin status for
 `tokenjuice`, then check a successful noisy command in the next model request,
 an exact read, an explicit raw wrapper and a failure. Doctor checks local bundle
-content, not server loading or execution. Real V2 acceptance remains unqualified.
+content, not server loading or execution. An installed-bundle contract imports the generated entrypoint outside the source
+tree and checks registration, coherent replacement, raw/failure preservation and
+removal. This validates tokenjuice packaging, not the vendor loader or model
+request. Real V2 acceptance remains unqualified.
 V1 hooks do not run under V2; see the [official migration guide](https://dev.opencode.ai/v2/docs/build/plugins/migrate-v1).
 After verifying V2, `tokenjuice uninstall opencode` can remove the old V1 file.

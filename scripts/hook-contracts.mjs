@@ -3,7 +3,7 @@
 import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 
 const repoRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
@@ -377,10 +377,53 @@ async function runQoderContracts() {
   return { doctor: doctor.status, stdout: "compacted", envelope: "preserved", unsafe: "unchanged" };
 }
 
+async function runOpenCodeV2Contracts() {
+  const home = join(tempRoot, "opencode-v2");
+  const env = { HOME: home, OPENCODE_CONFIG_DIR: join(home, "config") };
+  await mkdir(home, { recursive: true });
+  const cli = (args) => run(process.execPath, [distCliPath, ...args], { cwd: home, env });
+  const installed = JSON.parse((await cli(["install", "opencode-v2", "--format", "json"])).stdout);
+  const doctor = JSON.parse((await cli(["doctor", "opencode-v2", "--format", "json"])).stdout);
+  assert(doctor.status === "ok", `opencode-v2: doctor failed: ${JSON.stringify(doctor)}`);
+  // This is the installed self-contained entrypoint, not a source-tree import.
+  const plugin = (await import(pathToFileURL(installed.extensionPath).href)).default;
+  assert(plugin.id === "tokenjuice", "opencode-v2: invalid default plugin definition");
+  let listener;
+  let disposed = false;
+  const cleanup = await plugin.setup({ tool: { async hook(name, callback) {
+    assert(name === "execute.after", "opencode-v2: wrong hook event");
+    listener = callback;
+    return { async dispose() { disposed = true; } };
+  } } });
+  assert(typeof listener === "function", "opencode-v2: hook was not registered");
+  const stdout = ["On branch main", "Changes not staged for commit:",
+    ...Array.from({ length: 40 }, (_, i) => `\tmodified:   src/file-${i}.ts`), "no changes added to commit"].join("\n");
+  const fixture = (command = "git status", patch = {}) => ({ tool: "shell", status: "completed", input: { command },
+    result: { output: { output: stdout, status: "completed", truncated: false, exit: 0, ...patch },
+      content: [{ type: "text", text: stdout }], metadata: { preserved: true } } });
+  const event = fixture();
+  await listener(event);
+  assert(event.result.output.output.length < stdout.length, "opencode-v2: installed bundle did not compact stdout");
+  assert(event.result.content[0].text === event.result.output.output, "opencode-v2: projections diverged");
+  assert(event.result.metadata.preserved === true, "opencode-v2: metadata changed");
+  for (const input of [fixture("cat exact.txt"), fixture("tokenjuice wrap --raw -- git status"),
+    fixture("git status", { exit: 7 }), fixture("git status", { status: "running", shellID: "background" })]) {
+    const original = input.result;
+    await listener(input);
+    assert(input.result === original, "opencode-v2: exact/raw/failure/background result changed");
+  }
+  await cleanup();
+  assert(disposed, "opencode-v2: cleanup did not dispose the registration");
+  await cli(["uninstall", "opencode-v2"]);
+  const disabled = JSON.parse((await cli(["doctor", "opencode-v2", "--format", "json"])).stdout);
+  assert(disabled.status === "disabled", "opencode-v2: uninstall left the plugin active");
+  return { doctor: doctor.status, bundle: "loaded", projections: "coherent", rawAndFailure: "preserved" };
+}
+
 try {
   assert(process.platform !== "win32", "hook contracts require POSIX shells; run on Linux, macOS, or WSL");
   await assertFile(distCliPath, "run `pnpm build` first");
-  const results = { codex: await runCodexContracts(), "qoder-cli": await runQoderContracts() };
+  const results = { codex: await runCodexContracts(), "qoder-cli": await runQoderContracts(), "opencode-v2": await runOpenCodeV2Contracts() };
   for (const spec of preToolHosts) results[spec.host] = await runPreToolContracts(spec);
   process.stdout.write(`${JSON.stringify({ ok: true, level: "installed-hook-contract", results }, null, 2)}\n`);
 } finally {

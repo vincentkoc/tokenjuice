@@ -26,9 +26,7 @@ describe("settings snapshots", () => {
     const file = await readSettingsFile(path);
     await writeSettingsFile(file, "updated", undefined, { mode: 0o700 });
     expect(await readFile(path, "utf8")).toBe("updated");
-    if (process.platform !== "win32") {
-      expect((await stat(path)).mode & 0o777).toBe(0o700);
-    }
+    expect((await stat(path)).mode & 0o777).toBe(process.platform === "win32" ? 0o666 : 0o700);
     await expect(writeSettingsFile(file, "stale", undefined, { mode: 0o755 })).rejects.toThrow("settings changed");
   });
 

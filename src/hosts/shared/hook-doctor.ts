@@ -1,3 +1,4 @@
+import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
 import { doctorQoderWorkSkill } from "../qoderwork/index.js";
@@ -285,6 +286,7 @@ export type HookIntegrationDoctorReport = {
   openhands: OpenHandsDoctorReport;
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
+  "opencode-v2": Awaited<ReturnType<typeof doctorOpenCodeV2Extension>>;
   pi: PiDoctorReport;
   "pi-go": PiGoDoctorReport;
   plandex: PlandexDoctorReport;
@@ -408,6 +410,7 @@ const hookDoctorIntegrationDoctors = {
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),
+  "opencode-v2": (options) => doctorOpenCodeV2Extension(getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),
   "pi-go": (options) => doctorPiGoSkill(undefined, getHookCommandOptions(options)),
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),

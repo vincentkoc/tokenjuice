@@ -6,6 +6,7 @@
 
 - Send CodeBuddy pre-tool command rewrites through the runtime-supported `updatedInput` field so installed hooks compact Bash output.
 - Add QoderWork terminal guidance skill installation, diagnostics and owned-file removal at its documented user skill path.
+- Add explicit OpenCode V2 plugin directory installation, diagnostics and owned-file removal without changing the V1 target.
 
 - Document the external OpenClaw plugin installation step before enabling it, replacing the outdated bundled-plugin instructions.
 - Add a Qoder CLI native-hook lifecycle API with synchronous Bash replacement, scoped removal and configuration diagnostics.

@@ -2,6 +2,8 @@ export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } 
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";
 export type { QwenWorkSkillOptions } from "./hosts/qwenwork/index.js";
+export { installOpenCodeV2Extension, doctorOpenCodeV2Extension, uninstallOpenCodeV2Extension } from "./hosts/opencode/v2/index.js";
+export type { OpenCodeV2Options } from "./hosts/opencode/v2/index.js";
 export { ARTIFACT_DIR_ENV, STATS_ENABLED_ENV, getArtifact, isValidArtifactId, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, resolveArtifactBaseDir, shouldRecordStats, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";

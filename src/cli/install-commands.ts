@@ -1,3 +1,4 @@
+import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
 import { installQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { installQoderWorkSkill } from "../hosts/qoderwork/index.js";
@@ -1340,6 +1341,15 @@ const installPiGoCommand = createHostCommand(() => installPiGoSkill(), (result) 
   process.stdout.write(formatInstallSuccess("pi-go", "skill", details));
 });
 
+const installOpencodeV2Command = createHostCommand((args) => installOpenCodeV2Extension({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("opencode-v2", "extension", [
+    { label: "Extension", value: result.extensionPath },
+    { label: "Verify", value: "tokenjuice doctor opencode-v2" },
+    { label: "Beta", value: "V2 shell output replacement; verify loading in a fresh session" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installOpencodeCommand = createHostCommand((args) => installOpenCodeExtension(undefined, { local: args.local }), (result) => {
   const details = [
     { label: "Extension", value: result.extensionPath },
@@ -1637,6 +1647,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],
   ["opencode", installOpencodeCommand],
+  ["opencode-v2", installOpencodeV2Command],
   ["roo", installRooCommand],
   ["rovo", installRovoCommand],
   ["rovo-dev", installRovoCommand],

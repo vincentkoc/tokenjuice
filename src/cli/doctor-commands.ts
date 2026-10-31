@@ -1,3 +1,4 @@
+import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { doctorQoderWorkSkill } from "../hosts/qoderwork/index.js";
@@ -398,6 +399,14 @@ const doctorPiGoCommand = createDoctorCommand(() => doctorPiGoSkill(), (report) 
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Extension({ local: args.local }), (report) => {
+  process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
@@ -1162,6 +1171,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],
   ["opencode", doctorOpencodeCommand],
+  ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],
   ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],

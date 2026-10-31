@@ -81,6 +81,15 @@ function textContent(content) {
   return content.map(item => item.text).join("");
 }
 
+function normalizeFailureOutput(output) {
+  assert.equal(typeof output, "string");
+  // Goose merges separate pipes; stderr can arrive before, during or after stdout.
+  const parts = output.split(failureStderr);
+  assert.equal(parts.length, 2, "complete stderr must occur exactly once");
+  assert.equal(parts.join(""), `${failureStdout}\nCommand exited with code 7`);
+  return `${failureStdout}${failureStderr}\nCommand exited with code 7`;
+}
+
 let expectedHints;
 let modelRequests = 0;
 let serverError;
@@ -146,7 +155,9 @@ async function session(guided, custom = true, extraEnv = {}) {
   assert.equal(modelRequests, cases.length + 1);
   assert.equal(observed.size, cases.length);
   assert.match(result.stdout, /fixture complete/u);
-  return new Map(observed);
+  const results = new Map(observed);
+  results.set("failure", normalizeFailureOutput(results.get("failure")));
+  return results;
 }
 
 try {

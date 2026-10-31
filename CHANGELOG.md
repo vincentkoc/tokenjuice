@@ -65,6 +65,8 @@
 
 ### Maintenance
 
+- Avoid false Goose native-test failures from stdout/stderr arrival order while checking complete failed output and exit status.
+
 - Record Qoder CLI 1.1.81 startup checks, account/catalog prerequisites and the exact remaining native replacement acceptance procedure.
 
 - Update the contributor and CI package manager to pnpm 10.34.9 and read the CI version from `package.json`.

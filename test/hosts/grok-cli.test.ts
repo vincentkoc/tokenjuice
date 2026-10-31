@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -39,244 +39,61 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
   }
 }
 
-describe("grok-cli hooks", () => {
-  it.each(["null", "[]", "7", "true", '"text"', "{malformed"])("fails open for unsupported hook input: %s", async (raw) => {
-    const result = await captureStdout(() => runGrokCliPostToolUseHook(raw));
-    expect(result).toEqual({ code: 0, output: "{}\n" });
-  });
-
-  it("installs a PostToolUse hook into Grok CLI user settings", async () => {
+describe("retired grok-cli hooks", () => {
+  it("refuses installation without creating or changing config", async () => {
     const home = await createTempDir();
-    const settingsPath = join(home, ".grok", "user-settings.json");
-    const launcherPath = join(home, "bin", "tokenjuice");
-    await mkdir(join(home, ".grok"), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      defaultModel: "grok-code-fast-1",
-      hooks: {
-        PostToolUse: [
-          {
-            matcher: "read_file",
-            hooks: [{ type: "command", command: "other-hook" }],
-          },
-        ],
-      },
-    }));
-
-    const result = await installGrokCliHook(settingsPath, { binaryPath: launcherPath, local: true });
-    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      defaultModel: string;
-      hooks: { PostToolUse: Array<{ matcher: string; hooks: Array<{ command: string; type?: string; timeout?: number }> }> };
-    };
-
-    await expect(access(`${settingsPath}.bak`)).resolves.toBeUndefined();
-    expect(result.settingsPath).toBe(settingsPath);
-    expect(result.command).toBe(`${launcherPath} grok-cli-post-tool-use`);
-    expect(result.backupPath).toBe(`${settingsPath}.bak`);
-    expect(parsed.defaultModel).toBe("grok-code-fast-1");
-    expect(parsed.hooks.PostToolUse).toHaveLength(2);
-    expect(parsed.hooks.PostToolUse[1]?.matcher).toBe("bash");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.type).toBe("command");
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.timeout).toBe(30);
-    expect(parsed.hooks.PostToolUse[1]?.hooks[0]?.command).toBe(`${launcherPath} grok-cli-post-tool-use`);
+    const settingsPath = join(home, "user-settings.json");
+    await expect(installGrokCliHook(settingsPath)).rejects.toThrow(/do not replace tool output/u);
+    await expect(readFile(settingsPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await writeFile(settingsPath, '{"apiKey":"fixture-no-secret"}');
+    await expect(installGrokCliHook(settingsPath)).rejects.toThrow(/tokenjuice wrap/u);
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe('{"apiKey":"fixture-no-secret"}');
   });
 
-  it("reports installed and uninstalled hook health", async () => {
+  it("finds retired hooks and removes only their commands from mixed groups", async () => {
     const home = await createTempDir();
-    const settingsPath = join(home, ".grok", "user-settings.json");
-    const launcherPath = join(home, "tokenjuice");
-    await mkdir(join(home, ".grok"), { recursive: true });
-    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-
-    await installGrokCliHook(settingsPath, { binaryPath: launcherPath, local: true });
-    const installed = await doctorGrokCliHook(settingsPath, { binaryPath: launcherPath, local: true });
-
-    expect(installed.status).toBe("ok");
-    expect(installed.detectedCommand).toBe(`${launcherPath} grok-cli-post-tool-use`);
-    expect(installed.advisories[0]).toContain("beta");
-
-    const removed = await uninstallGrokCliHook(settingsPath);
-    const disabled = await doctorGrokCliHook(settingsPath, { binaryPath: launcherPath, local: true });
-
-    expect(removed.removed).toBe(1);
-    expect(disabled.status).toBe("disabled");
+    const settingsPath = join(home, "user-settings.json");
+    const keep = { type: "command", command: 'echo "grok-cli-post-tool-use"' };
+    const unrelated = { matcher: "read_file", hooks: [{ type: "command", command: "other-hook" }] };
+    await writeFile(settingsPath, JSON.stringify({ defaultModel: "keep", hooks: {
+      PostToolUse: [unrelated, { matcher: "bash", hooks: [keep, { type: "command", command: "tokenjuice grok-cli-post-tool-use" }] }],
+      Stop: [{ hooks: [{ command: "other-hook" }] }],
+    } }));
+    expect((await doctorGrokCliHook(settingsPath)).status).toBe("broken");
+    expect((await doctorGrokCliHook(settingsPath)).fixCommand).toBe("tokenjuice uninstall grok-cli");
+    expect(await uninstallGrokCliHook(settingsPath)).toEqual({ settingsPath, removed: 1 });
+    expect(JSON.parse(await readFile(settingsPath, "utf8"))).toEqual({ defaultModel: "keep", hooks: {
+      PostToolUse: [unrelated, { matcher: "bash", hooks: [keep] }], Stop: [{ hooks: [{ command: "other-hook" }] }],
+    } });
+    expect((await doctorGrokCliHook(settingsPath)).status).toBe("disabled");
+    expect((await uninstallGrokCliHook(settingsPath)).removed).toBe(0);
   });
 
-  it("injects compacted context for noisy bash output", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "git status",
-      },
-      tool_output: {
-        success: true,
-        output: [
-          "On branch pr-65478-security-fix",
-          "Your branch and 'origin/pr-65478-security-fix' have diverged,",
-          "and have 8 and 642 different commits each, respectively.",
-          "",
-          "Changes not staged for commit:",
-          "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
-          "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
-          "",
-          "no changes added to commit",
-        ].join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      additionalContext?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(response.additionalContext).toContain("Changes not staged:");
-    expect(response.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.additionalContext).not.toContain("and have 8 and 642");
-    expect(response.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
+  it("removes old Node-launched hooks and preserves malformed commands", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "user-settings.json");
+    const malformed = { command: "tokenjuice 'grok-cli-post-tool-use" };
+    await writeFile(settingsPath, JSON.stringify({ hooks: { PostToolUse: [{ hooks: [
+      { command: "node '/opt/tokenjuice/dist/cli/main.js' grok-cli-post-tool-use" }, malformed,
+    ] }] } }));
+    expect((await uninstallGrokCliHook(settingsPath)).removed).toBe(1);
+    expect(JSON.parse(await readFile(settingsPath, "utf8")).hooks.PostToolUse[0].hooks).toEqual([malformed]);
   });
 
-  it("accepts PostToolUse payloads without an event name", async () => {
-    const payload = JSON.stringify({
-      tool_name: "bash",
-      tool_input: {
-        command: "git status",
-      },
-      tool_output: {
-        success: true,
-        output: [
-          "Changes not staged for commit:",
-          "\tmodified:   README.md",
-          "\tmodified:   docs/spec.md",
-          "no changes added to commit",
-        ].join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      additionalContext?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(response.additionalContext).toContain("M: README.md");
-    expect(response.additionalContext).toContain("M: docs/spec.md");
+  it("keeps malformed JSON unchanged during cleanup", async () => {
+    const home = await createTempDir();
+    const settingsPath = join(home, "user-settings.json");
+    await writeFile(settingsPath, "{malformed");
+    await expect(uninstallGrokCliHook(settingsPath)).rejects.toThrow(/JSON|property|Unexpected/u);
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe("{malformed");
   });
 
-  it("honors tokenjuice raw bypass commands without re-compacting them", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "tokenjuice wrap --raw -- git log --oneline -50",
-      },
-      tool_output: {
-        success: true,
-        output: Array.from({ length: 50 }, (_, i) => `${String(i).padStart(7, "0")} commit message ${i}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("honors tokenjuice full bypass commands with leading cd prefixes", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "cd /data/code/project && tokenjuice wrap --full -- python scripts/dump.py --limit 500",
-      },
-      tool_output: {
-        success: true,
-        output: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("does not treat inner command flags as a raw bypass without the wrap separator", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "tokenjuice wrap git diff --raw",
-      },
-      tool_output: {
-        success: true,
-        output: Array.from({ length: 80 }, (_, i) => `diff line ${i + 1}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      additionalContext?: string;
-    };
-
-    expect(code).toBe(0);
-    expect(response.additionalContext).toContain("diff line");
-  });
-
-  it("honors absolute tokenjuice raw bypass commands", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      cwd: "/repo",
-      tool_input: {
-        command: "/usr/local/bin/tokenjuice wrap --raw -- git status",
-      },
-      tool_output: {
-        success: true,
-        output: Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("keeps unrelated hook payloads silent", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "read_file",
-      tool_input: { path: "README.md" },
-      tool_output: { output: "hello" },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
-  });
-
-  it("keeps failed bash payloads silent", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      tool_input: {
-        command: "pnpm test",
-      },
-      tool_output: {
-        success: false,
-        output: "FAIL test/example.test.ts\nexpected true to be false\n".repeat(20),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runGrokCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output).toBe("{}\n");
+  it("keeps stale hook commands inert for noisy successful output and malformed input", async () => {
+    const payload = JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "bash",
+      tool_input: { command: "find src -type f" }, tool_output: { success: true,
+        output: Array.from({ length: 80 }, (_, i) => `src/file-${i}.ts`).join("\n") } });
+    for (const input of [payload, "null", "[]", "7", "true", "{malformed"]) {
+      expect(await captureStdout(() => runGrokCliPostToolUseHook(input))).toEqual({ code: 0, output: "{}\n" });
+    }
   });
 });

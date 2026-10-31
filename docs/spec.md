@@ -225,7 +225,6 @@ tokenjuice install gitlab-duo
 tokenjuice install greptile
 tokenjuice install grok-build
 tokenjuice install grok-bot
-tokenjuice install grok-cli
 tokenjuice install gptme
 tokenjuice install jean2
 tokenjuice install jetbrains-ai
@@ -343,7 +342,6 @@ tokenjuice install codebuddy --local
 tokenjuice install command-code --local
 tokenjuice install cursor --local
 tokenjuice install devin --local
-tokenjuice install grok-cli --local
 tokenjuice install pi --local
 tokenjuice install opencode --local
 tokenjuice install qwen-code --local
@@ -409,7 +407,7 @@ supported host hooks:
 | Greptile | `tokenjuice install greptile` | `.greptile/rules.md` | ✴️ Beta. Inserts marker-delimited plain Markdown reviewer rules that tell Greptile to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Greptile rules do not intercept review comments or command output; see `docs/greptile-integration.md` |
 | Grok Build | `tokenjuice install grok-build` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells Grok Build to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because Grok Build instructions do not intercept command output; see `docs/grok-build-integration.md` |
 | Grok Bot | `tokenjuice install grok-bot` | `.cursor/rules/tokenjuice.mdc` | ✴️ Experimental; cloud rule loading remains unqualified. Installs a local Cursor-format workspace rule with `alwaysApply: true` metadata that tells Grok Bot to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed. Grok Bot owns execution and output delivery; live rule loading is not yet verified; see `docs/grok-bot-integration.md` |
-| Community Grok CLI | `tokenjuice install grok-cli` | `~/.grok/user-settings.json` | ✴️ Beta. Uses a user-level `PostToolUse` hook for the `bash` tool; compacted context is injected alongside the original output; `tokenjuice install grok-cli --local` is available for repo-local verification; see `docs/grok-cli-integration.md` |
+| Community Grok CLI | `tokenjuice wrap -- <command>` | `~/.grok/user-settings.json` | Automatic hook retired: additive context does not replace model output. Legacy cleanup remains available; see [Grok CLI integration](grok-cli-integration.md). |
 | gptme | `tokenjuice install gptme` | `AGENTS.md` | ✴️ Beta. Inserts a marker-delimited instruction block into the current git/project root that tells gptme to use `tokenjuice wrap` for noisy terminal commands and `tokenjuice wrap --raw -- <command>` only when raw bytes are needed; guidance-only, because gptme agent instruction files do not intercept tool output; see `docs/gptme-integration.md` |
 | GitHub Copilot coding agent | `tokenjuice install copilot-agent` | `.github/hooks/tokenjuice-agent.json` | Uses a repo-local `postToolUse` hook for shell output so Copilot coding agent receives compacted terminal output; `tokenjuice install copilot-agent --local` is available for repo-local verification; see `docs/copilot-agent-integration.md` |
 | GitHub Copilot CLI | `tokenjuice install copilot-cli` | `~/.copilot/hooks/tokenjuice-cli.json` | Uses `postToolUse` shell output rewriting on the `bash` tool (matcher `"shell"`) to compact command output before it returns to the agent. Honors `COPILOT_HOME`; the shared `~/.copilot/hooks/` dir is used with a per-host filename to coexist with the VS Code Copilot Chat install. After install, run `tokenjuice doctor copilot-cli --print-instructions` and paste the snippet into the repo's `.github/copilot-instructions.md` (or `AGENTS.md`) so the agent treats compacted output as authoritative and only prefixes `tokenjuice wrap --raw --` when raw bytes are required. |

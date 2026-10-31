@@ -62,6 +62,34 @@ The [official bundle publishing contract](https://github.com/deepseek-ai/deepsee
 requires `dsh.bundle.patch`; a plain dependency alone does not activate a plugin.
 Do not edit the profile manifest by hand. Inspect the dumped configuration for the
 `tokenjuice-deepseek-harness` insertion, then verify a successful noisy Bash command
-and an exact raw command in a fresh native session. Profile loading and actual
-model-visible execution remain unqualified; the isolated bundle contract checks
-packaging and callback behavior without claiming vendor activation.
+and an exact raw command in a fresh native session.
+
+## Native acceptance fixture
+
+The pinned `0.2.2-alpha.2` fixture runs baseline and installed-plugin headless
+sessions against a loopback Chat Completions endpoint. It uses a disposable home,
+profile and Git repository, fixed Bash calls and a dummy local credential; it
+does not use a vendor account or an external model service. The native profile
+manager adds and removes an isolated copy of the built bundle, with an offline
+package operation, and the fixture checks the composed configuration.
+
+```sh
+pnpm build
+node scripts/deepseek-e2e.mjs /path/to/@deepseek-ai/dsh/lib/bin.js
+```
+
+Use Node 26 and keep `pnpm` on PATH. The Harness itself requires Node 24.9 or
+newer. The fixture can take a second argument pointing to a packaged tokenjuice
+`dist/cli/main.js`; its DeepSeek bundle must belong to that same package.
+
+The next model requests must contain shortened Git status for 80 modified files.
+Native JSON tool-result events must match those model-facing bytes. Exact file
+reads preserve CRLF and trailing blank lines; explicit raw wrapping and complete
+failed-command stdout, stderr and exit status remain identical to baseline.
+The fixture selects the documented `danger-full-access` permission preset only
+for its fixed commands and disposable repository. This does not qualify
+interactive approval or sandbox behavior.
+
+The installed-bundle contract separately checks callback behavior and canonical
+value preservation. Desktop profiles, other Harness versions, remote model
+providers and live PTC sessions need separate qualification.

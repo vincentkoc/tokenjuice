@@ -66,6 +66,7 @@
 ### Maintenance
 
 - Record Qoder CLI 1.1.81 startup checks, account/catalog prerequisites and the exact remaining native replacement acceptance procedure.
+- Qualify DeepSeek Harness 0.2.2-alpha.2 native profile activation and model-visible Bash results through an isolated loopback fixture, including exact/raw output and complete failed-command preservation.
 
 - Update the contributor and CI package manager to pnpm 10.34.9 and read the CI version from `package.json`.
 - Publish adapter support modes, automated evidence and remaining host-acceptance steps; distinguish OpenCode V1/V2 setup in T3 guidance.

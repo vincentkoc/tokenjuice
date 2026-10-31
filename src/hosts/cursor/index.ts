@@ -345,6 +345,8 @@ export async function runCursorPreToolUseHook(rawText: string, wrapLauncher = "t
     return 0;
   }
 
+  if (!isRecord(payload)) return 0;
+
   if (payload.tool_name !== "Shell" || !isRecord(payload.tool_input)) {
     return 0;
   }

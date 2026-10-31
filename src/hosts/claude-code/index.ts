@@ -390,6 +390,8 @@ export async function runClaudeCodePreToolUseHook(rawText: string, wrapLauncher 
     return 0;
   }
 
+  if (!isRecord(payload)) return 0;
+
   if (payload.hook_event_name !== "PreToolUse") {
     return 0;
   }

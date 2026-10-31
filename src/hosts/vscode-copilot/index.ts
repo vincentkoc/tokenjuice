@@ -4,8 +4,7 @@ import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
-import { stripLeadingCdPrefix } from "../../core/command.js";
-import { extractHookCommandPaths, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
 import {
   ensureHooksDir,
   findStrayTokenjuiceHookFiles,
@@ -16,6 +15,8 @@ import {
   writeCopilotHooksConfigAtomic,
   type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
+
+import { commandAlreadyWrapped } from "../shared/pre-tool-wrap.js";
 
 type VscodeCopilotHooksConfig = CopilotHooksConfig;
 
@@ -418,59 +419,6 @@ export async function doctorVscodeCopilotHook(
   };
 }
 
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-
-  let wrapIndex = -1;
-  const first = argv[0];
-  const second = argv[1];
-
-  if (first === "tokenjuice") {
-    wrapIndex = 1;
-  } else if (
-    typeof first === "string"
-    && /(?:^|[\\/])node(?:\.exe)?$/iu.test(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    wrapIndex = 2;
-  }
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex === -1 ? undefined : optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-function commandAlreadyWrapped(command: string): boolean {
-  const argv = parseShellWords(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-  if (argv[0] === "tokenjuice" && argv[1] === "wrap") {
-    return true;
-  }
-  const first = argv[0];
-  const second = argv[1];
-  if (
-    typeof first === "string"
-    && /(?:^|[\\/])node(?:\.exe)?$/iu.test(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    return true;
-  }
-  return false;
-}
-
 function resolveWrapperShell(): { path: string; flag: string; platform: "win32" | "posix" } {
   if (process.platform === "win32") {
     return { path: "powershell", flag: "-Command", platform: "win32" };
@@ -499,6 +447,11 @@ export async function runVscodeCopilotPreToolUseHook(
     return 0;
   }
 
+  if (!isRecord(payload)) {
+    process.stdout.write("{}\n");
+    return 0;
+  }
+
   const toolInputValue = readPayloadField(payload, "tool_input", "toolInput");
   if (!isTerminalToolName(readPayloadField(payload, "tool_name", "toolName")) || !isRecord(toolInputValue)) {
     process.stdout.write("{}\n");
@@ -511,11 +464,7 @@ export async function runVscodeCopilotPreToolUseHook(
     process.stdout.write("{}\n");
     return 0;
   }
-  if (commandAlreadyWrapped(command)) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-  if (commandRequestsTokenjuiceRawBypass(command)) {
+  if (commandAlreadyWrapped(command, process.platform)) {
     process.stdout.write("{}\n");
     return 0;
   }

@@ -310,8 +310,12 @@ async function runPreToolContracts(spec) {
   assert(secondPass.stderr === "", `${spec.host}: second pass wrote stderr`);
   assert(secondPass.stdout === "" || !JSON.parse(secondPass.stdout).hookSpecificOutput, `${spec.host}: double wrap`);
   if (spec.host === "cursor") assert(!secondPass.stdout, "cursor: double wrap");
-  const malformed = await invoke("{broken");
-  assert(malformed.stderr === "" && (malformed.stdout === "" || malformed.stdout.trim() === "{}"), `${spec.host}: malformed input did not fail open`);
+  for (const input of ["{broken", "null", "[]", "true", "42"]) {
+    const malformed = await invoke(input);
+    assert(malformed.stderr === "" && (malformed.stdout === "" || malformed.stdout.trim() === "{}"), `${spec.host}: non-object input ${input} did not fail open`);
+  }
+  const explicit = await invoke(payload("'/opt/my tools/tokenjuice' wrap --raw -- git status"));
+  assert(explicit.stderr === "" && (explicit.stdout === "" || explicit.stdout.trim() === "{}"), `${spec.host}: absolute raw wrapper was wrapped again`);
 
   if (spec.host === "droid") {
     const rawBypass = await invoke(payload(`"${process.execPath}" "${distCliPath}" wrap --raw -- ${listing}`));

@@ -349,6 +349,7 @@ describe("commandAlreadyWrapped", () => {
     ["node /abs/dist/cli/main.js wrap -- git status", true, "node dispatch"],
     ["/usr/bin/node /abs/dist/cli/main.js wrap --raw -- git status", true, "absolute node dispatch"],
     ["git status", false, "plain command"],
+    ["node /repo/dist/cli/main.js inspect wrap", false, "wrap is an argument to another subcommand"],
     ["tokenjuice ls", false, "non-wrap subcommand"],
     ["some-other-binary wrap -- git status", false, "unrecognized launcher"],
     ["", false, "empty string"],

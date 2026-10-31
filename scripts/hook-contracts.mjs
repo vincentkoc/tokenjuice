@@ -326,10 +326,61 @@ async function runPreToolContracts(spec) {
   return { doctor: doctor.status, listing: "compacted", exactRead: "preserved", failureExit: failed.code };
 }
 
+async function runQoderContracts() {
+  const home = join(tempRoot, "qoder-cli");
+  const settingsPath = join(home, ".qoder", "settings.json");
+  await mkdir(dirname(settingsPath), { recursive: true });
+  const foreign = { matcher: "Read", hooks: [{ type: "command", command: "printf preserved", async: false }] };
+  await writeFile(settingsPath, JSON.stringify({ editor: { theme: "preserved" }, hooks: { PostToolUse: [foreign] } }));
+  const env = { HOME: home, USERPROFILE: home };
+  const cli = (args) => run(process.execPath, [distCliPath, ...args], { cwd: home, env });
+  await cli(["install", "qoder-cli", "--local"]);
+  const first = await readFile(settingsPath, "utf8");
+  await cli(["install", "qoder-cli", "--local"]);
+  assert(await readFile(settingsPath, "utf8") === first, "qoder-cli: reinstall changed settings");
+  const doctor = JSON.parse((await cli(["doctor", "qoder-cli", "--local", "--format", "json"])).stdout);
+  assert(doctor.status === "ok", `qoder-cli: doctor failed: ${JSON.stringify(doctor)}`);
+  const groups = JSON.parse(first).hooks.PostToolUse;
+  const hook = groups.find((group) => group.matcher === "Bash")?.hooks?.[0];
+  assert(hook?.async === false && hook.timeout === 10, "qoder-cli: replacement hook must be synchronous and bounded");
+  assert(typeof hook.command === "string", "qoder-cli: installed command missing");
+  const invoke = async (payload) => {
+    const output = await run("/bin/sh", ["-c", hook.command], { cwd: home, env, input: payload });
+    assert(output.stderr === "", `qoder-cli: unexpected hook stderr: ${output.stderr}`);
+    return JSON.parse(output.stdout);
+  };
+  const stdout = ["On branch main", "Changes not staged for commit:",
+    ...Array.from({ length: 40 }, (_, i) => `\tmodified:   src/file-${i}.ts`), "no changes added to commit"].join("\n");
+  const response = { stdout, stderr: "warning retained\n", exitCode: 0, extra: { preserved: true } };
+  const payload = (command, toolResponse = response) => JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "Bash",
+    cwd: home, tool_input: { command }, tool_response: toolResponse });
+  const replacement = (await invoke(payload("git status"))).hookSpecificOutput;
+  assert(replacement?.hookEventName === "PostToolUse", "qoder-cli: wrong replacement event");
+  assert(typeof replacement.updatedToolOutput === "string", "qoder-cli: replacement must be a serialized response string");
+  const updated = JSON.parse(replacement.updatedToolOutput);
+  assert(updated.stdout.length < stdout.length && updated.stdout.includes("src/file-0.ts"), "qoder-cli: stdout not compacted");
+  assert(updated.stderr === response.stderr && updated.exitCode === 0 && updated.extra.preserved === true, "qoder-cli: response envelope changed");
+  for (const command of ["cat exact-file.txt", "tokenjuice wrap --raw -- git status",
+    "env X=1 tokenjuice wrap --raw -- git status", `"${process.execPath}" "${distCliPath}" wrap --raw -- git status`]) {
+    assert(Object.keys(await invoke(payload(command))).length === 0, `qoder-cli: exact/raw command changed: ${command}`);
+  }
+  for (const patch of [{ exitCode: 7 }, { interrupted: true }, { kind: "backgrounded", taskId: "task" }]) {
+    assert(Object.keys(await invoke(payload("git status", { ...response, ...patch }))).length === 0, "qoder-cli: unsafe outcome changed");
+  }
+  for (const input of ["{broken", "null", "[]"]) {
+    assert(Object.keys(await invoke(input)).length === 0, "qoder-cli: malformed input did not fail open");
+  }
+  await cli(["uninstall", "qoder-cli"]);
+  const remaining = JSON.parse(await readFile(settingsPath, "utf8"));
+  assert(JSON.stringify(remaining.hooks.PostToolUse) === JSON.stringify([foreign]), "qoder-cli: uninstall changed foreign hooks");
+  assert(remaining.editor.theme === "preserved", "qoder-cli: uninstall changed other settings");
+  return { doctor: doctor.status, stdout: "compacted", envelope: "preserved", unsafe: "unchanged" };
+}
+
 try {
   assert(process.platform !== "win32", "hook contracts require POSIX shells; run on Linux, macOS, or WSL");
   await assertFile(distCliPath, "run `pnpm build` first");
-  const results = { codex: await runCodexContracts() };
+  const results = { codex: await runCodexContracts(), "qoder-cli": await runQoderContracts() };
   for (const spec of preToolHosts) results[spec.host] = await runPreToolContracts(spec);
   process.stdout.write(`${JSON.stringify({ ok: true, level: "installed-hook-contract", results }, null, 2)}\n`);
 } finally {

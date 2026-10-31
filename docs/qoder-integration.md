@@ -67,4 +67,8 @@ guidance block. Explicitly wrapped commands remain untouched by the native hook.
 
 Contract: [Qoder hooks](https://docs.qoder.com/cli/hooks) and
 [SDK types](https://docs.qoder.com/cli/sdk/references-typescript).
-Live Qoder execution has not yet been qualified.
+The installed-hook contract runs the packaged CLI, reads its installed command,
+executes that command as a child process, and checks serialized response
+replacement, raw/exact-read bypass, failure/background preservation, reinstall
+idempotence and surgical uninstall. This validates tokenjuice's installed
+process boundary. Live Qoder execution has not yet been qualified.

@@ -36,6 +36,7 @@ export type CompactBashResultInput = {
 } & RewritePolicyOptions;
 
 type CompactBashResultKeepReason =
+  | "raw-bypass"
   | "empty-output"
   | InspectionCommandSkipReason
   | "configured-command"
@@ -208,6 +209,32 @@ export function shouldSkipCommand(command: string, skipCommandNames?: readonly s
   return false;
 }
 
+function commandRequestsRawBypass(command: string): boolean {
+  let argv = getEffectiveCommandArgv({ command: stripLeadingCdPrefix(command) });
+  for (let depth = 0; depth < 16; depth++) {
+    const shellBody = unwrapShellRunner({ argv });
+    if (shellBody) {
+      argv = getEffectiveCommandArgv({ command: shellBody });
+      continue;
+    }
+    const name = getCommandName(argv)?.toLowerCase();
+    const wrapIndex = name && /^tokenjuice(?:\.(?:exe|cmd|bat))?$/u.test(name)
+      ? 1
+      : name && /^node(?:\.exe)?$/u.test(name) && argv[1]?.endsWith(".js") && argv[1].includes("tokenjuice")
+        ? 2
+        : -1;
+    if (wrapIndex !== -1 && argv[wrapIndex] === "wrap") {
+      const end = argv.indexOf("--", wrapIndex + 1);
+      const options = argv.slice(wrapIndex + 1, end === -1 ? undefined : end);
+      return options.includes("--raw") || options.includes("--full");
+    }
+    const wrapped = getWrappedCommandArgv(argv);
+    if (!wrapped?.length) return false;
+    argv = wrapped;
+  }
+  return false;
+}
+
 export async function compactBashResult(input: CompactBashResultInput): Promise<CompactBashResultOutput> {
   const command = input.command.trim();
   if (!command) {
@@ -228,6 +255,10 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
       rawText,
       usedTrustedFullText,
     };
+  }
+
+  if (commandRequestsRawBypass(command)) {
+    return { action: "keep", reason: "raw-bypass", rawText, usedTrustedFullText };
   }
 
   const safeInventoryArgv = getSafeRepositoryInventorySourceArgv(command);

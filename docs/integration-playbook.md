@@ -189,3 +189,20 @@ output. Check raw bypass and failing commands too. Instruction/skill integration
 also need evidence that the host loads the file and uses `tokenjuice wrap`.
 Record missing credentials or unavailable hosts as unverified; a passing doctor
 or a generated config snapshot cannot substitute for this evidence.
+
+### OpenCode session acceptance
+
+`node scripts/opencode-e2e.mjs /path/to/opencode` runs the real host with an
+installed plugin and disposable home/workspace. CI pins OpenCode 1.19.5. A
+loopback OpenAI-compatible fixture endpoint requests real bash commands and
+checks the tool results in the host's next model request: listing compaction,
+exact file bytes, raw bypass, and failing-command output and exit status.
+The host model endpoint is local; no model credentials are passed through.
+OpenCode may install its own plugin SDK dependencies during startup.
+
+This test covers host discovery, plugin initialization, shell execution, and
+model-visible delivery. It does not validate remote model-provider availability
+or model reasoning quality. The exported plugin must be an async initializer,
+as described in the [OpenCode plugin contract](https://opencode.ai/docs/plugins/).
+Reinstall and restart OpenCode after upgrading from an installation that exported
+an unsupported `{ id, setup }` object; doctor reports that older format as a warning.

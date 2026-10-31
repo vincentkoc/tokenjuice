@@ -4144,11 +4144,11 @@ exports[`host CLI commands > install, doctor, and uninstall droid 1`] = `
 "$ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Droid
+[stdout] - tokenjuice PreToolUse hook is not installed for Droid
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook is not installed.
+[stdout] - Droid PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install droid
 exit 0
 
@@ -4156,7 +4156,7 @@ $ tokenjuice install droid
 [stdout] success: droid hook installed successfully
 
   Hook        : <SANDBOX>/home/.factory/settings.json
-  Command     : <NODE> '<LAUNCHER>' droid-post-tool-use
+  Command     : <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
   Verify      : tokenjuice doctor droid
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -4164,10 +4164,10 @@ exit 0
 $ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook compacts Execute shell output before it returns to the agent.
+[stdout] - Droid PreToolUse hook wraps Execute commands through tokenjuice before execution.
 [stdout] repair: tokenjuice install droid
 exit 0
 
@@ -4177,11 +4177,11 @@ $ tokenjuice doctor droid --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Droid PostToolUse hook compacts Execute shell output before it returns to the agent."
+    "Droid PreToolUse hook wraps Execute commands through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install droid",
-  "expectedCommand": "<NODE> '<LAUNCHER>' droid-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' droid-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -4191,7 +4191,7 @@ $ tokenjuice install droid --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.factory/settings.json",
   "backupPath": "<SANDBOX>/home/.factory/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' droid-post-tool-use"
+  "command": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -4211,11 +4211,11 @@ exit 0
 $ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Droid
+[stdout] - tokenjuice PreToolUse hook is not installed for Droid
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook is not installed.
+[stdout] - Droid PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install droid
 exit 0
 "

@@ -5,14 +5,12 @@ import { homedir } from "node:os";
 import { shouldRecordStats } from "../../core/artifacts.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
+import { type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { isTokenjuiceExecutablePath, parseShellWords } from "../shared/hook-command.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
+import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 
 export type DroidHookCommandOptions = TokenjuiceHookCommandOptions;
@@ -54,10 +52,11 @@ type DroidPostToolUsePayload = {
   cwd?: unknown;
 };
 
-const TOKENJUICE_DROID_SUBCOMMAND = "droid-post-tool-use";
+const TOKENJUICE_DROID_SUBCOMMAND = "droid-pre-tool-use";
+const TOKENJUICE_DROID_LEGACY_SUBCOMMAND = "droid-post-tool-use";
 const TOKENJUICE_DROID_FIX_COMMAND = "tokenjuice install droid";
-const TOKENJUICE_DROID_ADVISORY = "Droid PostToolUse hook compacts Execute shell output before it returns to the agent.";
-const TOKENJUICE_DROID_DISABLED_ADVISORY = "Droid PostToolUse hook is not installed.";
+const TOKENJUICE_DROID_ADVISORY = "Droid PreToolUse hook wraps Execute commands through tokenjuice before execution.";
+const TOKENJUICE_DROID_DISABLED_ADVISORY = "Droid PreToolUse hook is not installed.";
 
 function getFactoryHome(): string {
   return process.env.FACTORY_HOME || join(homedir(), ".factory");
@@ -92,16 +91,16 @@ async function readFactorySettings(settingsPath: string): Promise<{ config: Fact
 function isTokenjuiceDroidHook(entry: unknown): boolean {
   return isRecord(entry)
     && typeof entry.command === "string"
-    && entry.command.includes(TOKENJUICE_DROID_SUBCOMMAND);
+    && (entry.command.includes(TOKENJUICE_DROID_SUBCOMMAND) || entry.command.includes(TOKENJUICE_DROID_LEGACY_SUBCOMMAND));
 }
 
-function getPostToolUseGroups(config: FactorySettings): unknown[] {
-  const postToolUse = config.hooks.PostToolUse;
-  return Array.isArray(postToolUse) ? postToolUse : [];
+function getHookGroups(config: FactorySettings, event: "PreToolUse" | "PostToolUse"): unknown[] {
+  const groups = config.hooks[event];
+  return Array.isArray(groups) ? groups : [];
 }
 
 function findTokenjuiceDroidHookCommand(config: FactorySettings): string | undefined {
-  for (const group of getPostToolUseGroups(config)) {
+  for (const group of [...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")]) {
     if (!isRecord(group) || !Array.isArray(group.hooks)) {
       continue;
     }
@@ -114,10 +113,10 @@ function findTokenjuiceDroidHookCommand(config: FactorySettings): string | undef
   return undefined;
 }
 
-function removeTokenjuiceDroidHooks(config: FactorySettings): number {
+function removeTokenjuiceDroidHookEvent(config: FactorySettings, event: "PreToolUse" | "PostToolUse"): number {
   let removed = 0;
   const retainedGroups: unknown[] = [];
-  for (const group of getPostToolUseGroups(config)) {
+  for (const group of getHookGroups(config, event)) {
     if (!isRecord(group) || !Array.isArray(group.hooks)) {
       retainedGroups.push(group);
       continue;
@@ -134,14 +133,18 @@ function removeTokenjuiceDroidHooks(config: FactorySettings): number {
     }
   }
   if (retainedGroups.length > 0) {
-    config.hooks.PostToolUse = retainedGroups;
+    config.hooks[event] = retainedGroups;
   } else {
-    delete config.hooks.PostToolUse;
+    delete config.hooks[event];
   }
   return removed;
 }
 
-function createDroidPostToolUseHook(command: string): Record<string, unknown> {
+function removeTokenjuiceDroidHooks(config: FactorySettings): number {
+  return removeTokenjuiceDroidHookEvent(config, "PreToolUse") + removeTokenjuiceDroidHookEvent(config, "PostToolUse");
+}
+
+function createDroidPreToolUseHook(command: string): Record<string, unknown> {
   return {
     matcher: "Execute",
     hooks: [
@@ -158,12 +161,14 @@ export async function installDroidHook(
   settingsPath = getDefaultSettingsPath(),
   options: DroidHookCommandOptions = {},
 ): Promise<InstallDroidHookResult> {
+  if (process.platform === "win32") {
+    throw new Error("Droid pre-tool wrapping requires a POSIX shell; run Droid and tokenjuice in WSL.");
+  }
   const settings = await readSettingsFile(settingsPath);
   const config = sanitizeFactorySettings(settings.data ? JSON.parse(settings.data.toString("utf8")) as unknown : undefined);
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_DROID_SUBCOMMAND, "droid", options);
+  const command = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_DROID_SUBCOMMAND, hostName: "droid" });
   removeTokenjuiceDroidHooks(config);
-  const postToolUse = getPostToolUseGroups(config);
-  config.hooks.PostToolUse = [...postToolUse, createDroidPostToolUseHook(command)];
+  config.hooks.PreToolUse = [...getHookGroups(config, "PreToolUse"), createDroidPreToolUseHook(command)];
   const backupPath = await writeSettingsFile(settings, `${JSON.stringify(config, null, 2)}\n`, "replace");
   return {
     settingsPath,
@@ -191,21 +196,26 @@ export async function doctorDroidHook(
   settingsPath = getDefaultSettingsPath(),
   options: DroidHookCommandOptions = {},
 ): Promise<DroidDoctorReport> {
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_DROID_SUBCOMMAND, "droid", options);
+  const expectedCommand = await buildWrapLauncherHookCommand({ ...options, subcommand: TOKENJUICE_DROID_SUBCOMMAND, hostName: "droid" });
   const { config, exists } = await readFactorySettings(settingsPath);
   const detectedCommand = exists ? findTokenjuiceDroidHookCommand(config) : undefined;
 
-  return {
-    settingsPath,
-    ...(await buildHookCommandDoctorFields({
-      expectedCommand,
-      detectedCommand,
-      disabledIssue: "tokenjuice PostToolUse hook is not installed for Droid",
-      hostLabel: "Droid",
-      advisory: detectedCommand ? TOKENJUICE_DROID_ADVISORY : TOKENJUICE_DROID_DISABLED_ADVISORY,
-      fixCommand: TOKENJUICE_DROID_FIX_COMMAND,
-    })),
-  };
+  const fields = await buildHookCommandDoctorFields({
+    expectedCommand,
+    detectedCommand,
+    disabledIssue: "tokenjuice PreToolUse hook is not installed for Droid",
+    hostLabel: "Droid",
+    advisory: detectedCommand?.includes(TOKENJUICE_DROID_LEGACY_SUBCOMMAND)
+      ? "Legacy Droid PostToolUse hook adds context without replacing the original output; reinstall to enable pre-tool wrapping."
+      : detectedCommand ? TOKENJUICE_DROID_ADVISORY : TOKENJUICE_DROID_DISABLED_ADVISORY,
+    fixCommand: TOKENJUICE_DROID_FIX_COMMAND,
+  });
+  if (process.platform === "win32") {
+    fields.status = detectedCommand ? "broken" : "disabled";
+    fields.issues.push("Droid pre-tool wrapping requires a POSIX shell; run Droid and tokenjuice in WSL.");
+    fields.fixCommand = "run Droid in WSL, then run tokenjuice install droid";
+  }
+  return { settingsPath, ...fields };
 }
 
 function commandRequestsTokenjuiceRawBypass(command: string): boolean {
@@ -380,4 +390,42 @@ export async function runDroidPostToolUseHook(rawText: string): Promise<number> 
     writeEmptyHookJsonLine();
     return 0;
   }
+}
+
+/** Rewrite only Execute commands; permission policy remains owned by Droid. */
+export async function runDroidPreToolUseHook(rawText: string, wrapLauncher = "tokenjuice"): Promise<number> {
+  try {
+    const payload: unknown = JSON.parse(rawText);
+    if (!isRecord(payload) || payload.hook_event_name !== "PreToolUse"
+      || payload.tool_name !== "Execute" || !isRecord(payload.tool_input)) {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    const toolInput = payload.tool_input;
+    const command = toolInput.command;
+    if (typeof command !== "string" || !command.trim() || commandAlreadyWrapped(command)
+      || process.platform === "win32") {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    const shellPath = await resolveHostShell([
+      process.env.TOKENJUICE_DROID_SHELL, process.env.SHELL, "bash", "sh",
+    ]);
+    if (!shellPath) {
+      writeEmptyHookJsonLine();
+      return 0;
+    }
+    writeHookJsonLine({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        updatedInput: {
+          ...toolInput,
+          command: buildWrappedCommand({ wrapLauncher, shellPath, command, source: "droid" }),
+        },
+      },
+    });
+  } catch {
+    writeEmptyHookJsonLine();
+  }
+  return 0;
 }

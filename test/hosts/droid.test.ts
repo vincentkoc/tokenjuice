@@ -8,12 +8,17 @@ import {
   doctorDroidHook,
   installDroidHook,
   runDroidPostToolUseHook,
+  runDroidPreToolUseHook,
   uninstallDroidHook,
 } from "../../src/index.js";
 
 const tempDirs: string[] = [];
+const originalPlatform = Object.getOwnPropertyDescriptor(process, "platform")!;
 const originalEnv = {
   FACTORY_HOME: process.env.FACTORY_HOME,
+  TOKENJUICE_DROID_SHELL: process.env.TOKENJUICE_DROID_SHELL,
+  SHELL: process.env.SHELL,
+  PATH: process.env.PATH,
   TOKENJUICE_ARTIFACT_DIR: process.env.TOKENJUICE_ARTIFACT_DIR,
   TOKENJUICE_STATS: process.env.TOKENJUICE_STATS,
   TOKENJUICE_DROID_STORE: process.env.TOKENJUICE_DROID_STORE,
@@ -23,6 +28,7 @@ const originalEnv = {
 beforeEach(async () => {
   const home = await createTempDir();
   process.env.FACTORY_HOME = home;
+  process.env.TOKENJUICE_DROID_SHELL = "/bin/sh";
   process.env.TOKENJUICE_ARTIFACT_DIR = join(home, "artifacts");
   delete process.env.TOKENJUICE_STATS;
   delete process.env.TOKENJUICE_DROID_STORE;
@@ -30,6 +36,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  Object.defineProperty(process, "platform", originalPlatform);
   for (const [name, value] of Object.entries(originalEnv)) {
     if (value === undefined) {
       delete process.env[name];
@@ -75,6 +82,80 @@ const noisyPayload = {
 };
 
 describe("droid hooks", () => {
+  it("does not install or run POSIX wrappers on native Windows", async () => {
+    Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+    await expect(installDroidHook(undefined, { binaryPath: "/opt/tokenjuice", local: true }))
+      .rejects.toThrow("WSL");
+    const report = await doctorDroidHook(undefined, { binaryPath: "/opt/tokenjuice", local: true });
+    expect(report.status).toBe("disabled");
+    expect(report.fixCommand).toContain("WSL");
+    expect(await captureStdout(() => runDroidPreToolUseHook(JSON.stringify({
+      hook_event_name: "PreToolUse", tool_name: "Execute", tool_input: { command: "ls" },
+    })))).toEqual({ code: 0, output: "{}\n" });
+  });
+
+  it("wraps Execute input without changing other fields or granting permission", async () => {
+    const toolInput = { command: "printf '%s\\n' \"a b\" && exit 7", timeout: 45, runInBackground: false };
+    const { code, output } = await captureStdout(() => runDroidPreToolUseHook(JSON.stringify({
+      hook_event_name: "PreToolUse", tool_name: "Execute", tool_input: toolInput,
+    }), "/opt/tokenjuice/bin/tokenjuice"));
+    const response = JSON.parse(output).hookSpecificOutput;
+    expect(code).toBe(0);
+    expect(response.hookEventName).toBe("PreToolUse");
+    expect(response.updatedInput).toEqual({ ...toolInput, command: expect.stringContaining("wrap --source") });
+    expect(response.updatedInput.command).toContain("/bin/sh -lc");
+    expect(response.updatedInput.command).toContain("exit 7");
+    expect(response.permissionDecision).toBeUndefined();
+  });
+
+  it.each([
+    "not json", "null", "[]",
+    JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "Execute", tool_input: { command: "ls" } }),
+    JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Read", tool_input: { command: "ls" } }),
+    JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Execute", tool_input: {} }),
+  ])("leaves unsupported pre-tool payloads unchanged: %s", async (payload) => {
+    expect(await captureStdout(() => runDroidPreToolUseHook(payload))).toEqual({ code: 0, output: "{}\n" });
+  });
+
+  it.each([
+    "tokenjuice wrap --raw -- git status",
+    "/opt/bin/tokenjuice wrap -- git status",
+    "cd /repo && tokenjuice wrap --raw -- git status",
+    "node /opt/tokenjuice/dist/cli/main.js wrap --raw -- git status",
+  ])("does not rewrap an explicit wrapper: %s", async (command) => {
+    expect(await captureStdout(() => runDroidPreToolUseHook(JSON.stringify({
+      hook_event_name: "PreToolUse", tool_name: "Execute", tool_input: { command },
+    })))).toEqual({ code: 0, output: "{}\n" });
+  });
+
+  it("leaves commands unchanged when no shell is available", async () => {
+    process.env.TOKENJUICE_DROID_SHELL = "/missing/tokenjuice-shell";
+    process.env.SHELL = "/missing/tokenjuice-shell";
+    process.env.PATH = "";
+    expect(await captureStdout(() => runDroidPreToolUseHook(JSON.stringify({
+      hook_event_name: "PreToolUse", tool_name: "Execute", tool_input: { command: "ls" },
+    })))).toEqual({ code: 0, output: "{}\n" });
+  });
+
+  it("migrates a mixed legacy group while preserving unrelated hooks", async () => {
+    const home = process.env.FACTORY_HOME!;
+    const settingsPath = join(home, "settings.json");
+    const launcherPath = join(home, "tokenjuice");
+    await writeFile(launcherPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    await writeFile(settingsPath, JSON.stringify({ hooks: { PostToolUse: [{
+      matcher: "Execute", hooks: [
+        { type: "command", command: `${launcherPath} droid-post-tool-use` },
+        { type: "command", command: "other-hook" },
+      ],
+    }] } }));
+    expect((await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true })).status).toBe("broken");
+    await installDroidHook(settingsPath, { binaryPath: launcherPath, local: true });
+    const config = JSON.parse(await readFile(settingsPath, "utf8"));
+    expect(config.hooks.PostToolUse[0].hooks).toEqual([{ type: "command", command: "other-hook" }]);
+    expect(config.hooks.PreToolUse[0].matcher).toBe("Execute");
+    expect((await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true })).status).toBe("ok");
+  });
+
   it.each([
     ["rewrite", {}],
     ["non-post-tool-use", { hook_event_name: "PreToolUse" }],
@@ -174,23 +255,23 @@ describe("droid hooks", () => {
     expect(await readFile(artifactDir, "utf8")).toBe("occupied");
   });
 
-  it("installs a PostToolUse hook into Factory settings.json", async () => {
+  it("installs a PreToolUse hook into Factory settings.json", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
     const launcherPath = join(home, "bin", "tokenjuice");
 
     const result = await installDroidHook(settingsPath, { binaryPath: launcherPath, local: true });
     const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: { PostToolUse: Array<{ matcher: string; hooks: Array<{ type: string; command: string; timeout: number }> }> };
+      hooks: { PreToolUse: Array<{ matcher: string; hooks: Array<{ type: string; command: string; timeout: number }> }> };
     };
 
     expect(result.settingsPath).toBe(settingsPath);
-    expect(result.command).toBe(`${launcherPath} droid-post-tool-use`);
+    expect(result.command).toBe(`${launcherPath} droid-pre-tool-use --wrap-launcher ${launcherPath}`);
     expect(result.backupPath).toBeUndefined();
-    expect(parsed.hooks.PostToolUse).toHaveLength(1);
-    expect(parsed.hooks.PostToolUse[0]?.matcher).toBe("Execute");
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.command).toBe(`${launcherPath} droid-post-tool-use`);
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.timeout).toBe(60);
+    expect(parsed.hooks.PreToolUse).toHaveLength(1);
+    expect(parsed.hooks.PreToolUse[0]?.matcher).toBe("Execute");
+    expect(parsed.hooks.PreToolUse[0]?.hooks[0]?.command).toBe(`${launcherPath} droid-pre-tool-use --wrap-launcher ${launcherPath}`);
+    expect(parsed.hooks.PreToolUse[0]?.hooks[0]?.timeout).toBe(60);
   });
 
   it("preserves unrelated settings and hooks on install", async () => {
@@ -216,8 +297,7 @@ describe("droid hooks", () => {
     expect(result.backupPath).toBe(`${settingsPath}.bak`);
     expect(parsed.theme).toBe("dark");
     expect(parsed.customModels).toEqual([{ model: "test" }]);
-    expect((parsed.hooks as Record<string, unknown>).PreToolUse).toHaveLength(1);
-    expect((parsed.hooks as Record<string, unknown>).PostToolUse).toHaveLength(1);
+    expect((parsed.hooks as Record<string, unknown>).PreToolUse).toHaveLength(2);
   });
 
   it("replaces existing tokenjuice droid hook on reinstall", async () => {
@@ -227,18 +307,18 @@ describe("droid hooks", () => {
 
     await installDroidHook(settingsPath, { binaryPath: launcherPath, local: true });
     const first = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: { PostToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }> };
+      hooks: { PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }> };
     };
-    expect(first.hooks.PostToolUse).toHaveLength(1);
+    expect(first.hooks.PreToolUse).toHaveLength(1);
 
     const newLauncherPath = join(home, "bin", "tokenjuice-new");
     await installDroidHook(settingsPath, { binaryPath: newLauncherPath, local: true });
     const second = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: { PostToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }> };
+      hooks: { PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }> };
     };
 
-    expect(second.hooks.PostToolUse).toHaveLength(1);
-    expect(second.hooks.PostToolUse[0]?.hooks[0]?.command).toBe(`${newLauncherPath} droid-post-tool-use`);
+    expect(second.hooks.PreToolUse).toHaveLength(1);
+    expect(second.hooks.PreToolUse[0]?.hooks[0]?.command).toBe(`${newLauncherPath} droid-pre-tool-use --wrap-launcher ${newLauncherPath}`);
   });
 
   it("reports installed and uninstalled hook health", async () => {
@@ -251,8 +331,8 @@ describe("droid hooks", () => {
     const installed = await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true });
 
     expect(installed.status).toBe("ok");
-    expect(installed.detectedCommand).toBe(`${launcherPath} droid-post-tool-use`);
-    expect(installed.advisories[0]).toContain("PostToolUse");
+    expect(installed.detectedCommand).toBe(`${launcherPath} droid-pre-tool-use --wrap-launcher ${launcherPath}`);
+    expect(installed.advisories[0]).toContain("PreToolUse");
 
     const removed = await uninstallDroidHook(settingsPath);
     const disabled = await doctorDroidHook(settingsPath, { binaryPath: launcherPath, local: true });
@@ -485,9 +565,9 @@ describe("droid hooks", () => {
 
     // Add another hook manually
     const current = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: { PostToolUse: unknown[] };
+      hooks: { PreToolUse: unknown[] };
     };
-    current.hooks.PostToolUse.push({
+    current.hooks.PreToolUse.push({
       matcher: "Edit",
       hooks: [{ type: "command", command: "other-hook" }],
     });
@@ -495,11 +575,11 @@ describe("droid hooks", () => {
 
     const result = await uninstallDroidHook(settingsPath);
     const after = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: { PostToolUse: Array<{ matcher: string }> };
+      hooks: { PreToolUse: Array<{ matcher: string }> };
     };
 
     expect(result.removed).toBe(1);
-    expect(after.hooks.PostToolUse).toHaveLength(1);
-    expect(after.hooks.PostToolUse[0]?.matcher).toBe("Edit");
+    expect(after.hooks.PreToolUse).toHaveLength(1);
+    expect(after.hooks.PreToolUse[0]?.matcher).toBe("Edit");
   });
 });

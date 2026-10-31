@@ -67,7 +67,7 @@ export { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallD
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "./hosts/dot-agents/index.js";
 export { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "./hosts/docker-agent/index.js";
-export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
+export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, runDroidPreToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorEcaSkill, installEcaSkill, uninstallEcaSkill } from "./hosts/eca/index.js";
 export { doctorElyraSkill, installElyraSkill, uninstallElyraSkill } from "./hosts/elyra/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";

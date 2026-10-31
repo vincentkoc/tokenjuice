@@ -62,6 +62,21 @@ describe("Ante instructions", () => {
     expect(await readFile(join(root, "CLAUDE.md"), "utf8")).toBe("fallback\n");
   });
 
+  it.each([true, false])("preserves ancestor instructions above the project (Git: %s)", async (git) => {
+    const parent = await sandbox();
+    const project = join(parent, "project");
+    await mkdir(project);
+    if (git) await mkdir(join(project, ".git"));
+    const path = join(parent, "CLAUDE.md");
+    await writeFile(path, "shared instructions\n");
+    process.chdir(project);
+    expect((await installAnteInstructions()).instructionsPath).toBe(path);
+    expect((await doctorAnteInstructions()).instructionsPath).toBe(path);
+    await expect(readFile(join(project, "AGENTS.md"))).rejects.toMatchObject({ code: "ENOENT" });
+    await uninstallAnteInstructions();
+    expect(await readFile(path, "utf8")).toBe("shared instructions\n");
+  });
+
   it("refuses to overwrite or uninstall unmatched markers", async () => {
     const root = await sandbox();
     const path = join(root, "AGENTS.md");

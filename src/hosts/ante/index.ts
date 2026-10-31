@@ -79,7 +79,7 @@ async function getDefaultInstructionsPath(options: AnteInstructionsOptions = {})
       }
     }
     const parent = dirname(current);
-    if (current === root || current === parent) break;
+    if (current === parent) break;
     current = parent;
   }
   return join(root, "AGENTS.md");

@@ -11,8 +11,9 @@ use `tokenjuice wrap -- <command>` for noisy terminal output. The raw escape is
 `tokenjuice wrap --raw -- <command>`. This is guidance; Ante chooses whether to
 follow it and retains command execution and approval decisions.
 
-Within the current Git project, tokenjuice selects the nearest existing
-`AGENTS.md`, or `CLAUDE.md` when the same directory has no `AGENTS.md`. If none
+Starting at the working directory, tokenjuice searches ancestors for the nearest
+existing `AGENTS.md`, or `CLAUDE.md` when the same directory has no `AGENTS.md`.
+The search can select shared instructions above the Git root. If none
 exists, it creates `AGENTS.md` at the Git root, or the working directory outside
 Git. Existing fallback instructions remain in their original file. Uninstall
 removes only Ante's managed block. Doctor validates that block, not a running

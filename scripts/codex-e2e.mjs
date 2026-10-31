@@ -179,6 +179,8 @@ request_max_retries = 0
 stream_max_retries = 0
 [features]
 hooks = true
+plugins = false
+plugin_discovery_prefetch = false
 [analytics]
 enabled = false
 [feedback]

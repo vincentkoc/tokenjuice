@@ -53,8 +53,9 @@ the installed hook actually ran its status guard, and rejects duplicate
 observations. Chunk IDs and elapsed time are excluded from comparisons; output
 and exit status remain exact.
 
-The fixture uses a local model catalog, file-based authentication storage, and no
-provider credentials. Its one-off `--dangerously-bypass-hook-trust` invocation is
+The fixture disables plugins and marketplace discovery prefetch, uses a local
+model catalog and file-based authentication storage, and needs no provider
+credentials. Its one-off `--dangerously-bypass-hook-trust` invocation is
 limited to the freshly installed hook after checking its exact executable,
 arguments, matcher, and sole hook entry. The native read-only sandbox remains
 enabled. Real user hook trust and configuration are untouched.

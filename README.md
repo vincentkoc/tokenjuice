@@ -314,6 +314,7 @@ direct payload:
 - [Qodo integration](docs/qodo-integration.md)
 - [WorkBuddy desktop skill](docs/workbuddy-integration.md)
 - [Doubao Work skill](docs/doubao-work-integration.md)
+- [AutoClaw workflow](docs/autoclaw-integration.md)
 - [Qoder integration](docs/qoder-integration.md)
 - [Qwen Code integration](docs/qwen-code-integration.md)
 - [Replit integration](docs/replit-integration.md)

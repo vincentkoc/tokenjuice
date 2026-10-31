@@ -30,6 +30,38 @@ The plugin therefore skips PTC sub-dispatches. In PTC workflows, explicitly run
 `tokenjuice wrap -- <command>` for output intended for model consumption and use
 `--raw` for exact data. Do not count this plugin as transparent PTC compaction.
 
-This change supplies the runtime module. Bundle packaging and profile activation
-are separate work; installing a dependency alone does not activate a Cordis
-plugin. Live Harness execution remains unqualified.
+## Build and activate a profile bundle
+
+`pnpm build` creates a self-contained plugin package at
+`dist/hosts/deepseek-harness/bundle`, also included in the tokenjuice npm package.
+It contains `index.js`, a package manifest and the Cordis insertion patch.
+Its `engines.dsh` pins the qualified source contract to `0.2.2-alpha.2`.
+Other Harness versions need separate qualification.
+
+From a tokenjuice source checkout:
+
+```sh
+pnpm build
+dsh plugin --profile PROFILE add "$(pwd)/dist/hosts/deepseek-harness/bundle"
+dsh --profile PROFILE --dump-config
+```
+
+Replace `PROFILE` with the profile used by your Harness session. For an npm global
+installation, locate the bundle under
+`$(npm root -g)/tokenjuice/dist/hosts/deepseek-harness/bundle` instead.
+Keep the bundle path available while the profile links it. Quit the desktop app
+before changing its profile and start a fresh session afterward.
+
+Use the native plugin manager to remove it:
+
+```sh
+dsh plugin --profile PROFILE remove tokenjuice-deepseek-harness
+```
+
+The [official bundle publishing contract](https://github.com/deepseek-ai/deepseek-harness/blob/ce7073d51254c26cd63b22a60835b8f948deb447/docs/user/develop/basic/publish.md)
+requires `dsh.bundle.patch`; a plain dependency alone does not activate a plugin.
+Do not edit the profile manifest by hand. Inspect the dumped configuration for the
+`tokenjuice-deepseek-harness` insertion, then verify a successful noisy Bash command
+and an exact raw command in a fresh native session. Profile loading and actual
+model-visible execution remain unqualified; the isolated bundle contract checks
+packaging and callback behavior without claiming vendor activation.

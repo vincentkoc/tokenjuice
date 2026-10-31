@@ -27,6 +27,7 @@
 
 - Expose native Qoder CLI hook installation, doctor and uninstall as `qoder-cli`, retaining the existing `qoder` instruction target.
 - Add a DeepSeek Harness native Bash post-execute plugin that compacts model-facing content while preserving canonical values and downstream policy decisions.
+- Package the DeepSeek Harness runtime as a self-contained, version-pinned Cordis bundle with native profile activation guidance.
 
 ### Maintenance
 

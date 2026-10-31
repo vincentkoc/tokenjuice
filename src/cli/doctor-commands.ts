@@ -103,44 +103,29 @@ import { doctorZedInstructions } from "../hosts/zed/index.js";
 import { doctorZencoderRule } from "../hosts/zencoder/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
 import { formatHookDoctorReport, writeDoctorList } from "./doctor-output.js";
+import { createHostCommand } from "./host-command.js";
 import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
 
-async function doctorHooksCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorInstalledHooks({ local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(formatHookDoctorReport(report));
-  return report.status === "broken" ? 1 : 0;
+function createDoctorCommand<Report extends { status: string }>(
+  run: (args: ParsedArgs) => Promise<Report>,
+  writeText: (report: Report, args: ParsedArgs) => void,
+): HostCommandHandler {
+  return createHostCommand(run, writeText, (report) => report.status === "broken" ? 1 : 0);
 }
 
-async function doctorAdalCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAdalInstructions();
+const doctorHooksCommand = createDoctorCommand((args) => doctorInstalledHooks({ local: args.local }), (report) => {
+  process.stdout.write(formatHookDoctorReport(report));
+});
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAdalCommand = createDoctorCommand(() => doctorAdalInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAetherCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAetherPrompt();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAetherCommand = createDoctorCommand(() => doctorAetherPrompt(), (report) => {
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -148,314 +133,162 @@ async function doctorAetherCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAiderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAiderConvention();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAiderCommand = createDoctorCommand(() => doctorAiderConvention(), (report) => {
   process.stdout.write(`convention path: ${report.conventionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAictlCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAictlInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAictlCommand = createDoctorCommand(() => doctorAictlInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAiMemoryProtocolCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAiMemoryProtocolMemory();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAiMemoryProtocolCommand = createDoctorCommand(() => doctorAiMemoryProtocolMemory(), (report) => {
   process.stdout.write(`memory path: ${report.memoryPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentLayerCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentLayerInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentLayerCommand = createDoctorCommand(() => doctorAgentLayerInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentinitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentInitInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentinitCommand = createDoctorCommand(() => doctorAgentInitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentlinkCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentlinkInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentlinkCommand = createDoctorCommand(() => doctorAgentlinkInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentloomCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentloomRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentloomCommand = createDoctorCommand(() => doctorAgentloomRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentsCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsCliMemory();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentsCliCommand = createDoctorCommand(() => doctorAgentsCliMemory(), (report) => {
   process.stdout.write(`memory path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentsMdCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsMdInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentsMdCommand = createDoctorCommand(() => doctorAgentsMdInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentsgeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsGeRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentsgeCommand = createDoctorCommand(() => doctorAgentsGeRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentsmeshCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsMeshRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentsmeshCommand = createDoctorCommand(() => doctorAgentsMeshRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAmazonQCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAmazonQRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAmazonQCommand = createDoctorCommand(() => doctorAmazonQRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAmpCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAmpInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAmpCommand = createDoctorCommand(() => doctorAmpInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAntigravityCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAntigravityRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAntigravityCommand = createDoctorCommand(() => doctorAntigravityRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAnywhereAgentsInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAnywhereAgentsCommand = createDoctorCommand(() => doctorAnywhereAgentsInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAugmentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAugmentRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAugmentCommand = createDoctorCommand(() => doctorAugmentRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAvanteCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAvanteInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAvanteCommand = createDoctorCommand(() => doctorAvanteInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBazCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBazSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBazCommand = createDoctorCommand(() => doctorBazSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBitoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBitoGuidelines();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBitoCommand = createDoctorCommand(() => doctorBitoGuidelines(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`guidelines path: ${report.guidelinesPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -463,119 +296,63 @@ async function doctorBitoCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBlackboxCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBlackboxSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBlackboxCommand = createDoctorCommand(() => doctorBlackboxSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBlocksCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBlocksSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBlocksCommand = createDoctorCommand(() => doctorBlocksSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorClawdbotCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClawdbotSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorClawdbotCommand = createDoctorCommand(() => doctorClawdbotSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBobCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBobInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBobCommand = createDoctorCommand(() => doctorBobInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBuilderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBuilderRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBuilderCommand = createDoctorCommand(() => doctorBuilderRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCharlieCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCharlieInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCharlieCommand = createDoctorCommand(() => doctorCharlieInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodexCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodexHook(undefined, {
+const doctorCodexCommand = createDoctorCommand((args) => doctorCodexHook(undefined, {
     local: args.local,
     ...(args.noOmit ? { noOmit: true } : {}),
-  });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+  }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -602,115 +379,59 @@ async function doctorCodexCommand(args: ParsedArgs): Promise<number> {
     );
   }
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPiExtension();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorPiCommand = createDoctorCommand(() => doctorPiExtension(), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPiGoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPiGoSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorPiGoCommand = createDoctorCommand(() => doctorPiGoSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpencodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenCodeExtension();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpencodeCommand = createDoctorCommand(() => doctorOpenCodeExtension(), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPlandexCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPlandexConvention();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorPlandexCommand = createDoctorCommand(() => doctorPlandexConvention(), (report) => {
   process.stdout.write(`convention path: ${report.conventionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorQoderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQoderInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorQoderCommand = createDoctorCommand(() => doctorQoderInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorReplitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorReplitInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorReplitCommand = createDoctorCommand(() => doctorReplitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorQwenCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQwenCodeHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorQwenCodeCommand = createDoctorCommand((args) => doctorQwenCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -721,17 +442,9 @@ async function doctorQwenCodeCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCommandCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCommandCodeHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCommandCodeCommand = createDoctorCommand((args) => doctorCommandCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -742,34 +455,18 @@ async function doctorCommandCodeCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCrushCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCrushSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCrushCommand = createDoctorCommand(() => doctorCrushSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCursorCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCursorHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCursorCommand = createDoctorCommand((args) => doctorCursorHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -779,33 +476,17 @@ async function doctorCursorCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDeepagentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDeepAgentsInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDeepagentsCommand = createDoctorCommand(() => doctorDeepAgentsInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDevinCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDevinHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDevinCommand = createDoctorCommand((args) => doctorDevinHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -816,50 +497,26 @@ async function doctorDevinCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("advisories", report.advisories);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDotAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDotAgentsRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDotAgentsCommand = createDoctorCommand(() => doctorDotAgentsRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDockerAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDockerAgentPrompt();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDockerAgentCommand = createDoctorCommand(() => doctorDockerAgentPrompt(), (report) => {
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCopilotAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCopilotAgentHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCopilotAgentCommand = createDoctorCommand((args) => doctorCopilotAgentHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -870,85 +527,45 @@ async function doctorCopilotAgentCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorEcaCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorEcaSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorEcaCommand = createDoctorCommand(() => doctorEcaSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorElyraCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorElyraSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorElyraCommand = createDoctorCommand(() => doctorElyraSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorFirebaseStudioRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorFirebaseStudioCommand = createDoctorCommand(() => doctorFirebaseStudioRule(), (report) => {
   process.stdout.write(`rules path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorForgecodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorForgeCodeInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorForgecodeCommand = createDoctorCommand(() => doctorForgeCodeInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGeminiCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGeminiCliHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGeminiCliCommand = createDoctorCommand((args) => doctorGeminiCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -959,34 +576,18 @@ async function doctorGeminiCliCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGitlabDuoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGitLabDuoRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGitlabDuoCommand = createDoctorCommand(() => doctorGitLabDuoRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGrokCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokCliHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGrokCliCommand = createDoctorCommand((args) => doctorGrokCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -997,214 +598,110 @@ async function doctorGrokCliCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGptmeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGptmeInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGptmeCommand = createDoctorCommand(() => doctorGptmeInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorJean2Command(args: ParsedArgs): Promise<number> {
-  const report = await doctorJean2Instructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorJean2Command = createDoctorCommand(() => doctorJean2Instructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGrokBuildCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokBuildInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGrokBuildCommand = createDoctorCommand(() => doctorGrokBuildInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGrokBotCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokBotRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGrokBotCommand = createDoctorCommand(() => doctorGrokBotRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGooseCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGooseHints();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGooseCommand = createDoctorCommand(() => doctorGooseHints(), (report) => {
   process.stdout.write(`hints path: ${report.hintsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGreptileCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGreptileRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGreptileCommand = createDoctorCommand(() => doctorGreptileRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorQodoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQodoReviewConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorQodoCommand = createDoctorCommand(() => doctorQodoReviewConfig(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCoderabbitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeRabbitConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCoderabbitCommand = createDoctorCommand(() => doctorCodeRabbitConfig(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJetBrainsAiRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorJetbrainsAiCommand = createDoctorCommand(() => doctorJetBrainsAiRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorJunieCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJunieInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorJunieCommand = createDoctorCommand(() => doctorJunieInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorJulesCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJulesInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorJulesCommand = createDoctorCommand(() => doctorJulesInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorLeanctlCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorLeanCtlInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorLeanctlCommand = createDoctorCommand(() => doctorLeanCtlInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorKimiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKimiHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKimiCommand = createDoctorCommand((args) => doctorKimiHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1215,17 +712,9 @@ async function doctorKimiCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorLocalcodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorLocalCodePlugin();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorLocalcodeCommand = createDoctorCommand(() => doctorLocalCodePlugin(), (report) => {
   process.stdout.write(`plugin dir: ${report.pluginDir}\n`);
   process.stdout.write(`manifest path: ${report.manifestPath}\n`);
   process.stdout.write(`entrypoint path: ${report.indexPath}\n`);
@@ -1234,17 +723,9 @@ async function doctorLocalcodeCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpenhandsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenHandsHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpenhandsCommand = createDoctorCommand((args) => doctorOpenHandsHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1255,105 +736,56 @@ async function doctorOpenhandsCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpenwebuiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenWebUITool();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpenwebuiCommand = createDoctorCommand(() => doctorOpenWebUITool(), (report) => {
   process.stdout.write(`tool path: ${report.toolPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorMcpAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMcpAgentDefinition();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorMcpAgentCommand = createDoctorCommand(() => doctorMcpAgentDefinition(), (report) => {
   process.stdout.write(`agent path: ${report.agentPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMiniSweAgentConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorMiniSweAgentCommand = createDoctorCommand(() => doctorMiniSweAgentConfig(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorSweAgentConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorSweAgentCommand = createDoctorCommand(() => doctorSweAgentConfig(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorStagewiseCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorStagewiseSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorStagewiseCommand = createDoctorCommand(() => doctorStagewiseSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpenInterpreterCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenInterpreterInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpenInterpreterCommand = createDoctorCommand(() => doctorOpenInterpreterInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
 async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   if (args.printInstructions) {
@@ -1380,192 +812,97 @@ async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   return report.status === "broken" ? 1 : 0;
 }
 
-async function doctorZedCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorZedInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorZedCommand = createDoctorCommand(() => doctorZedInstructions(), (report) => {
   process.stdout.write(`rules path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorZencoderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorZencoderRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorZencoderCommand = createDoctorCommand(() => doctorZencoderRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorRooCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRooInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorRooCommand = createDoctorCommand(() => doctorRooInstructions(), (report) => {
   process.stdout.write(`rules path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorRovoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRovoInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorRovoCommand = createDoctorCommand(() => doctorRovoInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorRulerCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRulerRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorRulerCommand = createDoctorCommand(() => doctorRulerRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorTabnineCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTabnineInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorTabnineCommand = createDoctorCommand(() => doctorTabnineInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorTabbyCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTabbySystemPrompt();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorTabbyCommand = createDoctorCommand(() => doctorTabbySystemPrompt(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorTraeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTraeRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorTraeCommand = createDoctorCommand(() => doctorTraeRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorUipathCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorUiPathInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorUipathCommand = createDoctorCommand(() => doctorUiPathInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorKiloCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKiloRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKiloCommand = createDoctorCommand(() => doctorKiloRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorMistralVibeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMistralVibeInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorMistralVibeCommand = createDoctorCommand(() => doctorMistralVibeInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorMuxCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMuxHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorMuxCommand = createDoctorCommand((args) => doctorMuxHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hook path: ${report.hookPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1576,107 +913,58 @@ async function doctorMuxCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorNovakitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorNovaKitInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorNovakitCommand = createDoctorCommand(() => doctorNovaKitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorKnownsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKnownsInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKnownsCommand = createDoctorCommand(() => doctorKnownsInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOnaCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOnaSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOnaCommand = createDoctorCommand(() => doctorOnaSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorWarpCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorWarpInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorWarpCommand = createDoctorCommand(() => doctorWarpInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorKiroCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKiroSteering();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKiroCommand = createDoctorCommand(() => doctorKiroSteering(), (report) => {
   process.stdout.write(`steering path: ${report.steeringPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorWindsurfCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorWindsurfRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorWindsurfCommand = createDoctorCommand(() => doctorWindsurfRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
 async function doctorCopilotCliCommand(args: ParsedArgs): Promise<number> {
   if (args.printInstructions) {
@@ -1703,14 +991,7 @@ async function doctorCopilotCliCommand(args: ParsedArgs): Promise<number> {
   return report.status === "broken" ? 1 : 0;
 }
 
-async function doctorClaudeCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClaudeCodeHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorClaudeCodeCommand = createDoctorCommand((args) => doctorClaudeCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1720,17 +1001,9 @@ async function doctorClaudeCodeCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorClineCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClineHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorClineCommand = createDoctorCommand((args) => doctorClineHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hook path: ${report.hookPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1741,82 +1014,42 @@ async function doctorClineCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodebuffCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodebuffInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCodebuffCommand = createDoctorCommand(() => doctorCodebuffInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodeantCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeAntInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCodeantCommand = createDoctorCommand(() => doctorCodeAntInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodegenCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodegenInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCodegenCommand = createDoctorCommand(() => doctorCodegenInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCoderAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCoderAgentsSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCoderAgentsCommand = createDoctorCommand(() => doctorCoderAgentsSkill(), (report) => {
   process.stdout.write(`skill path: ${report.skillPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodebuddyCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeBuddyHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCodebuddyCommand = createDoctorCommand((args) => doctorCodeBuddyHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1826,33 +1059,17 @@ async function doctorCodebuddyCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorContinueCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorContinueRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorContinueCommand = createDoctorCommand(() => doctorContinueRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDroidCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDroidHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDroidCommand = createDoctorCommand((args) => doctorDroidHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -1863,8 +1080,7 @@ async function doctorDroidCommand(args: ParsedArgs): Promise<number> {
   writeDoctorList("advisories", report.advisories);
   writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
 export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<string, HostCommandHandler>([
   ["hooks", doctorHooksCommand],

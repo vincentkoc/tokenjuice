@@ -1,6 +1,8 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+import { backupPathExists, writeTextFileWithoutBackup } from "../shared/instruction-file.js";
 
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
@@ -148,18 +150,6 @@ function agentOwnershipSignature(agent: Record<string, unknown>): string {
 async function pathExists(path: string): Promise<boolean> {
   try {
     await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -488,18 +478,6 @@ function removePromptSourceFromAgents(
     return { ...agent, prompts };
   });
   return removed;
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
 }
 
 async function writeAetherSettings(settingsPath: string, config: AetherSettings): Promise<void> {

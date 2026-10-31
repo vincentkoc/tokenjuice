@@ -4,7 +4,7 @@
 
 ### Fixes
 
-- Publish Mux hook updates atomically from checked file snapshots, preserve executable permissions, and reserve backups without overwriting concurrent files.
+- Document the external OpenClaw plugin installation step before enabling it, replacing the outdated bundled-plugin instructions.
 - Enforce input byte limits while reading CLI files, Mux hook JSON, and Pi/OpenCode full output, including files that grow during a read.
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
 - Parse guarded setup commands from hook input without regular-expression backtracking.
@@ -12,13 +12,17 @@
 - Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
 - Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.
+- Add the Qoder synchronous post-tool runtime entrypoint for compacting successful foreground Bash output while preserving its response envelope.
 
 - Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.
 - Route Droid Execute commands through pre-tool wrapping so compacted output replaces noisy terminal output; migrate legacy tokenjuice post-tool entries on reinstall.
+- Publish Mux hook updates atomically from checked file snapshots, preserve executable permissions, and reserve backups without overwriting concurrent files.
 
 ### Maintenance
 
 - Pin third-party GitHub Actions to verified commit SHAs so mutable tags cannot replace CI or release code.
+- Document T3 Code provider configuration boundaries and verification requirements.
+
 - Audit dependencies weekly and on pull requests, validate Node.js 22/24/26, and patch the development-tool minimatch denial-of-service advisory.
 - Scan JavaScript, TypeScript, and GitHub Actions workflows with CodeQL on pull requests, main pushes, and a weekly schedule.
 

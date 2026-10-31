@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { lstat, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { backupPathExists } from "../shared/instruction-file.js";
+
 import { realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
@@ -64,18 +66,6 @@ function isLegacyTokenjuiceMcpAgentDefinitionText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^<!-- tokenjuice:mcp-agent-restore-backup=(\.bak(?:\.\d+)?) -->$/mu);
   return match?.[1];
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function chooseMcpAgentBackupPath(agentPath: string): Promise<string> {

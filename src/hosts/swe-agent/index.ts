@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
+import { backupPathExists } from "../shared/instruction-file.js";
 
 import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
@@ -49,18 +50,6 @@ function isTokenjuiceSweAgentConfigText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^# tokenjuice:swe-agent-restore-backup=(\.bak(?:\.\d+)?)$/mu);
   return match?.[1];
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function chooseSweAgentBackupPath(configPath: string): Promise<string> {

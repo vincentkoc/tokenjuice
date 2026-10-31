@@ -36,6 +36,7 @@ import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
 import { runOpenHandsPostToolUseHook } from "../hosts/openhands/index.js";
 import { runQwenCodePostToolUseHook } from "../hosts/qwen-code/index.js";
+import { runQoderPostToolUseHook } from "../hosts/qoder/hook.js";
 import { runVscodeCopilotPreToolUseHook } from "../hosts/vscode-copilot/index.js";
 import type { Format, ParsedArgs } from "./command-types.js";
 import { installCommands } from "./install-commands.js";
@@ -1112,6 +1113,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCopilotCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "droid-pre-tool-use":
       return await runDroidPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "qoder-post-tool-use":
+      return await runQoderPostToolUseHook(await readStdin(args.maxInputBytes));
     case "droid-post-tool-use":
       return await runDroidPostToolUseHook(await readStdin(args.maxInputBytes));
     default:

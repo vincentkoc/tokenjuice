@@ -1,6 +1,8 @@
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
+import { backupPathExists } from "../shared/instruction-file.js";
+
 import { findGitRoot } from "../shared/project-root.js";
 
 import { readBoundedTextFile } from "../../core/bounded-text-file.js";
@@ -78,18 +80,6 @@ async function assertNoMuxHookSymlink(hookPath: string, operation: string): Prom
   const symlink = await findMuxHookSymlink(hookPath);
   if (symlink) {
     throw new Error(`cannot safely ${operation} Mux hook through symlinked ${symlink.label} ${symlink.path}; remove the symlink, then rerun tokenjuice ${operation} mux`);
-  }
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
   }
 }
 

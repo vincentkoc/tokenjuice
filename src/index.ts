@@ -111,6 +111,7 @@ export { doctorPiGoSkill, installPiGoSkill, uninstallPiGoSkill } from "./hosts/p
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorQodoReviewConfig, installQodoReviewConfig, uninstallQodoReviewConfig } from "./hosts/qodo/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
+export { runQoderPostToolUseHook } from "./hosts/qoder/hook.js";
 export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";

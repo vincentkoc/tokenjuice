@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+
+import { backupPathExists } from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
@@ -49,18 +51,6 @@ function isTokenjuiceDockerAgentPromptText(text: string): boolean {
 function readRestoreBackupSuffix(text: string): string | undefined {
   const match = text.match(/^# tokenjuice:docker-agent-restore-backup=(\.bak(?:\.\d+)?)$/mu);
   return match?.[1];
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function chooseDockerAgentBackupPath(promptPath: string): Promise<string> {

@@ -54,11 +54,13 @@ async function run(command, args, timeout = 90_000) {
 }
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+const failureStderr = "failure-stderr\n";
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
-  { id: "failure", command: "printf 'failure-output\\n'; printf 'failure-stderr\\n' >&2; exit 7" },
+  { id: "failure", command: `${quote(process.execPath)} -e ${quote(`process.stdout.write(${JSON.stringify(failureOutput)}); process.stderr.write(${JSON.stringify(failureStderr)}); process.exit(7);`)}` },
 ];
 function stdout(content) {
   assert.equal(typeof content, "string");
@@ -169,7 +171,10 @@ try {
   assert.equal(stdout(installed.get("exact")), exact, "hook must preserve exact file bytes");
   assert.match(installed.get("exact"), /\nStderr: \(empty\)\nExit Code: 0\n/u, "exact read must succeed without stderr");
   assert.deepEqual(installed.get("raw"), baseline.get("raw"), "raw bypass must preserve the native result");
-  assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
+  assert.ok(installed.get("failure").includes(failureOutput.trimEnd()), "model must receive all 80 failure lines");
+  const rewriteNotice = '\n<system-reminder data-role="tool-hint">The shell tool input was changed before execution. Do not assume the original command was executed verbatim.</system-reminder>';
+  assert.ok(installed.get("failure").endsWith(rewriteNotice), "host must retain its native input-rewrite notice");
+  assert.equal(installed.get("failure").slice(0, -rewriteNotice.length), baseline.get("failure"), "failure streams and status must match apart from the host rewrite notice");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");
   assert.match(baseline.get("failure"), /\nExit Code: 7\n/u, "native failure fixture must fail");
   assert.match(installed.get("failure"), /\nExit Code: 7\n/u, "host must preserve the shell failure status");

@@ -205,7 +205,7 @@ describe("devin hook", () => {
     expect(result.code).toBe(0);
     expect(parsed.hookSpecificOutput.hookEventName).toBe("PreToolUse");
     expect(parsed.hookSpecificOutput.updatedInput.shell_id).toBe("main");
-    expect(parsed.hookSpecificOutput.updatedInput.command).toContain("/usr/local/bin/tokenjuice wrap --source devin --");
+    expect(parsed.hookSpecificOutput.updatedInput.command).toContain("/usr/local/bin/tokenjuice wrap --keep-failures --source devin --");
     expect(parsed.hookSpecificOutput.updatedInput.command).toContain(" -lc 'pnpm test'");
   });
 

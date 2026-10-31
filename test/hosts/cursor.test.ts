@@ -314,7 +314,7 @@ describe("runCursorPreToolUseHook", () => {
     const parsed = parseWrappedCommand(response.updated_input.command);
     expect(parsed.launcher).toEqual(["/usr/local/bin/tokenjuice"]);
     expect(parsed.subcommand).toBe("wrap");
-    expect(parsed.wrapArgs).toEqual(["--source", "cursor"]);
+    expect(parsed.wrapArgs).toEqual(["--keep-failures", "--source", "cursor"]);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -383,7 +383,7 @@ describe("runCursorPreToolUseHook", () => {
     // may or may not be absolute depending on how resolve() normalized it.
     expect(parsed.launcher[0]).toBe(process.execPath);
     expect(parsed.launcher[1]).toBe("/repo/dist/cli/main.js");
-    expect(parsed.wrapArgs).toEqual(["--source", "cursor"]);
+    expect(parsed.wrapArgs).toEqual(["--keep-failures", "--source", "cursor"]);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);
@@ -439,7 +439,7 @@ describe("runCursorPreToolUseHook", () => {
 
     expect(code).toBe(0);
     const parsed = parseWrappedCommand(response.updated_input.command);
-    expect(parsed.wrapArgs).toEqual(["--source", "cursor"]);
+    expect(parsed.wrapArgs).toEqual(["--keep-failures", "--source", "cursor"]);
     expect(parsed.shellPath).toBe(hostShellPath);
     expect(parsed.inner).toBe("git status --short");
     expect(parsed.wrapDepth).toBe(1);

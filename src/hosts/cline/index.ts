@@ -140,7 +140,7 @@ export async function runClinePreToolUseHook(rawText: string, wrapLauncher = "to
     const shellPath = await resolveHostShell([process.env.SHELL, "bash"]);
     if (!shellPath) { writeEmptyHookJsonLine(); return 0; }
     const result = rewriteClineInput(payload, command => commandAlreadyWrapped(command) ? command
-      : buildWrappedCommand({ wrapLauncher, shellPath, command, source: "cline", keepFailures: true }));
+      : buildWrappedCommand({ wrapLauncher, shellPath, command, source: "cline" }));
     writeHookJsonLine(result ?? {});
   } catch {
     writeEmptyHookJsonLine();

@@ -22,6 +22,8 @@ pick one integration mode:
 - instruction or skill guidance (when the documented host surface cannot rewrite commands/results)
 - provider configuration or migration guidance (when the product delegates execution or has retired)
 
+Automatic pre-tool wrappers pass `--keep-failures` so failed stdout/stderr and exit status survive without reduction (within the normal capture limit). Manual `tokenjuice wrap` keeps its existing default. Native acceptance must inspect all lines of a long failing command, not just a short error message.
+
 for pre-tool wrapping, preserve shell semantics (for example `bash -lc '<cmd>'`) and ensure classification normalization can recover the nested command.
 
 ## implementation checklist

@@ -441,7 +441,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
     };
     expect(response.hookSpecificOutput.hookEventName).toBe("PreToolUse");
     expect(response.hookSpecificOutput.updatedInput.command).toBe(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot -- /bin/bash -lc 'git status --short'",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot -- /bin/bash -lc 'git status --short'",
     );
     expect(response.hookSpecificOutput.updatedInput.explanation).toBe("List contents");
     expect(response.hookSpecificOutput.updatedInput.goal).toBe("check repo");
@@ -465,7 +465,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(JSON.parse(output).hookSpecificOutput.updatedInput.command).toContain(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot --",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot --",
     );
   });
 
@@ -591,7 +591,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
       };
     };
     expect(response.hookSpecificOutput.updatedInput.command).toContain(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot --",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot --",
     );
     expect(response.hookSpecificOutput.updatedInput.command).toContain("ls /tmp");
     expect(response.hookSpecificOutput.updatedInput.explanation).toBe("List contents of /tmp");

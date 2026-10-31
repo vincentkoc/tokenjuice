@@ -184,7 +184,7 @@ describe("qwen-code hooks", () => {
     const response = JSON.parse(output).hookSpecificOutput;
     expect(code).toBe(0);
     expect(response.hookEventName).toBe("PreToolUse");
-    expect(response.updatedInput).toEqual({ ...toolInput, command: expect.stringContaining("wrap --source") });
+    expect(response.updatedInput).toEqual({ ...toolInput, command: expect.stringContaining("wrap --keep-failures --source") });
     expect(response.updatedInput.command).toContain("/bin/sh -lc");
     expect(response.updatedInput.command).toContain("exit 7");
     expect(response.permissionDecision).toBeUndefined();

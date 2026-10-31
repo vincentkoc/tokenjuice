@@ -50,11 +50,13 @@ async function run(command, args, timeout = 90_000) {
 }
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
+const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+const failureStderr = "failure-stderr\n";
 const cases = [
   { id: "listing", command: "find fixtures -type f" },
   { id: "exact", command: "cat exact.txt" },
   { id: "raw", command: `${quote(process.execPath)} ${quote(cli)} wrap --raw -- find fixtures -type f` },
-  { id: "failure", command: "printf 'failure-output\\n'; printf 'failure-stderr\\n' >&2; exit 7" },
+  { id: "failure", command: `${quote(process.execPath)} -e ${quote(`process.stdout.write(${JSON.stringify(failureOutput)}); process.stderr.write(${JSON.stringify(failureStderr)}); process.exit(7);`)}` },
 ];
 const observed = new Map();
 let modelRequests = 0;
@@ -177,7 +179,8 @@ try {
   assert.ok(listing.length < baseline.get("listing").length);
   assert.equal(installed.get("exact"), baseline.get("exact"), "hook must preserve the native exact read");
   assert.deepEqual(installed.get("raw"), baseline.get("raw"), "raw bypass must preserve the native result");
-  assert.ok(installed.get("failure").includes("failure-output"), "model must receive failure output");
+  assert.ok(installed.get("failure").includes(failureOutput.trimEnd()), "model must receive all 80 failure lines");
+  assert.equal(installed.get("failure"), baseline.get("failure"), "automatic wrapping must preserve the native failed result");
   assert.ok(installed.get("failure").includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(installed.get("failure").endsWith("[Process exited with code 7]"), "model must receive failure status");
   process.stdout.write(`${JSON.stringify({ ok: true, host: "droid", version, modelRequestsPerSession: modelRequests, results: [...installed.keys()] }, null, 2)}\n`);

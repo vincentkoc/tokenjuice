@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type CodegenInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallCodegenInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallCodegenInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallCodegenInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallCodegenInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type CodegenDoctorReport = InstructionsDoctorReport;
 

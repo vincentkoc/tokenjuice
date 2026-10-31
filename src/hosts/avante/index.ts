@@ -12,21 +12,19 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AvanteInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAvanteInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAvanteInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAvanteInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAvanteInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type AvanteDoctorReport = InstructionsDoctorReport;
 

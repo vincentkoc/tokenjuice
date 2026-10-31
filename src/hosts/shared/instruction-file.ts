@@ -7,13 +7,11 @@ export type InstructionFileSnapshot = {
   exists: boolean;
 };
 
-export type WriteInstructionFileResult = {
-  filePath: string;
+export type WriteInstructionFileResult<PathKey extends string = "filePath"> = Record<PathKey, string> & {
   backupPath?: string;
 };
 
-export type RemoveInstructionFileResult = {
-  filePath: string;
+export type RemoveInstructionFileResult<PathKey extends string = "filePath"> = Record<PathKey, string> & {
   removed: boolean;
 };
 

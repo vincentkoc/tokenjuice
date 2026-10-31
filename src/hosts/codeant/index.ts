@@ -17,6 +17,8 @@ import {
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
   pathEntryExists,
   assertSafeInstructionBackupPath,
   collectGuidanceIssues,
@@ -28,15 +30,9 @@ export type CodeAntInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallCodeAntInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallCodeAntInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallCodeAntInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallCodeAntInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type CodeAntDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

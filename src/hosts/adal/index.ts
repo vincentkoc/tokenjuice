@@ -20,21 +20,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AdalInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAdalInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAdalInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAdalInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAdalInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type AdalDoctorReport = InstructionsDoctorReport;
 

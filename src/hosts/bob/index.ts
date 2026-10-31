@@ -6,20 +6,15 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { RemoveInstructionFileResult, WriteInstructionFileResult } from "../shared/instruction-file.js";
 
 export type BobInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallBobInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallBobInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallBobInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallBobInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type BobDoctorReport = InstructionsDoctorReport;
 

@@ -21,21 +21,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AnteInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAnteInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAnteInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAnteInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAnteInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type AnteDoctorReport = InstructionsDoctorReport;
 

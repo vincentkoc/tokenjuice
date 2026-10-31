@@ -21,21 +21,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AictlInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAictlInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAictlInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAictlInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAictlInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type AictlDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

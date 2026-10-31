@@ -23,21 +23,20 @@ import {
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  collectGuidanceIssues,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AgentsMdInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAgentsMdInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAgentsMdInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAgentsMdInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAgentsMdInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
 export type AgentsMdDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;

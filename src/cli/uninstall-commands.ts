@@ -351,7 +351,7 @@ const uninstallCodebuddyCommand = createHostCommand(() => uninstallCodeBuddyHook
 const uninstallCommandCodeCommand = createHostCommand(() => uninstallCommandCodeHook(), (result) => {
   process.stdout.write(`removed command-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
-  process.stdout.write("enable: tokenjuice install command-code\n");
+  process.stdout.write("use: tokenjuice wrap -- <command>\n");
 });
 
 const uninstallPiGoCommand = createHostCommand(() => uninstallPiGoSkill(), (result) => {

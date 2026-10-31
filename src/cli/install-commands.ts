@@ -104,20 +104,15 @@ import { installZedInstructions } from "../hosts/zed/index.js";
 import { installZencoderRule } from "../hosts/zencoder/index.js";
 import { shellQuote } from "../hosts/shared/hook-command.js";
 import { formatCodeBuddyInstallSuccess, formatInstallSuccess } from "./install-output.js";
-import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
+import { createHostCommand } from "./host-command.js";
+import type { HostCommandHandler } from "./command-types.js";
 
 function formatPlandexLoadCommand(conventionPath: string): string {
   const loadPath = relative(process.cwd(), conventionPath) || "PLANDEX.tokenjuice.md";
   return `plandex load ${shellQuote(loadPath)}`;
 }
 
-async function installAdalCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAdalInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAdalCommand = createHostCommand(() => installAdalInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; AdaL CLI still owns command execution" },
@@ -128,16 +123,9 @@ async function installAdalCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("adal", "instructions", details));
-  return 0;
-}
+});
 
-async function installAetherCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAetherPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAetherCommand = createHostCommand(() => installAetherPrompt(), (result) => {
   const details = [
     { label: "Prompt", value: result.promptPath },
     { label: "Settings", value: result.settingsPath },
@@ -154,16 +142,9 @@ async function installAetherCommand(args: ParsedArgs): Promise<number> {
   }
   details.push({ label: "Agents updated", value: String(result.agentsUpdated) });
   process.stdout.write(formatInstallSuccess("aether", "prompt", details));
-  return 0;
-}
+});
 
-async function installAiderCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAiderConvention();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAiderCommand = createHostCommand(() => installAiderConvention(), (result) => {
   const details = [
     { label: "Convention", value: result.conventionPath },
     { label: "Beta", value: "convention-based guidance; load it with aider --read CONVENTIONS.tokenjuice.md" },
@@ -174,16 +155,9 @@ async function installAiderCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("aider", "convention", details));
-  return 0;
-}
+});
 
-async function installAictlCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAictlInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAictlCommand = createHostCommand(() => installAictlInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "AICTL.md project prompt guidance; aictl still owns command execution" },
@@ -194,16 +168,9 @@ async function installAictlCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("aictl", "instructions", details));
-  return 0;
-}
+});
 
-async function installAiMemoryProtocolCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAiMemoryProtocolMemory();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAiMemoryProtocolCommand = createHostCommand(() => installAiMemoryProtocolMemory(), (result) => {
   const memoryDir = dirname(dirname(result.memoryPath));
   const details = [
     { label: "Memory", value: result.memoryPath },
@@ -217,16 +184,9 @@ async function installAiMemoryProtocolCommand(args: ParsedArgs): Promise<number>
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("ai-memory-protocol", "memory", details));
-  return 0;
-}
+});
 
-async function installAgentLayerCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentLayerInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentLayerCommand = createHostCommand(() => installAgentLayerInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "Agent Layer source instructions; requires an initialized al project" },
@@ -239,16 +199,9 @@ async function installAgentLayerCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agent-layer", "instructions", details));
-  return 0;
-}
+});
 
-async function installAgentinitCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentInitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentinitCommand = createHostCommand(() => installAgentInitInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "AgentInit source AGENTS.md guidance; run agentinit sync to propagate it" },
@@ -260,16 +213,9 @@ async function installAgentinitCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agentinit", "instructions", details));
-  return 0;
-}
+});
 
-async function installAgentlinkCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentlinkInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentlinkCommand = createHostCommand(() => installAgentlinkInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "source AGENTS.md guidance; run agentlink sync to repair downstream symlinks" },
@@ -281,16 +227,9 @@ async function installAgentlinkCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agentlink", "instructions", details));
-  return 0;
-}
+});
 
-async function installAgentloomCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentloomRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentloomCommand = createHostCommand(() => installAgentloomRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "Agentloom source rule; run agentloom sync to propagate it" },
@@ -302,16 +241,9 @@ async function installAgentloomCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agentloom", "rule", details));
-  return 0;
-}
+});
 
-async function installAgentsCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentsCliMemory();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentsCliCommand = createHostCommand(() => installAgentsCliMemory(), (result) => {
   const details = [
     { label: "Memory", value: result.instructionsPath },
     { label: "Beta", value: "agents-cli memory source; run agents sync to propagate it" },
@@ -323,16 +255,9 @@ async function installAgentsCliCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agents-cli", "memory", details));
-  return 0;
-}
+});
 
-async function installAgentsMdCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentsMdInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentsMdCommand = createHostCommand(() => installAgentsMdInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "generic AGENTS.md guidance; the active agent still owns command execution" },
@@ -343,16 +268,9 @@ async function installAgentsMdCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agents-md", "instructions", details));
-  return 0;
-}
+});
 
-async function installAgentsgeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentsGeRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentsgeCommand = createHostCommand(() => installAgentsGeRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "agents.ge source rule; run agents sync to propagate it" },
@@ -364,16 +282,9 @@ async function installAgentsgeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agentsge", "rule", details));
-  return 0;
-}
+});
 
-async function installAgentsmeshCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAgentsMeshRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAgentsmeshCommand = createHostCommand(() => installAgentsMeshRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "AgentsMesh source rule; requires an initialized agentsmesh project" },
@@ -386,16 +297,9 @@ async function installAgentsmeshCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("agentsmesh", "rule", details));
-  return 0;
-}
+});
 
-async function installAmazonQCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAmazonQRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAmazonQCommand = createHostCommand(() => installAmazonQRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based Amazon Q/Kiro compatibility guidance" },
@@ -407,16 +311,9 @@ async function installAmazonQCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("amazon-q", "rule", details));
-  return 0;
-}
+});
 
-async function installAmpCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAmpInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAmpCommand = createHostCommand(() => installAmpInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Amp still owns command execution" },
@@ -430,16 +327,9 @@ async function installAmpCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Updated paths", value: result.instructionsPaths.join(", ") });
   }
   process.stdout.write(formatInstallSuccess("amp", "instructions", details));
-  return 0;
-}
+});
 
-async function installAntigravityCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAntigravityRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAntigravityCommand = createHostCommand(() => installAntigravityRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Antigravity still owns command execution" },
@@ -450,16 +340,9 @@ async function installAntigravityCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("antigravity", "rule", details));
-  return 0;
-}
+});
 
-async function installAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAnywhereAgentsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAnywhereAgentsCommand = createHostCommand(() => installAnywhereAgentsInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "AGENTS.local.md guidance; run anywhere-agents to regenerate downstream files" },
@@ -471,16 +354,9 @@ async function installAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("anywhere-agents", "instructions", details));
-  return 0;
-}
+});
 
-async function installAugmentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAugmentRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAugmentCommand = createHostCommand(() => installAugmentRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Augment still owns command execution" },
@@ -491,16 +367,9 @@ async function installAugmentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("augment", "rule", details));
-  return 0;
-}
+});
 
-async function installAvanteCommand(args: ParsedArgs): Promise<number> {
-  const result = await installAvanteInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installAvanteCommand = createHostCommand(() => installAvanteInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Avante still owns command execution" },
@@ -511,16 +380,9 @@ async function installAvanteCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("avante", "instructions", details));
-  return 0;
-}
+});
 
-async function installBazCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBazSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBazCommand = createHostCommand(() => installBazSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Baz still owns review, fixer, and shell execution" },
@@ -531,16 +393,9 @@ async function installBazCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("baz", "skill", details));
-  return 0;
-}
+});
 
-async function installBitoCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBitoGuidelines();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBitoCommand = createHostCommand(() => installBitoGuidelines(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Guidelines", value: result.guidelinesPath },
@@ -555,16 +410,9 @@ async function installBitoCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Guidelines backup", value: result.guidelinesBackupPath });
   }
   process.stdout.write(formatInstallSuccess("bito", "custom guidelines", details));
-  return 0;
-}
+});
 
-async function installBlackboxCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBlackboxSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBlackboxCommand = createHostCommand(() => installBlackboxSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Blackbox still owns shell execution" },
@@ -575,16 +423,9 @@ async function installBlackboxCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("blackbox", "skill", details));
-  return 0;
-}
+});
 
-async function installBlocksCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBlocksSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBlocksCommand = createHostCommand(() => installBlocksSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Blocks still owns shell execution" },
@@ -595,16 +436,9 @@ async function installBlocksCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("blocks", "skill", details));
-  return 0;
-}
+});
 
-async function installClawdbotCommand(args: ParsedArgs): Promise<number> {
-  const result = await installClawdbotSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installClawdbotCommand = createHostCommand(() => installClawdbotSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Clawdbot still owns shell execution" },
@@ -615,16 +449,9 @@ async function installClawdbotCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("clawdbot", "skill", details));
-  return 0;
-}
+});
 
-async function installBobCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBobInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBobCommand = createHostCommand(() => installBobInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; IBM Bob still owns command execution" },
@@ -635,16 +462,9 @@ async function installBobCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("bob", "instructions", details));
-  return 0;
-}
+});
 
-async function installBuilderCommand(args: ParsedArgs): Promise<number> {
-  const result = await installBuilderRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installBuilderCommand = createHostCommand(() => installBuilderRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Builder still owns command execution" },
@@ -655,16 +475,9 @@ async function installBuilderCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("builder", "rule", details));
-  return 0;
-}
+});
 
-async function installCharlieCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCharlieInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCharlieCommand = createHostCommand(() => installCharlieInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "AGENTS.md-based guidance; Charlie still owns command execution" },
@@ -675,19 +488,12 @@ async function installCharlieCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("charlie", "instructions", details));
-  return 0;
-}
+});
 
-async function installCodexCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodexHook(undefined, {
+const installCodexCommand = createHostCommand((args) => installCodexHook(undefined, {
     local: args.local,
     ...(args.noOmit ? { noOmit: true } : {}),
-  });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+  }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -709,16 +515,9 @@ async function installCodexCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
   details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
   process.stdout.write(formatInstallSuccess("codex", "hook", details));
-  return 0;
-}
+});
 
-async function installClaudeCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installClaudeCodeHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installClaudeCodeCommand = createHostCommand((args) => installClaudeCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -728,16 +527,9 @@ async function installClaudeCodeCommand(args: ParsedArgs): Promise<number> {
   }
   details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
   process.stdout.write(formatInstallSuccess("claude-code", "hook", details));
-  return 0;
-}
+});
 
-async function installClineCommand(args: ParsedArgs): Promise<number> {
-  const result = await installClineHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installClineCommand = createHostCommand((args) => installClineHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hookPath },
     { label: "Command", value: result.command },
@@ -746,16 +538,9 @@ async function installClineCommand(args: ParsedArgs): Promise<number> {
     { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
   ];
   process.stdout.write(formatInstallSuccess("cline", "hook", details));
-  return 0;
-}
+});
 
-async function installCodeantCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodeAntInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCodeantCommand = createHostCommand(() => installCodeAntInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instructions-based guidance; CodeAnt still owns review and fixes" },
@@ -766,16 +551,9 @@ async function installCodeantCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("codeant", "instructions", details));
-  return 0;
-}
+});
 
-async function installCodebuffCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodebuffInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCodebuffCommand = createHostCommand(() => installCodebuffInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Codebuff still owns command execution" },
@@ -786,16 +564,9 @@ async function installCodebuffCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("codebuff", "instructions", details));
-  return 0;
-}
+});
 
-async function installCodegenCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodegenInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCodegenCommand = createHostCommand(() => installCodegenInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "rule-file guidance; Codegen still owns command execution" },
@@ -806,16 +577,9 @@ async function installCodegenCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("codegen", "instructions", details));
-  return 0;
-}
+});
 
-async function installCoderAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCoderAgentsSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCoderAgentsCommand = createHostCommand(() => installCoderAgentsSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Coder Agents still owns shell execution" },
@@ -826,27 +590,13 @@ async function installCoderAgentsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("coder-agents", "skill", details));
-  return 0;
-}
+});
 
-async function installCodebuddyCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodeBuddyHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCodebuddyCommand = createHostCommand((args) => installCodeBuddyHook(undefined, { local: args.local }), (result, args) => {
   process.stdout.write(formatCodeBuddyInstallSuccess({ ...result, local: args.local }));
-  return 0;
-}
+});
 
-async function installCommandCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCommandCodeHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCommandCodeCommand = createHostCommand((args) => installCommandCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -858,16 +608,9 @@ async function installCommandCodeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("command-code", "hook", details));
-  return 0;
-}
+});
 
-async function installContinueCommand(args: ParsedArgs): Promise<number> {
-  const result = await installContinueRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installContinueCommand = createHostCommand(() => installContinueRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Continue still owns command execution" },
@@ -878,16 +621,9 @@ async function installContinueCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("continue", "rule", details));
-  return 0;
-}
+});
 
-async function installCopilotAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCopilotAgentHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCopilotAgentCommand = createHostCommand((args) => installCopilotAgentHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -900,16 +636,9 @@ async function installCopilotAgentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("copilot-agent", "hook", details));
-  return 0;
-}
+});
 
-async function installCrushCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCrushSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCrushCommand = createHostCommand(() => installCrushSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "project-local Agent Skill; Crush still owns command execution" },
@@ -920,16 +649,9 @@ async function installCrushCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("crush", "skill", details));
-  return 0;
-}
+});
 
-async function installCursorCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCursorHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCursorCommand = createHostCommand((args) => installCursorHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -940,16 +662,9 @@ async function installCursorCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Verify", value: `tokenjuice doctor hooks${args.local ? " --local" : ""}` });
   details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
   process.stdout.write(formatInstallSuccess("cursor", "hook", details));
-  return 0;
-}
+});
 
-async function installDeepagentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installDeepAgentsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installDeepagentsCommand = createHostCommand(() => installDeepAgentsInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Deep Agents Code still owns command execution" },
@@ -960,16 +675,9 @@ async function installDeepagentsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("deepagents", "instructions", details));
-  return 0;
-}
+});
 
-async function installDevinCommand(args: ParsedArgs): Promise<number> {
-  const result = await installDevinHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installDevinCommand = createHostCommand((args) => installDevinHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -981,16 +689,9 @@ async function installDevinCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("devin", "hook", details));
-  return 0;
-}
+});
 
-async function installDotAgentsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installDotAgentsRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installDotAgentsCommand = createHostCommand(() => installDotAgentsRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "dot-agents global rule; run dot-agents sync to propagate it" },
@@ -1002,16 +703,9 @@ async function installDotAgentsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("dot-agents", "rule", details));
-  return 0;
-}
+});
 
-async function installDockerAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installDockerAgentPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installDockerAgentCommand = createHostCommand(() => installDockerAgentPrompt(), (result) => {
   const details = [
     { label: "Prompt", value: result.promptPath },
     { label: "Beta", value: "prompt-file guidance; Docker Agent still owns command execution" },
@@ -1023,16 +717,9 @@ async function installDockerAgentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("docker-agent", "prompt", details));
-  return 0;
-}
+});
 
-async function installEcaCommand(args: ParsedArgs): Promise<number> {
-  const result = await installEcaSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installEcaCommand = createHostCommand(() => installEcaSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "project skill guidance; ECA still owns shell execution" },
@@ -1043,16 +730,9 @@ async function installEcaCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("eca", "skill", details));
-  return 0;
-}
+});
 
-async function installElyraCommand(args: ParsedArgs): Promise<number> {
-  const result = await installElyraSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installElyraCommand = createHostCommand(() => installElyraSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "project skill guidance; Elyra still owns shell execution" },
@@ -1063,16 +743,9 @@ async function installElyraCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("elyra", "skill", details));
-  return 0;
-}
+});
 
-async function installFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
-  const result = await installFirebaseStudioRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installFirebaseStudioCommand = createHostCommand(() => installFirebaseStudioRule(), (result) => {
   const details = [
     { label: "Rules", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Gemini in Firebase still owns command execution" },
@@ -1083,16 +756,9 @@ async function installFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("firebase-studio", "rules", details));
-  return 0;
-}
+});
 
-async function installForgecodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installForgeCodeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installForgecodeCommand = createHostCommand(() => installForgeCodeInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "ForgeCode AGENTS.md guidance; ForgeCode still owns command execution" },
@@ -1103,16 +769,9 @@ async function installForgecodeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("forgecode", "instructions", details));
-  return 0;
-}
+});
 
-async function installGeminiCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGeminiCliHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGeminiCliCommand = createHostCommand((args) => installGeminiCliHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -1124,16 +783,9 @@ async function installGeminiCliCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("gemini-cli", "hook", details));
-  return 0;
-}
+});
 
-async function installGitlabDuoCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGitLabDuoRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGitlabDuoCommand = createHostCommand(() => installGitLabDuoRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "custom-rules guidance; GitLab Duo still owns command execution" },
@@ -1144,16 +796,9 @@ async function installGitlabDuoCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("gitlab-duo", "rule", details));
-  return 0;
-}
+});
 
-async function installGrokCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGrokCliHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGrokCliCommand = createHostCommand((args) => installGrokCliHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -1165,16 +810,9 @@ async function installGrokCliCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("grok-cli", "hook", details));
-  return 0;
-}
+});
 
-async function installGptmeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGptmeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGptmeCommand = createHostCommand(() => installGptmeInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; gptme still owns command execution" },
@@ -1185,16 +823,9 @@ async function installGptmeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("gptme", "instructions", details));
-  return 0;
-}
+});
 
-async function installJean2Command(args: ParsedArgs): Promise<number> {
-  const result = await installJean2Instructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installJean2Command = createHostCommand(() => installJean2Instructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-file guidance; Jean2 still owns command execution" },
@@ -1205,16 +836,9 @@ async function installJean2Command(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("jean2", "instructions", details));
-  return 0;
-}
+});
 
-async function installGrokBuildCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGrokBuildInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGrokBuildCommand = createHostCommand(() => installGrokBuildInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Grok Build still owns command execution" },
@@ -1225,16 +849,9 @@ async function installGrokBuildCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("grok-build", "instructions", details));
-  return 0;
-}
+});
 
-async function installGrokBotCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGrokBotRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGrokBotCommand = createHostCommand(() => installGrokBotRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: ".cursor/rules guidance; Grok Bot still owns execution and output delivery" },
@@ -1245,16 +862,9 @@ async function installGrokBotCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("grok-bot", "rule", details));
-  return 0;
-}
+});
 
-async function installGooseCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGooseHints();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGooseCommand = createHostCommand(() => installGooseHints(), (result) => {
   const details = [
     { label: "Hints", value: result.hintsPath },
     { label: "Beta", value: "hints-based guidance; Goose still owns command execution" },
@@ -1266,16 +876,9 @@ async function installGooseCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("goose", "hints", details));
-  return 0;
-}
+});
 
-async function installGreptileCommand(args: ParsedArgs): Promise<number> {
-  const result = await installGreptileRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installGreptileCommand = createHostCommand(() => installGreptileRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rules-based guidance; Greptile still owns PR review and runtime inspection" },
@@ -1286,16 +889,9 @@ async function installGreptileCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("greptile", "rule", details));
-  return 0;
-}
+});
 
-async function installQodoCommand(args: ParsedArgs): Promise<number> {
-  const result = await installQodoReviewConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installQodoCommand = createHostCommand(() => installQodoReviewConfig(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Beta", value: "review-guideline guidance; Qodo still owns PR review and CI feedback" },
@@ -1306,16 +902,9 @@ async function installQodoCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("qodo", "review config", details));
-  return 0;
-}
+});
 
-async function installCoderabbitCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCodeRabbitConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCoderabbitCommand = createHostCommand(() => installCodeRabbitConfig(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Beta", value: "path-instruction guidance; CodeRabbit still owns PR review and tools" },
@@ -1326,16 +915,9 @@ async function installCoderabbitCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("coderabbit", "review config", details));
-  return 0;
-}
+});
 
-async function installJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
-  const result = await installJetBrainsAiRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installJetbrainsAiCommand = createHostCommand(() => installJetBrainsAiRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; JetBrains AI Assistant still owns command execution" },
@@ -1346,16 +928,9 @@ async function installJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("jetbrains-ai", "rule", details));
-  return 0;
-}
+});
 
-async function installJunieCommand(args: ParsedArgs): Promise<number> {
-  const result = await installJunieInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installJunieCommand = createHostCommand(() => installJunieInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Junie still owns command execution" },
@@ -1366,16 +941,9 @@ async function installJunieCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("junie", "instructions", details));
-  return 0;
-}
+});
 
-async function installJulesCommand(args: ParsedArgs): Promise<number> {
-  const result = await installJulesInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installJulesCommand = createHostCommand(() => installJulesInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Jules still owns command execution" },
@@ -1386,16 +954,9 @@ async function installJulesCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("jules", "instructions", details));
-  return 0;
-}
+});
 
-async function installLeanctlCommand(args: ParsedArgs): Promise<number> {
-  const result = await installLeanCtlInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installLeanctlCommand = createHostCommand(() => installLeanCtlInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "project instruction guidance; LeanCTL still owns command execution" },
@@ -1406,16 +967,9 @@ async function installLeanctlCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("leanctl", "instructions", details));
-  return 0;
-}
+});
 
-async function installKimiCommand(args: ParsedArgs): Promise<number> {
-  const result = await installKimiHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installKimiCommand = createHostCommand((args) => installKimiHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Command", value: result.command },
@@ -1427,16 +981,9 @@ async function installKimiCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("kimi", "hook", details));
-  return 0;
-}
+});
 
-async function installLocalcodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installLocalCodePlugin();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installLocalcodeCommand = createHostCommand(() => installLocalCodePlugin(), (result) => {
   const details = [
     { label: "Plugin", value: result.pluginDir },
     { label: "Manifest", value: result.manifestPath },
@@ -1453,16 +1000,9 @@ async function installLocalcodeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Entrypoint backup", value: result.indexBackupPath });
   }
   process.stdout.write(formatInstallSuccess("localcode", "plugin", details));
-  return 0;
-}
+});
 
-async function installKiroCommand(args: ParsedArgs): Promise<number> {
-  const result = await installKiroSteering();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installKiroCommand = createHostCommand(() => installKiroSteering(), (result) => {
   const details = [
     { label: "Steering", value: result.steeringPath },
     { label: "Beta", value: "steering-based guidance; Kiro still owns command execution" },
@@ -1473,16 +1013,9 @@ async function installKiroCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("kiro", "steering", details));
-  return 0;
-}
+});
 
-async function installKiloCommand(args: ParsedArgs): Promise<number> {
-  const result = await installKiloRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installKiloCommand = createHostCommand(() => installKiloRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Config", value: result.configPath },
@@ -1497,16 +1030,9 @@ async function installKiloCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Config backup", value: result.configBackupPath });
   }
   process.stdout.write(formatInstallSuccess("kilo", "rule", details));
-  return 0;
-}
+});
 
-async function installMcpAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installMcpAgentDefinition();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installMcpAgentCommand = createHostCommand(() => installMcpAgentDefinition(), (result) => {
   const details = [
     { label: "Agent", value: result.agentPath },
     { label: "Beta", value: "agent-file guidance; mcp-agent still owns command execution" },
@@ -1518,16 +1044,9 @@ async function installMcpAgentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("mcp-agent", "agent", details));
-  return 0;
-}
+});
 
-async function installMistralVibeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installMistralVibeInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installMistralVibeCommand = createHostCommand(() => installMistralVibeInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Mistral Vibe still owns command execution" },
@@ -1538,16 +1057,9 @@ async function installMistralVibeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("mistral-vibe", "instructions", details));
-  return 0;
-}
+});
 
-async function installMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installMiniSweAgentConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installMiniSweAgentCommand = createHostCommand(() => installMiniSweAgentConfig(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Beta", value: "config-fragment guidance; mini-SWE-agent still owns command execution" },
@@ -1559,16 +1071,9 @@ async function installMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("mini-swe-agent", "config", details));
-  return 0;
-}
+});
 
-async function installSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const result = await installSweAgentConfig();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installSweAgentCommand = createHostCommand(() => installSweAgentConfig(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Beta", value: "config-fragment guidance; SWE-agent still owns command execution" },
@@ -1580,16 +1085,9 @@ async function installSweAgentCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("swe-agent", "config", details));
-  return 0;
-}
+});
 
-async function installStagewiseCommand(args: ParsedArgs): Promise<number> {
-  const result = await installStagewiseSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installStagewiseCommand = createHostCommand(() => installStagewiseSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Stagewise still owns shell execution" },
@@ -1600,16 +1098,9 @@ async function installStagewiseCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("stagewise", "skill", details));
-  return 0;
-}
+});
 
-async function installMuxCommand(args: ParsedArgs): Promise<number> {
-  const result = await installMuxHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installMuxCommand = createHostCommand((args) => installMuxHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hookPath },
     { label: "Command", value: result.command },
@@ -1621,16 +1112,9 @@ async function installMuxCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("mux", "hook", details));
-  return 0;
-}
+});
 
-async function installNovakitCommand(args: ParsedArgs): Promise<number> {
-  const result = await installNovaKitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installNovakitCommand = createHostCommand(() => installNovaKitInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "NOVAKIT.md guidance; NovaKit still owns command execution" },
@@ -1641,16 +1125,9 @@ async function installNovakitCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("novakit", "instructions", details));
-  return 0;
-}
+});
 
-async function installKnownsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installKnownsInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installKnownsCommand = createHostCommand(() => installKnownsInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "KNOWNS.md guidance; Knowns still owns MCP/project memory" },
@@ -1661,16 +1138,9 @@ async function installKnownsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("knowns", "instructions", details));
-  return 0;
-}
+});
 
-async function installOnaCommand(args: ParsedArgs): Promise<number> {
-  const result = await installOnaSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installOnaCommand = createHostCommand(() => installOnaSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "workspace skill guidance; Ona still owns command execution" },
@@ -1681,16 +1151,9 @@ async function installOnaCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("ona", "skill", details));
-  return 0;
-}
+});
 
-async function installWarpCommand(args: ParsedArgs): Promise<number> {
-  const result = await installWarpInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installWarpCommand = createHostCommand(() => installWarpInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Warp still owns command execution" },
@@ -1701,16 +1164,9 @@ async function installWarpCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("warp", "instructions", details));
-  return 0;
-}
+});
 
-async function installOpenhandsCommand(args: ParsedArgs): Promise<number> {
-  const result = await installOpenHandsHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installOpenhandsCommand = createHostCommand((args) => installOpenHandsHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -1722,16 +1178,9 @@ async function installOpenhandsCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("openhands", "hook", details));
-  return 0;
-}
+});
 
-async function installOpenInterpreterCommand(args: ParsedArgs): Promise<number> {
-  const result = await installOpenInterpreterInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installOpenInterpreterCommand = createHostCommand(() => installOpenInterpreterInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Open Interpreter still owns command execution" },
@@ -1742,16 +1191,9 @@ async function installOpenInterpreterCommand(args: ParsedArgs): Promise<number> 
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("open-interpreter", "instructions", details));
-  return 0;
-}
+});
 
-async function installOpenwebuiCommand(args: ParsedArgs): Promise<number> {
-  const result = await installOpenWebUITool();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installOpenwebuiCommand = createHostCommand(() => installOpenWebUITool(), (result) => {
   const details = [
     { label: "Tool source", value: result.toolPath },
     { label: "Beta", value: "Workspace Tool export; review and import manually in Open WebUI" },
@@ -1762,16 +1204,9 @@ async function installOpenwebuiCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("openwebui", "tool source", details));
-  return 0;
-}
+});
 
-async function installPlandexCommand(args: ParsedArgs): Promise<number> {
-  const result = await installPlandexConvention();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installPlandexCommand = createHostCommand(() => installPlandexConvention(), (result) => {
   const details = [
     { label: "Convention", value: result.conventionPath },
     { label: "Beta", value: "context-based guidance; Plandex still owns command execution" },
@@ -1783,16 +1218,9 @@ async function installPlandexCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("plandex", "convention", details));
-  return 0;
-}
+});
 
-async function installQoderCommand(args: ParsedArgs): Promise<number> {
-  const result = await installQoderInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installQoderCommand = createHostCommand(() => installQoderInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Qoder still owns command execution" },
@@ -1803,16 +1231,9 @@ async function installQoderCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("qoder", "instructions", details));
-  return 0;
-}
+});
 
-async function installReplitCommand(args: ParsedArgs): Promise<number> {
-  const result = await installReplitInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installReplitCommand = createHostCommand(() => installReplitInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Replit Agent still owns command execution" },
@@ -1823,16 +1244,9 @@ async function installReplitCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("replit", "instructions", details));
-  return 0;
-}
+});
 
-async function installQwenCodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installQwenCodeHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -1844,19 +1258,12 @@ async function installQwenCodeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("qwen-code", "hook", details));
-  return 0;
-}
+});
 
-async function installPiCommand(args: ParsedArgs): Promise<number> {
-  const result = await installPiExtension(undefined, {
+const installPiCommand = createHostCommand((args) => installPiExtension(undefined, {
     local: args.local,
     skipCommandNames: args.skipCommandNames,
-  });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+  }), (result, args) => {
   const details = [
     { label: "Extension", value: result.extensionPath },
   ];
@@ -1869,16 +1276,9 @@ async function installPiCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Reload", value: "/reload" });
   details.push({ label: "Usage in pi", value: "/tj status | /tj on | /tj off | /tj raw-next" });
   process.stdout.write(formatInstallSuccess("pi", "extension", details));
-  return 0;
-}
+});
 
-async function installPiGoCommand(args: ParsedArgs): Promise<number> {
-  const result = await installPiGoSkill();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installPiGoCommand = createHostCommand(() => installPiGoSkill(), (result) => {
   const details = [
     { label: "Skill", value: result.skillPath },
     { label: "Beta", value: "project skill guidance; pi-go still owns shell execution" },
@@ -1889,16 +1289,9 @@ async function installPiGoCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("pi-go", "skill", details));
-  return 0;
-}
+});
 
-async function installOpencodeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installOpenCodeExtension(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installOpencodeCommand = createHostCommand((args) => installOpenCodeExtension(undefined, { local: args.local }), (result) => {
   const details = [
     { label: "Extension", value: result.extensionPath },
   ];
@@ -1908,16 +1301,9 @@ async function installOpencodeCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Reload", value: "restart opencode (the plugin is auto-loaded on session start)" });
   details.push({ label: "Verify", value: "tokenjuice doctor opencode" });
   process.stdout.write(formatInstallSuccess("opencode", "extension", details));
-  return 0;
-}
+});
 
-async function installRooCommand(args: ParsedArgs): Promise<number> {
-  const result = await installRooInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installRooCommand = createHostCommand(() => installRooInstructions(), (result) => {
   const details = [
     { label: "Rules", value: result.instructionsPath },
     { label: "Beta", value: "rule-based guidance; Roo Code still owns command execution" },
@@ -1928,16 +1314,9 @@ async function installRooCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("roo", "rules", details));
-  return 0;
-}
+});
 
-async function installRovoCommand(args: ParsedArgs): Promise<number> {
-  const result = await installRovoInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installRovoCommand = createHostCommand(() => installRovoInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Rovo Dev CLI still owns command execution" },
@@ -1948,16 +1327,9 @@ async function installRovoCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("rovo", "instructions", details));
-  return 0;
-}
+});
 
-async function installRulerCommand(args: ParsedArgs): Promise<number> {
-  const result = await installRulerRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installRulerCommand = createHostCommand(() => installRulerRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; run ruler apply to propagate it" },
@@ -1969,16 +1341,9 @@ async function installRulerCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("ruler", "rule", details));
-  return 0;
-}
+});
 
-async function installTabnineCommand(args: ParsedArgs): Promise<number> {
-  const result = await installTabnineInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installTabnineCommand = createHostCommand(() => installTabnineInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-based guidance; Tabnine CLI still owns command execution" },
@@ -1989,16 +1354,9 @@ async function installTabnineCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("tabnine", "instructions", details));
-  return 0;
-}
+});
 
-async function installTabbyCommand(args: ParsedArgs): Promise<number> {
-  const result = await installTabbySystemPrompt();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installTabbyCommand = createHostCommand(() => installTabbySystemPrompt(), (result) => {
   const details = [
     { label: "Config", value: result.configPath },
     { label: "Beta", value: "system-prompt guidance; Tabby still owns command execution" },
@@ -2009,16 +1367,9 @@ async function installTabbyCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("tabby", "system prompt", details));
-  return 0;
-}
+});
 
-async function installTraeCommand(args: ParsedArgs): Promise<number> {
-  const result = await installTraeRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installTraeCommand = createHostCommand(() => installTraeRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Trae still owns command execution" },
@@ -2029,16 +1380,9 @@ async function installTraeCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("trae", "rule", details));
-  return 0;
-}
+});
 
-async function installUipathCommand(args: ParsedArgs): Promise<number> {
-  const result = await installUiPathInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installUipathCommand = createHostCommand(() => installUiPathInstructions(), (result) => {
   const details = [
     { label: "Instructions", value: result.instructionsPath },
     { label: "Beta", value: "instruction-file guidance; the active coding agent still owns command execution" },
@@ -2049,16 +1393,9 @@ async function installUipathCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("uipath", "instructions", details));
-  return 0;
-}
+});
 
-async function installVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
-  const result = await installVscodeCopilotHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installVscodeCopilotCommand = createHostCommand((args) => installVscodeCopilotHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -2074,16 +1411,9 @@ async function installVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Verify", value: `tokenjuice doctor vscode-copilot${args.local ? " --local" : ""}` });
   details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
   process.stdout.write(formatInstallSuccess("vscode-copilot", "hook", details));
-  return 0;
-}
+});
 
-async function installWindsurfCommand(args: ParsedArgs): Promise<number> {
-  const result = await installWindsurfRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installWindsurfCommand = createHostCommand(() => installWindsurfRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Windsurf still owns command execution" },
@@ -2094,16 +1424,9 @@ async function installWindsurfCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("windsurf", "rule", details));
-  return 0;
-}
+});
 
-async function installCopilotCliCommand(args: ParsedArgs): Promise<number> {
-  const result = await installCopilotCliHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installCopilotCliCommand = createHostCommand((args) => installCopilotCliHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.hooksPath },
     { label: "Command", value: result.command },
@@ -2115,16 +1438,9 @@ async function installCopilotCliCommand(args: ParsedArgs): Promise<number> {
   details.push({ label: "Verify", value: `tokenjuice doctor copilot-cli${args.local ? " --local" : ""}` });
   details.push({ label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" });
   process.stdout.write(formatInstallSuccess("copilot-cli", "hook", details));
-  return 0;
-}
+});
 
-async function installDroidCommand(args: ParsedArgs): Promise<number> {
-  const result = await installDroidHook(undefined, { local: args.local });
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installDroidCommand = createHostCommand((args) => installDroidHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
     { label: "Command", value: result.command },
@@ -2135,16 +1451,9 @@ async function installDroidCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("droid", "hook", details));
-  return 0;
-}
+});
 
-async function installZedCommand(args: ParsedArgs): Promise<number> {
-  const result = await installZedInstructions();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installZedCommand = createHostCommand(() => installZedInstructions(), (result) => {
   const details = [
     { label: "Rules", value: result.instructionsPath },
     { label: "Beta", value: "rule-based guidance; Zed still owns command execution" },
@@ -2155,16 +1464,9 @@ async function installZedCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("zed", "rules", details));
-  return 0;
-}
+});
 
-async function installZencoderCommand(args: ParsedArgs): Promise<number> {
-  const result = await installZencoderRule();
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return 0;
-  }
-
+const installZencoderCommand = createHostCommand(() => installZencoderRule(), (result) => {
   const details = [
     { label: "Rule", value: result.rulePath },
     { label: "Beta", value: "rule-based guidance; Zencoder still owns command execution" },
@@ -2175,8 +1477,7 @@ async function installZencoderCommand(args: ParsedArgs): Promise<number> {
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("zencoder", "rule", details));
-  return 0;
-}
+});
 
 export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<string, HostCommandHandler>([
   ["adal", installAdalCommand],

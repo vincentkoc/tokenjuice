@@ -10,12 +10,7 @@ import {
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
@@ -24,7 +19,6 @@ import {
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  collectGuidanceIssues,
   readInstructionFile,
 } from "../shared/instruction-file.js";
 
@@ -198,29 +192,18 @@ export async function doctorAictlInstructions(
   const structureIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AICTL_BLOCK_CONFIG)
     ? [`configured aictl instructions have malformed tokenjuice marker structure; ${TOKENJUICE_AICTL_FIX_COMMAND} cannot safely repair this automatically`]
     : [];
-  const guidanceIssues = collectGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AICTL_BLOCK_CONFIG), {
-    required: [
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AICTL_BLOCK_CONFIG), {
+    configuredLabel: "aictl instructions",
+    additionalRequired: [
       {
         requiredText: "tokenjuice terminal output compaction",
         missingIssue: "configured aictl instructions do not look like the tokenjuice block",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured aictl instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured aictl instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "project prompt file",
         missingIssue: "configured aictl instructions are missing project prompt guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured aictl instructions still suggest the full escape hatch",
       },
     ],
   });

@@ -5,8 +5,13 @@ import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAnces
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -205,8 +210,10 @@ export async function doctorClawdbotSkill(
     ...(!frontmatter.hasName ? ["configured Clawdbot skill is missing the required tokenjuice skill name"] : []),
     ...(!frontmatter.hasDescription ? ["configured Clawdbot skill is missing discovery frontmatter"] : []),
     ...(!frontmatter.hasUserInvocableFalse ? ["configured Clawdbot skill is missing user-invocable: false frontmatter"] : []),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "Clawdbot skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_CLAWDBOT_OWNERSHIP_MARKER,
           missingIssue: "configured Clawdbot skill is missing the tokenjuice ownership marker",
@@ -215,23 +222,11 @@ export async function doctorClawdbotSkill(
           requiredText: TOKENJUICE_CLAWDBOT_SKILL_MARKER,
           missingIssue: "configured Clawdbot skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Clawdbot skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Clawdbot skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: "skills/tokenjuice/SKILL.md",
           missingIssue: "configured Clawdbot skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Clawdbot skill still suggests the full escape hatch",
         },
       ],
     }),

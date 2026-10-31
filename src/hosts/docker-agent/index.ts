@@ -2,11 +2,20 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { findAvailableBackupPath, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  findAvailableBackupPath,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
 import {
   type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
@@ -184,20 +193,16 @@ export async function doctorDockerAgentPrompt(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Docker Agent prompt file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_DOCKER_AGENT_MARKER,
         missingIssue: "configured Docker Agent prompt file does not look like the tokenjuice prompt",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Docker Agent prompt file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Docker Agent prompt file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".docker-agent/tokenjuice.md",
         missingIssue: "configured Docker Agent prompt file is missing prompt-file path guidance",
@@ -205,12 +210,6 @@ export async function doctorDockerAgentPrompt(
       {
         requiredText: "add_prompt_files",
         missingIssue: "configured Docker Agent prompt file is missing add_prompt_files guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Docker Agent prompt file still suggests the full escape hatch",
       },
     ],
   });

@@ -5,8 +5,13 @@ import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAnces
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -202,8 +207,10 @@ export async function doctorBlocksSkill(
   const issues = [
     ...(!frontmatter.hasName ? ["configured Blocks skill is missing the required tokenjuice-blocks skill name"] : []),
     ...(!frontmatter.hasDescription ? ["configured Blocks skill is missing discovery frontmatter"] : []),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "Blocks skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_BLOCKS_OWNERSHIP_MARKER,
           missingIssue: "configured Blocks skill is missing the tokenjuice ownership marker",
@@ -212,23 +219,11 @@ export async function doctorBlocksSkill(
           requiredText: TOKENJUICE_BLOCKS_SKILL_MARKER,
           missingIssue: "configured Blocks skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Blocks skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Blocks skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: ".agents/skills/tokenjuice-blocks/SKILL.md",
           missingIssue: "configured Blocks skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Blocks skill still suggests the full escape hatch",
         },
       ],
     }),

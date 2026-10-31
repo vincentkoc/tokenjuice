@@ -1,3 +1,4 @@
+import { constants } from "node:fs";
 import { open } from "node:fs/promises";
 
 export async function readBoundedTextFile(
@@ -9,7 +10,7 @@ export async function readBoundedTextFile(
     throw new RangeError("maxBytes must be a non-negative safe integer");
   }
 
-  const file = await open(path, "r");
+  const file = await open(path, options.regularFileOnly ? constants.O_RDONLY | constants.O_NONBLOCK : "r");
   try {
     const details = await file.stat();
     if ((options.regularFileOnly && !details.isFile()) || details.size > maxBytes) {

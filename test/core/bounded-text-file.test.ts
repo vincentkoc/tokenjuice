@@ -1,6 +1,7 @@
 import { appendFile, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -93,8 +94,21 @@ describe("bounded text file reads", () => {
     expect(await readBoundedTextFile(join(path, ".."), 4, { regularFileOnly: true })).toBeNull();
   });
 
+  it.skipIf(process.platform === "win32")("rejects a FIFO without waiting for a writer", async () => {
+    const path = `${await createFile("")}.fifo`;
+    execFileSync("mkfifo", [path]);
+    const moduleUrl = pathToFileURL(resolve("src/core/bounded-text-file.ts")).href;
+    const script = `import { readBoundedTextFile } from ${JSON.stringify(moduleUrl)};
+      console.log(await readBoundedTextFile(${JSON.stringify(path)}, 4, { regularFileOnly: true }));`;
+    expect(execFileSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", script], {
+      encoding: "utf8",
+      timeout: 3000,
+    }).trim()).toBe("null");
+  });
+
   it.each([-1, 0.5, Number.NaN, Number.POSITIVE_INFINITY])("rejects invalid byte limits: %s", async (maxBytes) => {
     await expect(readBoundedTextFile("unused.txt", maxBytes)).rejects.toThrow(RangeError);
     expect(open).not.toHaveBeenCalled();
   });
 });
+import { execFileSync } from "node:child_process";

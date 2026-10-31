@@ -20,6 +20,17 @@ afterEach(async () => {
 });
 
 describe("runWrappedCommand", () => {
+  it("keeps long failure output intact when failure passthrough is requested", async () => {
+    const stdout = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
+    const wrapped = await runWrappedCommand([process.execPath, "-e", `process.stdout.write(${JSON.stringify(stdout)}); process.stderr.write('failure-stderr\\n'); process.exit(7);`], { keepFailures: true, recordStats: false });
+    expect(wrapped.exitCode).toBe(7);
+    expect(wrapped.stdout).toBe(stdout);
+    expect(wrapped.stderr).toBe("failure-stderr\n");
+    expect(wrapped.result.stats.ratio).toBe(1);
+    expect(wrapped.result.inlineText).toContain(stdout);
+    expect(wrapped.result.inlineText).not.toContain("omitted");
+  });
+
   it("preserves the child exit code and produces a compact result", async () => {
     const wrapped = await runWrappedCommand([
       process.execPath,

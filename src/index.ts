@@ -36,7 +36,7 @@ export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
 export { doctorCharlieInstructions, installCharlieInstructions, uninstallCharlieInstructions } from "./hosts/charlie/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook, uninstallClaudeCodeHook } from "./hosts/claude-code/index.js";
-export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
+export { doctorClineHook, installClineHook, runClinePreToolUseHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "./hosts/codeant/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";

@@ -61,7 +61,7 @@ beta integrations:
 | <img width="48px" src="docs/client-bob.svg" alt="IBM Bob" /> | [IBM Bob Shell](https://bob.ibm.com/docs/shell/configuration/configuring) | `tokenjuice install bob` | `AGENTS.md` |
 | <img width="48px" src="docs/client-builder.svg" alt="Builder" /> | [Builder](https://www.builder.io/c/docs/projects-configuration-files) | `tokenjuice install builder` | `.builder/rules/tokenjuice.mdc` |
 | <img width="48px" src="docs/client-charlie.svg" alt="Charlie" /> | [Charlie](https://docs.charlielabs.ai/customization/instructions) | `tokenjuice install charlie` | `AGENTS.md` |
-| <img width="48px" src="docs/client-cline.svg" alt="Cline" /> | [Cline](https://docs.cline.bot/features/hooks/hook-reference) | `tokenjuice install cline` | `~/Documents/Cline/Hooks/tokenjuice-post-tool-use` |
+| <img width="48px" src="docs/client-cline.svg" alt="Cline" /> | [Cline](docs/cline-integration.md) | `tokenjuice install cline` | `~/.cline/hooks/PreToolUse`; native CLI 3.0.74 input wrapping |
 | <img width="48px" src="docs/client-codeant.svg" alt="CodeAnt" /> | [CodeAnt](https://docs.codeant.ai/ide/review/code_review_instructions) | `tokenjuice install codeant` | `.codeant/instructions.json` |
 | <img width="48px" src="docs/client-codebuff.svg" alt="Codebuff" /> | [Codebuff](https://www.codebuff.com/docs/help/quick-start) | `tokenjuice install codebuff` | `AGENTS.md` |
 | <img width="48px" src="docs/client-codegen.svg" alt="Codegen" /> | [Codegen](https://docs.codegen.com/settings/repo-rules) | `tokenjuice install codegen` | `AGENTS.md` |
@@ -184,6 +184,7 @@ tokenjuice reduce [file]
 tokenjuice reduce-json [file]
 tokenjuice wrap -- <command> [args...]
 tokenjuice wrap --no-stats -- <command> [args...]
+tokenjuice wrap --keep-failures -- <command> [args...]
 tokenjuice wrap --raw -- <command> [args...]
 tokenjuice wrap --store -- <command> [args...]
 tokenjuice install [adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|qoderwork|qwen-code|qwenwork|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|copilot-cli|zed|zencoder]
@@ -214,6 +215,8 @@ when a reducer gets it wrong or the task needs untouched bytes, use the explicit
 tokenjuice wrap --raw -- pnpm --help
 tokenjuice wrap --full -- git status
 ```
+
+`--keep-failures` compacts successful commands and preserves failed commands’ stdout, stderr and exit status within the capture limit. Cline automatic wrapping enables it.
 
 statistics use bounded metadata segments and exclude pre-existing JSON sidecars. page with `--limit` and the returned `--cursor`; output reports when coverage is partial. set `TOKENJUICE_STATS=off` or pass `--no-stats` to stop metadata and hook-debug telemetry writes. `--raw` and `--full` return untouched bytes; artifact retention remains opt-in through `--store`.
 

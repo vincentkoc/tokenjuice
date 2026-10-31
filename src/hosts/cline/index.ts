@@ -1,200 +1,155 @@
-import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { lstat } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
-import { readStringField } from "../../core/record-fields.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  pathExists,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
+import { rewriteClineInput } from "../../core/integrations/rewrite-cline-input.js";
+import { parseTokenjuiceHookCommand, type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext, writeHookJsonLine } from "../shared/hook-output.js";
-import { isRecord } from "../shared/hooks-json-file.js";
+import { writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
+import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, isExecutableFile, resolveHostShell } from "../shared/pre-tool-wrap.js";
+import { readSettingsFile, removeSettingsFile, writeSettingsFile, type SettingsFile } from "../shared/settings-file.js";
 
-export type ClineHookCommandOptions = TokenjuiceHookCommandOptions & {
-  hooksDir?: string;
-};
-
-export type InstallClineHookResult = {
-  hookPath: string;
-  command: string;
-};
-
-export type UninstallClineHookResult = {
-  hookPath: string;
-  removed: boolean;
-};
-
+export type ClineHookCommandOptions = TokenjuiceHookCommandOptions & { hooksDir?: string };
+export type InstallClineHookResult = { hookPath: string; command: string };
+export type UninstallClineHookResult = { hookPath: string; removed: boolean };
 export type ClineDoctorReport = HookCommandDoctorReport<"hookPath">;
 
-type ClinePostToolUsePayload = {
-  hookName?: unknown;
-  postToolUse?: unknown;
-  workspaceRoots?: unknown;
-};
+const PRE_TOOL = "cline-pre-tool-use";
+const POST_TOOL = "cline-post-tool-use";
+const ADVISORY = "Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.";
 
-const TOKENJUICE_CLINE_SUBCOMMAND = "cline-post-tool-use";
-const TOKENJUICE_CLINE_FIX_COMMAND = "tokenjuice install cline";
-const TOKENJUICE_CLINE_DISABLED_ADVISORY = "Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.";
-const TOKENJUICE_CLINE_ADVISORY = "Cline support is beta and currently injects compacted context without suppressing the original tool result.";
-const TOKENJUICE_CLINE_HOOK_FILENAME = process.platform === "win32"
-  ? "tokenjuice-post-tool-use.ps1"
-  : "tokenjuice-post-tool-use";
-
-function getClineHooksDir(options: ClineHookCommandOptions = {}): string {
-  return options.hooksDir || process.env.CLINE_HOOKS_DIR || join(homedir(), "Documents", "Cline", "Hooks");
+function hooksDir(options: ClineHookCommandOptions): string {
+  return options.hooksDir || process.env.CLINE_HOOKS_DIR || join(homedir(), ".cline", "hooks");
 }
 
-function getDefaultHookPath(options: ClineHookCommandOptions = {}): string {
-  return join(getClineHooksDir(options), TOKENJUICE_CLINE_HOOK_FILENAME);
+function defaultHookPath(options: ClineHookCommandOptions): string {
+  return join(hooksDir(options), "PreToolUse");
 }
 
-function buildHookScript(command: string): string {
-  if (process.platform === "win32") {
-    return [
-      "$inputText = [Console]::In.ReadToEnd()",
-      `$inputText | & ${command}`,
-      "",
-    ].join("\n");
-  }
-
-  return [
-    "#!/usr/bin/env bash",
-    "set -euo pipefail",
-    `exec ${command}`,
-    "",
-  ].join("\n");
+function legacyHookPath(options: ClineHookCommandOptions): string {
+  const directory = options.hooksDir || process.env.CLINE_HOOKS_DIR || join(homedir(), "Documents", "Cline", "Hooks");
+  return join(directory, process.platform === "win32" ? "tokenjuice-post-tool-use.ps1" : "tokenjuice-post-tool-use");
 }
 
-function extractConfiguredCommand(script: string): string | undefined {
-  const execMatch = /^exec\s+(.+)$/mu.exec(script);
-  if (execMatch?.[1]?.includes(TOKENJUICE_CLINE_SUBCOMMAND)) {
-    return execMatch[1];
+function scriptFor(command: string, legacy = false): string {
+  return `#!/usr/bin/env bash\n${legacy ? "" : "# tokenjuice:cline pre-tool-use\n"}set -euo pipefail\nexec ${command}\n`;
+}
+
+function ownedCommand(file: SettingsFile): string | undefined {
+  const script = file.data?.toString("utf8");
+  if (!script) return undefined;
+  const powershell = /^\$inputText \| & (.+)$/mu.exec(script)?.[1];
+  if (powershell && script === `$inputText = [Console]::In.ReadToEnd()\n$inputText | & ${powershell}\n`) {
+    try {
+      if (parseTokenjuiceHookCommand(powershell, "win32").subcommand === POST_TOOL
+        && powershell.trimEnd().endsWith(` ${POST_TOOL}`)) return powershell;
+    } catch { /* Preserve custom PowerShell scripts. */ }
   }
-  const powershellMatch = /\|\s*&\s+(.+)$/mu.exec(script);
-  if (powershellMatch?.[1]?.includes(TOKENJUICE_CLINE_SUBCOMMAND)) {
-    return powershellMatch[1];
-  }
+  const command = /^exec (.+)$/mu.exec(script)?.[1];
+  if (!command) return undefined;
+  try {
+    const parsed = parseTokenjuiceHookCommand(command);
+    if (parsed.subcommand === PRE_TOOL && scriptFor(command) === script) return command;
+    if (parsed.subcommand === POST_TOOL && command.trimEnd().endsWith(` ${POST_TOOL}`)
+      && scriptFor(command, true) === script) return command;
+  } catch { /* Unrecognized scripts belong to the user. */ }
   return undefined;
 }
 
-async function readConfiguredCommand(hookPath: string): Promise<string | undefined> {
-  try {
-    return extractConfiguredCommand(await readFile(hookPath, "utf8"));
-  } catch {
-    return undefined;
+async function assertNoSymlink(path: string): Promise<void> {
+  for (const candidate of [dirname(path), path]) {
+    try {
+      if ((await lstat(candidate)).isSymbolicLink()) throw new Error(`cannot modify Cline hook through symlink: ${candidate}`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
   }
+}
+
+async function removeOwnedHook(path: string): Promise<boolean> {
+  await assertNoSymlink(path);
+  const file = await readSettingsFile(path);
+  if (!ownedCommand(file)) return false;
+  await assertNoSymlink(path);
+  return removeSettingsFile(file);
 }
 
 export async function installClineHook(
   hookPath?: string,
   options: ClineHookCommandOptions = {},
 ): Promise<InstallClineHookResult> {
-  const resolvedHookPath = hookPath ?? getDefaultHookPath(options);
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_CLINE_SUBCOMMAND, "cline", options);
-  await mkdir(dirname(resolvedHookPath), { recursive: true });
-  await writeFile(resolvedHookPath, buildHookScript(command), "utf8");
-  if (process.platform !== "win32") {
-    await chmod(resolvedHookPath, 0o755);
+  if (process.platform === "win32") throw new Error("Cline input wrapping requires a POSIX shell; use tokenjuice wrap manually on Windows");
+  const path = hookPath ?? defaultHookPath(options);
+  if (!["PreToolUse", "PreToolUse.sh"].includes(basename(path))) {
+    throw new Error("Cline discovers hooks named PreToolUse or PreToolUse.sh; choose that filename");
   }
-  return { hookPath: resolvedHookPath, command };
+  await assertNoSymlink(path);
+  const file = await readSettingsFile(path);
+  if (file.metadata && !ownedCommand(file)) throw new Error(`Cline PreToolUse hook already exists and is not managed by tokenjuice: ${path}`);
+  const legacy = legacyHookPath(options);
+  if (legacy !== path) await assertNoSymlink(legacy);
+  const command = await buildWrapLauncherHookCommand({ ...options, subcommand: PRE_TOOL, hostName: "Cline" });
+  await assertNoSymlink(path);
+  await writeSettingsFile(file, scriptFor(command), undefined, { mode: 0o755 });
+  if (legacy !== path) await removeOwnedHook(legacy);
+  return { hookPath: path, command };
 }
 
-export async function uninstallClineHook(hookPath = getDefaultHookPath()): Promise<UninstallClineHookResult> {
-  const exists = await pathExists(hookPath);
-  if (exists) {
-    await rm(hookPath, { force: true });
-  }
-  return { hookPath, removed: exists };
+export async function uninstallClineHook(
+  hookPath?: string,
+  options: ClineHookCommandOptions = {},
+): Promise<UninstallClineHookResult> {
+  const path = hookPath ?? defaultHookPath(options);
+  let removed = await removeOwnedHook(path);
+  if (!hookPath) removed = await removeOwnedHook(legacyHookPath(options)) || removed;
+  return { hookPath: path, removed };
 }
 
 export async function doctorClineHook(
   hookPath?: string,
   options: ClineHookCommandOptions = {},
 ): Promise<ClineDoctorReport> {
-  const resolvedHookPath = hookPath ?? getDefaultHookPath(options);
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_CLINE_SUBCOMMAND, "cline", options);
-  const detectedCommand = await readConfiguredCommand(resolvedHookPath);
-
-  return {
-    hookPath: resolvedHookPath,
-    ...(await buildHookCommandDoctorFields({
-      expectedCommand,
-      detectedCommand,
-      disabledIssue: "tokenjuice PostToolUse hook script is not installed for Cline",
-      hostLabel: "Cline",
-      advisory: detectedCommand ? TOKENJUICE_CLINE_ADVISORY : TOKENJUICE_CLINE_DISABLED_ADVISORY,
-      fixCommand: TOKENJUICE_CLINE_FIX_COMMAND,
-    })),
-  };
-}
-
-function readWorkspaceCwd(payload: ClinePostToolUsePayload): string | undefined {
-  if (!Array.isArray(payload.workspaceRoots)) {
-    return undefined;
-  }
-  const first = payload.workspaceRoots[0];
-  return typeof first === "string" && first.trim() ? first : undefined;
-}
-
-function isShellToolName(value: unknown): boolean {
-  return value === "execute_command" || value === "executeCommand" || value === "terminal";
-}
-
-function writeClineResponse(contextModification = ""): void {
-  writeHookJsonLine({ cancel: false, contextModification, errorMessage: "" });
-}
-
-export async function runClinePostToolUseHook(rawText: string): Promise<number> {
-  let payload: ClinePostToolUsePayload;
+  const path = hookPath ?? defaultHookPath(options);
+  const expectedCommand = await buildWrapLauncherHookCommand({ ...options, subcommand: PRE_TOOL, hostName: "Cline" });
+  let pathIssue: string | undefined;
   try {
-    payload = JSON.parse(rawText) as ClinePostToolUsePayload;
-  } catch {
-    writeClineResponse();
-    return 0;
+    await assertNoSymlink(path);
+  } catch (error) {
+    pathIssue = (error as Error).message;
   }
-
-  if (payload.hookName !== "PostToolUse" || !isRecord(payload.postToolUse)) {
-    writeClineResponse();
-    return 0;
+  const file = pathIssue ? undefined : await readSettingsFile(path);
+  const detectedCommand = file ? ownedCommand(file) : undefined;
+  const fields = await buildHookCommandDoctorFields({ expectedCommand, detectedCommand,
+    disabledIssue: "tokenjuice PreToolUse hook is not installed for Cline", hostLabel: "Cline", advisory: ADVISORY,
+    fixCommand: `tokenjuice install cline${options.local ? " --local" : ""}` });
+  const issues = [...fields.issues];
+  if (pathIssue) issues.push(pathIssue);
+  if (file?.metadata && !detectedCommand) issues.push("Cline PreToolUse path contains an unmanaged hook; preserve it and merge wrapping manually");
+  if (detectedCommand && !(await isExecutableFile(path))) issues.push("Cline PreToolUse hook is not executable; reinstall tokenjuice");
+  if (!detectedCommand && ownedCommand(await readSettingsFile(legacyHookPath(options)))) {
+    issues.push("legacy tokenjuice PostToolUse hook is not discovered by current Cline; reinstall tokenjuice");
   }
+  if (process.platform === "win32") issues.push("Cline input wrapping requires a POSIX shell; use tokenjuice wrap manually on Windows");
+  return { hookPath: path, ...fields, issues, ...(issues.length && (file?.metadata || issues.length > fields.issues.length) ? { status: "broken" as const } : {}) };
+}
 
-  const tool = payload.postToolUse;
-  if (!isShellToolName(tool.toolName) && !isShellToolName(tool.tool)) {
-    writeClineResponse();
-    return 0;
-  }
-
-  const parameters = isRecord(tool.parameters) ? tool.parameters : {};
-  const command = readStringField(parameters, ["command", "cmd"]) ?? readStringField(tool, ["command"]);
-  const result = readStringField(tool, ["result"]);
-  if (!command || !result) {
-    writeClineResponse();
-    return 0;
-  }
-
+export async function runClinePreToolUseHook(rawText: string, wrapLauncher = "tokenjuice"): Promise<number> {
   try {
-    const cwd = readWorkspaceCwd(payload);
-    const outcome = await compactBashResult({
-      source: "cline",
-      command,
-      visibleText: result,
-      ...(cwd ? { cwd } : {}),
-      inspectionPolicy: "allow-safe-inventory",
-      metadata: { source: "cline-post-tool-use" },
-      genericFallbackMinSavedChars: 120,
-      genericFallbackMaxRatio: 0.75,
-      skipGenericFallbackForCompoundCommands: true,
-    });
-
-    writeClineResponse(
-      outcome.action === "rewrite" ? buildCompactedOutputContext(outcome.result.inlineText) : "",
-    );
-    return 0;
+    if (process.platform === "win32") { writeEmptyHookJsonLine(); return 0; }
+    const payload: unknown = JSON.parse(rawText);
+    const shellPath = await resolveHostShell([process.env.SHELL, "bash"]);
+    if (!shellPath) { writeEmptyHookJsonLine(); return 0; }
+    const result = rewriteClineInput(payload, command => commandAlreadyWrapped(command) ? command
+      : buildWrappedCommand({ wrapLauncher, shellPath, command, source: "cline", keepFailures: true }));
+    writeHookJsonLine(result ?? {});
   } catch {
-    writeClineResponse();
-    return 0;
+    writeEmptyHookJsonLine();
   }
+  return 0;
+}
+
+/** Legacy additive hooks must not add a second copy of output. */
+export async function runClinePostToolUseHook(_rawText: string): Promise<number> {
+  writeHookJsonLine({ cancel: false, contextModification: "", errorMessage: "" });
+  return 0;
 }

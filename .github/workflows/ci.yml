@@ -209,6 +209,12 @@ jobs:
       - name: Verify Mux/Xum model-visible tool results
         run: node scripts/mux-e2e.mjs "$RUNNER_TEMP/tokenjuice-xum/node_modules/@coder/xum/dist/cli/index.js"
 
+      - name: Install pinned Cline CLI host
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-cline" --ignore-scripts --no-audit --no-fund @cline/cli-linux-x64@3.0.74
+
+      - name: Verify Cline CLI model-visible tool results
+        run: node scripts/cline-e2e.mjs "$RUNNER_TEMP/tokenjuice-cline/node_modules/@cline/cli-linux-x64/bin/cline"
+
       - name: Install pinned Pi host
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-pi" --ignore-scripts --no-audit --no-fund @earendil-works/pi-coding-agent@1.4.0
 

@@ -538,7 +538,7 @@ const installClineCommand = createHostCommand((args) => installClineHook(undefin
   const details = [
     { label: "Hook", value: result.hookPath },
     { label: "Command", value: result.command },
-    { label: "Beta", value: "enable this PostToolUse hook in Cline's Hooks tab after install" },
+    { label: "Beta", value: "PreToolUse wrapping; restart Cline after install" },
     { label: "Verify", value: `tokenjuice doctor cline${args.local ? " --local" : ""}` },
     { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
   ];

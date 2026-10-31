@@ -231,6 +231,7 @@ export type RuleFixture = {
 };
 
 export type WrapOptions = {
+  keepFailures?: boolean;
   cwd?: string;
   source?: string;
   noOmit?: boolean;

@@ -2512,47 +2512,47 @@ exit 0
 
 exports[`host CLI commands > install, doctor, and uninstall cline 1`] = `
 "$ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook script is not installed for Cline
+[stdout] - tokenjuice PreToolUse hook is not installed for Cline
 [stdout] advisories:
-[stdout] - Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 
 $ tokenjuice install cline
 [stdout] success: cline hook installed successfully
 
-  Hook        : <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
-  Command     : <NODE> '<LAUNCHER>' cline-post-tool-use
-  Beta        : enable this PostToolUse hook in Cline's Hooks tab after install
+  Hook        : <SANDBOX>/home/.cline/hooks/PreToolUse
+  Command     : <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
+  Beta        : PreToolUse wrapping; restart Cline after install
   Verify      : tokenjuice doctor cline
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
 
 $ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Cline support is beta and currently injects compacted context without suppressing the original tool result.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 
 $ tokenjuice doctor cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Cline support is beta and currently injects compacted context without suppressing the original tool result."
+    "Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance."
   ],
   "fixCommand": "tokenjuice install cline",
-  "expectedCommand": "<NODE> '<LAUNCHER>' cline-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' cline-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -2560,32 +2560,32 @@ exit 0
 
 $ tokenjuice install cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
-  "command": "<NODE> '<LAUNCHER>' cline-post-tool-use"
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
+  "command": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
 $ tokenjuice uninstall cline
 [stdout] removed cline hook: yes
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] enable: tokenjuice install cline
 exit 0
 
 $ tokenjuice uninstall cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
   "removed": false
 }
 exit 0
 
 $ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook script is not installed for Cline
+[stdout] - tokenjuice PreToolUse hook is not installed for Cline
 [stdout] advisories:
-[stdout] - Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 "

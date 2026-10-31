@@ -19,7 +19,7 @@ import { UNKNOWN_ARTIFACT_SOURCE } from "../core/source.js";
 import { runWrappedCommand } from "../core/wrap.js";
 import type { WrapResult } from "../types.js";
 import { runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
-import { runClinePostToolUseHook } from "../hosts/cline/index.js";
+import { runClinePreToolUseHook, runClinePostToolUseHook } from "../hosts/cline/index.js";
 import { runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
 import { runCommandCodePostToolUseHook } from "../hosts/command-code/index.js";
 import { runCodexPostToolUseHook } from "../hosts/codex/index.js";
@@ -56,7 +56,7 @@ function printUsage(): void {
       "  tokenjuice --version",
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit] [--no-stats]",
       "  tokenjuice reduce-json [file]",
-      "  tokenjuice wrap [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice wrap [--keep-failures] [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install adal",
       "  tokenjuice install aether",
@@ -293,6 +293,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let noStats = false;
   let tee = false;
   let raw = false;
+  let keepFailures = false;
   let noOmit = false;
   let allowOmit = false;
   let storeDir: string | undefined;
@@ -379,6 +380,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
       case "--raw":
       case "--full":
         raw = true;
+        index += 1;
+        break;
+      case "--keep-failures":
+        keepFailures = true;
         index += 1;
         break;
       case "--no-omit":
@@ -500,6 +505,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     noStats,
     tee,
     raw,
+    keepFailures,
     noOmit,
     allowOmit,
     storeDir,
@@ -645,6 +651,7 @@ async function runWrap(args: ParsedArgs): Promise<number> {
   const noOmit = resolveNoOmit(args.noOmit);
   const wrapped = await runWrappedCommand(args.passthrough, {
     tee: args.tee,
+    ...(args.keepFailures ? { keepFailures: true } : {}),
     ...(args.raw ? { raw: true } : {}),
     ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
@@ -655,7 +662,15 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(typeof args.maxCaptureBytes === "number" ? { maxCaptureBytes: args.maxCaptureBytes } : {}),
     ...(args.source ? { source: args.source } : {}),
   });
-  const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
+  const failedPassthrough = args.keepFailures === true && wrapped.exitCode !== 0;
+  if (failedPassthrough && args.format === "text") {
+    if (!args.tee) {
+      process.stdout.write(wrapped.stdout);
+      process.stderr.write(wrapped.stderr);
+    }
+    return wrapped.exitCode;
+  }
+  const inlineText = decorateWrapInlineText(wrapped.result, args.raw || failedPassthrough);
   // Passthrough output already has the command's exact line endings.
   const exactText = args.raw || (wrapped.stderr.length === 0 && inlineText === wrapped.stdout);
   emit(args.format, wrapped, inlineText, exactText);
@@ -1089,6 +1104,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runClaudeCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "claude-code-post-tool-use":
       return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes));
+    case "cline-pre-tool-use":
+      return await runClinePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "cline-post-tool-use":
       return await runClinePostToolUseHook(await readStdin(args.maxInputBytes));
     case "codebuddy-pre-tool-use":

@@ -107,7 +107,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
             },
           },
           {
-            raw: opts.raw ?? false,
+            raw: opts.raw === true || (opts.keepFailures === true && code !== 0),
             noOmit: opts.noOmit ?? false,
             trace: opts.trace ?? false,
             ...(opts.recordStats !== undefined ? { recordStats: opts.recordStats } : {}),

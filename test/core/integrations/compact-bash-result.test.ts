@@ -35,6 +35,27 @@ describe("compactBashResult", () => {
     process.env.TOKENJUICE_NO_OMISSION = originalNoOmissionEnv;
   });
 
+  it.each([
+    "tokenjuice wrap --raw -- find fixtures -type f",
+    "/usr/local/bin/tokenjuice wrap --full -- find fixtures -type f",
+    "node '/workspace/tokenjuice/dist/cli/main.js' wrap --raw -- find fixtures -type f",
+    "env DEBUG=1 bash -lc 'tokenjuice wrap --raw -- find fixtures -type f'",
+  ])("preserves explicit raw output after the tool executes: %s", async (command) => {
+    const text = Array.from({ length: 80 }, (_, index) => `fixtures/example-${index}.json`).join("\n");
+    const outcome = await compactBashResult({ source: "opencode", command, visibleText: text });
+    expect(outcome).toMatchObject({ action: "keep", reason: "raw-bypass", rawText: text });
+  });
+
+  it.each([
+    "tokenjuice wrap -- find fixtures --raw",
+    "tokenjuice wrap git diff --raw",
+    "echo 'tokenjuice wrap --raw -- find fixtures'",
+    "node /workspace/other.js wrap --raw -- find fixtures",
+  ])("does not infer a raw bypass from command arguments: %s", async (command) => {
+    const outcome = await compactBashResult({ source: "opencode", command, visibleText: "fixture output" });
+    expect(outcome).not.toMatchObject({ reason: "raw-bypass" });
+  });
+
   it("uses trusted full text when provided", async () => {
     const outcome = await compactBashResult({
       source: "pi",

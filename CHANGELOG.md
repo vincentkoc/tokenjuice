@@ -5,6 +5,8 @@
 ### Fixes
 
 - Keep source normalization, shell flag matching, and hook configuration parsing responsive on long or malformed input.
+- Export an OpenCode plugin initializer accepted by the host loader, restoring shell-output compaction; warn when an older plugin needs reinstalling.
+- Honor explicit `tokenjuice wrap --raw` / `--full` bypasses in shared post-tool compaction.
 - Droid install, doctor and uninstall respect existing standalone hook files and their unwrapped event-map format.
 
 - Preserve exact file-read output through pre-tool hook wrapping without appending an extra newline.

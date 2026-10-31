@@ -6569,59 +6569,52 @@ exports[`host CLI commands > install, doctor, and uninstall mux 1`] = `
 "$ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice tool_post hook is not installed for Mux
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install mux
-[stdout] success: mux hook installed successfully
-
-  Hook        : <SANDBOX>/project/.mux/tool_post
-  Command     : <NODE> '<LAUNCHER>' mux-post-tool-use
-  Beta        : project-local tool_post hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor mux
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' mux-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor mux --format json
 [stdout] {
   "hookPath": "<SANDBOX>/project/.mux/tool_post",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result."
+    "Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install mux",
-  "expectedCommand": "<NODE> '<LAUNCHER>' mux-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' mux-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/project/.mux/tool_post"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/project/.mux/tool_post"
+  ]
 }
 exit 0
 
 $ tokenjuice install mux --format json
-[stdout] {
-  "hookPath": "<SANDBOX>/project/.mux/tool_post",
-  "command": "<NODE> '<LAUNCHER>' mux-post-tool-use"
-}
-exit 0
+throws Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall mux
-[stdout] removed mux hook: yes
+[stdout] removed mux hook: no
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] enable: tokenjuice install mux
 exit 0
@@ -6636,12 +6629,12 @@ exit 0
 $ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice tool_post hook is not installed for Mux
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;

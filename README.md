@@ -101,7 +101,7 @@ beta integrations:
 | <img width="48px" src="docs/client-swe-agent.svg" alt="SWE-agent" /> | [SWE-agent](https://swe-agent.com/latest/) | `tokenjuice install swe-agent` | `.swe-agent/tokenjuice.yaml` |
 | <img width="48px" src="docs/client-stagewise.svg" alt="Stagewise" /> | [Stagewise](https://docs.stagewise.io/agent/skills-and-context) | `tokenjuice install stagewise` | `.stagewise/skills/tokenjuice/SKILL.md` |
 | <img width="48px" src="docs/client-mistral-vibe.svg" alt="Mistral Vibe" /> | [Mistral Vibe](https://docs.mistral.ai/mistral-vibe/agents-skills) | `tokenjuice install mistral-vibe` | `AGENTS.md` |
-| <img width="48px" src="docs/client-mux.svg" alt="Mux" /> | [Mux](https://mux.coder.com/hooks/tools) | `tokenjuice install mux` | `.mux/tool_post` |
+| <img width="48px" src="docs/client-mux.svg" alt="Mux" /> | [Mux / Xum](https://github.com/coder/xum) | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/mux-integration.md) |
 | <img width="48px" src="docs/client-novakit.svg" alt="NovaKit" /> | [NovaKit CLI](https://www.novakit.ai/docs/cli) | `tokenjuice install novakit` | `NOVAKIT.md` |
 | <img width="48px" src="docs/client-knowns.svg" alt="Knowns" /> | [Knowns](https://knowns.sh/) | `tokenjuice install knowns` | `KNOWNS.md` |
 | <img width="48px" src="docs/client-ona.svg" alt="Ona" /> | [Ona Agent](https://ona.com/docs/ona/agents/overview) | `tokenjuice install ona` | `.ona/skills/tokenjuice/SKILL.md` |

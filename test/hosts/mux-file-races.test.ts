@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { installMuxHook, uninstallMuxHook } from "../../src/hosts/mux/index.js";
+import { uninstallMuxHook } from "../../src/hosts/mux/index.js";
 
 const race = vi.hoisted(() => ({ afterRead: undefined as ((path: string) => Promise<void>) | undefined }));
 
@@ -43,22 +43,9 @@ afterEach(async () => {
 });
 
 describe("Mux hook snapshot updates", () => {
-  it("preserves an edit made after the installer reads its snapshot", async () => {
-    const path = await fixture();
-    await writeFile(path, "#!/usr/bin/env bash\necho original\n");
-    race.afterRead = async () => { await writeFile(path, "#!/usr/bin/env bash\necho concurrent\n"); };
-
-    await expect(installMuxHook(path, { binaryPath: process.execPath })).rejects.toThrow("settings changed");
-    expect(await readFile(path, "utf8")).toContain("echo concurrent");
-    expect(await readdir(dirname(path))).toEqual(["tool_post"]);
-  });
-
   it.each([false, true])("preserves concurrent edits during uninstall, custom hook: %s", async (custom) => {
     const path = await fixture();
-    if (custom) {
-      await writeFile(path, "#!/usr/bin/env bash\necho custom\n");
-    }
-    await installMuxHook(path, { binaryPath: process.execPath });
+    await writeFile(path, "#!/usr/bin/env bash\n# tokenjuice:mux begin\n(\n  set -euo pipefail\n  tokenjuice mux-post-tool-use\n) || true\n# tokenjuice:mux end\n" + (custom ? "echo custom\n" : ""));
     race.afterRead = async () => { await writeFile(path, "#!/usr/bin/env bash\necho concurrent\n"); };
 
     await expect(uninstallMuxHook(path)).rejects.toThrow("settings changed");
@@ -68,11 +55,11 @@ describe("Mux hook snapshot updates", () => {
   it.skipIf(process.platform === "win32")("refuses a hook replaced by a symlink after reading", async () => {
     const path = await fixture();
     const target = join(dirname(path), "other-script");
-    await writeFile(path, "#!/usr/bin/env bash\necho original\n");
+    await writeFile(path, "#!/usr/bin/env bash\n# tokenjuice:mux begin\n(\n  set -euo pipefail\n  tokenjuice mux-post-tool-use\n) || true\n# tokenjuice:mux end\n");
     await writeFile(target, "private target\n");
     race.afterRead = async () => { await rm(path); await symlink(target, path); };
 
-    await expect(installMuxHook(path, { binaryPath: process.execPath })).rejects.toThrow("symlinked file");
+    await expect(uninstallMuxHook(path)).rejects.toThrow("symlinked file");
     expect(await readFile(target, "utf8")).toBe("private target\n");
     expect((await readdir(dirname(path))).sort()).toEqual(["other-script", "tool_post"]);
   });

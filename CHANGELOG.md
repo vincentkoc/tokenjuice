@@ -5,6 +5,7 @@
 ### Fixes
 
 - Match native Copilot CLI Bash hooks, require proven shell exit 0 before compaction, and preserve completion metadata outside output summaries; verify real 1.0.105 model requests and remove obsolete synthetic fixtures.
+- Retire additive Mux/Xum automatic compaction, keep legacy hook cleanup and silent handlers, and qualify explicit wrapping against the published Xum CLI.
 
 - Retire community Grok CLI additive hook compaction, retain scoped legacy cleanup, and validate explicit wrapping against the actual packaged standalone runtime.
 - Validate OpenCode V2 plugin discovery and model-visible shell-result replacement with native v2.0.18 baseline/installed sessions, including exact reads, raw bypass and complete failure metadata.

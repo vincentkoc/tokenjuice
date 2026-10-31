@@ -5,8 +5,13 @@ import { createProjectInstructionPathResolver, createSymlinkGuard } from "../sha
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { pathEntryExists, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -181,8 +186,10 @@ export async function doctorBazSkill(skillPath?: string, options: BazSkillOption
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Baz skill",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_BAZ_OWNERSHIP_MARKER,
         missingIssue: "configured Baz skill is missing the tokenjuice ownership marker",
@@ -199,23 +206,11 @@ export async function doctorBazSkill(skillPath?: string, options: BazSkillOption
         requiredText: TOKENJUICE_BAZ_SKILL_MARKER,
         missingIssue: "configured Baz skill does not look like the tokenjuice skill",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Baz skill is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Baz skill is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".baz/skills/tokenjuice/SKILL.md",
         missingIssue: "configured Baz skill is missing workspace skill path guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Baz skill still suggests the full escape hatch",
       },
     ],
   });

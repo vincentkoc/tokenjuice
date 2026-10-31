@@ -6,18 +6,13 @@ import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realp
 
 import { findGitRoot } from "../shared/project-root.js";
 
-import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues } from "../shared/instruction-file.js";
+
 
 export type GrokBotRuleOptions = {
   projectDir?: string;
@@ -616,8 +611,10 @@ export async function doctorGrokBotRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Grok Bot rule",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_GROK_BOT_OWNERSHIP_MARKER,
         missingIssue: "configured Grok Bot rule is missing the tokenjuice ownership marker",
@@ -626,23 +623,11 @@ export async function doctorGrokBotRule(
         requiredText: TOKENJUICE_GROK_BOT_RULE_MARKER,
         missingIssue: "configured Grok Bot rule does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Grok Bot rule is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Grok Bot rule is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "does not install an interception hook or rewrite Grok Bot tool results",
         missingIssue: "configured Grok Bot rule is missing the guidance-only boundary",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Grok Bot rule still suggests the full escape hatch",
       },
     ],
   });

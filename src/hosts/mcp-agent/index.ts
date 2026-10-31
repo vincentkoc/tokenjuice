@@ -2,16 +2,20 @@ import { randomUUID } from "node:crypto";
 import { mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { findAvailableBackupPath, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  findAvailableBackupPath,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
 
 import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  collectTokenjuiceGuidanceIssues,
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
@@ -254,8 +258,10 @@ export async function doctorMcpAgentDefinition(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "mcp-agent definition",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_MCP_AGENT_MARKER,
         missingIssue: "configured mcp-agent definition does not look like the tokenjuice definition",
@@ -264,14 +270,8 @@ export async function doctorMcpAgentDefinition(
         requiredText: "name: tokenjuice",
         missingIssue: "configured mcp-agent definition is missing tokenjuice agent frontmatter",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured mcp-agent definition is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured mcp-agent definition is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".mcp-agent/agents",
         missingIssue: "configured mcp-agent definition is missing search path guidance",
@@ -279,12 +279,6 @@ export async function doctorMcpAgentDefinition(
       {
         requiredText: "agents.search_paths",
         missingIssue: "configured mcp-agent definition is missing load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured mcp-agent definition still suggests the full escape hatch",
       },
     ],
   });

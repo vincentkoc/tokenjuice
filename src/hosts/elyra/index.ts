@@ -1,13 +1,13 @@
 import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
   buildInstructionDoctorReportFields,
@@ -257,8 +257,10 @@ export async function doctorElyraSkill(
 
   const issues = [
     ...collectFrontmatterIssues(existing.text),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "elyra skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_ELYRA_OWNERSHIP_MARKER,
           missingIssue: "configured elyra skill is missing the tokenjuice ownership marker",
@@ -267,23 +269,11 @@ export async function doctorElyraSkill(
           requiredText: TOKENJUICE_ELYRA_SKILL_MARKER,
           missingIssue: "configured elyra skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured elyra skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured elyra skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: ".elyra/skills/tokenjuice/SKILL.md",
           missingIssue: "configured elyra skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured elyra skill still suggests the full escape hatch",
         },
       ],
     }),

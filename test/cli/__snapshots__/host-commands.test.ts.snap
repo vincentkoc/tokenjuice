@@ -6915,62 +6915,54 @@ exports[`host CLI commands > install, doctor, and uninstall openhands 1`] = `
 "$ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for OpenHands
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install openhands
-[stdout] success: openhands hook installed successfully
-
-  Hook        : <SANDBOX>/project/.openhands/hooks.json
-  Command     : <NODE> '<LAUNCHER>' openhands-post-tool-use
-  Beta        : project-local PostToolUse hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor openhands
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' openhands-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor openhands --format json
 [stdout] {
   "hooksPath": "<SANDBOX>/project/.openhands/hooks.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "OpenHands support is beta and currently injects compacted context without suppressing the original tool result."
+    "OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install openhands",
-  "expectedCommand": "<NODE> '<LAUNCHER>' openhands-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' openhands-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/project/.openhands/hooks.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/project/.openhands/hooks.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install openhands --format json
-[stdout] {
-  "hooksPath": "<SANDBOX>/project/.openhands/hooks.json",
-  "backupPath": "<SANDBOX>/project/.openhands/hooks.json.bak",
-  "command": "<NODE> '<LAUNCHER>' openhands-post-tool-use"
-}
-exit 0
+throws OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall openhands
-[stdout] removed openhands entries: 1
+[stdout] removed openhands entries: 0
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
-[stdout] enable: tokenjuice install openhands
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall openhands --format json
@@ -6983,12 +6975,12 @@ exit 0
 $ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for OpenHands
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -9067,10 +9059,10 @@ exit 0
 
 exports[`host CLI commands > rejects unknown or missing targets 1`] = `
 "$ tokenjuice install not-a-host
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice install
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall not-a-host
 throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder

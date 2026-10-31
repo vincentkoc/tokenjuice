@@ -1,260 +1,143 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { lstat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { readStringField } from "../../core/record-fields.js";
-import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
-import {
-  buildTokenjuiceHookCommand,
-  type TokenjuiceHookCommandOptions,
-} from "../shared/host-command.js";
-import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
-import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
+import { parseTokenjuiceHookCommand, type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
+import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { writeEmptyHookJsonLine } from "../shared/hook-output.js";
 import { isRecord } from "../shared/hooks-json-file.js";
+import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 
-export type OpenHandsHookCommandOptions = TokenjuiceHookCommandOptions & {
-  projectDir?: string;
-};
-
-export type InstallOpenHandsHookResult = {
-  hooksPath: string;
-  backupPath?: string;
-  command: string;
-};
-
-export type UninstallOpenHandsHookResult = {
-  hooksPath: string;
-  removed: number;
-};
-
+export type OpenHandsHookCommandOptions = TokenjuiceHookCommandOptions & { projectDir?: string };
+export type InstallOpenHandsHookResult = { hooksPath: string; backupPath?: string; command: string };
+export type UninstallOpenHandsHookResult = { hooksPath: string; removed: number };
 export type OpenHandsDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
-type OpenHandsHooksConfig = Record<string, unknown> & {
-  post_tool_use: unknown[];
-};
+const SUBCOMMAND = "openhands-post-tool-use";
+const RETIRED = "OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.";
+const EVENTS = ["post_tool_use", "PostToolUse"] as const;
 
-type OpenHandsPostToolUsePayload = {
-  event_type?: unknown;
-  tool_name?: unknown;
-  tool_input?: unknown;
-  tool_response?: unknown;
-  working_dir?: unknown;
-};
-
-const TOKENJUICE_OPENHANDS_SUBCOMMAND = "openhands-post-tool-use";
-const TOKENJUICE_OPENHANDS_FIX_COMMAND = "tokenjuice install openhands";
-const TOKENJUICE_OPENHANDS_ADVISORY = "OpenHands support is beta and currently injects compacted context without suppressing the original tool result.";
-
-function getProjectDir(options: OpenHandsHookCommandOptions = {}): string {
+function projectDir(options: OpenHandsHookCommandOptions): string {
   return options.projectDir || process.env.OPENHANDS_PROJECT_DIR || process.cwd();
 }
 
-function getDefaultHooksPath(options: OpenHandsHookCommandOptions = {}): string {
-  return join(getProjectDir(options), ".openhands", "hooks.json");
+function defaultHooksPath(options: OpenHandsHookCommandOptions): string {
+  return join(projectDir(options), ".openhands", "hooks.json");
 }
 
-function sanitizeOpenHandsHooksConfig(raw: unknown): OpenHandsHooksConfig {
-  if (!isRecord(raw)) {
-    return { post_tool_use: [] };
-  }
-  return {
-    ...raw,
-    post_tool_use: Array.isArray(raw.post_tool_use) ? [...raw.post_tool_use] : [],
-  };
-}
-
-async function readOpenHandsHooksConfig(hooksPath: string): Promise<{ config: OpenHandsHooksConfig; exists: boolean }> {
-  try {
-    const rawText = await readFile(hooksPath, "utf8");
-    return { config: sanitizeOpenHandsHooksConfig(JSON.parse(rawText) as unknown), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { post_tool_use: [] }, exists: false };
-    }
-    throw error;
-  }
-}
-
-async function loadOpenHandsHooksConfigWithBackup(hooksPath: string): Promise<{ config: OpenHandsHooksConfig; backupPath?: string }> {
-  try {
-    const rawText = await readFile(hooksPath, "utf8");
-    const backupPath = `${hooksPath}.bak`;
-    await writeFile(backupPath, rawText, "utf8");
-    return { config: sanitizeOpenHandsHooksConfig(JSON.parse(rawText) as unknown), backupPath };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { post_tool_use: [] } };
-    }
-    throw error;
-  }
-}
-
-async function writeOpenHandsHooksConfig(hooksPath: string, config: OpenHandsHooksConfig): Promise<void> {
-  await mkdir(dirname(hooksPath), { recursive: true });
-  const tempPath = `${hooksPath}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
-  await rename(tempPath, hooksPath);
-}
-
-function isTokenjuiceOpenHandsHook(hook: unknown): boolean {
-  return isRecord(hook)
-    && typeof hook.command === "string"
-    && hook.command.includes(TOKENJUICE_OPENHANDS_SUBCOMMAND);
-}
-
-function findTokenjuiceOpenHandsHookCommand(config: OpenHandsHooksConfig): string | undefined {
-  for (const group of config.post_tool_use) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      continue;
-    }
-    for (const hook of group.hooks) {
-      if (isTokenjuiceOpenHandsHook(hook)) {
-        return (hook as { command: string }).command;
-      }
+async function symlinkIssue(path: string, options: OpenHandsHookCommandOptions, defaultPath: boolean): Promise<string | undefined> {
+  for (const candidate of [...(defaultPath ? [projectDir(options)] : []), dirname(path), path]) {
+    try {
+      if ((await lstat(candidate)).isSymbolicLink()) return `cannot modify OpenHands hooks through symlink: ${candidate}`;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
   }
   return undefined;
 }
 
-function removeTokenjuiceOpenHandsHooks(config: OpenHandsHooksConfig): number {
-  let removed = 0;
-  const retainedGroups: unknown[] = [];
-  for (const group of config.post_tool_use) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      retainedGroups.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => {
-      const remove = isTokenjuiceOpenHandsHook(hook);
-      if (remove) {
-        removed += 1;
-      }
-      return !remove;
-    });
-    if (retainedHooks.length > 0) {
-      retainedGroups.push({ ...group, hooks: retainedHooks });
+function ownedHook(hook: unknown): hook is Record<string, unknown> & { command: string } {
+  if (!isRecord(hook) || (hook.type !== undefined && hook.type !== "command") || typeof hook.command !== "string"
+    || !hook.command.trimEnd().endsWith(` ${SUBCOMMAND}`)) return false;
+  try {
+    const parsed = parseTokenjuiceHookCommand(hook.command);
+    if (parsed.subcommand !== SUBCOMMAND) return false;
+    // Retain arbitrary scripts and compound shell commands that mention this name.
+    return parsed.runtimePath
+      ? parsed.argv.length === 3 && /(?:^|[\\/])dist[\\/]cli[\\/]main\.js$/u.test(parsed.launcherPath ?? "")
+      : parsed.argv.length === 2;
+  } catch {
+    return false;
+  }
+}
+
+function containers(config: Record<string, unknown>): Record<string, unknown>[] {
+  return isRecord(config.hooks) ? [config, config.hooks] : [config];
+}
+
+function findCommand(config: Record<string, unknown>): string | undefined {
+  for (const container of containers(config)) for (const event of EVENTS) {
+    const groups = container[event];
+    if (!Array.isArray(groups)) continue;
+    for (const group of groups) {
+      if (!isRecord(group) || !Array.isArray(group.hooks)) continue;
+      for (const hook of group.hooks) if (ownedHook(hook)) return hook.command;
     }
   }
-  config.post_tool_use = retainedGroups;
+  return undefined;
+}
+
+function removeHooks(config: Record<string, unknown>): number {
+  let removed = 0;
+  for (const container of containers(config)) for (const event of EVENTS) {
+    const groups = container[event];
+    if (!Array.isArray(groups)) continue;
+    const retained: unknown[] = [];
+    for (const group of groups) {
+      if (!isRecord(group) || !Array.isArray(group.hooks)) { retained.push(group); continue; }
+      const before = removed;
+      const hooks = group.hooks.filter(hook => {
+        if (!ownedHook(hook)) return true;
+        removed++;
+        return false;
+      });
+      if (removed === before) retained.push(group);
+      else if (hooks.length) retained.push({ ...group, hooks });
+    }
+    container[event] = retained;
+  }
   return removed;
 }
 
-function createOpenHandsHook(command: string): Record<string, unknown> {
-  return {
-    matcher: "terminal",
-    hooks: [
-      {
-        type: "command",
-        command,
-        timeout: 60,
-      },
-    ],
-  };
+/** @deprecated Additive hook context cannot compact model-visible tool output. */
+export async function installOpenHandsHook(
+  _hooksPath?: string,
+  _options: OpenHandsHookCommandOptions = {},
+): Promise<InstallOpenHandsHookResult> {
+  throw new Error(RETIRED);
 }
 
-export async function installOpenHandsHook(
+export async function uninstallOpenHandsHook(
   hooksPath?: string,
   options: OpenHandsHookCommandOptions = {},
-): Promise<InstallOpenHandsHookResult> {
-  const resolvedHooksPath = hooksPath ?? getDefaultHooksPath(options);
-  const { config, backupPath } = await loadOpenHandsHooksConfigWithBackup(resolvedHooksPath);
-  const command = await buildTokenjuiceHookCommand(TOKENJUICE_OPENHANDS_SUBCOMMAND, "openhands", options);
-  removeTokenjuiceOpenHandsHooks(config);
-  config.post_tool_use = [...config.post_tool_use, createOpenHandsHook(command)];
-  await writeOpenHandsHooksConfig(resolvedHooksPath, config);
-  return {
-    hooksPath: resolvedHooksPath,
-    ...(backupPath ? { backupPath } : {}),
-    command,
-  };
-}
-
-export async function uninstallOpenHandsHook(hooksPath = getDefaultHooksPath()): Promise<UninstallOpenHandsHookResult> {
-  const { config } = await readOpenHandsHooksConfig(hooksPath);
-  const removed = removeTokenjuiceOpenHandsHooks(config);
-  if (removed > 0) {
-    await writeOpenHandsHooksConfig(hooksPath, config);
+): Promise<UninstallOpenHandsHookResult> {
+  const path = hooksPath ?? defaultHooksPath(options);
+  const issue = await symlinkIssue(path, options, hooksPath === undefined);
+  if (issue) throw new Error(issue);
+  const file = await readSettingsFile(path);
+  const parsed: unknown = file.data ? JSON.parse(file.data.toString("utf8")) as unknown : {};
+  const removed = isRecord(parsed) ? removeHooks(parsed) : 0;
+  if (removed) {
+    const changedIssue = await symlinkIssue(path, options, hooksPath === undefined);
+    if (changedIssue) throw new Error(changedIssue);
+    await writeSettingsFile(file, `${JSON.stringify(parsed, null, 2)}\n`);
   }
-  return { hooksPath, removed };
+  return { hooksPath: path, removed };
 }
 
 export async function doctorOpenHandsHook(
   hooksPath?: string,
   options: OpenHandsHookCommandOptions = {},
 ): Promise<OpenHandsDoctorReport> {
-  const resolvedHooksPath = hooksPath ?? getDefaultHooksPath(options);
-  const expectedCommand = await buildTokenjuiceHookCommand(TOKENJUICE_OPENHANDS_SUBCOMMAND, "openhands", options);
-  const { config, exists } = await readOpenHandsHooksConfig(resolvedHooksPath);
-  const detectedCommand = findTokenjuiceOpenHandsHookCommand(config);
-
+  const path = hooksPath ?? defaultHooksPath(options);
+  const issue = await symlinkIssue(path, options, hooksPath === undefined);
+  const file = issue ? undefined : await readSettingsFile(path);
+  const parsed: unknown = file?.data ? JSON.parse(file.data.toString("utf8")) as unknown : {};
+  const detectedCommand = isRecord(parsed) ? findCommand(parsed) : undefined;
   return {
-    hooksPath: resolvedHooksPath,
-    ...(await buildHookCommandDoctorFields({
-      expectedCommand,
-      detectedCommand: exists ? detectedCommand : undefined,
-      disabledIssue: "tokenjuice PostToolUse hook is not installed for OpenHands",
-      hostLabel: "OpenHands",
-      advisory: TOKENJUICE_OPENHANDS_ADVISORY,
-      fixCommand: TOKENJUICE_OPENHANDS_FIX_COMMAND,
-    })),
+    hooksPath: path,
+    status: issue || detectedCommand ? "broken" : "disabled",
+    expectedCommand: "tokenjuice wrap -- <command>",
+    ...(detectedCommand ? { detectedCommand } : {}),
+    issues: issue ? [issue] : detectedCommand ? ["retired tokenjuice OpenHands hook is still installed"] : [],
+    advisories: [RETIRED],
+    fixCommand: detectedCommand ? "tokenjuice uninstall openhands" : "tokenjuice wrap -- <command>",
+    checkedPaths: [path],
+    missingPaths: file?.metadata || issue ? [] : [path],
   };
 }
 
-function readOpenHandsOutputText(response: unknown): string {
-  if (typeof response === "string") {
-    return response;
-  }
-  if (!isRecord(response)) {
-    return "";
-  }
-  return readStringField(response, ["output", "text", "content", "result", "llmContent"]) ?? "";
-}
-
-export async function runOpenHandsPostToolUseHook(rawText: string): Promise<number> {
-  let payload: OpenHandsPostToolUsePayload;
-  try {
-    payload = JSON.parse(rawText) as OpenHandsPostToolUsePayload;
-  } catch {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  if (payload.event_type !== "PostToolUse" || payload.tool_name !== "terminal") {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  const toolInput = isRecord(payload.tool_input) ? payload.tool_input : undefined;
-  const command = toolInput ? readStringField(toolInput, ["command", "cmd"]) : undefined;
-  const visibleText = readOpenHandsOutputText(payload.tool_response);
-  if (!command || !visibleText.trim()) {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
-
-  try {
-    const outcome = await compactBashResult({
-      source: "openhands",
-      command,
-      visibleText,
-      ...(typeof payload.working_dir === "string" && payload.working_dir.trim() ? { cwd: payload.working_dir } : {}),
-      inspectionPolicy: "allow-safe-inventory",
-      metadata: { source: "openhands-post-tool-use" },
-      genericFallbackMinSavedChars: 120,
-      genericFallbackMaxRatio: 0.75,
-      skipGenericFallbackForCompoundCommands: true,
-    });
-
-    if (outcome.action === "keep") {
-      writeEmptyHookJsonLine();
-      return 0;
-    }
-
-    writeHookJsonLine({
-      additionalContext: buildCompactedOutputContext(outcome.result.inlineText),
-    });
-    return 0;
-  } catch {
-    writeEmptyHookJsonLine();
-    return 0;
-  }
+/** Keep stale configurations harmless until their hooks are removed. */
+export async function runOpenHandsPostToolUseHook(_rawText: string): Promise<number> {
+  writeEmptyHookJsonLine();
+  return 0;
 }

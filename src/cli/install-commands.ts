@@ -1162,19 +1162,10 @@ const installWarpCommand = createHostCommand(() => installWarpInstructions(), (r
   process.stdout.write(formatInstallSuccess("warp", "instructions", details));
 });
 
-const installOpenhandsCommand = createHostCommand((args) => installOpenHandsHook(undefined, { local: args.local }), (result, args) => {
-  const details = [
-    { label: "Hook", value: result.hooksPath },
-    { label: "Command", value: result.command },
-    { label: "Beta", value: "project-local PostToolUse hook; compacted context is injected alongside original output" },
-    { label: "Verify", value: `tokenjuice doctor openhands${args.local ? " --local" : ""}` },
-    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
-  ];
-  if (result.backupPath) {
-    details.push({ label: "Backup", value: result.backupPath });
-  }
-  process.stdout.write(formatInstallSuccess("openhands", "hook", details));
-});
+const installOpenhandsCommand: HostCommandHandler = async (args) => {
+  await installOpenHandsHook(undefined, { local: args.local });
+  return 0;
+};
 
 const installOpenInterpreterCommand = createHostCommand(() => installOpenInterpreterInstructions(), (result) => {
   const details = [

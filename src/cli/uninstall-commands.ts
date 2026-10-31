@@ -584,7 +584,7 @@ const uninstallWarpCommand = createHostCommand(() => uninstallWarpInstructions()
 const uninstallOpenhandsCommand = createHostCommand(() => uninstallOpenHandsHook(), (result) => {
   process.stdout.write(`removed openhands entries: ${result.removed}\n`);
   process.stdout.write(`hooks path: ${result.hooksPath}\n`);
-  process.stdout.write("enable: tokenjuice install openhands\n");
+  process.stdout.write("use: tokenjuice wrap -- <command>\n");
 });
 
 const uninstallOpenInterpreterCommand = createHostCommand(() => uninstallOpenInterpreterInstructions(), (result) => {

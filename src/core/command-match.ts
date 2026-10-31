@@ -159,7 +159,7 @@ function getNormalizedArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
 }
 
 function isShellCommandStringOption(token: string): boolean {
-  return /^-[A-Za-z]*c[A-Za-z]*$/u.test(token);
+  return token.includes("c") && /^-[A-Za-z]+$/u.test(token);
 }
 
 export function getSourcePriority(source: CommandMatchSource): number {

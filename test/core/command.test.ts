@@ -44,6 +44,12 @@ describe("splitTopLevelCommandChain", () => {
 });
 
 describe("unwrapShellRunner", () => {
+  it("rejects long malformed option clusters without accepting a partial flag", () => {
+    const flags = "c".repeat(100_000);
+    expect(unwrapShellRunner({ argv: ["bash", `-${flags}!`, "git status"] })).toBeNull();
+    expect(unwrapShellRunner({ argv: ["bash", `-${flags}`, "git status"] })).toBe("git status");
+  });
+
   it("extracts a shell body from bash -lc", () => {
     expect(unwrapShellRunner({ command: "bash -lc 'cd apps && swift test'" })).toBe("cd apps && swift test");
   });

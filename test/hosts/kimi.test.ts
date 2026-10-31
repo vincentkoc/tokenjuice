@@ -85,6 +85,20 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("kimi hook", () => {
+  it("rejects an unterminated command string with many escapes", async () => {
+    const home = await createTempDir();
+    const configPath = join(home, "config.toml");
+    await writeFile(configPath, [
+      "# tokenjuice:kimi begin",
+      `command = "${"\\!".repeat(128)}`,
+      "# tokenjuice:kimi end",
+    ].join("\n"));
+
+    const report = await doctorKimiHook(configPath, { binaryPath: "/opt/tokenjuice", local: true });
+    expect(report.detectedCommand).toBeUndefined();
+    expect(report.status).not.toBe("ok");
+  });
+
   it("installs a marker-delimited PostToolUse Shell hook in config.toml", async () => {
     const home = await createTempDir();
     const configPath = join(home, ".kimi", "config.toml");

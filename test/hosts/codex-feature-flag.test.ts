@@ -26,6 +26,11 @@ async function withTempCodexHome<T>(
 }
 
 describe("parseCodexFeatureFlag", () => {
+  it("ignores long comments containing Unicode line separators", () => {
+    const source = `[features]\nhooks = true #${"#".repeat(100_000)}\u2028ignored\ncodex_hooks = false\n`;
+    expect(parseCodexFeatureFlag(source, "hooks")).toEqual({ keyPresent: true, key: "hooks", value: true });
+  });
+
   it("returns keyPresent=false when file has no features section", () => {
     expect(parseCodexFeatureFlag("[other]\nfoo = 1\n", "codex_hooks")).toEqual({
       keyPresent: false,

@@ -277,4 +277,10 @@ describe("artifacts", () => {
     expect(normalizeArtifactSource("qoder")).toBe("qoder");
     expect(normalizeArtifactSource("vscode-copilot-pre-tool-use")).toBe("vscode-copilot");
   });
+
+  it("preserves long internal hyphen runs while trimming source boundaries", () => {
+    const source = `custom${"-".repeat(100_000)}source`;
+    expect(normalizeArtifactSource(`--${source}--`)).toBe(source);
+    expect(normalizeArtifactSource("-".repeat(100_000))).toBeNull();
+  });
 });

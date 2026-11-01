@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { mkdir, lstat, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { delimiter, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
@@ -14,7 +14,7 @@ import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../cor
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
 import { isNodeExecutablePath, parseShellWords } from "../shared/hook-command.js";
-import { buildTokenjuiceHookCommand, isExecutableFile } from "../shared/host-command.js";
+import { buildTokenjuiceHookCommand, resolveCommandFromPath } from "../shared/host-command.js";
 import { inspectTokenjuiceHookCommand, type HookCommandPackageVersionMismatch, type HookCommandRuntimeMismatch } from "../shared/hook-command-doctor.js";
 
 import type { ToolExecutionInput } from "../../types.js";
@@ -672,27 +672,7 @@ async function loadHooksConfig(hooksPath: string): Promise<{
   }
 }
 
-async function resolveCodexHooksRenderer(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-  const names = process.platform === "win32"
-    ? ["codex-hooks.exe", "codex-hooks.cmd", "codex-hooks.bat", "codex-hooks"]
-    : ["codex-hooks"];
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-    for (const name of names) {
-      const candidate = join(segment, name);
-      if (await isExecutableFile(candidate)) {
-        return candidate;
-      }
-    }
-  }
-  return undefined;
-}
+
 
 const UNSAFE_WINDOWS_BATCH_ARGUMENT = /["&|<>()^%!\u0000-\u001F\u007F]/u;
 
@@ -1039,7 +1019,7 @@ export async function installCodexHook(
   options: CodexHookCommandOptions = {},
 ): Promise<InstallCodexHookResult> {
   const command = await buildCodexHookCommand(options);
-  const rendererPath = await resolveCodexHooksRenderer();
+  const rendererPath = await resolveCommandFromPath("codex-hooks");
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
     const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);
@@ -1088,7 +1068,7 @@ export async function installCodexHook(
 export async function uninstallCodexHook(
   hooksPath = getDefaultHooksPath(),
 ): Promise<UninstallCodexHookResult> {
-  const rendererPath = await resolveCodexHooksRenderer();
+  const rendererPath = await resolveCommandFromPath("codex-hooks");
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
     const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);

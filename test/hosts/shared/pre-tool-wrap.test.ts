@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,6 +50,20 @@ describe("isRecord", () => {
 });
 
 describe("isExecutableFile / pathExists", () => {
+  it("rejects directories and links to directories while accepting links to executable files", async () => {
+    const dir = await createTempDir();
+    const executable = join(dir, "runme");
+    const fileLink = join(dir, "file-link");
+    const directoryLink = join(dir, "directory-link");
+    await writeExecutable(executable);
+    await symlink(executable, fileLink);
+    await symlink(dir, directoryLink, "dir");
+
+    expect(await isExecutableFile(dir)).toBe(false);
+    expect(await isExecutableFile(directoryLink)).toBe(false);
+    expect(await isExecutableFile(fileLink)).toBe(true);
+  });
+
   it("isExecutableFile returns true for an executable file", async () => {
     const dir = await createTempDir();
     const exec = join(dir, "runme");
@@ -144,6 +158,14 @@ describe("resolveShellPath", () => {
 });
 
 describe("resolveHostShell", () => {
+  it("falls back past a shell directory to the next usable shell", async () => {
+    const dir = await createTempDir();
+    const shell = join(dir, "shell");
+    await writeExecutable(shell);
+    process.env.PATH = "";
+    expect(await resolveHostShell([dir, shell])).toBe(shell);
+  });
+
   it("tries candidates in order and returns the first resolvable one", async () => {
     const home = await createTempDir();
     const bin = join(home, "bin");

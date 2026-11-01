@@ -1,9 +1,9 @@
-import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, rename, rm } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { mkdir, readFile, rename, rm } from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { isExecutableFile, pathExists } from "../shared/host-command.js";
 import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
 import {
   ensureHooksDir,
@@ -16,7 +16,7 @@ import {
   type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
 
-import { commandAlreadyWrapped } from "../shared/pre-tool-wrap.js";
+import { commandAlreadyWrapped, resolveInstalledTokenjuicePath } from "../shared/pre-tool-wrap.js";
 
 type VscodeCopilotHooksConfig = CopilotHooksConfig;
 
@@ -102,50 +102,6 @@ function getDefaultHooksPath(): string {
   return join(getVscodeCopilotHooksDir(), TOKENJUICE_VSCODE_COPILOT_FILENAME);
 }
 
-
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
-}
 
 async function buildVscodeCopilotHookCommand(
   options: VscodeCopilotHookCommandOptions = {},

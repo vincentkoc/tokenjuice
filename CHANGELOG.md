@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Skip directories and directory symlinks when selecting hook launchers or host shells, preserve executable file symlinks, and report configured directory launchers as broken.
+
 ## 0.9.0 - 2026-11-01
 
 Requires **Node.js 22 or newer** across npm, Homebrew, and Linux packages.

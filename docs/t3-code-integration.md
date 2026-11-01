@@ -7,7 +7,7 @@ a remote environment or external provider server. There is no separate
 
 | Provider | Setup | Configuration to match |
 | --- | --- | --- |
-| Codex | `tokenjuice install codex` | The provider instance's shared `CODEX_HOME`; check shadow-home propagation separately. |
+| Codex | Explicit `tokenjuice wrap -- <command>` in native `0.166.0`; its hook lacks shell exit status and automatic compaction stays off. | The provider instance's selected `CODEX_HOME`; check shadow-home propagation separately. |
 | Claude Code | `tokenjuice install claude-code` | The instance's `CLAUDE_CONFIG_DIR`, including custom instances. |
 | OpenCode V1 | `tokenjuice install opencode` | The configuration directory on the OpenCode server's machine. |
 | OpenCode V2 | `tokenjuice install opencode-v2` | The V2 server's configuration directory; qualify loading separately from V1. |
@@ -46,6 +46,30 @@ OpenCode 2; V1 fixture results do not establish V2 or T3 propagation. [T3 OpenCo
 4. Check `tokenjuice wrap --raw -- <command>` and a failing command's status.
    Repeat for each custom instance or remote environment you intend to use.
 
-Provider adapter tests establish their own contracts. T3 propagation through
-these configuration paths remains unqualified until this check is completed
-in T3 itself.
+## Native custom Codex acceptance
+
+After building, run:
+
+```bash
+node scripts/t3-codex-e2e.mjs /path/to/t3 /path/to/codex
+```
+
+The fixture runs real T3 `0.1.6` and Codex `0.166.0`, with a private T3 base
+and HOME, a custom provider instance, an explicitly selected Codex home and a
+credential-free loopback Responses provider. It starts one local server and
+one fresh T3 thread through the native CLI. It does not use existing accounts,
+copy authentication, install a service, or expose a LAN listener.
+
+Actual follow-up model requests verify an 80-entry listing, explicit wrapping
+compaction, exact CRLF and blank lines, raw bypass, and all 80 failure lines plus
+stderr and exit 7 with `--keep-failures`. The provider endpoint and model catalog
+come from the selected custom Codex home. CI verifies the official Linux T3
+archive digest before running the same fixture.
+
+This qualifies explicit wrapping through that custom Codex instance. It does
+not establish automatic Codex hook compaction. Shadow-home authentication,
+Claude, OpenCode, other providers, remote environments and desktop sessions
+remain unqualified. Provider adapter tests establish their separate contracts;
+repeat the complete route for each selected T3 instance.
+
+Native CLI contract: [scripts on the host](https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/outside-agents.md#scripts-on-the-host).

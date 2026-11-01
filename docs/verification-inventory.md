@@ -140,7 +140,7 @@ CLI compatibility; they are not E2E evidence.
 | --- | --- |
 | [DeepSeek Harness](deepseek-harness-integration.md) | [Native fixture](../scripts/deepseek-e2e.mjs) covers its pinned CLI/profile. The native plugin activation route is separate from `tokenjuice install`. Other versions and PTC sessions require separate acceptance. |
 | [OpenClaw](spec.md) | Plugin adapter tests cover result handling. Native installation/loading and model delivery are unqualified; a package install or doctor is insufficient. |
-| [T3 Code](t3-code-integration.md) | Provider composition. Each selected instance, custom/shadow home and external server requires a fresh T3 thread; standalone provider fixtures do not qualify propagation. |
+| [T3 Code](t3-code-integration.md) | [Native custom Codex fixture](../scripts/t3-codex-e2e.mjs) qualifies explicit wrapping through T3 `0.1.6` and Codex `0.166.0`. Shadow homes, other providers and remote/desktop routes remain unqualified. |
 | [WorkBuddy](workbuddy-integration.md) | Packaged skill metadata only; desktop import, enablement and actual model-visible tool output unqualified. |
 | [Doubao Work](doubao-work-integration.md) | Packaged skill metadata only; personal importer and tool execution unqualified. |
 | [AutoClaw](autoclaw-integration.md) | Copyable workflow only; custom-skill creation/loading and runtime execution unqualified. |

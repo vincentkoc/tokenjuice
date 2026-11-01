@@ -2,17 +2,11 @@ import { join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
-import {
-  hasMalformedMarkerDelimitedBlock,
-  inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
-} from "../shared/marker-instructions.js";
+import { createMarkerInstructionCommands } from "../shared/marker-instructions.js";
 import {
   buildTokenjuiceGuidanceBullets,
 } from "../shared/instruction-guidance.js";
 import type { PathDoctorReport } from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
 
 import { doctorMarkerInstructions } from "../shared/marker-instruction-doctor.js";
 
@@ -59,24 +53,15 @@ const TOKENJUICE_TRAE_BLOCK_CONFIG = {
   block: TOKENJUICE_TRAE_BLOCK,
 };
 
+const markerCommands = createMarkerInstructionCommands("trae", TOKENJUICE_TRAE_BLOCK_CONFIG);
+
 export async function installTraeRule(
   rulePath?: string,
   options: TraeRuleOptions = {},
 ): Promise<InstallTraeRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_TRAE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install trae`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedRulePath, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  return {
-    rulePath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  const result = await markerCommands.install(resolvedRulePath);
+  return { rulePath: result.instructionsPath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallTraeRule(
@@ -84,16 +69,8 @@ export async function uninstallTraeRule(
   options: TraeRuleOptions = {},
 ): Promise<UninstallTraeRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_TRAE_BLOCK_CONFIG)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall trae`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedRulePath, TOKENJUICE_TRAE_BLOCK_CONFIG);
-  return { rulePath: result.filePath, removed: result.removed };
+  const result = await markerCommands.uninstall(resolvedRulePath);
+  return { rulePath: result.instructionsPath, removed: result.removed };
 }
 
 export async function doctorTraeRule(

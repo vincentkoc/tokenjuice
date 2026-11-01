@@ -1,7 +1,8 @@
-import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { realpath, rm } from "node:fs/promises";
+import { join } from "node:path";
 
 import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
+import { writePrivateConfigFile } from "../shared/private-config-file.js";
 import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
@@ -104,27 +105,6 @@ async function resolveConfigPath(configPath?: string, options: QodoReviewConfigO
   return getDefaultConfigPath(options);
 }
 
-async function getExistingFileMode(filePath: string, existing: QodoConfigSnapshot): Promise<number | undefined> {
-  if (!existing.exists) {
-    return undefined;
-  }
-  return (await lstat(filePath)).mode & 0o777;
-}
-
-async function writeQodoConfigAtomically(filePath: string, text: string, mode?: number): Promise<void> {
-  const fileMode = mode ?? 0o600;
-  await mkdir(dirname(filePath), { recursive: true, mode: 0o700 });
-  const tempDir = await mkdtemp(join(dirname(filePath), ".tokenjuice-"));
-  const tempPath = join(tempDir, "write");
-  try {
-    await writeFile(tempPath, text, { encoding: "utf8", flag: "wx", mode: fileMode });
-    await chmod(tempPath, fileMode);
-    await rename(tempPath, filePath);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
 async function chooseQodoBackupPath(filePath: string): Promise<string> {
   return findSafeInstructionBackupPath(filePath, () => `cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
 }
@@ -134,18 +114,7 @@ async function writeQodoConfigFile(
   text: string,
   existing: QodoConfigSnapshot,
 ): Promise<InstallQodoReviewConfigResult> {
-  const mode = await getExistingFileMode(filePath, existing);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = await chooseQodoBackupPath(filePath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx", mode: mode ?? 0o600 });
-    await chmod(backupPath, mode ?? 0o600);
-  }
-  await writeQodoConfigAtomically(filePath, text, mode);
-  return {
-    configPath: filePath,
-    ...(backupPath ? { backupPath } : {}),
-  };
+  return writePrivateConfigFile(filePath, text, existing, chooseQodoBackupPath);
 }
 
 const {

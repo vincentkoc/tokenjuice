@@ -11,6 +11,10 @@
 
 - Skip directories and directory symlinks when selecting hook launchers or host shells, preserve executable file symlinks, and report configured directory launchers as broken.
 
+### Features
+
+- Add native Hermes terminal transforms, Copilot SDK hooks, LangChain sync/async middleware, Mastra tool-result processors, and FastMCP proxy middleware over the shared reducers, with bundled Python adapters and native runtime verification.
+
 ## 0.9.0 - 2026-11-01
 
 Requires **Node.js 22 or newer** across npm, Homebrew, and Linux packages.

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -29,6 +30,12 @@ function run(command, args, { cwd = project, status = 0 } = {}) {
 }
 
 function smoke(cli, packageRoot, installed) {
+  const assets = installed ? join(packageRoot, "node_modules/tokenjuice") : packageRoot;
+  for (const path of ["python/pyproject.toml", "python/tokenjuice_integrations/bridge.py",
+    "python/tokenjuice_integrations/langchain.py", "python/tokenjuice_integrations/fastmcp.py",
+    "hosts/hermes/bundle/plugin.yaml", "hosts/hermes/bundle/__init__.py"]) {
+    assert.ok(existsSync(join(assets, "dist", path)), `packaged integration asset missing: ${path}`);
+  }
   assert.equal(run(cli, ["--version"]).trim(), manifest.version);
   const baseline = run("find", ["fixtures", "-type", "f"]);
   const compacted = run(cli, ["wrap", "--", "find", "fixtures", "-type", "f"]);
@@ -48,10 +55,14 @@ function smoke(cli, packageRoot, installed) {
 
   const main = installed ? "tokenjuice" : pathToFileURL(join(packageRoot, "dist/index.js")).href;
   const openclaw = installed ? "tokenjuice/openclaw" : pathToFileURL(join(packageRoot, "dist/hosts/openclaw/index.js")).href;
+  const copilotSdk = installed ? "tokenjuice/copilot-sdk" : pathToFileURL(join(packageRoot, "dist/hosts/copilot-sdk/index.js")).href;
+  const mastra = installed ? "tokenjuice/mastra" : pathToFileURL(join(packageRoot, "dist/hosts/mastra/index.js")).href;
   run(process.execPath, ["--input-type=module", "-e", `
     import assert from 'node:assert/strict';
     assert.equal(typeof (await import(${JSON.stringify(main)})).classifyExecution, 'function');
     assert.equal(typeof (await import(${JSON.stringify(openclaw)})).createTokenjuiceOpenClawEmbeddedExtension, 'function');
+    assert.equal(typeof (await import(${JSON.stringify(copilotSdk)})).createCopilotSdkHooks, 'function');
+    assert.equal(typeof (await import(${JSON.stringify(mastra)})).createMastraProcessor, 'function');
   `], { cwd: packageRoot });
 }
 

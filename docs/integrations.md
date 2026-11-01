@@ -9,6 +9,8 @@ Some observation-only hooks are retired because additive context retains the ori
 
 ## native and external integration routes
 
+Framework applications can use native [Hermes, Copilot SDK, LangChain, Mastra, and FastMCP adapters](framework-integrations.md). These use the host plugin manager or application middleware rather than `tokenjuice install`.
+
 | Logo | Client | Install | Configuration / behavior |
 | --- | --- | --- | --- |
 | <img width="48px" src="client-claude.jpg" alt="Claude" /> | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `tokenjuice install claude-code` | `~/.claude/settings.json` |

@@ -1,10 +1,10 @@
 import { realpath } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
+import { inspectSkillFrontmatter } from "../shared/skill-frontmatter.js";
 import { doctorProjectSkill } from "../shared/project-skill-doctor.js";
 import {
   isValidDoubleQuotedYamlScalar,
-  parseSimpleYamlFrontmatter,
   stripYamlComment,
 } from "../../core/simple-yaml-frontmatter.js";
 import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAncestor } from "../shared/path-ancestors.js";
@@ -116,26 +116,6 @@ function isValidSimpleYamlScalar(rawValue: string): boolean {
   return !/^[@,&*!|>%`]/u.test(value);
 }
 
-function inspectSkillFrontmatter(text: string): { hasName: boolean; hasDescription: boolean; hasValidYaml: boolean } {
-  const lines = text.split(/\r?\n/u);
-  if (lines[0] !== "---") {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const endIndex = lines.findIndex((line, index) => index > 0 && line === "---");
-  if (endIndex < 0) {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const frontmatter = lines.slice(1, endIndex);
-  const parsed = parseSimpleYamlFrontmatter(frontmatter, isValidSimpleYamlScalar);
-  return {
-    hasName: parsed.values.get("name") === "tokenjuice",
-    hasDescription: (parsed.values.get("description") ?? "") !== "",
-    hasValidYaml: parsed.hasValidYaml,
-  };
-}
-
 const TOKENJUICE_STAGEWISE_SKILL = [
   "---",
   "name: tokenjuice",
@@ -194,7 +174,7 @@ export async function doctorStagewiseSkill(
       ? "use the project-local .stagewise/skills/tokenjuice/SKILL.md path, then run tokenjuice install stagewise"
       : "replace symlinked Stagewise skill paths with regular project files, then run tokenjuice install stagewise",
     collectIssues: (text) => {
-      const frontmatter = inspectSkillFrontmatter(text);
+      const frontmatter = inspectSkillFrontmatter(text, isValidSimpleYamlScalar);
       return [
         ...(!frontmatter.hasValidYaml ? ["configured Stagewise skill has invalid discovery frontmatter"] : []),
         ...(!frontmatter.hasName ? ["configured Stagewise skill is missing the required tokenjuice skill name"] : []),

@@ -4,9 +4,9 @@ import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 import {
+  createRestorableInstructionCommands,
   findAvailableBackupPath,
   readInstructionFile,
-  removeInstructionFile,
   writeInstructionFile,
 } from "../shared/instruction-file.js";
 
@@ -109,6 +109,13 @@ function buildSweAgentConfig(
   ].join("\n");
 }
 
+const restorableCommands = createRestorableInstructionCommands({
+  buildText: buildSweAgentConfig,
+  isManagedText: isTokenjuiceSweAgentConfigText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeSweAgentConfigWithoutBackup,
+});
+
 export async function installSweAgentConfig(
   configPath?: string,
   options: SweAgentConfigOptions = {},
@@ -150,23 +157,7 @@ export async function uninstallSweAgentConfig(
   options: SweAgentConfigOptions = {},
 ): Promise<UninstallSweAgentConfigResult> {
   const resolvedConfigPath = configPath ?? (await getDefaultConfigPath(options));
-  const existing = await readInstructionFile(resolvedConfigPath);
-  if (!existing.exists || !isTokenjuiceSweAgentConfigText(existing.text)) {
-    return { configPath: resolvedConfigPath, removed: false };
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedConfigPath}${restoreBackupSuffix}`;
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceSweAgentConfigText(backup.text)) {
-      await rm(resolvedConfigPath, { force: true });
-      await rename(backupPath, resolvedConfigPath);
-      return { configPath: resolvedConfigPath, removed: true };
-    }
-  }
-
-  const result = await removeInstructionFile(resolvedConfigPath);
+  const result = await restorableCommands.uninstall(resolvedConfigPath);
   return { configPath: result.filePath, removed: result.removed };
 }
 

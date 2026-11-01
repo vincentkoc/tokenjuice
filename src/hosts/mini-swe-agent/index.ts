@@ -4,10 +4,8 @@ import { dirname, join } from "node:path";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 import {
-  findAvailableBackupPath,
+  createRestorableInstructionCommands,
   readInstructionFile,
-  removeInstructionFile,
-  writeInstructionFile,
 } from "../shared/instruction-file.js";
 
 import {
@@ -120,43 +118,20 @@ function buildMiniSweAgentConfig(
   ].join("\n");
 }
 
+const restorableCommands = createRestorableInstructionCommands({
+  buildText: buildMiniSweAgentConfig,
+  isManagedText: isTokenjuiceMiniSweAgentConfigText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeMiniSweAgentConfigWithoutBackup,
+});
+
 export async function installMiniSweAgentConfig(
   configPath?: string,
   options: MiniSweAgentConfigOptions = {},
 ): Promise<InstallMiniSweAgentConfigResult> {
   const resolvedConfigPath = configPath ?? (await getDefaultConfigPath(options));
-  const existing = await readInstructionFile(resolvedConfigPath);
-  if (existing.exists && isTokenjuiceMiniSweAgentConfigText(existing.text)) {
-    const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-    if (existing.text === buildMiniSweAgentConfig({ restoreBackupSuffix })) {
-      return { configPath: resolvedConfigPath };
-    }
-
-    const result = await writeInstructionFile(
-      resolvedConfigPath,
-      buildMiniSweAgentConfig({ restoreBackupSuffix }),
-    );
-    return {
-      configPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await findAvailableBackupPath(resolvedConfigPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeMiniSweAgentConfigWithoutBackup(
-      resolvedConfigPath,
-      buildMiniSweAgentConfig({ restoreBackupSuffix: backupPath.slice(resolvedConfigPath.length) }),
-    );
-    return { configPath: resolvedConfigPath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedConfigPath, buildMiniSweAgentConfig());
-  return {
-    configPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  const result = await restorableCommands.install(resolvedConfigPath);
+  return { configPath: result.filePath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallMiniSweAgentConfig(
@@ -164,23 +139,7 @@ export async function uninstallMiniSweAgentConfig(
   options: MiniSweAgentConfigOptions = {},
 ): Promise<UninstallMiniSweAgentConfigResult> {
   const resolvedConfigPath = configPath ?? (await getDefaultConfigPath(options));
-  const existing = await readInstructionFile(resolvedConfigPath);
-  if (!existing.exists || !isTokenjuiceMiniSweAgentConfigText(existing.text)) {
-    return { configPath: resolvedConfigPath, removed: false };
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedConfigPath}${restoreBackupSuffix}`;
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceMiniSweAgentConfigText(backup.text)) {
-      await rm(resolvedConfigPath, { force: true });
-      await rename(backupPath, resolvedConfigPath);
-      return { configPath: resolvedConfigPath, removed: true };
-    }
-  }
-
-  const result = await removeInstructionFile(resolvedConfigPath);
+  const result = await restorableCommands.uninstall(resolvedConfigPath);
   return { configPath: result.filePath, removed: result.removed };
 }
 

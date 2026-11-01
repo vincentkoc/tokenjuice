@@ -68,8 +68,35 @@ archive digest before running the same fixture.
 
 This qualifies explicit wrapping through that custom Codex instance. It does
 not establish automatic Codex hook compaction. Shadow-home authentication,
-Claude, OpenCode, other providers, remote environments and desktop sessions
-remain unqualified. Provider adapter tests establish their separate contracts;
+OpenCode, other providers, remote environments and desktop sessions remain
+unqualified. The separate Claude fixture below qualifies its custom instance. Provider adapter tests establish their separate contracts;
 repeat the complete route for each selected T3 instance.
 
 Native CLI contract: [scripts on the host](https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/outside-agents.md#scripts-on-the-host).
+
+## Native custom Claude acceptance
+
+After building, run:
+
+```bash
+node scripts/t3-claude-e2e.mjs /path/to/t3 /path/to/claude
+```
+
+Real T3 `0.1.6` starts three fresh threads through Claude Code `2.1.316`:
+baseline, installed and uninstalled. A private T3 base and HOME isolate the
+fixture. The selected custom instance sets `CLAUDE_CONFIG_DIR` without changing
+HOME and supplies its loopback Anthropic endpoint and disposable token through
+its environment settings. No existing login or paid provider is used. The
+custom settings allow Bash only for this disposable project.
+
+Actual follow-up model requests verify automatic hook loading and 80-entry
+listing compaction. Exact reads preserve Claude's native normalization of CRLF
+and surrounding whitespace; raw bypass and all 80 failure lines, stderr and
+exit-7 metadata match the baseline. Uninstall preserves custom settings and a
+fresh thread returns to the complete baseline. The same pinned fixture runs
+in Linux CI alongside the custom Codex fixture, reusing the T3 archive.
+
+This qualifies that custom Claude instance's native CLI route. Other versions,
+permission settings, accounts, remote environments and desktop sessions require
+separate acceptance. Provider health checks and doctor output alone do not
+establish hook loading or model-visible tool output.

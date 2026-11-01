@@ -126,6 +126,10 @@ jobs:
           tar -xzf "$RUNNER_TEMP/t3.tar.gz" -C "$RUNNER_TEMP/tokenjuice-t3" --strip-components=1
       - name: Verify native T3 custom Codex provider and model-visible tool results
         run: node scripts/t3-codex-e2e.mjs "$RUNNER_TEMP/tokenjuice-t3/t3" "$RUNNER_TEMP/tokenjuice-t3-codex/node_modules/.bin/codex"
+      - name: Install pinned Claude Code host for T3
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-t3-claude" --ignore-scripts --no-audit --no-fund @anthropic-ai/claude-code-linux-x64@2.1.316
+      - name: Verify native T3 custom Claude hook lifecycle and model-visible tool results
+        run: node scripts/t3-claude-e2e.mjs "$RUNNER_TEMP/tokenjuice-t3/t3" "$RUNNER_TEMP/tokenjuice-t3-claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude"
 
   grok-native:
     runs-on: macos-15

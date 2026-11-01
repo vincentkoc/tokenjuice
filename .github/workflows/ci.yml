@@ -189,6 +189,22 @@ jobs:
       - name: Verify package outputs
         run: pnpm verify:package
 
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.23"
+          cache: false
+
+      - name: Install Linux packaging tools
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          sudo apt-get update
+          sudo apt-get install --yes rpm
+
+      - name: Verify Linux package runtime dependencies
+        run: node scripts/build-linux-packages.mjs
+
       - name: Verify extracted and installed packages
         run: node scripts/package-e2e.mjs
 

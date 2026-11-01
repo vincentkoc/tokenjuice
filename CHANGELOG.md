@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 - 2026-11-01
+
+Requires **Node.js 22 or newer** across npm, Homebrew, and Linux packages.
 
 ### Fixes
+
+- Enforce Node.js 22 minimum dependencies in DEB and RPM packages and verify built package metadata in CI and before release publication.
 
 - Verify the extracted release launcher and locally installed npm package before publication, including compaction, exact/raw reads, complete failure streams and library exports.
 - Put the README quick start before the adapter catalog, add a complete docs index, remove stale automatic-install examples, and align contributor and release instructions with current checks.

@@ -13,7 +13,7 @@ that means:
   - `README.md`
   - `LICENSE`
 - Homebrew installs that tarball and wraps `dist/cli/main.js` with the brewed `node`
-- nfpm builds `.deb` and `.rpm` packages that depend on `nodejs`
+- nfpm builds `.deb` and `.rpm` packages that require `nodejs >= 22`
 
 ## runtime and release checks
 
@@ -30,6 +30,9 @@ pnpm release:local
 `release:local` runs `verify` and `verify:package`.
 These commands check lint, circular dependencies, types, tests, package exports, the release tarball, checksums, and the Homebrew formula.
 CI also runs installed-hook contracts and pinned native-host acceptance fixtures.
+The CI package job and Release workflow run `node scripts/build-linux-packages.mjs`
+to build DEB/RPM artifacts with nfpm and verify their Node.js minimum using
+`dpkg-deb` and `rpm`. Release completes this check before publishing any package.
 
 The [repository release procedure](../AGENTS.md#release-process) defines version, commit, and tag ordering.
 The tag-driven Release workflow builds Linux packages and publishes GitHub assets and the npm package.

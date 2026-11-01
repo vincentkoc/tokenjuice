@@ -84,6 +84,9 @@ jobs:
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      - name: Install Linux package inspectors
+        run: sudo apt-get update && sudo apt-get install --yes rpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -98,19 +101,7 @@ jobs:
           set -euo pipefail
           pnpm release:artifacts
 
-          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/all/g" \
-            packaging/nfpm.yaml > release/nfpm-deb.yaml
-          nfpm package \
-            --config release/nfpm-deb.yaml \
-            --packager deb \
-            --target "release/tokenjuice_${RELEASE_VERSION}_all.deb"
-
-          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/noarch/g" \
-            packaging/nfpm.yaml > release/nfpm-rpm.yaml
-          nfpm package \
-            --config release/nfpm-rpm.yaml \
-            --packager rpm \
-            --target "release/tokenjuice-${RELEASE_VERSION}-1.noarch.rpm"
+          node scripts/build-linux-packages.mjs
 
           pnpm release:checksums
           pnpm release:formula

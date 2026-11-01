@@ -1,4 +1,3 @@
-import { rename, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
@@ -11,8 +10,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
-  readInstructionFile,
-  removeInstructionFile,
+  uninstallManagedInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
 import type { PathDoctorReport } from "../shared/instruction-doctor.js";
@@ -96,22 +94,11 @@ export async function uninstallAntigravityRule(
   options: AntigravityRuleOptions = {},
 ): Promise<UninstallAntigravityRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && !isTokenjuiceAntigravityRuleText(existing.text)) {
-    throw new Error(
-      `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice Antigravity rule. Review and remove it manually, or reinstall tokenjuice antigravity first.`,
-    );
-  }
-
-  const backupPath = `${resolvedRulePath}.bak`;
-  const backup = await readInstructionFile(backupPath);
-  if (existing.exists && backup.exists && !isTokenjuiceAntigravityRuleText(backup.text)) {
-    await rm(resolvedRulePath, { force: true });
-    await rename(backupPath, resolvedRulePath);
-    return { rulePath: resolvedRulePath, removed: true };
-  }
-
-  const result = await removeInstructionFile(resolvedRulePath);
+  const result = await uninstallManagedInstructionFile(
+    resolvedRulePath,
+    isTokenjuiceAntigravityRuleText,
+    `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice Antigravity rule. Review and remove it manually, or reinstall tokenjuice antigravity first.`,
+  );
   return { rulePath: result.filePath, removed: result.removed };
 }
 

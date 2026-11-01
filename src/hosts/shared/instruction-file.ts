@@ -231,3 +231,24 @@ export async function writeTextFileWithoutBackup(filePath: string, text: string)
     throw error;
   }
 }
+
+export async function uninstallManagedInstructionFile(
+  filePath: string,
+  isManagedText: (text: string) => boolean,
+  refusalMessage: string,
+): Promise<RemoveInstructionFileResult> {
+  const existing = await readInstructionFile(filePath);
+  if (existing.exists && !isManagedText(existing.text)) {
+    throw new Error(refusalMessage);
+  }
+
+  const backupPath = `${filePath}.bak`;
+  const backup = await readInstructionFile(backupPath);
+  if (existing.exists && backup.exists && !isManagedText(backup.text)) {
+    await rm(filePath, { force: true });
+    await rename(backupPath, filePath);
+    return { filePath, removed: true };
+  }
+
+  return removeInstructionFile(filePath);
+}

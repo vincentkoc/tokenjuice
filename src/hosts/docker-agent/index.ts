@@ -3,10 +3,8 @@ import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import {
-  findAvailableBackupPath,
+  createRestorableInstructionCommands,
   readInstructionFile,
-  removeInstructionFile,
-  writeInstructionFile,
 } from "../shared/instruction-file.js";
 
 import { findGitRoot } from "../shared/project-root.js";
@@ -111,43 +109,20 @@ function buildDockerAgentPrompt(
   ].join("\n");
 }
 
+const restorableCommands = createRestorableInstructionCommands({
+  buildText: buildDockerAgentPrompt,
+  isManagedText: isTokenjuiceDockerAgentPromptText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeDockerAgentPromptWithoutBackup,
+});
+
 export async function installDockerAgentPrompt(
   promptPath?: string,
   options: DockerAgentPromptOptions = {},
 ): Promise<InstallDockerAgentPromptResult> {
   const resolvedPromptPath = promptPath ?? (await getDefaultPromptPath(options));
-  const existing = await readInstructionFile(resolvedPromptPath);
-  if (existing.exists && isTokenjuiceDockerAgentPromptText(existing.text)) {
-    const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-    if (existing.text === buildDockerAgentPrompt({ restoreBackupSuffix })) {
-      return { promptPath: resolvedPromptPath };
-    }
-
-    const result = await writeInstructionFile(
-      resolvedPromptPath,
-      buildDockerAgentPrompt({ restoreBackupSuffix }),
-    );
-    return {
-      promptPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await findAvailableBackupPath(resolvedPromptPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeDockerAgentPromptWithoutBackup(
-      resolvedPromptPath,
-      buildDockerAgentPrompt({ restoreBackupSuffix: backupPath.slice(resolvedPromptPath.length) }),
-    );
-    return { promptPath: resolvedPromptPath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedPromptPath, buildDockerAgentPrompt());
-  return {
-    promptPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  const result = await restorableCommands.install(resolvedPromptPath);
+  return { promptPath: result.filePath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallDockerAgentPrompt(
@@ -155,23 +130,7 @@ export async function uninstallDockerAgentPrompt(
   options: DockerAgentPromptOptions = {},
 ): Promise<UninstallDockerAgentPromptResult> {
   const resolvedPromptPath = promptPath ?? (await getDefaultPromptPath(options));
-  const existing = await readInstructionFile(resolvedPromptPath);
-  if (!existing.exists || !isTokenjuiceDockerAgentPromptText(existing.text)) {
-    return { promptPath: resolvedPromptPath, removed: false };
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedPromptPath}${restoreBackupSuffix}`;
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceDockerAgentPromptText(backup.text)) {
-      await rm(resolvedPromptPath, { force: true });
-      await rename(backupPath, resolvedPromptPath);
-      return { promptPath: resolvedPromptPath, removed: true };
-    }
-  }
-
-  const result = await removeInstructionFile(resolvedPromptPath);
+  const result = await restorableCommands.uninstall(resolvedPromptPath);
   return { promptPath: result.filePath, removed: result.removed };
 }
 

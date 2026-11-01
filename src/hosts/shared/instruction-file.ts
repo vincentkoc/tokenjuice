@@ -113,6 +113,58 @@ export async function writeInstructionFile(filePath: string, text: string): Prom
   };
 }
 
+export function createRestorableInstructionCommands(config: {
+  buildText: (options?: { restoreBackupSuffix?: string | undefined }) => string;
+  isManagedText: (text: string) => boolean;
+  readRestoreBackupSuffix: (text: string) => string | undefined;
+  writeWithoutBackup: (filePath: string, text: string) => Promise<void>;
+}) {
+  return {
+    async install(filePath: string): Promise<WriteInstructionFileResult> {
+      const existing = await readInstructionFile(filePath);
+      if (existing.exists && config.isManagedText(existing.text)) {
+        const restoreBackupSuffix = config.readRestoreBackupSuffix(existing.text);
+        if (existing.text === config.buildText({ restoreBackupSuffix })) {
+          return { filePath };
+        }
+
+        return writeInstructionFile(filePath, config.buildText({ restoreBackupSuffix }));
+      }
+
+      if (existing.exists) {
+        const backupPath = await findAvailableBackupPath(filePath);
+        await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
+        await config.writeWithoutBackup(
+          filePath,
+          config.buildText({ restoreBackupSuffix: backupPath.slice(filePath.length) }),
+        );
+        return { filePath, backupPath };
+      }
+
+      return writeInstructionFile(filePath, config.buildText());
+    },
+    async uninstall(filePath: string): Promise<RemoveInstructionFileResult> {
+      const existing = await readInstructionFile(filePath);
+      if (!existing.exists || !config.isManagedText(existing.text)) {
+        return { filePath, removed: false };
+      }
+
+      const restoreBackupSuffix = config.readRestoreBackupSuffix(existing.text);
+      if (restoreBackupSuffix) {
+        const backupPath = `${filePath}${restoreBackupSuffix}`;
+        const backup = await readInstructionFile(backupPath);
+        if (backup.exists && !config.isManagedText(backup.text)) {
+          await rm(filePath, { force: true });
+          await rename(backupPath, filePath);
+          return { filePath, removed: true };
+        }
+      }
+
+      return removeInstructionFile(filePath);
+    },
+  };
+}
+
 export async function installManagedInstructionFile(
   filePath: string,
   text: string,

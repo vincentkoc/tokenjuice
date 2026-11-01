@@ -122,7 +122,8 @@ async function session() {
   assert.equal(receipt.error, null);
   const environment = observed.get("environment");
   assert.equal(environment.is_error, false);
-  assert.deepEqual(JSON.parse(text(environment.content)), { home, config: configDir },
+  // Claude may append a system reminder after the command's first output line.
+  assert.deepEqual(JSON.parse(text(environment.content).split("\n", 1)[0]), { home, config: configDir },
     "T3 must select the custom config directory while retaining its private HOME");
   return new Map(observed);
 }
@@ -211,8 +212,11 @@ try {
   assert.ok(text(installed.get("failure").content).includes("failure-stderr"), "model must receive failure stderr");
   assert.ok(text(installed.get("failure").content).includes("Exit code 7"), "model must receive shell failure status");
   await configure(process.execPath, [cli, "uninstall", "claude-code"]);
-  assert.deepEqual(JSON.parse(await readFile(join(configDir, "settings.json"), "utf8")), JSON.parse(originalSettings),
-    "uninstall must preserve custom settings and remove owned hook configuration");
+  const remainingSettings = JSON.parse(await readFile(join(configDir, "settings.json"), "utf8"));
+  // The installer retains its empty hooks container after removing owned events.
+  assert.deepEqual(remainingSettings.hooks, {}, "uninstall must remove owned hook configuration");
+  delete remainingSettings.hooks;
+  assert.deepEqual(remainingSettings, JSON.parse(originalSettings), "uninstall must preserve custom settings");
   const uninstalled = await session();
   assert.deepEqual(uninstalled, baseline, "a fresh T3 thread must return to the complete native baseline after uninstall");
   process.stdout.write(`${JSON.stringify({ ok: true, host: "t3", version, provider: "claude-code", providerVersion,

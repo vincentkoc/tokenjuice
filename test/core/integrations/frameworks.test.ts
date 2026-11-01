@@ -41,7 +41,7 @@ describe("native framework adapters", () => {
   });
 
   it("updates Mastra's native invocation without mutating the original result", async () => {
-    const updateToolInvocation = vi.fn();
+    const updateToolInvocation = vi.fn<(value: unknown) => void>();
     const result = { ...execution, metadata: { native: true } };
     const input = { toolName: "bash", toolCallId: "call-1", args: { command: execution.command }, result, messageList: { updateToolInvocation } };
     const processor = createMastraProcessor({ decode: () => result, replace: (original, text) => ({ ...(original as object), output: text }) });
@@ -56,7 +56,7 @@ describe("native framework adapters", () => {
   });
 
   it("keeps Mastra results when mapping or execution cannot be trusted", async () => {
-    const updateToolInvocation = vi.fn();
+    const updateToolInvocation = vi.fn<(value: unknown) => void>();
     const input = { toolName: "bash", toolCallId: "call-1", args: {}, result: execution, messageList: { updateToolInvocation } };
     for (const decode of [() => undefined, () => ({ ...execution, exitCode: 1 }), () => { throw new Error("bad schema"); }]) {
       await createMastraProcessor({ decode, replace: () => { throw new Error("must not run"); } }).processToolResult(input);

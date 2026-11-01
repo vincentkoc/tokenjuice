@@ -120,6 +120,9 @@ jobs:
           set -euo pipefail
           (cd release && sha256sum -c sha256sums.txt)
 
+      - name: Verify extracted and installed packages
+        run: node scripts/package-e2e.mjs
+
       - name: Evaluate Cloudsmith configuration
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}

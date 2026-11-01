@@ -190,6 +190,8 @@ tokenjuice uninstall claude-code
 
 Install and uninstall preserve unrelated configuration within each adapter's documented ownership boundary.
 `doctor hooks` checks installed wiring, including stale Homebrew paths. A successful check does not establish native host execution.
+CodeBuddy doctor verifies persisted config, not active-session activation.
+Follow the [CodeBuddy activation steps](codebuddy-integration.md) after an external configuration change.
 
 For a local build, use the host's documented `--local` route with disposable configuration.
 Follow the isolated example in the [integration playbook](integration-playbook.md#manual-verification-flow).

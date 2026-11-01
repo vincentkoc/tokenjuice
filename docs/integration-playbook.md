@@ -117,29 +117,39 @@ invoking it; split those commands into distinct matcher groups and retry.
 
 ## regression gates before merge
 
-minimum gate for a new host adapter:
+Use focused tests while iterating:
 
 ```bash
-pnpm typecheck
-pnpm vitest run test/hosts/<host>.test.ts
-pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/codebuddy.test.ts test/hosts/cursor.test.ts test/hosts/pi.test.ts
+pnpm exec vitest run test/hosts/<host>.test.ts
+```
+
+Before handoff, run the gates in [CONTRIBUTING.md](../CONTRIBUTING.md):
+
+```bash
+pnpm verify
+pnpm verify:package
 ```
 
 if you changed normalization/classification paths, also run:
 
 ```bash
-pnpm vitest run test/core/command.test.ts test/core/classify.test.ts test/core/trace.test.ts
+pnpm exec vitest run test/core/command.test.ts test/core/classify.test.ts test/core/trace.test.ts
 ```
 
 ## manual verification flow
 
-run from repo root:
+Run from the repository root. Use disposable configuration and the local build, rather than the installed CLI.
+This example uses Claude Code:
 
 ```bash
 pnpm build
-node dist/cli/main.js install <host>
-node dist/cli/main.js doctor <host>
+fixture_home="$(mktemp -d)"
+HOME="$fixture_home" CLAUDE_CONFIG_DIR="$fixture_home/.claude" node dist/cli/main.js install claude-code --local
+HOME="$fixture_home" CLAUDE_CONFIG_DIR="$fixture_home/.claude" node dist/cli/main.js doctor claude-code --local
 ```
+
+For another host, use its guide to isolate every host-specific configuration variable.
+Keep the disposable home until verification and uninstall checks finish.
 
 for command-path diagnostics, use trace:
 
@@ -167,9 +177,12 @@ for truncation-related debugging, verify both boundaries explicitly:
 
 when adding a host integration, update:
 
-- `README.md` command examples and support table
-- `docs/spec.md` supported host hooks table
-- dedicated design doc if host behavior differs materially (like cursor pre-tool wrapping)
+- [integration catalog](integrations.md) for the setup route
+- [documentation index](README.md) for the per-host guide
+- [support and verification](adapter-support-matrix.md) for test evidence and remaining acceptance work
+- the per-host guide for configuration, lifecycle, and runtime requirements
+
+Keep the root README focused on the quick start. Shared CLI and reducer behavior belongs in the [spec](spec.md).
 
 ## installed hook contracts and live acceptance
 
@@ -178,9 +191,10 @@ building the package. It installs into disposable homes, reads the generated
 hook commands, invokes them through a shell, and executes rewritten commands.
 No host CLI, model account, or developer config is required.
 
-Coverage: Codex post-tool feedback and fail-open limits; Claude Code, CodeBuddy,
-Cursor, and VS Code Copilot pre-tool listing compaction, exact reads, stderr and
-exit status, repeat invocation, malformed input, and uninstall.
+Coverage includes Codex feedback and fail-open limits, Qoder CLI result replacement, and the OpenCode V2 installed bundle.
+Pre-tool contracts cover Claude Code, CodeBuddy, Cursor, Droid, and VS Code Copilot.
+They check listing compaction, exact reads, raw bypass, complete failure streams, malformed input, and lifecycle behavior.
+See `scripts/hook-contracts.mjs` for each host's assertions.
 
 These are installed-hook integration contracts. Payloads are synthetic; they do
 not prove that a host discovers the config, invokes a hook, accepts a rewrite,

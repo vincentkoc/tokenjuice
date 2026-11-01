@@ -5,6 +5,7 @@
 ### Fixes
 
 - Verify the extracted release launcher and locally installed npm package before publication, including compaction, exact/raw reads, complete failure streams and library exports.
+- Put the README quick start before the adapter catalog, add a complete docs index, remove stale automatic-install examples, and align contributor and release instructions with current checks.
 
 - Verify Crush skill discovery, on-demand loading and model-visible wrapped output through pinned native CLI sessions, including disabled skills, custom-skill restoration, raw bypass and complete failed output.
 

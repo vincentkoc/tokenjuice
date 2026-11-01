@@ -1,6 +1,6 @@
 # distribution
 
-tokenjuice should ship as a compiled JavaScript terminal app first, not a fake-native binary.
+tokenjuice ships as a compiled JavaScript CLI and library. All distribution formats require Node.js.
 
 that means:
 
@@ -15,29 +15,25 @@ that means:
 - Homebrew installs that tarball and wraps `dist/cli/main.js` with the brewed `node`
 - nfpm builds `.deb` and `.rpm` packages that depend on `nodejs`
 
-## why this shape
+## runtime and release checks
 
-it keeps the distribution boring:
+Requires Node.js 22 or newer. The CLI uses the same compiled JavaScript entry point across distribution formats.
+Host bundles have separate build steps within `pnpm build`.
 
-- one runtime model
-- one CLI entrypoint
-- no second bundler/runtime path to debug
-- easy npm, `npx`, `pnpm dlx`, and global install support
-- clean path to Homebrew now
-- clean path to apt/dnf later through the same tarball
-
-native single-file binaries can come later if they earn their keep. they are not the default release story yet.
-
-## local release flow
+Use the package manager version pinned in `package.json`:
 
 ```bash
-pnpm install
-pnpm test
-pnpm build
-pnpm release:artifacts
-pnpm release:checksums
-pnpm release:formula
+pnpm install --frozen-lockfile
+pnpm release:local
 ```
+
+`release:local` runs `verify` and `verify:package`.
+These commands check lint, circular dependencies, types, tests, package exports, the release tarball, checksums, and the Homebrew formula.
+CI also runs installed-hook contracts and pinned native-host acceptance fixtures.
+
+The [repository release procedure](../AGENTS.md#release-process) defines version, commit, and tag ordering.
+The tag-driven Release workflow builds Linux packages and publishes GitHub assets and the npm package.
+Check that the tag and `package.json` versions agree before publication.
 
 normal formula generation verifies that the selected checksum entry matches the
 actual local tarball before writing Ruby. For formula-only recovery against an
@@ -94,12 +90,11 @@ Homebrew publication is target-owned:
 
 linux packages are built from the same compiled payload:
 
-- `.deb` depends on `nodejs`
-- `.rpm` depends on `nodejs`
+- `.deb` and `.rpm` require Node.js 22 or newer
 - payload lives under `/usr/lib/tokenjuice`
 - `/usr/bin/tokenjuice` is a thin wrapper
 
-publishing follows the `autosecure` pattern too:
+Cloudsmith publication is optional:
 
 - main release workflow can push to Cloudsmith for the fixed `vincentkoc/tokenjuice` repo
 - manual `publish-apt.yml` and `publish-rpm.yml` workflows exist for retries/backfills

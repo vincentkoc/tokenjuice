@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Qualify T3-managed OpenCode V2 servers with native plugin install/uninstall, custom configuration propagation and model-visible result checks in pinned Linux CI.
+
 ## 0.10.0 - 2026-11-01
 
 - Qualify native T3 custom Claude instances with automatic hook install/uninstall, configuration propagation and model-visible tool results in pinned Linux CI.

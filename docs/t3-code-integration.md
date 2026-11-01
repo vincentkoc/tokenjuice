@@ -10,7 +10,7 @@ a remote environment or external provider server. There is no separate
 | Codex | Explicit `tokenjuice wrap -- <command>` in native `0.166.0`; its hook lacks shell exit status and automatic compaction stays off. | The provider instance's selected `CODEX_HOME`; check shadow-home propagation separately. |
 | Claude Code | `tokenjuice install claude-code` | The instance's `CLAUDE_CONFIG_DIR`, including custom instances. |
 | OpenCode V1 | `tokenjuice install opencode` | The configuration directory on the OpenCode server's machine. |
-| OpenCode V2 | `tokenjuice install opencode-v2` | The V2 server's configuration directory; qualify loading separately from V1. |
+| OpenCode V2 | `tokenjuice install opencode-v2` | The V2 server's selected `OPENCODE_CONFIG_DIR`; V1 loading is separate. |
 
 For a custom home, pass the same environment variable to install and doctor:
 
@@ -41,7 +41,7 @@ OpenCode 2; V1 fixture results do not establish V2 or T3 propagation. [T3 OpenCo
    noisy Git status or test output, then read a small file exactly. OpenCode V2
    skips inventory commands, so a directory listing is not its compaction check.
 3. Inspect the provider transcript: confirm the compaction reached the next
-   model request and exact file bytes remain intact. UI appearance alone is
+   model request and exact reads match the native baseline. UI appearance alone is
    insufficient. Codex's context hook is additive; do not count it as replacement.
 4. Check `tokenjuice wrap --raw -- <command>` and a failing command's status.
    Repeat for each custom instance or remote environment you intend to use.
@@ -67,10 +67,11 @@ come from the selected custom Codex home. CI verifies the official Linux T3
 archive digest before running the same fixture.
 
 This qualifies explicit wrapping through that custom Codex instance. It does
-not establish automatic Codex hook compaction. Shadow-home authentication,
-OpenCode, other providers, remote environments and desktop sessions remain
-unqualified. The separate Claude fixture below qualifies its custom instance. Provider adapter tests establish their separate contracts;
-repeat the complete route for each selected T3 instance.
+not establish automatic Codex hook compaction. The separate Claude and OpenCode V2 fixtures below qualify their custom
+instances. Shadow-home authentication, OpenCode V1, other providers, remote
+environments and desktop sessions remain unqualified. Provider adapter tests
+establish their separate contracts; repeat the complete route for each selected
+T3 instance.
 
 Native CLI contract: [scripts on the host](https://github.com/pingdotgg/t3code/blob/v0.1.6/docs/user/outside-agents.md#scripts-on-the-host).
 
@@ -100,3 +101,31 @@ This qualifies that custom Claude instance's native CLI route. Other versions,
 permission settings, accounts, remote environments and desktop sessions require
 separate acceptance. Provider health checks and doctor output alone do not
 establish hook loading or model-visible tool output.
+
+## Native managed OpenCode V2 acceptance
+
+After building, run:
+
+```bash
+node scripts/t3-opencode-v2-e2e.mjs /path/to/t3 /path/to/opencode
+```
+
+Real T3 `0.1.6` starts OpenCode V2 `2.0.18` through a custom provider instance
+with an empty Server URL. Its environment selects a private
+`OPENCODE_CONFIG_DIR`; a native shell call confirms that selection and the
+unchanged private HOME. The OpenCode config supplies a credential-free loopback
+Chat Completions provider. No existing login or paid provider is used.
+
+Baseline, installed and uninstalled phases each restart T3 and start a fresh
+thread. This reloads the managed OpenCode server instead of relying on its
+configuration cache or waiting for its idle timeout. Follow-up model requests
+verify automatic compaction of Git status with 80 modified files, exact CRLF
+and blank lines, unchanged inventory and raw output, explicit wrapping, and
+all 80 failure lines plus stderr and exit 7. Uninstall preserves the custom
+provider config and restores the complete native baseline. CI runs the same
+pinned fixture on Linux alongside the other T3 fixtures.
+
+This qualifies the private, T3-managed V2 server route. OpenCode V1, existing
+shared or external servers, other versions and permissions, remote environments
+and desktop sessions still need separate acceptance. Doctor output alone does
+not establish plugin loading or model-visible replacement.

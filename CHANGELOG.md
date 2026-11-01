@@ -8,6 +8,8 @@
 
 ### Fixes
 
+- Qualify Ante `0.3.1` native instruction loading and model-visible tool results with isolated, credential-free sessions and pinned Linux CI.
+
 - Skip directories and directory symlinks when selecting hook launchers or host shells, preserve executable file symlinks, and report configured directory launchers as broken.
 
 ## 0.9.0 - 2026-11-01

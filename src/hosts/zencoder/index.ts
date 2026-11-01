@@ -9,11 +9,8 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import { readInstructionFile, removeInstructionFile } from "../shared/instruction-file.js";
-import {
-  type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
 
 export type ZencoderRuleOptions = {
   projectDir?: string;
@@ -204,58 +201,37 @@ export async function doctorZencoderRule(
   options: ZencoderRuleOptions = {},
 ): Promise<ZencoderDoctorReport> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Zencoder rule is not installed"],
-        advisory: TOKENJUICE_ZENCODER_ADVISORY,
-        fixCommand: TOKENJUICE_ZENCODER_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceZencoderRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Zencoder rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_ZENCODER_ADVISORY,
-        fixCommand: TOKENJUICE_ZENCODER_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
-    configuredLabel: "Zencoder rule file",
-    singular: true,
-    additionalRequired: [
-      {
-        requiredText: TOKENJUICE_ZENCODER_OWNERSHIP_MARKER,
-        missingIssue: "configured Zencoder rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_ZENCODER_RULE_MARKER,
-        missingIssue: "configured Zencoder rule file does not look like the tokenjuice rule",
-      },
-    ],
-  });
-  if (!hasAlwaysApplyFrontmatter(existing.text)) {
-    issues.push("configured Zencoder rule file is missing alwaysApply frontmatter");
-  }
-  if (!hasDescriptionFrontmatter(existing.text)) {
-    issues.push("configured Zencoder rule file is missing description frontmatter");
-  }
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceZencoderRuleText,
+      missingIssue: "tokenjuice Zencoder rule is not installed",
+      unmanagedIssue: "tokenjuice Zencoder rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_ZENCODER_ADVISORY,
       fixCommand: TOKENJUICE_ZENCODER_FIX_COMMAND,
+      collectIssues: (text) => {
+        const issues = collectTokenjuiceGuidanceIssues(text, {
+          configuredLabel: "Zencoder rule file",
+          singular: true,
+          additionalRequired: [
+            {
+              requiredText: TOKENJUICE_ZENCODER_OWNERSHIP_MARKER,
+              missingIssue: "configured Zencoder rule file is missing the tokenjuice ownership marker",
+            },
+            {
+              requiredText: TOKENJUICE_ZENCODER_RULE_MARKER,
+              missingIssue: "configured Zencoder rule file does not look like the tokenjuice rule",
+            },
+          ],
+        });
+        if (!hasAlwaysApplyFrontmatter(text)) {
+          issues.push("configured Zencoder rule file is missing alwaysApply frontmatter");
+        }
+        if (!hasDescriptionFrontmatter(text)) {
+          issues.push("configured Zencoder rule file is missing description frontmatter");
+        }
+        return issues;
+      },
     }),
   };
 }

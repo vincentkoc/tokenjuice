@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
+import { pruneHookGroups } from "../shared/hooks-json-file.js";
+
 import { extractHookCommandPaths } from "../shared/hook-command.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
@@ -203,25 +205,7 @@ async function readClaudeCodeSettings(settingsPath: string): Promise<{ config: C
   }
 }
 
-function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
-  const pruned: unknown[] = [];
-  for (const group of groups) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      pruned.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceClaudeCodeHookEntry(hook));
-    if (retainedHooks.length === 0) {
-      continue;
-    }
-    if (retainedHooks.length === group.hooks.length) {
-      pruned.push(group);
-      continue;
-    }
-    pruned.push({ ...group, hooks: retainedHooks });
-  }
-  return pruned;
-}
+
 
 function removeTokenjuiceHookEvent(config: ClaudeCodeSettings, event: ClaudeCodeHookEvent): boolean {
   if (!Array.isArray(config.hooks[event])) {
@@ -229,7 +213,7 @@ function removeTokenjuiceHookEvent(config: ClaudeCodeSettings, event: ClaudeCode
   }
 
   const groups = config.hooks[event];
-  const pruned = pruneTokenjuiceHookEntries(groups);
+  const pruned = pruneHookGroups(groups, isTokenjuiceClaudeCodeHookEntry);
   const changed = pruned.length !== groups.length || pruned.some((group, index) => group !== groups[index]);
   if (!changed) {
     return false;
@@ -262,7 +246,7 @@ export async function installClaudeCodeHook(
   const command = await buildClaudeCodeHookCommand(options);
 
   if (Array.isArray(config.hooks.PostToolUse)) {
-    const prunedPost = pruneTokenjuiceHookEntries(config.hooks.PostToolUse);
+    const prunedPost = pruneHookGroups(config.hooks.PostToolUse, isTokenjuiceClaudeCodeHookEntry);
     if (prunedPost.length === 0) {
       delete config.hooks.PostToolUse;
     } else {
@@ -271,7 +255,7 @@ export async function installClaudeCodeHook(
   }
 
   const preToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
-  const retained = pruneTokenjuiceHookEntries(preToolUse);
+  const retained = pruneHookGroups(preToolUse, isTokenjuiceClaudeCodeHookEntry);
   retained.push(createTokenjuiceClaudeCodeHook(command));
   config.hooks.PreToolUse = retained;
 

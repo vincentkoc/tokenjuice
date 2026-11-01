@@ -347,3 +347,13 @@ jobs:
 
       - name: Verify Crush skill loading and model-visible tool results
         run: node scripts/crush-e2e.mjs "$RUNNER_TEMP/tokenjuice-crush/crush"
+
+      - name: Extract pinned Ante host
+        run: |
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/ante.tar.gz" https://download.ante.run/releases/v0.3.1/ante-v0.3.1-linux-x86_64-musl.tar.gz
+          printf '%s  %s\n' eb66c8c1adf87a504d56535e9472a52ac146d36813d2cedb7cba0194a28e2e97 "$RUNNER_TEMP/ante.tar.gz" | sha256sum --check --status
+          mkdir -p "$RUNNER_TEMP/tokenjuice-ante"
+          tar -xzf "$RUNNER_TEMP/ante.tar.gz" -C "$RUNNER_TEMP/tokenjuice-ante" ante
+
+      - name: Verify Ante instructions and model-visible tool results
+        run: node scripts/ante-e2e.mjs "$RUNNER_TEMP/tokenjuice-ante/ante"

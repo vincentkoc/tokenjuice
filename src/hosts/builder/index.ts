@@ -1,4 +1,3 @@
-import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
@@ -11,8 +10,7 @@ import {
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
 import {
-  readInstructionFile,
-  removeInstructionFile,
+  uninstallManagedInstructionFile,
   installManagedInstructionFile,
 } from "../shared/instruction-file.js";
 import type { PathDoctorReport } from "../shared/instruction-doctor.js";
@@ -86,22 +84,11 @@ export async function uninstallBuilderRule(
   options: BuilderRuleOptions = {},
 ): Promise<UninstallBuilderRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && !isTokenjuiceBuilderRuleText(existing.text)) {
-    throw new Error(
-      `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice Builder rule. Review and remove it manually, or reinstall tokenjuice builder first.`,
-    );
-  }
-
-  const backupPath = `${resolvedRulePath}.bak`;
-  const backup = await readInstructionFile(backupPath);
-  if (existing.exists && backup.exists && !isTokenjuiceBuilderRuleText(backup.text)) {
-    await rm(resolvedRulePath, { force: true });
-    await rename(backupPath, resolvedRulePath);
-    return { rulePath: resolvedRulePath, removed: true };
-  }
-
-  const result = await removeInstructionFile(resolvedRulePath);
+  const result = await uninstallManagedInstructionFile(
+    resolvedRulePath,
+    isTokenjuiceBuilderRuleText,
+    `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice Builder rule. Review and remove it manually, or reinstall tokenjuice builder first.`,
+  );
   return { rulePath: result.filePath, removed: result.removed };
 }
 

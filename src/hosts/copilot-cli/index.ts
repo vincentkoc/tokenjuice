@@ -1,9 +1,9 @@
-import { constants as fsConstants } from "node:fs";
-import { access, rm } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { rm } from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { isExecutableFile, pathExists } from "../shared/host-command.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactCopilotResult } from "../../core/integrations/compact-copilot-result.js";
 import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
@@ -16,6 +16,8 @@ import {
   writeCopilotHooksConfigAtomic,
   type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
+
+import { resolveInstalledTokenjuicePath } from "../shared/pre-tool-wrap.js";
 
 type CopilotCliHooksConfig = CopilotHooksConfig;
 
@@ -87,49 +89,6 @@ function getCopilotCliHooksDir(): string {
 
 function getDefaultHooksPath(): string {
   return join(getCopilotCliHooksDir(), TOKENJUICE_COPILOT_CLI_FILENAME);
-}
-
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
 }
 
 async function buildCopilotCliHookCommand(

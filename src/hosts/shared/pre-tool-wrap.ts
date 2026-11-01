@@ -13,11 +13,10 @@
  * lives here.
  */
 
-import { constants as fsConstants } from "node:fs";
-import { access } from "node:fs/promises";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
+import { isExecutableFile } from "./host-command.js";
 
 import {
   isNodeExecutablePath,
@@ -47,16 +46,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export { pathExists } from "./host-command.js";
+export { isExecutableFile, pathExists } from "./host-command.js";
 
 /**
  * Walk `PATH` and return the first executable `tokenjuice` (or Windows

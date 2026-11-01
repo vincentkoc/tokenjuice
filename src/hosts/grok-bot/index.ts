@@ -2,6 +2,7 @@ import { constants } from "node:fs";
 import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
 
 import { findGitRoot } from "../shared/project-root.js";
@@ -290,20 +291,7 @@ function snapshotsMatch(actual: VerifiedRuleSnapshot, expected: VerifiedRuleSnap
 }
 
 async function chooseBackupPath(filePath: string): Promise<string> {
-  for (let suffix = 0; ; suffix += 1) {
-    const candidate = suffix === 0 ? `${filePath}.bak` : `${filePath}.bak.${suffix}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot write Grok Bot rule backup ${candidate}; tokenjuice will not write through symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, (candidate) => `cannot write Grok Bot rule backup ${candidate}; tokenjuice will not write through symlinks`);
 }
 
 async function writeExclusiveFile(filePath: string, text: string, mode: number): Promise<void> {

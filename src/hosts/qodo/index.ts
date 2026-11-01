@@ -1,6 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
@@ -124,20 +125,7 @@ async function writeQodoConfigAtomically(filePath: string, text: string, mode?: 
 }
 
 async function chooseQodoBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, () => `cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
 }
 
 async function writeQodoConfigFile(

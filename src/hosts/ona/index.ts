@@ -1,9 +1,9 @@
 import { lstat, realpath } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
+import { inspectSkillFrontmatter } from "../shared/skill-frontmatter.js";
 import {
   isValidDoubleQuotedYamlScalar,
-  parseSimpleYamlFrontmatter,
   stripYamlComment,
 } from "../../core/simple-yaml-frontmatter.js";
 import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
@@ -183,26 +183,6 @@ function isValidSimpleYamlScalar(rawValue: string): boolean {
     return false;
   }
   return !/^[@,&*!|>%`]/u.test(value);
-}
-
-function inspectSkillFrontmatter(text: string): { hasName: boolean; hasDescription: boolean; hasValidYaml: boolean } {
-  const lines = text.split(/\r?\n/u);
-  if (lines[0] !== "---") {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const endIndex = lines.findIndex((line, index) => index > 0 && line === "---");
-  if (endIndex < 0) {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const frontmatter = lines.slice(1, endIndex);
-  const parsed = parseSimpleYamlFrontmatter(frontmatter, isValidSimpleYamlScalar);
-  return {
-    hasName: parsed.values.get("name") === "tokenjuice",
-    hasDescription: (parsed.values.get("description") ?? "") !== "",
-    hasValidYaml: parsed.hasValidYaml,
-  };
 }
 
 const TOKENJUICE_ONA_SKILL = [
@@ -390,7 +370,7 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
   }
 
   const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_ONA_OWNERSHIP_MARKER);
-  const frontmatter = inspectSkillFrontmatter(existing.text);
+  const frontmatter = inspectSkillFrontmatter(existing.text, isValidSimpleYamlScalar);
   const legacy = await inspectLegacyOnaInstructions(options);
   const legacyIssues =
     legacy.hasLegacyBlock && legacy.issues.length === 0

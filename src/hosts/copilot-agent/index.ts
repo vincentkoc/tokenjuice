@@ -1,16 +1,14 @@
 import { readdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { inspectTokenjuiceHookCommand, type HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { findGitRoot } from "../shared/project-root.js";
 
 import { compactCopilotResult } from "../../core/integrations/compact-copilot-result.js";
-import { extractHookCommandPaths, shellQuote } from "../shared/hook-command.js";
+import { shellQuote } from "../shared/hook-command.js";
 import {
   buildTokenjuiceHookCommand,
-  isExecutableFile,
-  pathExists,
   type TokenjuiceHookCommandOptions,
 } from "../shared/host-command.js";
 import {
@@ -404,13 +402,9 @@ export async function doctorCopilotAgentHook(
     };
   }
 
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
+  const inspection = await inspectTokenjuiceHookCommand({ command: detectedCommand });
+  const checkedPaths = inspection.checkedPaths;
+  const missingPaths = checkedPaths.filter(path => inspection.missingPaths.includes(path) || inspection.nonExecutablePaths.includes(path));
 
   const issues: string[] = [];
   issues.push(...collectTokenjuiceHookTimeoutWarnings(config, fixCommand));

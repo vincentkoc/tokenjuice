@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Reject directory-valued JavaScript hook paths and apply the non-executable script exemption only to regular files invoked through Node; share the check across hook doctors.
+
 - Skip directories and directory symlinks when selecting hook launchers or host shells, preserve executable file symlinks, and report configured directory launchers as broken.
 
 ## 0.9.0 - 2026-11-01

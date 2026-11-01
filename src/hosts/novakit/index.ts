@@ -1,27 +1,22 @@
 import { realpath } from "node:fs/promises";
 import { join } from "node:path";
 
+import { inspectMarkerInstructionDoctor } from "../shared/marker-instruction-doctor.js";
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   createMarkerInstructionCommands,
-  getMarkerDelimitedBlockText,
-  hasMalformedMarkerDelimitedBlock,
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  readInstructionFile,
 } from "../shared/instruction-file.js";
 
 export type NovaKitInstructionsOptions = {
@@ -137,56 +132,31 @@ export async function doctorNovaKitInstructions(
       }),
     };
   }
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_NOVAKIT_BLOCK_CONFIG);
-  const hasTokenjuiceMarker = markerState.hasBegin || markerState.hasEnd;
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      hasTokenjuiceMarker,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice NovaKit instructions are not installed"],
-        advisory: TOKENJUICE_NOVAKIT_ADVISORY,
-        fixCommand: TOKENJUICE_NOVAKIT_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
-    configuredLabel: "NovaKit instructions",
-    repairCommand: TOKENJUICE_NOVAKIT_FIX_COMMAND,
-  });
-  const structureIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_NOVAKIT_BLOCK_CONFIG)
-    ? ["configured NovaKit instructions have unmatched tokenjuice markers"]
-    : [];
-  const guidanceIssues = collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_NOVAKIT_BLOCK_CONFIG), {
-    configuredLabel: "NovaKit instructions",
-    additionalRequired: [
-      {
-        requiredText: "tokenjuice terminal output compaction",
-        missingIssue: "configured NovaKit instructions do not look like the tokenjuice instructions",
-      },
-    ],
-    additionalRequiredAfter: [
-      {
-        requiredText: "NovaKit loads this NOVAKIT.md",
-        missingIssue: "configured NovaKit instructions are missing NOVAKIT.md context guidance",
-      },
-    ],
-  });
-  const issues = [...markerIssues, ...structureIssues, ...guidanceIssues];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    hasTokenjuiceMarker,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+  const { report, hasTokenjuiceMarker } = await inspectMarkerInstructionDoctor(
+    resolvedInstructionsPath,
+    TOKENJUICE_NOVAKIT_BLOCK_CONFIG,
+    {
+      configuredLabel: "NovaKit instructions",
       advisory: TOKENJUICE_NOVAKIT_ADVISORY,
-      fixCommand: [...markerIssues, ...structureIssues].length > 0
-        ? "remove unmatched tokenjuice markers from NOVAKIT.md, then run tokenjuice install novakit"
-        : TOKENJUICE_NOVAKIT_FIX_COMMAND,
-    }),
-  };
+      fixCommand: TOKENJUICE_NOVAKIT_FIX_COMMAND,
+      malformedFixCommand: "remove unmatched tokenjuice markers from NOVAKIT.md, then run tokenjuice install novakit",
+      malformedMarkerIssue: "configured NovaKit instructions have unmatched tokenjuice markers",
+      repairOnMarkerIssues: true,
+      guidanceOptions: {
+        additionalRequired: [
+          {
+            requiredText: "tokenjuice terminal output compaction",
+            missingIssue: "configured NovaKit instructions do not look like the tokenjuice instructions",
+          },
+        ],
+        additionalRequiredAfter: [
+          {
+            requiredText: "NovaKit loads this NOVAKIT.md",
+            missingIssue: "configured NovaKit instructions are missing NOVAKIT.md context guidance",
+          },
+        ],
+      },
+    },
+  );
+  return { instructionsPath: resolvedInstructionsPath, hasTokenjuiceMarker, ...report };
 }

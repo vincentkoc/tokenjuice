@@ -38,31 +38,45 @@ export async function doctorMarkerStructure(
   };
 }
 
+type MarkerInstructionDoctorOptions = {
+  configuredLabel: string;
+  advisory: string;
+  fixCommand: string;
+  malformedFixCommand: string;
+  singular?: boolean;
+  malformedMarkerIssue?: string;
+  malformedIssueOnlyWithoutMarkerIssues?: boolean;
+  guidanceOptions?: Omit<Parameters<typeof collectTokenjuiceGuidanceIssues>[1], "configuredLabel" | "singular">;
+  repairOnMarkerIssues?: boolean;
+};
+
 export async function doctorMarkerInstructions(
   instructionsPath: string,
   config: MarkerDelimitedBlockConfig,
-  options: {
-    configuredLabel: string;
-    advisory: string;
-    fixCommand: string;
-    malformedFixCommand: string;
-    singular?: boolean;
-    malformedMarkerIssue?: string;
-    malformedIssueOnlyWithoutMarkerIssues?: boolean;
-  },
+  options: MarkerInstructionDoctorOptions,
 ): Promise<InstructionDoctorReportFields & { instructionsPath: string }> {
+  return { instructionsPath, ...(await inspectMarkerInstructionDoctor(instructionsPath, config, options)).report };
+}
+
+export async function inspectMarkerInstructionDoctor(
+  instructionsPath: string,
+  config: MarkerDelimitedBlockConfig,
+  options: MarkerInstructionDoctorOptions,
+): Promise<{ report: InstructionDoctorReportFields; hasTokenjuiceMarker: boolean }> {
   const { configuredLabel, advisory, fixCommand, malformedFixCommand, singular = false } = options;
   const existing = await readInstructionFile(instructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, config);
   if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
     return {
-      instructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: [`tokenjuice ${configuredLabel} ${singular ? "is" : "are"} not installed`],
-        advisory,
-        fixCommand,
-      }),
+      hasTokenjuiceMarker: markerState.hasBegin || markerState.hasEnd,
+      report: {
+        ...buildInstructionDoctorReportFields({
+          status: "disabled",
+          issues: [`tokenjuice ${configuredLabel} ${singular ? "is" : "are"} not installed`],
+          advisory,
+          fixCommand,
+        }),
+      },
     };
   }
 
@@ -79,16 +93,19 @@ export async function doctorMarkerInstructions(
     ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, config), {
       configuredLabel,
       singular,
+      ...options.guidanceOptions,
     }),
   ];
 
   return {
-    instructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory,
-      fixCommand: hasMalformedMarkers ? malformedFixCommand : fixCommand,
-    }),
+    hasTokenjuiceMarker: markerState.hasBegin || markerState.hasEnd,
+    report: {
+      ...buildInstructionDoctorReportFields({
+        status: instructionDoctorStatusFromIssues(issues),
+        issues,
+        advisory,
+        fixCommand: hasMalformedMarkers || (options.repairOnMarkerIssues && markerIssues.length > 0) ? malformedFixCommand : fixCommand,
+      }),
+    },
   };
 }

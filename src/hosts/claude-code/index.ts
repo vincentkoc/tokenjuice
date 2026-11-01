@@ -3,16 +3,13 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 
 import { pruneHookGroups } from "../shared/hooks-json-file.js";
-
-import { extractHookCommandPaths } from "../shared/hook-command.js";
+import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
   buildWrapLauncherHookCommand,
   buildWrappedCommand,
   commandAlreadyWrapped,
-  isExecutableFile,
   isRecord,
-  pathExists,
   resolveHostShell,
 } from "../shared/pre-tool-wrap.js";
 
@@ -327,13 +324,9 @@ export async function doctorClaudeCodeHook(
     };
   }
 
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
+  const inspection = await inspectTokenjuiceHookCommand({ command: detectedCommand });
+  const checkedPaths = inspection.checkedPaths;
+  const missingPaths = checkedPaths.filter(path => inspection.missingPaths.includes(path) || inspection.nonExecutablePaths.includes(path));
 
   const issues: string[] = [];
   if (detected.hookEvent !== "PreToolUse") {

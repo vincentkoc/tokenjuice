@@ -4,6 +4,8 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import packageJson from "../../../package.json" with { type: "json" };
 
+import { bundleExtensionRuntimeSource } from "../shared/bundle-runtime.js";
+
 export type OpenCodeExtensionCommandOptions = {
   local?: boolean;
 };
@@ -84,35 +86,11 @@ async function resolveOpenCodeRuntimeEntryPoint(): Promise<string> {
   throw new Error(`unable to resolve opencode runtime source entrypoint from ${candidates.join(", ")}`);
 }
 
-async function bundleOpenCodeExtensionRuntimeSource(): Promise<string> {
-  let esbuild;
-  try {
-    esbuild = await import("esbuild");
-  } catch (error) {
-    throw new Error(`unable to load esbuild to bundle the opencode runtime from source: ${String(error)}`);
-  }
 
-  const entryPoint = await resolveOpenCodeRuntimeEntryPoint();
-  const result = await esbuild.build({
-    entryPoints: [entryPoint],
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: "node20",
-    write: false,
-  });
-
-  const runtimeSource = result.outputFiles[0]?.text;
-  if (!runtimeSource) {
-    throw new Error("failed to bundle the opencode runtime: esbuild produced no output");
-  }
-
-  return runtimeSource;
-}
 
 async function loadOpenCodeExtensionRuntimeSource(local = false): Promise<string> {
   if (local) {
-    return await bundleOpenCodeExtensionRuntimeSource();
+    return await bundleExtensionRuntimeSource("opencode", resolveOpenCodeRuntimeEntryPoint);
   }
 
   const runtimeAssetUrl = new URL("./extension/runtime.js", import.meta.url);
@@ -125,7 +103,7 @@ async function loadOpenCodeExtensionRuntimeSource(local = false): Promise<string
     }
   }
 
-  return await bundleOpenCodeExtensionRuntimeSource();
+  return await bundleExtensionRuntimeSource("opencode", resolveOpenCodeRuntimeEntryPoint);
 }
 
 async function writeAtomically(path: string, content: string): Promise<void> {

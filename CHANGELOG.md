@@ -2,15 +2,17 @@
 
 ## Unreleased
 
-### Features
-
-- Add native Hermes terminal transforms, Copilot SDK hooks, LangChain sync/async middleware, Mastra tool-result processors, and FastMCP proxy middleware over the shared reducers, with bundled Python adapters and native runtime verification.
+- Qualify Ante `0.3.1` native instruction loading and model-visible tool results with isolated, credential-free sessions and pinned Linux CI.
 
 ### Fixes
 
-- Qualify Ante `0.3.1` native instruction loading and model-visible tool results with isolated, credential-free sessions and pinned Linux CI.
+- Reject directory-valued JavaScript hook paths and apply the non-executable script exemption only to regular files invoked through Node; share the check across hook doctors.
 
 - Skip directories and directory symlinks when selecting hook launchers or host shells, preserve executable file symlinks, and report configured directory launchers as broken.
+
+### Features
+
+- Add native Hermes terminal transforms, Copilot SDK hooks, LangChain sync/async middleware, Mastra tool-result processors, and FastMCP proxy middleware over the shared reducers, with bundled Python adapters and native runtime verification.
 
 ## 0.9.0 - 2026-11-01
 

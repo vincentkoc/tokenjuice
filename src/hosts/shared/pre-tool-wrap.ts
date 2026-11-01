@@ -16,7 +16,7 @@
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 
 import { stripLeadingCdPrefix } from "../../core/command.js";
-import { isExecutableFile } from "./host-command.js";
+import { resolveCommandFromPath, isExecutableFile } from "./host-command.js";
 
 import {
   isNodeExecutablePath,
@@ -53,29 +53,7 @@ export { isExecutableFile, pathExists } from "./host-command.js";
  * variant) found. Empty segments and missing entries are skipped.
  */
 export async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
+  return resolveCommandFromPath("tokenjuice");
 }
 
 /**

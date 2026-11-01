@@ -19,6 +19,38 @@ async function createTempDir(): Promise<string> {
 }
 
 describe("inspectTokenjuiceHookCommand", () => {
+  it("rejects JavaScript directories and applies the permission exemption only to Node-invoked files", async () => {
+    const home = await createTempDir();
+    const directory = join(home, "main.js");
+    const link = join(home, "tokenjuice");
+    const nodeDirectory = join(home, "node.js");
+    await mkdir(directory);
+    await mkdir(nodeDirectory);
+    await symlink(directory, link, "dir");
+    for (const launcher of [directory, link]) {
+      const report = await inspectTokenjuiceHookCommand({ command: `${process.execPath} ${launcher} codex-post-tool-use` });
+      expect(report.nonExecutablePaths).toEqual([launcher]);
+    }
+    const runtime = await inspectTokenjuiceHookCommand({ command: `${nodeDirectory} ${directory} codex-post-tool-use` });
+    expect(runtime.nonExecutablePaths).toEqual([nodeDirectory]);
+    await rm(directory, { recursive: true });
+    await writeFile(directory, "console.log('fixture');\n", { mode: 0o644 });
+    expect((await inspectTokenjuiceHookCommand({ command: `${directory} codex-post-tool-use` })).nonExecutablePaths).toEqual([directory]);
+    expect((await inspectTokenjuiceHookCommand({ command: `${process.execPath} ${directory} codex-post-tool-use` })).nonExecutablePaths).toEqual([]);
+  });
+
+  it("accepts Node-invoked .js symlinks to regular scripts with other suffixes", async () => {
+    const home = await createTempDir();
+    for (const name of ["main.cjs", "script"]) {
+      const target = join(home, name);
+      const launcher = join(home, `${name}.js`);
+      await writeFile(target, "console.log('fixture');\n", { mode: 0o644 });
+      await symlink(target, launcher);
+      const report = await inspectTokenjuiceHookCommand({ command: `${process.execPath} ${launcher} codex-post-tool-use` });
+      expect(report.nonExecutablePaths).toEqual([]);
+    }
+  });
+
   it("reports runtime and Homebrew package-version drift without executing the hook", async () => {
     const home = await createTempDir();
     const configuredNodePath = join(home, "old", "bin", "node");

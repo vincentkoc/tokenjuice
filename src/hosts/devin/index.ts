@@ -1,16 +1,13 @@
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { inspectTokenjuiceHookCommand, type HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { isSetupWrapperSegment, splitTopLevelCommandChain, tokenizeCommand } from "../../core/command.js";
-import { extractHookCommandPaths } from "../shared/hook-command.js";
 import {
   buildWrapLauncherHookCommand,
   buildWrappedCommand,
   commandAlreadyWrapped,
-  isExecutableFile,
   isRecord,
-  pathExists,
   resolveHostShell,
 } from "../shared/pre-tool-wrap.js";
 
@@ -296,13 +293,9 @@ export async function doctorDevinHook(
     };
   }
 
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
+  const inspection = await inspectTokenjuiceHookCommand({ command: detectedCommand });
+  const checkedPaths = inspection.checkedPaths;
+  const missingPaths = checkedPaths.filter(path => inspection.missingPaths.includes(path) || inspection.nonExecutablePaths.includes(path));
 
   const issues: string[] = [];
   if (detectedCommand !== expectedCommand) {

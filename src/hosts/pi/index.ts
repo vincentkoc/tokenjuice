@@ -4,6 +4,8 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import packageJson from "../../../package.json" with { type: "json" };
 
+import { bundleExtensionRuntimeSource } from "../shared/bundle-runtime.js";
+
 export type PiExtensionCommandOptions = {
   local?: boolean;
   binaryPath?: string;
@@ -81,35 +83,11 @@ async function resolvePiRuntimeEntryPoint(): Promise<string> {
   throw new Error(`unable to resolve pi runtime source entrypoint from ${candidates.join(", ")}`);
 }
 
-async function bundlePiExtensionRuntimeSource(): Promise<string> {
-  let esbuild;
-  try {
-    esbuild = await import("esbuild");
-  } catch (error) {
-    throw new Error(`unable to load esbuild to bundle the pi runtime from source: ${String(error)}`);
-  }
 
-  const entryPoint = await resolvePiRuntimeEntryPoint();
-  const result = await esbuild.build({
-    entryPoints: [entryPoint],
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: "node20",
-    write: false,
-  });
-
-  const runtimeSource = result.outputFiles[0]?.text;
-  if (!runtimeSource) {
-    throw new Error("failed to bundle the pi runtime: esbuild produced no output");
-  }
-
-  return runtimeSource;
-}
 
 async function loadPiExtensionRuntimeSource(local = false): Promise<string> {
   if (local) {
-    return await bundlePiExtensionRuntimeSource();
+    return await bundleExtensionRuntimeSource("pi", resolvePiRuntimeEntryPoint);
   }
 
   const runtimeAssetUrl = new URL("./extension/runtime.js", import.meta.url);
@@ -122,7 +100,7 @@ async function loadPiExtensionRuntimeSource(local = false): Promise<string> {
     }
   }
 
-  return await bundlePiExtensionRuntimeSource();
+  return await bundleExtensionRuntimeSource("pi", resolvePiRuntimeEntryPoint);
 }
 
 async function writeAtomically(path: string, content: string): Promise<void> {

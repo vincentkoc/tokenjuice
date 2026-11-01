@@ -1,8 +1,9 @@
-import { chmod, lstat, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
 import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
+import { writePrivateConfigFile } from "../shared/private-config-file.js";
 import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
@@ -89,27 +90,6 @@ async function assertNoTabbyConfigSymlink(configPath: string, operation: string,
   }
 }
 
-async function getExistingFileMode(filePath: string, existing: TabbyConfigSnapshot): Promise<number | undefined> {
-  if (!existing.exists) {
-    return undefined;
-  }
-  return (await lstat(filePath)).mode & 0o777;
-}
-
-async function writeTabbyConfigAtomically(filePath: string, text: string, mode?: number): Promise<void> {
-  const fileMode = mode ?? 0o600;
-  await mkdir(dirname(filePath), { recursive: true, mode: 0o700 });
-  const tempDir = await mkdtemp(join(dirname(filePath), ".tokenjuice-"));
-  const tempPath = join(tempDir, "write");
-  try {
-    await writeFile(tempPath, text, { encoding: "utf8", flag: "wx", mode: fileMode });
-    await chmod(tempPath, fileMode);
-    await rename(tempPath, filePath);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
 async function chooseTabbyBackupPath(filePath: string): Promise<string> {
   return findSafeInstructionBackupPath(filePath, (candidate) => `cannot safely install Tabby config through symlinked config backup ${candidate}; replace it with a regular path, then rerun tokenjuice install tabby`);
 }
@@ -119,18 +99,7 @@ async function writeTabbyConfigFile(
   text: string,
   existing: TabbyConfigSnapshot,
 ): Promise<InstallTabbySystemPromptResult> {
-  const mode = await getExistingFileMode(filePath, existing);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = await chooseTabbyBackupPath(filePath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx", mode: mode ?? 0o600 });
-    await chmod(backupPath, mode ?? 0o600);
-  }
-  await writeTabbyConfigAtomically(filePath, text, mode);
-  return {
-    configPath: filePath,
-    ...(backupPath ? { backupPath } : {}),
-  };
+  return writePrivateConfigFile(filePath, text, existing, chooseTabbyBackupPath);
 }
 
 const {

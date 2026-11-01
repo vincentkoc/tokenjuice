@@ -65,7 +65,9 @@ and preserve exit status 7, all 80 failure lines, stderr and the host's exit
 notice. This establishes native plugin discovery and model-visible replacement
 for the pinned host, beyond the separate installed-bundle contract.
 
-Remote provider availability, other versions, interactive permissions and
-propagation into an existing shared or T3 server remain unqualified.
+A separate [T3 native fixture](t3-code-integration.md#native-managed-opencode-v2-acceptance)
+qualifies a private managed server through T3 `0.1.6`. Remote provider
+availability, other versions, interactive permissions and existing shared or
+external server propagation remain unqualified.
 V1 hooks do not run under V2; see the [official migration guide](https://dev.opencode.ai/v2/docs/build/plugins/migrate-v1).
 After verifying V2, `tokenjuice uninstall opencode` can remove the old V1 file.

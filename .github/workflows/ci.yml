@@ -130,6 +130,10 @@ jobs:
         run: npm install --prefix "$RUNNER_TEMP/tokenjuice-t3-claude" --ignore-scripts --no-audit --no-fund @anthropic-ai/claude-code-linux-x64@2.1.316
       - name: Verify native T3 custom Claude hook lifecycle and model-visible tool results
         run: node scripts/t3-claude-e2e.mjs "$RUNNER_TEMP/tokenjuice-t3/t3" "$RUNNER_TEMP/tokenjuice-t3-claude/node_modules/@anthropic-ai/claude-code-linux-x64/claude"
+      - name: Install pinned OpenCode V2 host for T3
+        run: npm install --prefix "$RUNNER_TEMP/tokenjuice-t3-opencode-v2" --ignore-scripts --no-audit --no-fund @opencode/cli-linux-x64@2.0.18
+      - name: Verify native T3 managed OpenCode V2 plugin lifecycle and model-visible results
+        run: node scripts/t3-opencode-v2-e2e.mjs "$RUNNER_TEMP/tokenjuice-t3/t3" "$RUNNER_TEMP/tokenjuice-t3-opencode-v2/node_modules/@opencode/cli-linux-x64/bin/opencode"
 
   grok-native:
     runs-on: macos-15

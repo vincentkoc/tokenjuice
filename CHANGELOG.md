@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Qualify Ante `0.3.1` native instruction loading and model-visible tool results with isolated, credential-free sessions and pinned Linux CI.
+- Document every installer target and alias with its verification level, including native acceptance gaps and external-product boundaries.
 
 ### Fixes
 

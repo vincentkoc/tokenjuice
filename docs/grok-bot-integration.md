@@ -21,6 +21,11 @@ name. If needed, enable it for that Bot under **Connect apps → connected count
 checks tokenjuice inside the cloud shell; local availability is insufficient.
 [Official skill workflow](https://docs.x.ai/grok-bot/skills-routines-and-automations).
 
+The installed macOS application `0.78.1` reaches the sign-in screen. Native
+cloud acceptance requires an account session and the service terms before the
+private-skill UI is available. No account was created or changed during this
+check.
+
 Private skill creation and live wrapper execution remain unqualified. This
 guide does not create a routine or publish a skill to a team.
 

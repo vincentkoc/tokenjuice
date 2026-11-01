@@ -7,7 +7,7 @@ function record(value: unknown): value is Record<string, unknown> {
 /** Copilot's successful tool invocation can still contain a failed shell command. */
 export async function compactCopilotResult(
   payload: unknown,
-  options: { source?: "copilot-cli" | "copilot-agent"; maxInlineChars?: number; storeRaw?: boolean } = {},
+  options: { source?: "copilot-cli" | "copilot-agent" | "copilot-sdk"; maxInlineChars?: number; storeRaw?: boolean } = {},
 ): Promise<Record<string, unknown> | undefined> {
   if (!record(payload) || (payload.toolName ?? payload.tool_name) !== "bash"
     || (payload.hook_event_name !== undefined && payload.hook_event_name !== "PostToolUse")) return undefined;
@@ -25,9 +25,10 @@ export async function compactCopilotResult(
   const footer = /\n<(?:shellId: \d+ completed with exit code|exited with exit code) (-?\d+)>$/u.exec(text);
   if (!footer || footer[1] !== "0") return undefined;
   const { source = "copilot-cli", ...compactionOptions } = options;
+  const cwd = payload.cwd ?? payload.workingDirectory;
   const outcome = await compactBashResult({
     source, command: input.command, visibleText: text.slice(0, footer.index), exitCode: 0,
-    ...(typeof payload.cwd === "string" && payload.cwd.trim() ? { cwd: payload.cwd } : {}),
+    ...(typeof cwd === "string" && cwd.trim() ? { cwd } : {}),
     ...compactionOptions,
     inspectionPolicy: "allow-safe-inventory",
     metadata: { source: `${source}-post-tool-use` },

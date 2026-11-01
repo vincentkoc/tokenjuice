@@ -37,6 +37,8 @@ See [distribution](docs/distribution.md) for release artifacts and Linux package
 ## host integrations
 
 Choose an integration from the [client catalog](docs/integrations.md).
+
+Building an agent? Use the native [Hermes, Copilot SDK, LangChain, Mastra, and FastMCP adapters](docs/framework-integrations.md).
 Check its guide before installing: automatic replacement, command wrapping, and skill guidance have different contracts.
 The [support matrix](docs/adapter-support-matrix.md) records native test versions and remaining acceptance work.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { compactFrameworkResult, type FrameworkSource } from "../core/integrations/compact-framework-result.js";
 
 import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -56,6 +57,7 @@ function printUsage(): void {
       "  tokenjuice --version",
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit] [--no-stats]",
       "  tokenjuice reduce-json [file]",
+      "  tokenjuice compact-shell-result  (JSON stdin; captured output only)",
       "  tokenjuice wrap [--keep-failures] [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install adal",
@@ -1067,6 +1069,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return 0;
     case "reduce":
       return await runReduce(args);
+    case "compact-shell-result": {
+      const request = JSON.parse(await readStdin(args.maxInputBytes)) as { source: FrameworkSource; result: unknown };
+      const text = await compactFrameworkResult(request?.source, request?.result);
+      process.stdout.write(`${JSON.stringify(text === undefined ? { action: "keep" } : { action: "rewrite", text })}\n`);
+      return 0;
+    }
     case "reduce-json":
       return await runReduceJson(args);
     case "wrap":

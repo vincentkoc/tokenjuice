@@ -47,6 +47,8 @@ for a new host adapter in `src/hosts/<host>/index.ts`:
 
 then wire CLI + exports:
 
+Application-owned SDK hooks and middleware use package exports and native application registration instead of CLI install/doctor/uninstall targets. A host-owned plugin manager can own that lifecycle. Document the native install, verification, disable, and removal route, package the required assets, and verify the real runtime boundary. Do not add fake configuration commands for application source code.
+
 - `src/cli/install-commands.ts`, `src/cli/uninstall-commands.ts`, `src/cli/doctor-commands.ts`
   - add a handler for `install <host>`, `uninstall <host>`, and `doctor <host>`
   - register it (and any alias) in `installCommands`, `uninstallCommands`, and `doctorCommands`

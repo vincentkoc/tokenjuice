@@ -8,6 +8,7 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [spec](spec.md) — CLI commands, adapter JSON, compaction, rules, and storage
 - [rules](rules.md) — JSON rule schema and authoring
 - [integration catalog](integrations.md) — setup routes and configuration locations
+- [framework integrations](framework-integrations.md) — Hermes, Copilot SDK, LangChain, Mastra, and FastMCP
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work
 
 ## development and distribution

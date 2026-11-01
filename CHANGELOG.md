@@ -2,6 +2,8 @@
 
 ## 0.10.0 - 2026-11-01
 
+- Qualify native T3 custom Claude instances with automatic hook install/uninstall, configuration propagation and model-visible tool results in pinned Linux CI.
+
 - Qualify explicit wrapping through a native T3 custom Codex instance with isolated model-request checks and pinned Linux CI.
 
 - Qualify Ante `0.3.1` native instruction loading and model-visible tool results with isolated, credential-free sessions and pinned Linux CI.

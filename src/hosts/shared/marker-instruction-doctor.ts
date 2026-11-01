@@ -13,6 +13,31 @@ import {
   type MarkerDelimitedBlockConfig,
 } from "./marker-instructions.js";
 
+export async function doctorMarkerStructure(
+  instructionsPath: string,
+  config: MarkerDelimitedBlockConfig,
+  options: { configuredLabel: string; advisory: string; fixCommand: string },
+): Promise<InstructionDoctorReportFields & { instructionsPath: string }> {
+  const existing = await readInstructionFile(instructionsPath);
+  const markerState = inspectMarkerDelimitedBlock(existing.text, config);
+  const disabled = !existing.exists || (!markerState.hasBegin && !markerState.hasEnd);
+  const issues = disabled
+    ? [`tokenjuice ${options.configuredLabel} are not installed`]
+    : collectMarkerDelimitedBlockIssues(markerState, {
+      configuredLabel: options.configuredLabel,
+      repairCommand: options.fixCommand,
+    });
+  return {
+    instructionsPath,
+    ...buildInstructionDoctorReportFields({
+      status: disabled ? "disabled" : instructionDoctorStatusFromIssues(issues),
+      issues,
+      advisory: options.advisory,
+      fixCommand: options.fixCommand,
+    }),
+  };
+}
+
 export async function doctorMarkerInstructions(
   instructionsPath: string,
   config: MarkerDelimitedBlockConfig,

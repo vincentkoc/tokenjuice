@@ -1,21 +1,15 @@
 import { join } from "node:path";
 
 import {
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
-import {
-  type InstructionsDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
+import { doctorMarkerStructure } from "../shared/marker-instruction-doctor.js";
 import {
   type RemoveInstructionFileResult,
   type WriteInstructionFileResult,
-  readInstructionFile,
 } from "../shared/instruction-file.js";
 
 export type AvanteInstructionsOptions = {
@@ -77,32 +71,9 @@ export async function doctorAvanteInstructions(
   options: AvanteInstructionsOptions = {},
 ): Promise<AvanteDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? getDefaultInstructionsPath(options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AVANTE_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Avante instructions are not installed"],
-        advisory: TOKENJUICE_AVANTE_ADVISORY,
-        fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerStructure(resolvedInstructionsPath, TOKENJUICE_AVANTE_BLOCK_CONFIG, {
     configuredLabel: "Avante instructions",
-    repairCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
+    advisory: TOKENJUICE_AVANTE_ADVISORY,
+    fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
   });
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_AVANTE_ADVISORY,
-      fixCommand: TOKENJUICE_AVANTE_FIX_COMMAND,
-    }),
-  };
 }

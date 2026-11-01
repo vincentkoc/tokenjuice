@@ -1,10 +1,9 @@
-import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
 import packageJson from "../../../package.json" with { type: "json" };
 
-import { bundleExtensionRuntimeSource } from "../shared/bundle-runtime.js";
+import { loadExtensionRuntimeSource } from "../shared/bundle-runtime.js";
 
 export type OpenCodeExtensionCommandOptions = {
   local?: boolean;
@@ -68,42 +67,8 @@ export default createTokenjuiceOpenCodeExtension(config);
 `;
 }
 
-async function resolveOpenCodeRuntimeEntryPoint(): Promise<string> {
-  const candidates = [
-    fileURLToPath(new URL("./extension/runtime.ts", import.meta.url)),
-    fileURLToPath(new URL("../../../src/hosts/opencode/extension/runtime.ts", import.meta.url)),
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      await access(candidate);
-      return candidate;
-    } catch {
-      continue;
-    }
-  }
-
-  throw new Error(`unable to resolve opencode runtime source entrypoint from ${candidates.join(", ")}`);
-}
-
-
-
 async function loadOpenCodeExtensionRuntimeSource(local = false): Promise<string> {
-  if (local) {
-    return await bundleExtensionRuntimeSource("opencode", resolveOpenCodeRuntimeEntryPoint);
-  }
-
-  const runtimeAssetUrl = new URL("./extension/runtime.js", import.meta.url);
-
-  try {
-    return await readFile(runtimeAssetUrl, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-  }
-
-  return await bundleExtensionRuntimeSource("opencode", resolveOpenCodeRuntimeEntryPoint);
+  return loadExtensionRuntimeSource("opencode", import.meta.url, local);
 }
 
 async function writeAtomically(path: string, content: string): Promise<void> {

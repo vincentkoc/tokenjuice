@@ -157,3 +157,27 @@ function hasTokenjuiceCommand(
   }
   return false;
 }
+
+// Keep unchanged group identities so callers can detect actual settings edits.
+export function pruneHookGroups(
+  groups: unknown[],
+  isTokenjuiceHookEntry: (hook: unknown) => boolean,
+): unknown[] {
+  const pruned: unknown[] = [];
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      pruned.push(group);
+      continue;
+    }
+    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceHookEntry(hook));
+    if (retainedHooks.length === 0) {
+      continue;
+    }
+    if (retainedHooks.length === group.hooks.length) {
+      pruned.push(group);
+      continue;
+    }
+    pruned.push({ ...group, hooks: retainedHooks });
+  }
+  return pruned;
+}

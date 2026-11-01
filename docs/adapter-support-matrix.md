@@ -6,8 +6,10 @@ received compacted output. Guidance asks an agent to use `tokenjuice wrap`.
 Replacement changes the result delivered by a host. Additive context retains
 the original result, so it does not establish net token savings.
 
-This inventory covers the products below. Follow each linked guide for its
-contract, install scope and verification steps.
+This matrix gives detailed acceptance records for the products below. The
+[complete verification inventory](verification-inventory.md) covers every CLI
+installer target and alias, including file-only integrations. Follow each linked
+guide for its contract, install scope and verification steps.
 
 | Product | Mode and setup | Automated evidence | Remaining host acceptance |
 | --- | --- | --- | --- |

@@ -9,6 +9,7 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [rules](rules.md) — JSON rule schema and authoring
 - [integration catalog](integrations.md) — setup routes and configuration locations
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work
+- [complete verification inventory](verification-inventory.md) — every installer target, aliases and evidence level
 
 ## development and distribution
 

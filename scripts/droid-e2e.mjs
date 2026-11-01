@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createProcessRunner } from "./e2e-process.mjs";
 
 const cli = fileURLToPath(new URL("../dist/cli/main.js", import.meta.url));
 const host = process.argv[2] ? resolve(process.argv[2]) : "droid";
@@ -29,25 +29,7 @@ const env = {
   SHELL: "/bin/bash",
 };
 
-async function run(command, args, timeout = 90_000) {
-  return await new Promise((resolveResult, reject) => {
-    const child = spawn(command, args, { cwd: project, env, stdio: ["ignore", "pipe", "pipe"] });
-    let stdout = "";
-    let stderr = "";
-    const timer = setTimeout(() => {
-      child.kill("SIGTERM");
-      reject(new Error(`timed out running ${command}\n${stderr}\n${stdout}`));
-    }, timeout);
-    child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
-    child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
-    child.on("error", (error) => { clearTimeout(timer); reject(error); });
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      if (code !== 0) reject(new Error(`${command} exited ${code}\n${stderr}\n${stdout}`));
-      else resolveResult({ stdout, stderr });
-    });
-  });
-}
+const run = createProcessRunner({ cwd: project, env });
 
 const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 const failureOutput = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";

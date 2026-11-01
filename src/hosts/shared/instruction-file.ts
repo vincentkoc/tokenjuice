@@ -52,14 +52,18 @@ async function writeInstructionFileAtomically(filePath: string, text: string): P
   }
 }
 
-async function resolveBackupPath(filePath: string): Promise<string> {
+export async function findSafeInstructionBackupPath(
+  filePath: string,
+  symlinkError: (backupPath: string) => string = (candidate) =>
+    `cannot write instruction backup ${candidate}; tokenjuice will not write through instruction symlinks`,
+): Promise<string> {
   let suffix = 0;
   while (true) {
     const candidate = suffix === 0 ? `${filePath}.bak` : `${filePath}.bak.${suffix}`;
     try {
       const stats = await lstat(candidate);
       if (stats.isSymbolicLink()) {
-        throw new Error(`cannot write instruction backup ${candidate}; tokenjuice will not write through instruction symlinks`);
+        throw new Error(symlinkError(candidate));
       }
       suffix += 1;
     } catch (error) {
@@ -80,12 +84,12 @@ export async function assertSafeInstructionBackupPath(filePath: string): Promise
     }
     throw error;
   }
-  await resolveBackupPath(filePath);
+  await findSafeInstructionBackupPath(filePath);
 }
 
 async function writeInstructionBackup(filePath: string, text: string): Promise<string> {
   while (true) {
-    const backupPath = await resolveBackupPath(filePath);
+    const backupPath = await findSafeInstructionBackupPath(filePath);
     try {
       await writeFile(backupPath, text, { encoding: "utf8", flag: "wx" });
       return backupPath;

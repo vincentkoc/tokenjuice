@@ -2,6 +2,7 @@ import { chmod, lstat, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/pro
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
   type PathDoctorReport,
@@ -109,20 +110,7 @@ async function writeTabbyConfigAtomically(filePath: string, text: string, mode?:
 }
 
 async function chooseTabbyBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot safely install Tabby config through symlinked config backup ${candidate}; replace it with a regular path, then rerun tokenjuice install tabby`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, (candidate) => `cannot safely install Tabby config through symlinked config backup ${candidate}; replace it with a regular path, then rerun tokenjuice install tabby`);
 }
 
 async function writeTabbyConfigFile(

@@ -10,8 +10,13 @@ description: |
 homepage: https://github.com/vincentkoc/tokenjuice
 license: MIT
 
-depends:
-  - nodejs
+overrides:
+  deb:
+    depends:
+      - nodejs (>= 22)
+  rpm:
+    depends:
+      - nodejs >= 22
 
 contents:
   - src: ./release/tokenjuice-v__VERSION__/dist

@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
+import { pruneHookGroups } from "../shared/hooks-json-file.js";
+
 import { extractHookCommandPaths } from "../shared/hook-command.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
@@ -206,34 +208,6 @@ async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Pro
   ]);
 }
 
-/**
- * Return `groups` with every tokenjuice hook entry removed from each group's
- * `.hooks[]`. Unrelated hooks are preserved; groups that end up empty are
- * dropped.
- *
- * This is the surgical counterpart to a simple group-level filter — dropping
- * a whole group would silently delete any user-authored hook that happens to
- * share a matcher group with the tokenjuice entry.
- */
-function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
-  const pruned: unknown[] = [];
-  for (const group of groups) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      pruned.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceCodeBuddyHookEntry(hook));
-    if (retainedHooks.length === 0) {
-      continue;
-    }
-    if (retainedHooks.length === group.hooks.length) {
-      pruned.push(group);
-      continue;
-    }
-    pruned.push({ ...group, hooks: retainedHooks });
-  }
-  return pruned;
-}
 
 function removeTokenjuiceHookEvent(config: CodeBuddySettings, event: "PreToolUse" | "PostToolUse"): boolean {
   if (!Array.isArray(config.hooks[event])) {
@@ -241,7 +215,7 @@ function removeTokenjuiceHookEvent(config: CodeBuddySettings, event: "PreToolUse
   }
 
   const groups = config.hooks[event];
-  const pruned = pruneTokenjuiceHookEntries(groups);
+  const pruned = pruneHookGroups(groups, isTokenjuiceCodeBuddyHookEntry);
   const changed = pruned.length !== groups.length || pruned.some((group, index) => group !== groups[index]);
   if (!changed) {
     return false;
@@ -271,7 +245,7 @@ export async function installCodeBuddyHook(
   // version of this host, but preserve unrelated hooks that happen to live in
   // the same matcher group.
   if (Array.isArray(config.hooks.PostToolUse)) {
-    const prunedPost = pruneTokenjuiceHookEntries(config.hooks.PostToolUse);
+    const prunedPost = pruneHookGroups(config.hooks.PostToolUse, isTokenjuiceCodeBuddyHookEntry);
     if (prunedPost.length === 0) {
       delete config.hooks.PostToolUse;
     } else {
@@ -280,7 +254,7 @@ export async function installCodeBuddyHook(
   }
 
   const preToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
-  const retained = pruneTokenjuiceHookEntries(preToolUse);
+  const retained = pruneHookGroups(preToolUse, isTokenjuiceCodeBuddyHookEntry);
   retained.push(createTokenjuiceCodeBuddyHook(command));
   config.hooks.PreToolUse = retained;
 

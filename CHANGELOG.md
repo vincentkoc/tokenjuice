@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- Verify the extracted release launcher and locally installed npm package before publication, including compaction, exact/raw reads, complete failure streams and library exports.
+
 - Verify Crush skill discovery, on-demand loading and model-visible wrapped output through pinned native CLI sessions, including disabled skills, custom-skill restoration, raw bypass and complete failed output.
 
 - Verify Goose hint discovery and model-visible wrapped output through pinned native CLI sessions, including filename overrides, uninstall, raw bypass and complete failed output.

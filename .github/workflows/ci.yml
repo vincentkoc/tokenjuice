@@ -189,6 +189,9 @@ jobs:
       - name: Verify package outputs
         run: pnpm verify:package
 
+      - name: Verify extracted and installed packages
+        run: node scripts/package-e2e.mjs
+
       - name: Verify isolated DeepSeek bundle
         run: TOKENJUICE_STATS=off node scripts/deepseek-bundle-contract.mjs
 

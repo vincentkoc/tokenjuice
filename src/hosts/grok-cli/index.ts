@@ -1,12 +1,12 @@
 import { constants as fsConstants } from "node:fs";
-import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { parseTokenjuiceHookCommand, type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import type { HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
 import { writeEmptyHookJsonLine } from "../shared/hook-output.js";
-import { type HooksSettings as GrokCliUserSettings, isRecord, sanitizeHooksSettings as sanitizeGrokCliSettings } from "../shared/hooks-json-file.js";
+import { readHooksSettings as readGrokCliSettings, type HooksSettings as GrokCliUserSettings, isRecord } from "../shared/hooks-json-file.js";
 
 export type GrokCliHookCommandOptions = TokenjuiceHookCommandOptions;
 
@@ -29,18 +29,6 @@ const TOKENJUICE_GROK_CLI_RETIRED =
 
 function getDefaultSettingsPath(): string {
   return join(homedir(), ".grok", "user-settings.json");
-}
-
-async function readGrokCliSettings(settingsPath: string): Promise<{ config: GrokCliUserSettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    return { config: sanitizeGrokCliSettings(JSON.parse(rawText) as unknown), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} }, exists: false };
-    }
-    throw error;
-  }
 }
 
 async function writeGrokCliSettings(settingsPath: string, config: GrokCliUserSettings): Promise<void> {

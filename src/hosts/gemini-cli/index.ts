@@ -10,7 +10,7 @@ import { compactBashResult } from "../../core/integrations/compact-bash-result.j
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { buildCompactedOutputContext, writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { type HooksSettings as GeminiSettings, isRecord, sanitizeHooksSettings as sanitizeGeminiSettings } from "../shared/hooks-json-file.js";
+import { readHooksSettings as readGeminiSettings, type HooksSettings as GeminiSettings, isRecord, sanitizeHooksSettings as sanitizeGeminiSettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 
 export type GeminiCliHookCommandOptions = TokenjuiceHookCommandOptions;
@@ -50,18 +50,6 @@ function getGeminiCliHome(): string {
 
 function getDefaultSettingsPath(): string {
   return join(getGeminiCliHome(), "settings.json");
-}
-
-async function readGeminiSettings(settingsPath: string): Promise<{ config: GeminiSettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    return { config: sanitizeGeminiSettings(JSON.parse(rawText) as unknown), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} }, exists: false };
-    }
-    throw error;
-  }
 }
 
 async function loadGeminiSettingsWithBackup(settingsPath: string): Promise<{ config: GeminiSettings; backupPath?: string }> {

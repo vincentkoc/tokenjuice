@@ -57,6 +57,7 @@ with tempfile.TemporaryDirectory(prefix="tokenjuice-hermes-native-") as temp:
 
         def do_POST(self):
             payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            assert self.path == "/v1/chat/completions", self.path
             requests.append(payload)
             result = next((m for m in reversed(payload["messages"]) if m["role"] == "tool"), None)
             message = {"role": "assistant", "content": "fixture complete"}
@@ -91,7 +92,7 @@ with tempfile.TemporaryDirectory(prefix="tokenjuice-hermes-native-") as temp:
         from run_agent import AIAgent
         for selected in range(len(commands)):
             requests.clear()
-            agent = AIAgent(base_url=f"http://127.0.0.1:{server.server_port}/v1", api_key="fixture", provider="openai", model="fixture",
+            agent = AIAgent(base_url=f"http://127.0.0.1:{server.server_port}/v1", api_key="fixture", provider="openai", api_mode="chat_completions", model="fixture",
                             enabled_toolsets=["terminal"], max_iterations=3, quiet_mode=True,
                             skip_context_files=True, load_soul_identity=False)
             agent.run_conversation("run the fixture")

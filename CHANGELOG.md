@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 - 2026-11-01
 
 - Qualify explicit wrapping through a native T3 custom Codex instance with isolated model-request checks and pinned Linux CI.
 

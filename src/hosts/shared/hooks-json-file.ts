@@ -38,6 +38,24 @@ export function sanitizeCopilotHooksConfig(raw: unknown): CopilotHooksConfig {
   };
 }
 
+export async function readJsonHooksConfig<Config>(
+  filePath: string,
+  label: string,
+  sanitize: (raw: unknown) => Config,
+  missingConfig: Config,
+): Promise<{ config: Config; exists: boolean }> {
+  try {
+    const rawText = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(rawText) as unknown;
+    return { config: sanitize(parsed), exists: true };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { config: missingConfig, exists: false };
+    }
+    throw new Error(`failed to read ${label} from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 export async function readCopilotHooksConfig(
   hooksPath: string,
   hostLabel: string,

@@ -1,8 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-import { pruneHookGroups } from "../shared/hooks-json-file.js";
+import { pruneHookGroups, readJsonHooksConfig } from "../shared/hooks-json-file.js";
 import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 import { readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
@@ -184,22 +183,7 @@ function sanitizeClaudeCodeSettings(raw: unknown): ClaudeCodeSettings {
 }
 
 async function readClaudeCodeSettings(settingsPath: string): Promise<{ config: ClaudeCodeSettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeClaudeCodeSettings(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read claude code settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return readJsonHooksConfig(settingsPath, "claude code settings", sanitizeClaudeCodeSettings, { hooks: {} });
 }
 
 

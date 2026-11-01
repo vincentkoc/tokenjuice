@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
+import { readJsonHooksConfig } from "../shared/hooks-json-file.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { getTelemetryCommandFamily, shouldRecordStats, storeArtifact, tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
@@ -785,22 +786,7 @@ async function writeStandaloneHooksConfig(
 }
 
 async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksConfig; exists: boolean }> {
-  try {
-    const rawText = await readFile(hooksPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeHooksConfig(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read codex hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return readJsonHooksConfig(hooksPath, "codex hooks", sanitizeHooksConfig, { hooks: {} });
 }
 
 function isTokenjuiceExecutableArg(value: string | undefined): boolean {

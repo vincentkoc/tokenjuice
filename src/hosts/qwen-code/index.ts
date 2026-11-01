@@ -5,7 +5,7 @@ import { findHookCommand, removeHookEntriesFromEvent } from "../shared/hooks-jso
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
-import { type HooksSettings as QwenCodeSettings, isRecord, sanitizeHooksSettings as sanitizeQwenCodeSettings } from "../shared/hooks-json-file.js";
+import { readHooksSettings as readQwenCodeSettings, type HooksSettings as QwenCodeSettings, isRecord, sanitizeHooksSettings as sanitizeQwenCodeSettings } from "../shared/hooks-json-file.js";
 import { buildWrapLauncherHookCommand, buildWrappedCommand, commandAlreadyWrapped, resolveHostShell } from "../shared/pre-tool-wrap.js";
 
 export type QwenCodeHookCommandOptions = TokenjuiceHookCommandOptions & {
@@ -37,18 +37,6 @@ function getProjectDir(options: QwenCodeHookCommandOptions = {}): string {
 
 function getDefaultSettingsPath(options: QwenCodeHookCommandOptions = {}): string {
   return join(getProjectDir(options), ".qwen", "settings.json");
-}
-
-async function readQwenCodeSettings(settingsPath: string): Promise<{ config: QwenCodeSettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    return { config: sanitizeQwenCodeSettings(JSON.parse(rawText) as unknown), exists: true };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return { config: { hooks: {} }, exists: false };
-    }
-    throw error;
-  }
 }
 
 async function loadQwenCodeSettingsWithBackup(settingsPath: string): Promise<{ config: QwenCodeSettings; backupPath?: string }> {

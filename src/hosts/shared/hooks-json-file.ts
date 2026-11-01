@@ -38,6 +38,18 @@ export function sanitizeCopilotHooksConfig(raw: unknown): CopilotHooksConfig {
   };
 }
 
+export async function readHooksSettings(settingsPath: string): Promise<{ config: HooksSettings; exists: boolean }> {
+  try {
+    const rawText = await readFile(settingsPath, "utf8");
+    return { config: sanitizeHooksSettings(JSON.parse(rawText) as unknown), exists: true };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { config: { hooks: {} }, exists: false };
+    }
+    throw error;
+  }
+}
+
 export async function readJsonHooksConfig<Config>(
   filePath: string,
   label: string,

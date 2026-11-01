@@ -69,12 +69,13 @@ try {
   const release = join(extracted, `tokenjuice-v${manifest.version}`);
   smoke(join(release, "bin/tokenjuice"), release, false);
 
-  const packed = JSON.parse(run("npm", ["pack", "--offline", "--ignore-scripts", "--json", "--pack-destination", root], { cwd: repo }));
-  assert.equal(packed.length, 1);
+  // Lifecycle output can precede npm's JSON. Consume the archive itself instead.
+  run("npm", ["pack", "--offline", "--ignore-scripts", "--pack-destination", root], { cwd: repo });
+  const packed = join(root, `tokenjuice-${manifest.version}.tgz`);
   const installed = join(root, "installed");
   await mkdir(installed);
   await writeFile(join(installed, "package.json"), '{"private":true,"type":"module"}\n');
-  run("npm", ["install", "--prefix", installed, "--offline", "--ignore-scripts", "--no-audit", "--no-fund", "--omit=dev", join(root, packed[0].filename)]);
+  run("npm", ["install", "--prefix", installed, "--offline", "--ignore-scripts", "--no-audit", "--no-fund", "--omit=dev", packed]);
   smoke(join(installed, "node_modules/.bin/tokenjuice"), installed, true);
   process.stdout.write(`${JSON.stringify({ ok: true, version: manifest.version, packages: ["release-tarball", "installed-npm"], checks: ["version", "compaction", "exact-read", "raw", "failure-streams", "library-exports"] })}\n`);
 } finally {

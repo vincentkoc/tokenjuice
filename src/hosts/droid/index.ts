@@ -2,6 +2,7 @@ import { lstat, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { homedir } from "node:os";
 
+import { findHookCommand } from "../shared/hooks-json-file.js";
 import { type TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
@@ -83,17 +84,7 @@ function getHookGroups(config: FactorySettings, event: "PreToolUse" | "PostToolU
 }
 
 function findTokenjuiceDroidHookCommand(config: FactorySettings): string | undefined {
-  for (const group of [...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")]) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      continue;
-    }
-    for (const hook of group.hooks) {
-      if (isTokenjuiceDroidHook(hook)) {
-        return (hook as { command: string }).command;
-      }
-    }
-  }
-  return undefined;
+  return findHookCommand([...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")], isTokenjuiceDroidHook);
 }
 
 function removeTokenjuiceDroidHookEvent(config: FactorySettings, event: "PreToolUse" | "PostToolUse"): number {

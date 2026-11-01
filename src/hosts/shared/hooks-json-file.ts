@@ -199,3 +199,49 @@ export function pruneHookGroups(
   }
   return pruned;
 }
+
+export function findHookCommand(
+  groups: unknown[],
+  isOwnedHook: (hook: unknown) => boolean,
+): string | undefined {
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      continue;
+    }
+    for (const hook of group.hooks) {
+      if (isOwnedHook(hook)) {
+        return (hook as { command: string }).command;
+      }
+    }
+  }
+  return undefined;
+}
+
+export function removeHookEntriesFromEvent(
+  config: HooksSettings,
+  event: string,
+  isOwnedHook: (hook: unknown) => boolean,
+): number {
+  let removed = 0;
+  const retainedGroups: unknown[] = [];
+  const groups = config.hooks[event];
+  for (const group of Array.isArray(groups) ? groups : []) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      retainedGroups.push(group);
+      continue;
+    }
+    const retainedHooks = group.hooks.filter((hook) => {
+      const remove = isOwnedHook(hook);
+      if (remove) {
+        removed += 1;
+      }
+      return !remove;
+    });
+    if (retainedHooks.length > 0) {
+      retainedGroups.push({ ...group, hooks: retainedHooks });
+    }
+  }
+  if (retainedGroups.length > 0) config.hooks[event] = retainedGroups;
+  else delete config.hooks[event];
+  return removed;
+}

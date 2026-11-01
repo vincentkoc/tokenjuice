@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { findHookCommand, removeHookEntriesFromEvent } from "../shared/hooks-json-file.js";
 import type { TokenjuiceHookCommandOptions } from "../shared/host-command.js";
 import { type HookCommandDoctorReport, buildHookCommandDoctorFields } from "../shared/hook-command-doctor.js";
 import { writeEmptyHookJsonLine, writeHookJsonLine } from "../shared/hook-output.js";
@@ -83,41 +84,11 @@ function getHookGroups(config: QwenCodeSettings, event: "PreToolUse" | "PostTool
 }
 
 function findTokenjuiceQwenCodeHookCommand(config: QwenCodeSettings): string | undefined {
-  for (const group of [...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")]) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      continue;
-    }
-    for (const hook of group.hooks) {
-      if (isTokenjuiceQwenCodeHook(hook)) {
-        return (hook as { command: string }).command;
-      }
-    }
-  }
-  return undefined;
+  return findHookCommand([...getHookGroups(config, "PreToolUse"), ...getHookGroups(config, "PostToolUse")], isTokenjuiceQwenCodeHook);
 }
 
 function removeTokenjuiceQwenCodeHookEvent(config: QwenCodeSettings, event: "PreToolUse" | "PostToolUse"): number {
-  let removed = 0;
-  const retainedGroups: unknown[] = [];
-  for (const group of getHookGroups(config, event)) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      retainedGroups.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => {
-      const remove = isTokenjuiceQwenCodeHook(hook);
-      if (remove) {
-        removed += 1;
-      }
-      return !remove;
-    });
-    if (retainedHooks.length > 0) {
-      retainedGroups.push({ ...group, hooks: retainedHooks });
-    }
-  }
-  if (retainedGroups.length > 0) config.hooks[event] = retainedGroups;
-  else delete config.hooks[event];
-  return removed;
+  return removeHookEntriesFromEvent(config, event, isTokenjuiceQwenCodeHook);
 }
 
 function removeTokenjuiceQwenCodeHooks(config: QwenCodeSettings): number {

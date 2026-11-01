@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 
+import { findHookCommand, removeHookEntriesFromEvent } from "../shared/hooks-json-file.js";
 import { readStringField } from "../../core/record-fields.js";
 import { readPositiveIntegerEnv } from "../../core/env.js";
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
@@ -102,41 +103,11 @@ function getHookGroups(config: GeminiSettings, event: "BeforeTool" | "AfterTool"
 }
 
 function findTokenjuiceGeminiHookCommand(config: GeminiSettings): string | undefined {
-  for (const group of [...getHookGroups(config, "BeforeTool"), ...getHookGroups(config, "AfterTool")]) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      continue;
-    }
-    for (const hook of group.hooks) {
-      if (isTokenjuiceGeminiHook(hook)) {
-        return (hook as { command: string }).command;
-      }
-    }
-  }
-  return undefined;
+  return findHookCommand([...getHookGroups(config, "BeforeTool"), ...getHookGroups(config, "AfterTool")], isTokenjuiceGeminiHook);
 }
 
 function removeTokenjuiceGeminiHookEvent(config: GeminiSettings, event: "BeforeTool" | "AfterTool"): number {
-  let removed = 0;
-  const retainedGroups: unknown[] = [];
-  for (const group of getHookGroups(config, event)) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      retainedGroups.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => {
-      const remove = isTokenjuiceGeminiHook(hook);
-      if (remove) {
-        removed += 1;
-      }
-      return !remove;
-    });
-    if (retainedHooks.length > 0) {
-      retainedGroups.push({ ...group, hooks: retainedHooks });
-    }
-  }
-  if (retainedGroups.length > 0) config.hooks[event] = retainedGroups;
-  else delete config.hooks[event];
-  return removed;
+  return removeHookEntriesFromEvent(config, event, isTokenjuiceGeminiHook);
 }
 
 function removeTokenjuiceGeminiHooks(config: GeminiSettings): number {

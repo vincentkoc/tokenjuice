@@ -1,4 +1,4 @@
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { findGitRoot } from "../shared/project-root.js";
@@ -8,7 +8,7 @@ import {
   buildTokenjuiceGuidanceBullets,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { readInstructionFile, removeInstructionFile } from "../shared/instruction-file.js";
+import { createRestorableRuleCommands } from "../shared/restorable-rule.js";
 import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
 
@@ -33,7 +33,6 @@ const TOKENJUICE_ZENCODER_OWNERSHIP_MARKER = "<!-- tokenjuice:zencoder-rule -->"
 const TOKENJUICE_ZENCODER_RESTORE_BACKUP_MARKER_PREFIX = "<!-- tokenjuice:zencoder-restore-backup=";
 const TOKENJUICE_ZENCODER_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_ZENCODER_ADVISORY = "Zencoder support is beta and rule-based; it guides agent behavior but does not intercept tool output.";
-const TOKENJUICE_ZENCODER_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getLeadingFrontmatterLines(text: string): string[] {
   const frontmatterStart = text.match(/^---\r?\n/u);
@@ -105,26 +104,6 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return suffix;
 }
 
-async function chooseBackupSuffix(rulePath: string): Promise<string> {
-  const primaryBackup = await readInstructionFile(`${rulePath}.bak`);
-  if (!primaryBackup.exists) {
-    return ".bak";
-  }
-
-  const secondaryBackup = await readInstructionFile(`${rulePath}${TOKENJUICE_ZENCODER_REINSTALL_BACKUP_SUFFIX}`);
-  if (!secondaryBackup.exists) {
-    return TOKENJUICE_ZENCODER_REINSTALL_BACKUP_SUFFIX;
-  }
-
-  for (let index = 1; ; index += 1) {
-    const suffix = `.tokenjuice-${index}.bak`;
-    const candidate = await readInstructionFile(`${rulePath}${suffix}`);
-    if (!candidate.exists) {
-      return suffix;
-    }
-  }
-}
-
 async function writeZencoderRuleWithoutBackup(
   rulePath: string,
   { restoreBackupSuffix }: { restoreBackupSuffix?: string | undefined } = {},
@@ -135,35 +114,21 @@ async function writeZencoderRuleWithoutBackup(
   await rename(tempPath, rulePath);
 }
 
+const restorableCommands = createRestorableRuleCommands({
+  buildText: buildZencoderRule,
+  isManagedText: isTokenjuiceZencoderRuleText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeZencoderRuleWithoutBackup,
+  refusalMessage: (filePath) => `refusing to remove ${filePath}; it does not look like the tokenjuice Zencoder rule. Review and remove it manually, or reinstall tokenjuice zencoder first.`,
+});
+
 export async function installZencoderRule(
   rulePath?: string,
   options: ZencoderRuleOptions = {},
 ): Promise<InstallZencoderRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceZencoderRuleText(existing.text)) {
-    const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-    const expectedRule = buildZencoderRule({ restoreBackupSuffix });
-    if (existing.text === expectedRule) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const backupPath = `${resolvedRulePath}${await chooseBackupSuffix(resolvedRulePath)}`;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeZencoderRuleWithoutBackup(resolvedRulePath, { restoreBackupSuffix });
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  if (existing.exists) {
-    const backupSuffix = await chooseBackupSuffix(resolvedRulePath);
-    const backupPath = `${resolvedRulePath}${backupSuffix}`;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeZencoderRuleWithoutBackup(resolvedRulePath, { restoreBackupSuffix: backupSuffix });
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  await writeZencoderRuleWithoutBackup(resolvedRulePath);
-  return { rulePath: resolvedRulePath };
+  const result = await restorableCommands.install(resolvedRulePath);
+  return { rulePath: result.filePath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallZencoderRule(
@@ -171,28 +136,7 @@ export async function uninstallZencoderRule(
   options: ZencoderRuleOptions = {},
 ): Promise<UninstallZencoderRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && !isTokenjuiceZencoderRuleText(existing.text)) {
-    throw new Error(
-      `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice Zencoder rule. Review and remove it manually, or reinstall tokenjuice zencoder first.`,
-    );
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  const backupPath = restoreBackupSuffix ? `${resolvedRulePath}${restoreBackupSuffix}` : "";
-  const backup = restoreBackupSuffix ? await readInstructionFile(backupPath) : { exists: false, text: "" };
-  if (
-    existing.exists
-    && restoreBackupSuffix
-    && backup.exists
-    && !isTokenjuiceZencoderRuleText(backup.text)
-  ) {
-    await rm(resolvedRulePath, { force: true });
-    await rename(backupPath, resolvedRulePath);
-    return { rulePath: resolvedRulePath, removed: true };
-  }
-
-  const result = await removeInstructionFile(resolvedRulePath);
+  const result = await restorableCommands.uninstall(resolvedRulePath);
   return { rulePath: result.filePath, removed: result.removed };
 }
 

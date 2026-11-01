@@ -1,6 +1,7 @@
 import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
 import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
 import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
@@ -147,51 +148,13 @@ async function writeQodoConfigFile(
   };
 }
 
-function getStructuralMarkerLines(text: string, marker: string): { lines: string[]; markerLines: number[] } {
-  const lines = text.split("\n");
-  const structureLines = getTomlStructureLines(lines);
-  return {
-    lines,
-    markerLines: structureLines.flatMap((line, index) => (line.trim() === marker ? [index] : [])),
-  };
-}
-
-function findTokenjuiceBlockLineRange(text: string): { lines: string[]; start: number; end: number } | undefined {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_QODO_END);
-  if (begin.markerLines.length !== 1 || end.markerLines.length !== 1 || end.markerLines[0]! < begin.markerLines[0]!) {
-    return undefined;
-  }
-  return {
-    lines: begin.lines,
-    start: begin.markerLines[0]!,
-    end: end.markerLines[0]! + 1,
-  };
-}
-
-function hasMalformedMarkerStructure(text: string): boolean {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_QODO_END);
-  const beginCount = begin.markerLines.length;
-  const endCount = end.markerLines.length;
-  return beginCount !== endCount || beginCount > 1 || endCount > 1 || (beginCount === 1 && end.markerLines[0]! < begin.markerLines[0]!);
-}
-
-function hasStructuralTokenjuiceMarker(text: string): boolean {
-  return getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN).markerLines.length > 0 || getStructuralMarkerLines(text, TOKENJUICE_QODO_END).markerLines.length > 0;
-}
-
-function hasTokenjuiceBlock(text: string): boolean {
-  return Boolean(findTokenjuiceBlockLineRange(text));
-}
-
-function getTokenjuiceBlockText(text: string): string {
-  const range = findTokenjuiceBlockLineRange(text);
-  if (!range) {
-    return "";
-  }
-  return range.lines.slice(range.start, range.end).join("\n");
-}
+const {
+  findTokenjuiceBlockLineRange,
+  hasMalformedMarkerStructure,
+  hasStructuralTokenjuiceMarker,
+  hasTokenjuiceBlock,
+  getTokenjuiceBlockText,
+} = createStructuredMarkerInspector(TOKENJUICE_QODO_BEGIN, TOKENJUICE_QODO_END, getTomlStructureLines);
 
 function isTokenjuiceBlockInsideReviewAgentTable(text: string): boolean {
   const blockRange = findTokenjuiceBlockLineRange(text);

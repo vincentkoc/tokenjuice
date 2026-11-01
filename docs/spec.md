@@ -191,15 +191,8 @@ tokenjuice uninstall claude-code
 Install and uninstall preserve unrelated configuration within each adapter's documented ownership boundary.
 `doctor hooks` checks installed wiring, including stale Homebrew paths. A successful check does not establish native host execution.
 
-For a local build, use the host's documented `--local` route:
-
-```bash
-pnpm build
-node dist/cli/main.js install claude-code --local
-node dist/cli/main.js doctor claude-code --local
-```
-
-Use a disposable host home for development checks. See the [integration playbook](integration-playbook.md#manual-verification-flow).
+For a local build, use the host's documented `--local` route with disposable configuration.
+Follow the isolated example in the [integration playbook](integration-playbook.md#manual-verification-flow).
 Retired additive hooks do not support new automatic installations. Their guides describe explicit wrapping and scoped legacy cleanup.
 
 ## rule model

@@ -1,4 +1,4 @@
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
@@ -10,7 +10,7 @@ import {
   buildTokenjuiceGuidanceBullets,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { readInstructionFile, removeInstructionFile } from "../shared/instruction-file.js";
+import { createRestorableRuleCommands } from "../shared/restorable-rule.js";
 import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type JetBrainsAiRuleOptions = {
@@ -35,7 +35,6 @@ const TOKENJUICE_JETBRAINS_AI_LEGACY_RESTORE_BACKUP_MARKER = "<!-- tokenjuice:je
 const TOKENJUICE_JETBRAINS_AI_RESTORE_BACKUP_MARKER_PREFIX = "<!-- tokenjuice:jetbrains-ai-restore-backup=";
 const TOKENJUICE_JETBRAINS_AI_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_JETBRAINS_AI_ADVISORY = "JetBrains AI Assistant support is beta and rule-based; it guides chat behavior but does not intercept tool output.";
-const TOKENJUICE_JETBRAINS_AI_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getProjectDir(options: JetBrainsAiRuleOptions = {}): string {
   return options.projectDir || process.env.JETBRAINS_AI_PROJECT_DIR || "";
@@ -85,26 +84,6 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return suffix;
 }
 
-async function chooseBackupSuffix(rulePath: string): Promise<string> {
-  const primaryBackup = await readInstructionFile(`${rulePath}.bak`);
-  if (!primaryBackup.exists) {
-    return ".bak";
-  }
-
-  const secondaryBackup = await readInstructionFile(`${rulePath}${TOKENJUICE_JETBRAINS_AI_REINSTALL_BACKUP_SUFFIX}`);
-  if (!secondaryBackup.exists) {
-    return TOKENJUICE_JETBRAINS_AI_REINSTALL_BACKUP_SUFFIX;
-  }
-
-  for (let index = 1; ; index += 1) {
-    const suffix = `.tokenjuice-${index}.bak`;
-    const candidate = await readInstructionFile(`${rulePath}${suffix}`);
-    if (!candidate.exists) {
-      return suffix;
-    }
-  }
-}
-
 async function writeJetBrainsAiRuleWithoutBackup(
   rulePath: string,
   { restoreBackupSuffix }: { restoreBackupSuffix?: string | undefined } = {},
@@ -115,35 +94,21 @@ async function writeJetBrainsAiRuleWithoutBackup(
   await rename(tempPath, rulePath);
 }
 
+const restorableCommands = createRestorableRuleCommands({
+  buildText: buildJetBrainsAiRule,
+  isManagedText: isTokenjuiceJetBrainsAiRuleText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeJetBrainsAiRuleWithoutBackup,
+  refusalMessage: (filePath) => `refusing to remove ${filePath}; it does not look like the tokenjuice JetBrains AI Assistant rule. Review and remove it manually, or reinstall tokenjuice jetbrains-ai first.`,
+});
+
 export async function installJetBrainsAiRule(
   rulePath?: string,
   options: JetBrainsAiRuleOptions = {},
 ): Promise<InstallJetBrainsAiRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceJetBrainsAiRuleText(existing.text)) {
-    const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-    const expectedRule = buildJetBrainsAiRule({ restoreBackupSuffix });
-    if (existing.text === expectedRule) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const backupPath = `${resolvedRulePath}${await chooseBackupSuffix(resolvedRulePath)}`;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeJetBrainsAiRuleWithoutBackup(resolvedRulePath, { restoreBackupSuffix });
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  if (existing.exists) {
-    const backupSuffix = await chooseBackupSuffix(resolvedRulePath);
-    const backupPath = `${resolvedRulePath}${backupSuffix}`;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeJetBrainsAiRuleWithoutBackup(resolvedRulePath, { restoreBackupSuffix: backupSuffix });
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  await writeJetBrainsAiRuleWithoutBackup(resolvedRulePath);
-  return { rulePath: resolvedRulePath };
+  const result = await restorableCommands.install(resolvedRulePath);
+  return { rulePath: result.filePath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallJetBrainsAiRule(
@@ -151,28 +116,7 @@ export async function uninstallJetBrainsAiRule(
   options: JetBrainsAiRuleOptions = {},
 ): Promise<UninstallJetBrainsAiRuleResult> {
   const resolvedRulePath = rulePath ?? (await getDefaultRulePath(options));
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && !isTokenjuiceJetBrainsAiRuleText(existing.text)) {
-    throw new Error(
-      `refusing to remove ${resolvedRulePath}; it does not look like the tokenjuice JetBrains AI Assistant rule. Review and remove it manually, or reinstall tokenjuice jetbrains-ai first.`,
-    );
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  const backupPath = restoreBackupSuffix ? `${resolvedRulePath}${restoreBackupSuffix}` : "";
-  const backup = restoreBackupSuffix ? await readInstructionFile(backupPath) : { exists: false, text: "" };
-  if (
-    existing.exists
-    && restoreBackupSuffix
-    && backup.exists
-    && !isTokenjuiceJetBrainsAiRuleText(backup.text)
-  ) {
-    await rm(resolvedRulePath, { force: true });
-    await rename(backupPath, resolvedRulePath);
-    return { rulePath: resolvedRulePath, removed: true };
-  }
-
-  const result = await removeInstructionFile(resolvedRulePath);
+  const result = await restorableCommands.uninstall(resolvedRulePath);
   return { rulePath: result.filePath, removed: result.removed };
 }
 

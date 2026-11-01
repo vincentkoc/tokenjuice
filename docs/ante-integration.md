@@ -25,4 +25,28 @@ session after changing them. Ante also reads global `~/.ante/AGENTS.md`, followi
 The library API accepts an explicit instruction path or `projectDir` option.
 
 Contract: [Ante AGENTS.md and CLAUDE.md fallback](https://docs.antigma.ai/extend/agents-md/).
-Live guidance adherence has not yet been qualified.
+
+## Native acceptance
+
+After building, run `node scripts/ante-e2e.mjs /path/to/ante`. The pinned native
+`0.3.1` fixture uses an isolated `HOME` and `ANTE_HOME`, a credential-free
+loopback OpenAI-compatible provider, fresh headless sessions and `auto`
+permission mode. No real account or shared server is used.
+
+The fixture verifies native `CLAUDE.md` fallback loading, installed guidance,
+`AGENTS.md` shadowing and uninstall restoration. Its deterministic provider
+chooses commands from the instructions actually received from Ante. Follow-up
+model requests verify an 80-entry listing summary, exact CRLF and blank lines,
+raw bypass, and complete exit-7 stdout/stderr with explicit `--keep-failures`.
+Native tool events are checked alongside the provider transcript. Reinstall and
+uninstall preserve custom instructions. CI verifies the official Linux archive
+digest before running the same fixture.
+
+This qualifies instruction discovery and tool transport in the pinned CLI.
+Other models' adherence, versions, desktop sessions, remote providers and
+permission modes require separate acceptance. Doctor still validates the file,
+not the running session.
+
+Native fixture contracts: [headless mode](https://docs.antigma.ai/usage/headless/),
+[provider catalog](https://docs.antigma.ai/reference/catalog-reference/) and
+[approvals](https://docs.antigma.ai/usage/approvals/).

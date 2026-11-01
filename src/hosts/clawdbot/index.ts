@@ -1,21 +1,19 @@
 import { realpath } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
+import { doctorProjectSkill } from "../shared/project-skill-doctor.js";
 import { createCanonicalProjectSkillPaths, createSymlinkGuard, findExistingAncestor } from "../shared/path-ancestors.js";
 
 import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  pathEntryExists,
   readInstructionFile,
   removeInstructionFile,
   writeInstructionFile,
 } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 
 export type ClawdbotSkillOptions = {
@@ -156,91 +154,43 @@ export async function doctorClawdbotSkill(
   skillPath?: string,
   options: ClawdbotSkillOptions = {},
 ): Promise<ClawdbotDoctorReport> {
-  let resolvedSkillPath: string;
-  try {
-    resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  } catch (error) {
-    const aliasPath = skillPath ?? (await getDefaultAliasPath(options));
-    if (!skillPath && !(await pathEntryExists(aliasPath))) {
-      return {
-        skillPath: aliasPath,
-        hasTokenjuiceMarker: false,
-        hasUnsafePathIssue: false,
-        ...buildInstructionDoctorReportFields({
-          status: "disabled",
-          issues: ["tokenjuice Clawdbot skill is not installed"],
-          advisory: TOKENJUICE_CLAWDBOT_ADVISORY,
-          fixCommand: TOKENJUICE_CLAWDBOT_FIX_COMMAND,
+  return doctorProjectSkill(skillPath, {
+    resolvePath: () => resolveSkillPath(skillPath, options),
+    getAliasPath: () => getDefaultAliasPath(options),
+    missingIssue: "tokenjuice Clawdbot skill is not installed",
+    ownershipMarker: TOKENJUICE_CLAWDBOT_OWNERSHIP_MARKER,
+    advisory: TOKENJUICE_CLAWDBOT_ADVISORY,
+    fixCommand: TOKENJUICE_CLAWDBOT_FIX_COMMAND,
+    pathFixCommand: (message) => message.includes("outside") || message.includes("only installs")
+      ? "use the project-local skills/tokenjuice/SKILL.md path, then run tokenjuice install clawdbot"
+      : "replace symlinked Clawdbot skill paths with regular project files, then run tokenjuice install clawdbot",
+    collectIssues: (text) => {
+      const frontmatter = inspectSkillFrontmatter(text);
+      return [
+        ...(!frontmatter.hasName ? ["configured Clawdbot skill is missing the required tokenjuice skill name"] : []),
+        ...(!frontmatter.hasDescription ? ["configured Clawdbot skill is missing discovery frontmatter"] : []),
+        ...(!frontmatter.hasUserInvocableFalse ? ["configured Clawdbot skill is missing user-invocable: false frontmatter"] : []),
+        ...collectTokenjuiceGuidanceIssues(text, {
+          configuredLabel: "Clawdbot skill",
+          singular: true,
+          additionalRequired: [
+            {
+              requiredText: TOKENJUICE_CLAWDBOT_OWNERSHIP_MARKER,
+              missingIssue: "configured Clawdbot skill is missing the tokenjuice ownership marker",
+            },
+            {
+              requiredText: TOKENJUICE_CLAWDBOT_SKILL_MARKER,
+              missingIssue: "configured Clawdbot skill does not look like the tokenjuice skill",
+            },
+          ],
+          additionalRequiredAfter: [
+            {
+              requiredText: "skills/tokenjuice/SKILL.md",
+              missingIssue: "configured Clawdbot skill is missing workspace skill path guidance",
+            },
+          ],
         }),
-      };
-    }
-    return {
-      skillPath: aliasPath,
-      hasTokenjuiceMarker: false,
-      hasUnsafePathIssue: true,
-      ...buildInstructionDoctorReportFields({
-        status: "broken",
-        issues: [(error as Error).message],
-        advisory: TOKENJUICE_CLAWDBOT_ADVISORY,
-        fixCommand: (error as Error).message.includes("outside") || (error as Error).message.includes("only installs")
-          ? "use the project-local skills/tokenjuice/SKILL.md path, then run tokenjuice install clawdbot"
-          : "replace symlinked Clawdbot skill paths with regular project files, then run tokenjuice install clawdbot",
-      }),
-    };
-  }
-
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (!existing.exists) {
-    return {
-      skillPath: resolvedSkillPath,
-      hasTokenjuiceMarker: false,
-      hasUnsafePathIssue: false,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Clawdbot skill is not installed"],
-        advisory: TOKENJUICE_CLAWDBOT_ADVISORY,
-        fixCommand: TOKENJUICE_CLAWDBOT_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_CLAWDBOT_OWNERSHIP_MARKER);
-  const frontmatter = inspectSkillFrontmatter(existing.text);
-  const issues = [
-    ...(!frontmatter.hasName ? ["configured Clawdbot skill is missing the required tokenjuice skill name"] : []),
-    ...(!frontmatter.hasDescription ? ["configured Clawdbot skill is missing discovery frontmatter"] : []),
-    ...(!frontmatter.hasUserInvocableFalse ? ["configured Clawdbot skill is missing user-invocable: false frontmatter"] : []),
-    ...collectTokenjuiceGuidanceIssues(existing.text, {
-      configuredLabel: "Clawdbot skill",
-      singular: true,
-      additionalRequired: [
-        {
-          requiredText: TOKENJUICE_CLAWDBOT_OWNERSHIP_MARKER,
-          missingIssue: "configured Clawdbot skill is missing the tokenjuice ownership marker",
-        },
-        {
-          requiredText: TOKENJUICE_CLAWDBOT_SKILL_MARKER,
-          missingIssue: "configured Clawdbot skill does not look like the tokenjuice skill",
-        },
-      ],
-      additionalRequiredAfter: [
-        {
-          requiredText: "skills/tokenjuice/SKILL.md",
-          missingIssue: "configured Clawdbot skill is missing workspace skill path guidance",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    skillPath: resolvedSkillPath,
-    hasTokenjuiceMarker,
-    hasUnsafePathIssue: false,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_CLAWDBOT_ADVISORY,
-      fixCommand: TOKENJUICE_CLAWDBOT_FIX_COMMAND,
-    }),
-  };
+      ];
+    },
+  });
 }

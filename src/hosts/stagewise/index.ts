@@ -1,6 +1,7 @@
 import { realpath } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
+import { doctorProjectSkill } from "../shared/project-skill-doctor.js";
 import {
   isValidDoubleQuotedYamlScalar,
   parseSimpleYamlFrontmatter,
@@ -12,15 +13,12 @@ import { createProjectDirResolver } from "../shared/project-root.js";
 
 import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  pathEntryExists,
   readInstructionFile,
   removeInstructionFile,
   writeInstructionFile,
 } from "../shared/instruction-file.js";
 import {
   type PathDoctorReport,
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 
 export type StagewiseSkillOptions = {
@@ -185,91 +183,43 @@ export async function doctorStagewiseSkill(
   skillPath?: string,
   options: StagewiseSkillOptions = {},
 ): Promise<StagewiseDoctorReport> {
-  let resolvedSkillPath: string;
-  try {
-    resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  } catch (error) {
-    const aliasPath = skillPath ?? (await getDefaultAliasPath(options));
-    if (!skillPath && !(await pathEntryExists(aliasPath))) {
-      return {
-        skillPath: aliasPath,
-        hasTokenjuiceMarker: false,
-        hasUnsafePathIssue: false,
-        ...buildInstructionDoctorReportFields({
-          status: "disabled",
-          issues: ["tokenjuice Stagewise skill is not installed"],
-          advisory: TOKENJUICE_STAGEWISE_ADVISORY,
-          fixCommand: TOKENJUICE_STAGEWISE_FIX_COMMAND,
+  return doctorProjectSkill(skillPath, {
+    resolvePath: () => resolveSkillPath(skillPath, options),
+    getAliasPath: () => getDefaultAliasPath(options),
+    missingIssue: "tokenjuice Stagewise skill is not installed",
+    ownershipMarker: TOKENJUICE_STAGEWISE_OWNERSHIP_MARKER,
+    advisory: TOKENJUICE_STAGEWISE_ADVISORY,
+    fixCommand: TOKENJUICE_STAGEWISE_FIX_COMMAND,
+    pathFixCommand: (message) => message.includes("outside") || message.includes("only installs")
+      ? "use the project-local .stagewise/skills/tokenjuice/SKILL.md path, then run tokenjuice install stagewise"
+      : "replace symlinked Stagewise skill paths with regular project files, then run tokenjuice install stagewise",
+    collectIssues: (text) => {
+      const frontmatter = inspectSkillFrontmatter(text);
+      return [
+        ...(!frontmatter.hasValidYaml ? ["configured Stagewise skill has invalid discovery frontmatter"] : []),
+        ...(!frontmatter.hasName ? ["configured Stagewise skill is missing the required tokenjuice skill name"] : []),
+        ...(!frontmatter.hasDescription ? ["configured Stagewise skill is missing discovery frontmatter"] : []),
+        ...collectTokenjuiceGuidanceIssues(text, {
+          configuredLabel: "Stagewise skill",
+          singular: true,
+          additionalRequired: [
+            {
+              requiredText: TOKENJUICE_STAGEWISE_OWNERSHIP_MARKER,
+              missingIssue: "configured Stagewise skill is missing the tokenjuice ownership marker",
+            },
+            {
+              requiredText: TOKENJUICE_STAGEWISE_SKILL_MARKER,
+              missingIssue: "configured Stagewise skill does not look like the tokenjuice skill",
+            },
+          ],
+          additionalRequiredAfter: [
+            {
+              requiredText: ".stagewise/skills/tokenjuice/SKILL.md",
+              missingIssue: "configured Stagewise skill is missing workspace skill path guidance",
+            },
+          ],
         }),
-      };
-    }
-    return {
-      skillPath: aliasPath,
-      hasTokenjuiceMarker: false,
-      hasUnsafePathIssue: true,
-      ...buildInstructionDoctorReportFields({
-        status: "broken",
-        issues: [(error as Error).message],
-        advisory: TOKENJUICE_STAGEWISE_ADVISORY,
-        fixCommand: (error as Error).message.includes("outside") || (error as Error).message.includes("only installs")
-          ? "use the project-local .stagewise/skills/tokenjuice/SKILL.md path, then run tokenjuice install stagewise"
-          : "replace symlinked Stagewise skill paths with regular project files, then run tokenjuice install stagewise",
-      }),
-    };
-  }
-
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (!existing.exists) {
-    return {
-      skillPath: resolvedSkillPath,
-      hasTokenjuiceMarker: false,
-      hasUnsafePathIssue: false,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Stagewise skill is not installed"],
-        advisory: TOKENJUICE_STAGEWISE_ADVISORY,
-        fixCommand: TOKENJUICE_STAGEWISE_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_STAGEWISE_OWNERSHIP_MARKER);
-  const frontmatter = inspectSkillFrontmatter(existing.text);
-  const issues = [
-    ...(!frontmatter.hasValidYaml ? ["configured Stagewise skill has invalid discovery frontmatter"] : []),
-    ...(!frontmatter.hasName ? ["configured Stagewise skill is missing the required tokenjuice skill name"] : []),
-    ...(!frontmatter.hasDescription ? ["configured Stagewise skill is missing discovery frontmatter"] : []),
-    ...collectTokenjuiceGuidanceIssues(existing.text, {
-      configuredLabel: "Stagewise skill",
-      singular: true,
-      additionalRequired: [
-        {
-          requiredText: TOKENJUICE_STAGEWISE_OWNERSHIP_MARKER,
-          missingIssue: "configured Stagewise skill is missing the tokenjuice ownership marker",
-        },
-        {
-          requiredText: TOKENJUICE_STAGEWISE_SKILL_MARKER,
-          missingIssue: "configured Stagewise skill does not look like the tokenjuice skill",
-        },
-      ],
-      additionalRequiredAfter: [
-        {
-          requiredText: ".stagewise/skills/tokenjuice/SKILL.md",
-          missingIssue: "configured Stagewise skill is missing workspace skill path guidance",
-        },
-      ],
-    }),
-  ];
-
-  return {
-    skillPath: resolvedSkillPath,
-    hasTokenjuiceMarker,
-    hasUnsafePathIssue: false,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_STAGEWISE_ADVISORY,
-      fixCommand: TOKENJUICE_STAGEWISE_FIX_COMMAND,
-    }),
-  };
+      ];
+    },
+  });
 }

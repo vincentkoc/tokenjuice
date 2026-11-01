@@ -1,8 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-import { pruneHookGroups } from "../shared/hooks-json-file.js";
+import { pruneHookGroups, readJsonHooksConfig } from "../shared/hooks-json-file.js";
 import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 
 import { extractHookCommandPaths } from "../shared/hook-command.js";
@@ -179,22 +178,7 @@ function sanitizeCodeBuddySettings(raw: unknown): CodeBuddySettings {
 }
 
 async function readCodeBuddySettings(settingsPath: string): Promise<{ config: CodeBuddySettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeCodeBuddySettings(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return readJsonHooksConfig(settingsPath, "codebuddy settings", sanitizeCodeBuddySettings, { hooks: {} });
 }
 
 async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Promise<string | undefined> {

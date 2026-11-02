@@ -1,1 +1,3 @@
-"""Optional native adapters. Import only the framework you use."""
+"""Optional native adapters and the dependency-free Hermes plugin entrypoint."""
+
+from .hermes import register

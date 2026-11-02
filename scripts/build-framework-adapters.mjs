@@ -9,5 +9,6 @@ await writeFile(`${python}/pyproject.toml`, `[build-system]\nrequires = ["setupt
 const hermes = `${output}/hosts/hermes/bundle`;
 await mkdir(hermes, { recursive: true });
 await cp("src/python/tokenjuice_integrations", `${hermes}/tokenjuice_integrations`, { recursive: true, filter: path => !path.includes("__pycache__") });
-await writeFile(`${hermes}/plugin.yaml`, `name: tokenjuice\nversion: ${version}\ndescription: Compact successful terminal output before model consumption\nauthor: tokenjuice\nprovides_hooks:\n  - transform_terminal_output\n`);
+const manifest = await readFile("src/python/tokenjuice_integrations/plugin.yaml", "utf8");
+await writeFile(`${hermes}/plugin.yaml`, manifest.replace(/^version: .+$/m, `version: ${version}`));
 await writeFile(`${hermes}/__init__.py`, "from .tokenjuice_integrations.hermes import register\n");

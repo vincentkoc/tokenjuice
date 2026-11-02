@@ -22,6 +22,13 @@ Keep `tokenjuice` on the application's PATH, or set `TOKENJUICE_BIN` to its exec
 
 ## Hermes
 
+The source plugin is self-contained at `src/python/tokenjuice_integrations`, so
+Hermes Git installs can select that subdirectory at an exact commit. It requires
+Hermes 0.22.5 or newer and a separately installed tokenjuice CLI. The plugin's
+[README](../src/python/tokenjuice_integrations/README.md) describes its subprocess,
+configuration, and permission boundaries. CI verifies both source and release
+bundles through the same native lifecycle and model-request tests.
+
 Copy the bundle into Hermes's native user-plugin directory, then enable and verify it through Hermes. The existence check protects an existing installation:
 
 ```sh

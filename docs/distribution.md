@@ -87,9 +87,11 @@ wheel. Until the first PyPI publication, use the bundled install described in
 [framework integrations](framework-integrations.md#package-paths-and-python-setup).
 
 The manual **Publish Python** workflow publishes independently of npm tags. It
-accepts a full `source_sha` on `main` with a successful main CI run, plus a stable
-`version` that matches that commit's `package.json`. It rebuilds and checks both
-distributions, then uploads them from a separate OIDC-enabled publish job.
+accepts the full `source_sha` of the workflow's current `main` commit with a
+successful main CI run, plus a stable `version` that matches that commit's
+`package.json`. The checkout uses the workflow's immutable GitHub SHA and rejects
+a different input SHA. It rebuilds and checks both distributions, then uploads
+them from a separate OIDC-enabled publish job.
 
 Before the first run, add a
 [pending PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)

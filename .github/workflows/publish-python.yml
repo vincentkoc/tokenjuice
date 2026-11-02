@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       source_sha:
-        description: "Full SHA of a reviewed main commit with successful CI"
+        description: "Full SHA of the current main commit with successful CI"
         required: true
         type: string
       version:
@@ -36,14 +36,13 @@ jobs:
           set -euo pipefail
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$EXPECTED_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
-          relation=$(gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...main" --jq .status)
-          [[ "$relation" == ahead || "$relation" == identical ]]
+          [[ "$SOURCE_SHA" == "$GITHUB_SHA" ]]
           passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&event=push&per_page=100" \
             --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml" and .head_branch == "main" and .conclusion == "success")] | length')
           [[ "$passed" -gt 0 ]]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:

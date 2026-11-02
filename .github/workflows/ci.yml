@@ -225,7 +225,11 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/tokenjuice-frameworks" --ignore-scripts --no-audit --no-fund @github/copilot-sdk@1.0.28 @mastra/core@1.81.0 @ai-sdk/openai-compatible@3.0.82
           python -m venv "$RUNNER_TEMP/tokenjuice-python"
-          "$RUNNER_TEMP/tokenjuice-python/bin/pip" install 'langchain==1.4.7' 'fastmcp==4.1.4' ./dist/python
+          "$RUNNER_TEMP/tokenjuice-python/bin/pip" install build==1.6.1 twine==7.0.0
+          "$RUNNER_TEMP/tokenjuice-python/bin/python" -m build dist/python --outdir "$RUNNER_TEMP/tokenjuice-python-dist"
+          "$RUNNER_TEMP/tokenjuice-python/bin/python" -m twine check --strict "$RUNNER_TEMP/tokenjuice-python-dist/"*
+          "$RUNNER_TEMP/tokenjuice-python/bin/python" scripts/python-package-e2e.py "$RUNNER_TEMP/tokenjuice-python-dist"
+          "$RUNNER_TEMP/tokenjuice-python/bin/pip" install 'langchain==1.4.7' 'fastmcp==4.1.4' "$RUNNER_TEMP/tokenjuice-python-dist/"*.whl
       - name: Verify native SDK and Agent model requests
         run: node scripts/frameworks-node-e2e.mjs "$RUNNER_TEMP/tokenjuice-frameworks"
       - name: Verify native Python agent and MCP proxy results

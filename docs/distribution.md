@@ -66,6 +66,52 @@ yarn global add tokenjuice
 npx tokenjuice --help
 ```
 
+## Python adapters and PyPI
+
+`node scripts/build-framework-adapters.mjs` prepares `dist/python`, including
+the `tokenjuice-integrations` project metadata, README, license, and adapters.
+It uses the version in `package.json`. Python requires 3.11 or newer; the
+tokenjuice CLI remains a separate Node.js dependency.
+
+Build and validate a wheel and source distribution:
+
+```sh
+python -m pip install build==1.6.1 twine==7.0.0
+python -m build dist/python --outdir /path/to/python-dist
+python -m twine check --strict /path/to/python-dist/*
+python scripts/python-package-e2e.py /path/to/python-dist
+```
+
+CI also runs the native LangChain and FastMCP contracts against the installed
+wheel. Until the first PyPI publication, use the bundled install described in
+[framework integrations](framework-integrations.md#package-paths-and-python-setup).
+
+The manual **Publish Python** workflow publishes independently of npm tags. It
+accepts the full `source_sha` of the workflow's current `main` commit with a
+successful main CI run, plus a stable `version` that matches that commit's
+`package.json`. The checkout uses the workflow's immutable GitHub SHA and rejects
+a different input SHA. It rebuilds and checks both distributions, then uploads
+them from a separate OIDC-enabled publish job.
+
+Before the first run, add a
+[pending PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+under the package owner's PyPI account with these exact fields:
+
+| Field | Value |
+| --- | --- |
+| PyPI project | `tokenjuice-integrations` |
+| GitHub owner | `vincentkoc` |
+| Repository | `tokenjuice` |
+| Workflow filename | `publish-python.yml` |
+| Environment | `pypi` |
+
+Use a GitHub `pypi` environment with the owner's normal release protections.
+No API token is stored in the repository. A pending publisher creates the PyPI
+project on its first successful upload. Publication fails on existing versions;
+do not replace artifacts or skip that failure. After publishing, verify the
+registry's version, hashes, install, and imports before submitting a LangChain
+integration listing.
+
 ## Homebrew
 
 the release pipeline generates a formula file that targets the GitHub release tarball.

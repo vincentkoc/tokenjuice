@@ -17,7 +17,7 @@ from langchain_core.tools import tool
 from mcp.types import TextContent
 
 dist = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / "dist"
-sys.path.insert(0, str(dist / "python"))
+# Exercise the installed distribution, rather than importing the build directory.
 from tokenjuice_integrations.bridge import compact_result
 from tokenjuice_integrations.langchain import TokenjuiceMiddleware as LangChainMiddleware
 from tokenjuice_integrations.fastmcp import TokenjuiceMiddleware as FastMCPMiddleware

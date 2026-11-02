@@ -8,15 +8,19 @@ These integrations use the application's native plugin or middleware lifecycle. 
 
 The npm and release packages include TypeScript exports, a Python package at `dist/python`, and a Hermes plugin at `dist/hosts/hermes/bundle`. Python adapters invoke the installed `tokenjuice compact-shell-result` JSON bridge. The bridge processes captured output; it never executes the supplied shell command.
 
-After installing tokenjuice globally with npm:
+Install tokenjuice CLI 0.10.0 or newer with Node.js 22 or newer. Install the
+[Python adapters from PyPI](https://pypi.org/project/tokenjuice-integrations/)
+in the application's Python 3.11 or newer environment:
 
 ```sh
-TOKENJUICE_PACKAGE="$(npm root -g)/tokenjuice"
-# Run in the Python environment that owns your application.
-python -m pip install "$TOKENJUICE_PACKAGE/dist/python[langchain,fastmcp]"
+npm install --global tokenjuice
+python -m pip install 'tokenjuice-integrations[langchain,fastmcp]'
 ```
 
-For a source checkout, run `pnpm build` and use its absolute `dist/python` path. For a release tarball, use the extracted package's `dist/python` path. The Python distribution is bundled; it is not a separately published PyPI project. Install only the extras your application uses. The Hermes bundle needs no Python extras.
+Install only the extras your application uses. The Hermes bundle needs no Python
+extras. Bundled installation remains available: pass the absolute
+`dist/python[langchain,fastmcp]` path from an npm package or release tarball to
+`python -m pip install`. For a source checkout, run `pnpm build` first.
 
 Keep `tokenjuice` on the application's PATH, or set `TOKENJUICE_BIN` to its executable path. Embedded Python applications can supply `launcher=["node", "/path/to/tokenjuice/dist/cli/main.js"]`. Launchers are argument vectors, never shell strings. Missing executables, invalid responses, inputs over 2 MB, and five-second bridge timeouts preserve the original result. Python bridge calls disable tokenjuice statistics.
 
@@ -32,6 +36,7 @@ bundles through the same native lifecycle and model-request tests.
 Copy the bundle into Hermes's native user-plugin directory, then enable and verify it through Hermes. The existence check protects an existing installation:
 
 ```sh
+TOKENJUICE_PACKAGE="$(npm root -g)/tokenjuice"
 PLUGINS="${HERMES_HOME:-$HOME/.hermes}/plugins"
 mkdir -p "$PLUGINS"
 test ! -e "$PLUGINS/tokenjuice" && cp -R "$TOKENJUICE_PACKAGE/dist/hosts/hermes/bundle" "$PLUGINS/tokenjuice"
@@ -68,6 +73,8 @@ Compose `onPostToolUse` with any existing callback; do not silently overwrite ap
 See [Copilot SDK post-tool hooks](https://docs.github.com/en/copilot/how-tos/copilot-sdk/hooks/post-tool-use).
 
 ## LangChain
+
+Use the [Python setup](#package-paths-and-python-setup) with the `langchain` extra.
 
 ```python
 from langchain.agents import create_agent
@@ -111,6 +118,8 @@ The mapping belongs to the application because Mastra tools do not share a shell
 See [Mastra processToolResult](https://mastra.ai/reference/processors/processor-interface#processtoolresult).
 
 ## FastMCP
+
+Use the [Python setup](#package-paths-and-python-setup) with the `fastmcp` extra.
 
 ```python
 import json

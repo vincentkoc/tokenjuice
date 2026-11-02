@@ -83,7 +83,8 @@ python scripts/python-package-e2e.py /path/to/python-dist
 ```
 
 CI also runs the native LangChain and FastMCP contracts against the installed
-wheel. Until the first PyPI publication, use the bundled install described in
+wheel. Install the [published Python package](https://pypi.org/project/tokenjuice-integrations/)
+as described in
 [framework integrations](framework-integrations.md#package-paths-and-python-setup).
 
 The manual **Publish Python** workflow publishes independently of npm tags. It
@@ -93,9 +94,7 @@ successful main CI run, plus a stable `version` that matches that commit's
 a different input SHA. It rebuilds and checks both distributions, then uploads
 them from a separate OIDC-enabled publish job.
 
-Before the first run, add a
-[pending PyPI trusted publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
-under the package owner's PyPI account with these exact fields:
+The PyPI project's GitHub trusted publisher uses these exact fields:
 
 | Field | Value |
 | --- | --- |
@@ -105,9 +104,10 @@ under the package owner's PyPI account with these exact fields:
 | Workflow filename | `publish-python.yml` |
 | Environment | `pypi` |
 
-Use a GitHub `pypi` environment with the owner's normal release protections.
-No API token is stored in the repository. A pending publisher creates the PyPI
-project on its first successful upload. Publication fails on existing versions;
+The GitHub `pypi` environment permits deployments from the `main` branch only.
+No API token is stored in the repository. For a new PyPI project, configure a
+[pending trusted publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
+before its first upload. Publication fails on existing versions;
 do not replace artifacts or skip that failure. After publishing, verify the
 registry's version, hashes, install, and imports before submitting a LangChain
 integration listing.

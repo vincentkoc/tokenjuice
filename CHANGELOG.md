@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document PyPI installation for the published Python framework adapters.
+
 - Build licensed Python wheel/source distributions, test native framework adapters from the installed wheel, and add manual PyPI trusted publishing for reviewed main commits.
 
 - Add a self-contained Hermes source plugin with a version floor for exact-commit catalog installations; verify source and bundled plugin lifecycles in CI.

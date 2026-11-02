@@ -241,6 +241,7 @@ jobs:
       - name: Verify native Hermes plugin lifecycle and model requests
         run: |
           "$RUNNER_TEMP/tokenjuice-python/bin/python" scripts/hermes-e2e.py "$RUNNER_TEMP/tokenjuice-hermes"
+          "$RUNNER_TEMP/tokenjuice-python/bin/python" scripts/hermes-e2e.py "$RUNNER_TEMP/tokenjuice-hermes" dist src/python/tokenjuice_integrations
 
   package:
     runs-on: ubuntu-latest

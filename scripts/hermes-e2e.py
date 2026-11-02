@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 vendor = Path(sys.argv[1]).resolve()
 dist = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else Path(__file__).resolve().parents[1] / "dist"
+plugin_source = Path(sys.argv[3]).resolve() if len(sys.argv) > 3 else dist / "hosts/hermes/bundle"
 sys.path.insert(0, str(vendor))
 
 with tempfile.TemporaryDirectory(prefix="tokenjuice-hermes-native-") as temp:
@@ -27,7 +28,7 @@ with tempfile.TemporaryDirectory(prefix="tokenjuice-hermes-native-") as temp:
     launcher.chmod(0o755)
     os.environ["TOKENJUICE_BIN"] = str(launcher)
     plugin = home / "plugins/tokenjuice"
-    shutil.copytree(dist / "hosts/hermes/bundle", plugin)
+    shutil.copytree(plugin_source, plugin)
     (home / "config.yaml").write_text("plugins:\n  enabled: [tokenjuice]\n  disabled: []\n")
     from hermes_cli.plugin_dev import doctor_plugin
     report = doctor_plugin(plugin)

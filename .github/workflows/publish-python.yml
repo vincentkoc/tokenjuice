@@ -1,0 +1,87 @@
+name: Publish Python
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: "Full SHA of a reviewed main commit with successful CI"
+        required: true
+        type: string
+      version:
+        description: "Stable version matching package.json (for example 0.10.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: python-pypi-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require a validated main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          relation=$(gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...main" --jq .status)
+          [[ "$relation" == ahead || "$relation" == identical ]]
+          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$SOURCE_SHA&event=push&per_page=100" \
+            --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml" and .head_branch == "main" and .conclusion == "success")] | length')
+          [[ "$passed" -gt 0 ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Build and check distributions
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; if (JSON.parse(readFileSync("package.json", "utf8")).version !== process.env.EXPECTED_VERSION) process.exit(1);'
+          node scripts/build-framework-adapters.mjs "$RUNNER_TEMP/tokenjuice-python-source"
+          python -m pip install build==1.6.1 twine==7.0.0
+          python -m build "$RUNNER_TEMP/tokenjuice-python-source/python" --outdir "$RUNNER_TEMP/tokenjuice-python-dist"
+          python -m twine check --strict "$RUNNER_TEMP/tokenjuice-python-dist/"*
+          python scripts/python-package-e2e.py "$RUNNER_TEMP/tokenjuice-python-dist"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: python-dist
+          path: ${{ runner.temp }}/tokenjuice-python-dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/tokenjuice-integrations
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-dist
+          path: python-dist
+      - name: Publish with PyPI trusted publishing
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          packages-dir: python-dist/

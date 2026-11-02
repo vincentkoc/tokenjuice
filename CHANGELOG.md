@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Build licensed Python wheel/source distributions, test native framework adapters from the installed wheel, and add manual PyPI trusted publishing for reviewed main commits.
+
 - Add a self-contained Hermes source plugin with a version floor for exact-commit catalog installations; verify source and bundled plugin lifecycles in CI.
 
 - Qualify T3-managed OpenCode V2 servers with native plugin install/uninstall, custom configuration propagation and model-visible result checks in pinned Linux CI.

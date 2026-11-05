@@ -216,7 +216,7 @@ jobs:
           node-version: 26
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
       - run: pnpm install --frozen-lockfile

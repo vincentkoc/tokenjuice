@@ -63,6 +63,11 @@ openclaw gateway restart
 
 Match the plugin to your OpenClaw version. See the [OpenClaw guide](https://docs.openclaw.ai/tools/tokenjuice) for host compatibility.
 
+The OpenClaw adapter compacts shell results, not Code Mode JavaScript results.
+Code Mode inputs carrying `code` pass through unchanged, even when OpenClaw
+also supplies that JavaScript in a `command` alias. Genuine shell `command`
+inputs still use the normal compaction and inspection-output protections.
+
 ## commands
 
 ```bash

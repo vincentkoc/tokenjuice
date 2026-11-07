@@ -1,4 +1,5 @@
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
+import { readOpenClawShellCommand } from "../../core/integrations/openclaw-command.js";
 import {
   buildCompactionNotice,
   buildTokenjuiceDetails,
@@ -49,10 +50,6 @@ function isExecLikeToolName(toolName: string | undefined): boolean {
   );
 }
 
-function readCommand(input: unknown): string {
-  return isRecord(input) && typeof input.command === "string" ? input.command : "";
-}
-
 function readCwd(input: unknown, details: unknown, fallback: string): string {
   if (isRecord(input) && typeof input.workdir === "string" && input.workdir.trim()) {
     return input.workdir;
@@ -95,7 +92,7 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
         return undefined;
       }
 
-      const command = readCommand(event.input);
+      const command = readOpenClawShellCommand(event.input);
       if (!command) {
         return undefined;
       }

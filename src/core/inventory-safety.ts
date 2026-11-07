@@ -307,6 +307,10 @@ function isSafeRepositoryInventorySource(argv: string[]): boolean {
 
 export function isRepositoryInventoryCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
   const argv = input.argv?.length ? getEffectiveCommandArgv(input) : getRepositoryInventorySourceArgv(input.command ?? "");
+  return isRepositoryInventoryArgv(argv);
+}
+
+function isRepositoryInventoryArgv(argv: string[]): boolean {
   const argv0 = getCommandName(argv);
   if (!argv0) {
     return false;
@@ -355,11 +359,16 @@ export function isSafeRepositoryInventoryPipeline(command: string): boolean {
 
 export function isRepositoryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
   const argv = input.argv?.length ? getEffectiveCommandArgv(input) : getRepositoryInventorySourceArgv(input.command ?? "");
+  return isPreparedRepositoryInspection({ argv, fileContent: isFileContentInspectionCommand(input) });
+}
+
+function isPreparedRepositoryInspection(analysis: { argv: string[]; fileContent: boolean }): boolean {
+  const { argv, fileContent } = analysis;
   const argv0 = getCommandName(argv);
-  if (isFileContentInspectionCommand(input)) {
+  if (fileContent) {
     return true;
   }
-  if (isRepositoryInventoryCommand(input)) {
+  if (isRepositoryInventoryArgv(argv)) {
     return true;
   }
   if (argv0 && REPO_INSPECTION_ONLY_COMMANDS.has(argv0)) {
@@ -391,7 +400,8 @@ export function getInspectionCommandSkipReason(
     return isRepositoryInspectionCommand({ command }) ? "inspection-command" : null;
   }
 
-  if (isFileContentInspectionCommand({ command }) && !hasCommandOnlyFileContentSummary(command)) {
+  const fileContent = isFileContentInspectionCommand({ command });
+  if (fileContent && !hasCommandOnlyFileContentSummary(command)) {
     return "file-content-inspection-command";
   }
 
@@ -399,9 +409,9 @@ export function getInspectionCommandSkipReason(
     return null;
   }
 
-  if (isRepositoryInspectionCommand({ command })) {
-    const sourceArgv = getRepositoryInventorySourceArgv(command);
-    const argv0 = getCommandName(sourceArgv);
+  const analysis = { argv: getRepositoryInventorySourceArgv(command), fileContent };
+  if (isPreparedRepositoryInspection(analysis)) {
+    const argv0 = getCommandName(analysis.argv);
     if (argv0 && REPO_INSPECTION_ONLY_COMMANDS.has(argv0)) {
       return "inspection-command";
     }

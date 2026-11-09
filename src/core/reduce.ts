@@ -266,13 +266,13 @@ function selectInlineText(
   classification: { family: string },
   input: ToolExecutionInput,
   rawText: string,
+  rawChars: number,
   compactText: string,
   maxInlineChars: number,
   compactCompaction: CompactionMetadata,
   noOmit = false,
 ): { text: string; compaction: CompactionMetadata } {
   const passthroughText = buildPassthroughText(input, rawText);
-  const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
   if (noOmit) {
     return {
@@ -299,13 +299,14 @@ function selectInlineText(
     };
   }
   const passthroughLimit = classification.family === "help" ? maxInlineChars : TINY_OUTPUT_MAX_CHARS;
-  if (countTextChars(passthroughText) > passthroughLimit) {
+  const passthroughChars = countTextChars(passthroughText);
+  if (passthroughChars > passthroughLimit) {
     return {
       text: compactText,
       compaction: compactCompaction,
     };
   }
-  if (countTextChars(passthroughText) <= countTextChars(compactText)) {
+  if (passthroughChars <= compactChars) {
     return {
       text: passthroughText,
       compaction: NO_COMPACTION_METADATA,
@@ -611,7 +612,7 @@ export async function reduceExecutionWithRules(
     facts,
     opts.noOmit,
   );
-  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction, opts.noOmit);
+  const selectedText = selectInlineText(classification, reducerInput, rawText, measuredRawChars, compactText, maxInlineChars, compaction, opts.noOmit);
   const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
   const inlineText = clamp(selectedText.text, maxInlineChars, opts.noOmit);
   const reducedChars = countTextChars(inlineText.text);

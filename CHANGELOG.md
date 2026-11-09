@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+- Lower allocation in text clipping and command analysis without changing compaction output.
+
 ## 0.11.0 - 2026-11-08
 
 - Preserve OpenClaw Code Mode tool results by excluding JavaScript command aliases from shell-output compaction.
+
 
 - Document PyPI installation for the published Python framework adapters.
 

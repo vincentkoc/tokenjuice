@@ -4,6 +4,8 @@
 
 - Lower allocation in text clipping and command analysis without changing compaction output.
 
+- Store telemetry command-family fixtures sequentially so a brief metadata-segment lock retry does not fail the test.
+
 ## 0.11.0 - 2026-11-08
 
 - Preserve OpenClaw Code Mode tool results by excluding JavaScript command aliases from shell-output compaction.

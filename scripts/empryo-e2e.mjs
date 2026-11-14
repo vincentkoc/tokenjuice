@@ -144,7 +144,7 @@ async function session(wrapped, afterObserver = false) {
     if (wrapped && item.id !== "raw") {
       assert.ok(input.command.includes("--keep-failures"));
       assert.ok(input.command.includes("--source empryo"));
-      assert.ok(input.command.includes(" -c "));
+      assert.match(input.command, /\/sh -c /u);
       assert.ok(!input.command.includes(" -lc "));
     } else {
       assert.equal(input.command, item.command);
@@ -189,14 +189,14 @@ await appendFile(process.argv[2], JSON.stringify({label: process.argv[3], input:
   const version = (await run(process.execPath, [host, "--version"])).stdout.trim();
   assert.equal(version, "soulforge 2.20.25");
   const baseline = await session(false);
-  await run(process.execPath, [cli, "install", "empryo"]);
+  await run(process.execPath, [cli, "install", "empryo", "--local"]);
   const installedSettings = JSON.parse(await readFile(settings, "utf8"));
   assert.equal(installedSettings.fixtureSentinel, custom.fixtureSentinel);
   assert.deepEqual(installedSettings.hooks.PreToolUse[0], group("before"));
   assert.equal(installedSettings.hooks.PreToolUse.length, 2);
   installedSettings.hooks.PreToolUse.push(group("after"));
   await writeFile(settings, JSON.stringify(installedSettings));
-  const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "empryo", "--format", "json"])).stdout);
+  const doctor = JSON.parse((await run(process.execPath, [cli, "doctor", "empryo", "--local", "--format", "json"])).stdout);
   assert.equal(doctor.status, "ok");
   const installed = await session(true, true);
   await run(process.execPath, [cli, "uninstall", "soulforge"]);

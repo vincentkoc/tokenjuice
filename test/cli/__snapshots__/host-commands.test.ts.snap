@@ -9092,7 +9092,7 @@ exports[`host CLI commands > install, doctor, and uninstall empryo 1`] = `
 [stdout] health: disabled
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 
@@ -9111,7 +9111,7 @@ $ tokenjuice doctor empryo
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] configured command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 
@@ -9121,7 +9121,7 @@ $ tokenjuice doctor empryo --format json
   "expectedCommand": "<NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "fixCommand": "tokenjuice install empryo",
   "advisories": [
-    "Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run."
+    "Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits."
   ],
   "detectedCommand": "<NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "issues": [],
@@ -9160,7 +9160,7 @@ $ tokenjuice doctor empryo
 [stdout] health: disabled
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 "
@@ -9172,7 +9172,7 @@ exports[`host CLI commands > install, doctor, and uninstall soulforge 1`] = `
 [stdout] health: disabled
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 
@@ -9191,7 +9191,7 @@ $ tokenjuice doctor soulforge
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] configured command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 
@@ -9201,7 +9201,7 @@ $ tokenjuice doctor soulforge --format json
   "expectedCommand": "<NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "fixCommand": "tokenjuice install empryo",
   "advisories": [
-    "Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run."
+    "Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits."
   ],
   "detectedCommand": "<NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "issues": [],
@@ -9240,7 +9240,7 @@ $ tokenjuice doctor soulforge
 [stdout] health: disabled
 [stdout] expected command: <NODE> '<LAUNCHER>' empryo-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.
+[stdout] - Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.
 [stdout] repair: tokenjuice install empryo
 exit 0
 "

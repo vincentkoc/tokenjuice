@@ -74,7 +74,7 @@ CLI compatibility; they are not E2E evidence.
 | [`docker-agent`](docker-agent-integration.md), `dockeragent`, `cagent` | [File contract](../test/hosts/docker-agent.test.ts) | Unqualified; see guide. |
 | [`eca`](eca-integration.md) | [File contract](../test/hosts/eca.test.ts) | Unqualified; see guide. |
 | [`elyra`](elyra-integration.md) | [File contract](../test/hosts/elyra.test.ts) | Unqualified; see guide. |
-| [`empryo`](empryo-integration.md), `soulforge` | [File and payload contracts](../test/hosts/empryo.test.ts) | Unqualified; see guide. |
+| [`empryo`](empryo-integration.md), `soulforge` | [File and payload contracts](../test/hosts/empryo.test.ts); [native CLI fixture](../scripts/empryo-e2e.mjs) | Native `2.20.25` hooks, lifecycle, default denial and follow-up model requests; host failure-output limits remain. |
 | [`firebase-studio`](firebase-studio-integration.md) | [File contract](../test/hosts/firebase-studio.test.ts) | Unqualified; see guide. |
 | [`forgecode`](forgecode-integration.md), `forge-code` | [File contract](../test/hosts/forgecode.test.ts) | Unqualified; see guide. |
 | [`gemini-cli`](gemini-cli-integration.md) | [Native fixture](../scripts/gemini-e2e.mjs) | Pinned CLI only; see the fixture and guide. |

@@ -25,7 +25,7 @@ export type UninstallEmpryoHookResult = { settingsPath: string; removed: boolean
 export type EmpryoDoctorReport = HookCommandDoctorReport<"settingsPath">;
 
 const SUBCOMMAND = "empryo-pre-tool-use";
-const ADVISORY = "Empryo / SoulForge PreToolUse wrapping; native session acceptance is unqualified. Inherited Claude hooks still run.";
+const ADVISORY = "Empryo / SoulForge PreToolUse wrapping; inherited Claude hooks still run. See the integration guide for native output limits.";
 const WINDOWS_ISSUE = "Empryo wrapping requires a POSIX shell; use WSL or explicit wrapping on native Windows.";
 
 function projectDir(options: EmpryoHookOptions): string {

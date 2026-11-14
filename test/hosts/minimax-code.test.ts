@@ -38,8 +38,7 @@ describe("MiniMax Code native pre-tool plugin", () => {
     } });
     const wrapped = parseWrappedCommand(response.hookSpecificOutput.updatedInput.command);
     expect(wrapped).toMatchObject({ launcher: ["/opt/tokenjuice"], inner: "git status", shellFlag: "-lc", wrapDepth: 1 });
-    expect(response.hookSpecificOutput.updatedInput.command).toContain("--keep-failures");
-    expect(response.hookSpecificOutput.updatedInput.command).toContain("--source 'minimax-code'");
+    expect(wrapped.wrapArgs).toEqual(["--keep-failures", "--source", "minimax-code"]);
   });
 
   it.each([

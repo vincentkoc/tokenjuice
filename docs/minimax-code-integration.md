@@ -10,6 +10,7 @@ The source contract was checked against MiniMax Code `0.7.2`, revision
 
 - [native plugin reader](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/plugin-system/plugin/package/minimax-reader.ts)
 - [hook input and output parser](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-modules/plugin-hooks/src/runner.ts)
+- [validated input application before permission checks](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/turn-system/agent-host/execution/plugin-hook-tool-lifecycle.ts)
 - [local plugin management](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/docs/examples.md#4-manage-plugins)
 
 ## Install and verify

@@ -44,20 +44,9 @@ guide for its contract, install scope and verification steps.
 | [Grok Build](grok-build-integration.md) | Project `AGENTS.md` guidance; `install grok-build`. Passive hook stdout cannot replace tool results. | Instruction lifecycle tests. | Fresh Build session loading and command adherence; keep the instruction file visible to the host's ignore rules. |
 | [Community Grok CLI](grok-cli-integration.md) | Explicit `tokenjuice wrap`; automatic hook retired. Legacy uninstall remains available. | Native macOS arm64 standalone from npm `grok-dev@1.1.7` reports `1.1.4`: checks model requests, explicit wrapping, raw output and native failure flags; configured hooks do not run. | The separate JavaScript entrypoint, other versions/platforms and remote providers remain unqualified. This is not xAI Grok Build or Grok Bot. |
 
+| [MiniMax Code](minimax-code-integration.md) | Native local plugin; foreground `bash` input wrapping. | Unit tests cover input preservation and bypass behavior. Packaged hook contracts exercise compaction, exact reads, raw output and complete failed streams using synthetic payloads. | Source contract: `0.7.2` at `3c21163c85a9684030cb147bfef48c6284fa3c46`. Native discovery, permissions and model-visible delivery remain unqualified. |
+
 ## Acceptance record
-
-### MiniMax Code
-
-The [MiniMax Code plugin](minimax-code-integration.md) wraps native foreground
-`bash` inputs through the shared wrapper. Unit tests cover payload parsing,
-input preservation, raw/double-wrap bypass, missing shells and Windows bypass.
-The packaged hook contract executes rewritten commands for compaction, exact
-reads, raw output and complete failed streams. These are synthetic hook tests;
-native plugin discovery, permissions and next-model-request delivery remain
-unqualified. The audited source contract is MiniMax Code `0.7.2` at
-`3c21163c85a9684030cb147bfef48c6284fa3c46`.
-
-
 For a new host/version, record these facts without copying private transcripts:
 
 1. Host and tokenjuice versions, execution machine class, configuration scope and

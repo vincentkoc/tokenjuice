@@ -51,7 +51,7 @@ describe("generic failure details", () => {
   it("keeps every short diagnostic that fits before adding progress context", async () => {
     const data = input();
     const lines = data.combinedText.split("\n");
-    for (let index = 0; index < 8; index++) lines[index * 10] = `Error: cause-${index}`;
+    for (let index = 0; index < 8; index++) lines[index * 9] = `Error: cause-${index}`;
     data.combinedText = lines.join("\n");
     const result = await reduceExecution(data, { maxInlineChars: 512, recordStats: false });
     for (let index = 0; index < 8; index++) expect(result.inlineText).toContain(`Error: cause-${index}`);

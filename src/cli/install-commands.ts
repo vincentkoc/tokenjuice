@@ -1,3 +1,4 @@
+import { installMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1063,6 +1064,15 @@ const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (
   ]));
 });
 
+const installMisterMorphCommand = createHostCommand(() => installMisterMorphSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("mister-morph", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Mister Morph" },
+    { label: "Verify", value: "tokenjuice doctor mister-morph" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1359,6 +1369,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
+  ["mister-morph", installMisterMorphCommand],
   ["qoderwork", installQoderWorkCommand],
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],

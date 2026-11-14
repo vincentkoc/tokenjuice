@@ -132,3 +132,5 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [WorkBuddy desktop integration](workbuddy-integration.md)
 - [Zed integration](zed-integration.md)
 - [Zencoder integration](zencoder-integration.md)
+
+- [Mister Morph integration](mister-morph-integration.md) — native guidance skill.

@@ -62,6 +62,7 @@ import { doctorGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { doctorGooseHints } from "../hosts/goose/index.js";
 import { doctorGreptileRule } from "../hosts/greptile/index.js";
 import { doctorGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { doctorFxInstructions } from "../hosts/fx/index.js";
 import { doctorGrokBotRule } from "../hosts/grok-bot/index.js";
 import { doctorGrokCliHook } from "../hosts/grok-cli/index.js";
 import { doctorGptmeInstructions } from "../hosts/gptme/index.js";
@@ -442,6 +443,7 @@ const doctorGptmeCommand = createFileDoctorCommand("instructions", "instructions
 const doctorJean2Command = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJean2Instructions());
 
 const doctorGrokBuildCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGrokBuildInstructions(), true);
+const doctorFxCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorFxInstructions(), true);
 
 const doctorGrokBotCommand = createFileDoctorCommand("rule", "rulePath", () => doctorGrokBotRule(), true);
 
@@ -743,6 +745,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["gptme", doctorGptmeCommand],
   ["jean2", doctorJean2Command],
   ["grok-build", doctorGrokBuildCommand],
+  ["fx", doctorFxCommand],
   ["grok-bot", doctorGrokBotCommand],
   ["grokbot", doctorGrokBotCommand],
   ["goose", doctorGooseCommand],

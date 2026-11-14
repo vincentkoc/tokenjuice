@@ -63,6 +63,7 @@ import { installGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { installGooseHints } from "../hosts/goose/index.js";
 import { installGreptileRule } from "../hosts/greptile/index.js";
 import { installGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { installFxInstructions } from "../hosts/fx/index.js";
 import { installGrokBotRule } from "../hosts/grok-bot/index.js";
 import { installGrokCliHook } from "../hosts/grok-cli/index.js";
 import { installGptmeInstructions } from "../hosts/gptme/index.js";
@@ -719,6 +720,14 @@ const installJean2Command = createFileInstallCommand(() => installJean2Instructi
   beta: "instruction-file guidance; Jean2 still owns command execution",
 });
 
+const installFxCommand = createFileInstallCommand(() => installFxInstructions(), {
+  target: "fx",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; fx still owns command execution",
+});
+
 const installGrokBuildCommand = createFileInstallCommand(() => installGrokBuildInstructions(), {
   target: "grok-build",
   noun: "instructions",
@@ -1318,6 +1327,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["gptme", installGptmeCommand],
   ["jean2", installJean2Command],
   ["grok-build", installGrokBuildCommand],
+  ["fx", installFxCommand],
   ["grok-bot", installGrokBotCommand],
   ["grokbot", installGrokBotCommand],
   ["goose", installGooseCommand],

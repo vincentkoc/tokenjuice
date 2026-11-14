@@ -79,6 +79,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Elyra integration](elyra-integration.md)
 - [Firebase Studio integration](firebase-studio-integration.md)
 - [ForgeCode integration](forgecode-integration.md)
+- [fx integration](fx-integration.md)
 - [Gemini CLI integration](gemini-cli-integration.md)
 - [GitLab Duo integration](gitlab-duo-integration.md)
 - [Goose integration](goose-integration.md)

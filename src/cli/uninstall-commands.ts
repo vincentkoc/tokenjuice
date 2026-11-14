@@ -62,6 +62,7 @@ import { uninstallGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { uninstallGooseHints } from "../hosts/goose/index.js";
 import { uninstallGreptileRule } from "../hosts/greptile/index.js";
 import { uninstallGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { uninstallFxInstructions } from "../hosts/fx/index.js";
 import { uninstallGrokBotRule } from "../hosts/grok-bot/index.js";
 import { uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
 import { uninstallGptmeInstructions } from "../hosts/gptme/index.js";
@@ -317,6 +318,7 @@ const uninstallGptmeCommand = createFileUninstallCommand("gptme", "instructions"
 const uninstallJean2Command = createFileUninstallCommand("jean2", "instructions", "instructionsPath", () => uninstallJean2Instructions());
 
 const uninstallGrokBuildCommand = createFileUninstallCommand("grok-build", "instructions", "instructionsPath", () => uninstallGrokBuildInstructions());
+const uninstallFxCommand = createFileUninstallCommand("fx", "instructions", "instructionsPath", () => uninstallFxInstructions());
 
 const uninstallGrokBotCommand = createHostCommand(() => uninstallGrokBotRule(), (result) => {
   process.stdout.write(`removed grok-bot rule: ${result.removed ? "yes" : "no"}\n`);
@@ -592,6 +594,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["gptme", uninstallGptmeCommand],
   ["jean2", uninstallJean2Command],
   ["grok-build", uninstallGrokBuildCommand],
+  ["fx", uninstallFxCommand],
   ["grok-bot", uninstallGrokBotCommand],
   ["grokbot", uninstallGrokBotCommand],
   ["goose", uninstallGooseCommand],

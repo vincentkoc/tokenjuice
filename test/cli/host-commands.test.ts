@@ -72,6 +72,7 @@ const HOST_TARGETS = [
   "firebase-studio",
   "forge-code",
   "forgecode",
+  "fx",
   "gemini-cli",
   "gitlab-duo",
   "goose",

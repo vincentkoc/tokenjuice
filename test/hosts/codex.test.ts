@@ -1525,6 +1525,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
     expect(debug.compaction?.authoritative).toBe(true);
+    expect(debug.compaction?.kinds).toContain("rule-line-filter");
   });
 
   it("leaves machine-readable JSON in the original tool result only", async () => {

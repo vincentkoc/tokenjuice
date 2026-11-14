@@ -1,3 +1,4 @@
+import { doctorCodelyCliHook, type CodelyCliDoctorReport } from "../codely-cli/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -157,6 +158,7 @@ export type HookIntegrationDoctorReport = {
   elyra: ElyraDoctorReport;
   "firebase-studio": FirebaseStudioDoctorReport;
   forgecode: ForgeCodeDoctorReport;
+  "codely-cli": CodelyCliDoctorReport;
   "gemini-cli": GeminiCliDoctorReport;
   "gitlab-duo": GitLabDuoDoctorReport;
   goose: GooseDoctorReport;
@@ -281,6 +283,7 @@ const hookDoctorIntegrationDoctors = {
   elyra: (options) => doctorElyraSkill(undefined, getHookCommandOptions(options)),
   "firebase-studio": (options) => doctorFirebaseStudioRule(undefined, getHookCommandOptions(options)),
   forgecode: (options) => doctorForgeCodeInstructions(undefined, getHookCommandOptions(options)),
+  "codely-cli": (options) => doctorCodelyCliHook(undefined, getHookCommandOptions(options)),
   "gemini-cli": (options) => doctorGeminiCliHook(undefined, getHookCommandOptions(options)),
   "gitlab-duo": (options) => doctorGitLabDuoRule(undefined, getHookCommandOptions(options)),
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),

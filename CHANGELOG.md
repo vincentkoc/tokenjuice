@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add Tuanjie Codely CLI native BeforeTool wrapping with safe settings lifecycle and explicit native-acceptance limits.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

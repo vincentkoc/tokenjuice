@@ -1,3 +1,4 @@
+import { installCodelyCliHook } from "../hosts/codely-cli/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -667,6 +668,18 @@ const installForgecodeCommand = createFileInstallCommand(() => installForgeCodeI
   beta: "ForgeCode AGENTS.md guidance; ForgeCode still owns command execution",
 });
 
+const installCodelyCliCommand = createHostCommand((args) => installCodelyCliHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Hook", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "BeforeTool wrapping; Codely CLI retains permission policy" },
+    { label: "Verify", value: `tokenjuice doctor codely-cli${args.local ? " --local" : ""}` },
+    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+  ];
+  if (result.backupPath) details.push({ label: "Backup", value: result.backupPath });
+  process.stdout.write(formatInstallSuccess("codely-cli", "hook", details));
+});
+
 const installGeminiCliCommand = createHostCommand((args) => installGeminiCliHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1312,6 +1325,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["firebase-studio", installFirebaseStudioCommand],
   ["forgecode", installForgecodeCommand],
   ["forge-code", installForgecodeCommand],
+  ["codely-cli", installCodelyCliCommand],
   ["gemini-cli", installGeminiCliCommand],
   ["gitlab-duo", installGitlabDuoCommand],
   ["grok-cli", installGrokCliCommand],

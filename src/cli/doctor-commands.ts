@@ -1,3 +1,4 @@
+import { doctorCodelyCliHook } from "../hosts/codely-cli/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -409,6 +410,17 @@ const doctorFirebaseStudioCommand = createFileDoctorCommand("rules", "rulePath",
 
 const doctorForgecodeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorForgeCodeInstructions(), true);
 
+const doctorCodelyCliCommand = createDoctorCommand((args) => doctorCodelyCliHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorGeminiCliCommand = createDoctorCommand((args) => doctorGeminiCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -737,6 +749,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["firebase-studio", doctorFirebaseStudioCommand],
   ["forgecode", doctorForgecodeCommand],
   ["forge-code", doctorForgecodeCommand],
+  ["codely-cli", doctorCodelyCliCommand],
   ["gemini-cli", doctorGeminiCliCommand],
   ["gitlab-duo", doctorGitlabDuoCommand],
   ["grok-cli", doctorGrokCliCommand],

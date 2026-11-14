@@ -1,3 +1,5 @@
+export { installMiniQSkill, doctorMiniQSkill, uninstallMiniQSkill } from "./hosts/miniq/index.js";
+export type { MiniQSkillOptions } from "./hosts/miniq/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";

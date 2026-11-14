@@ -24,7 +24,7 @@ export function buildManagedSkill(spec: ManagedSkillSpec): string {
     "---", "", marker(spec), "# tokenjuice terminal output compaction", "",
     "- Before wrapping a command, run `tokenjuice --version` inside the actual tool execution environment. In Bash, also check `command -v tokenjuice`.",
     "- If tokenjuice is unavailable there, report the missing dependency. A desktop installation does not establish availability inside a VM, container or remote shell.",
-    ...buildTokenjuiceGuidanceBullets({ wrapBullet: spec.wrapBullet }),
+    ...buildTokenjuiceGuidanceBullets(spec.wrapBullet === undefined ? {} : { wrapBullet: spec.wrapBullet }),
     "- These instructions guide command selection; the host retains execution and approval decisions.", "",
   ].join("\n");
 }

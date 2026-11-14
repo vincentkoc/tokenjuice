@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 
 import { doctorManagedSkill, installManagedSkill, uninstallManagedSkill } from "../shared/managed-skill.js";
 
-export type CraftAgentsSkillOptions = { workspaceDir?: string };
+export type CraftAgentsSkillOptions = { workspaceDir?: string | undefined };
 
 const FIX_COMMAND = "tokenjuice install craft-agents <workspace-dir>";
 const ADVISORY = "Craft Agents support is skill-based. Doctor checks the selected workspace file, not native skill discovery or command execution.";

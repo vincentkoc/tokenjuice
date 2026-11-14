@@ -62,6 +62,7 @@ const HOST_TARGETS = [
   "crush",
   "cursor",
   "deepagents",
+  "deveco",
   "devin",
   "docker-agent",
   "dockeragent",
@@ -171,7 +172,7 @@ async function enterSandbox(): Promise<string> {
 
   const env: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(savedEnv)) {
-    if (key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.startsWith("XDG_")) {
+    if (key === "DEVECO_CONFIG_DIR" || key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.startsWith("XDG_")) {
       continue;
     }
     env[key] = value;

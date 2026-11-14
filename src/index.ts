@@ -1,3 +1,5 @@
+export { installDevEcoExtension, doctorDevEcoExtension, uninstallDevEcoExtension } from "./hosts/deveco/index.js";
+export type { DevEcoOptions } from "./hosts/deveco/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";

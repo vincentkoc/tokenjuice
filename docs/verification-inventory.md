@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 105 handlers
-and 123 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 106 handlers
+and 124 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -69,6 +69,7 @@ CLI compatibility; they are not E2E evidence.
 | [`crush`](crush-integration.md) | [Native fixture](../scripts/crush-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`cursor`](cursor-integration.md) | [Hook contract](../scripts/hook-contracts.mjs) | Native loading/model delivery unqualified; see guide. |
 | [`deepagents`](deepagents-integration.md) | [File contract](../test/hosts/deepagents.test.ts) | Unqualified; see guide. |
+| [`deveco`](deveco-integration.md) | [Source contract](../test/hosts/deveco.test.ts) and [file lifecycle](../test/hosts/deveco-install.test.ts) | Unqualified; source snapshot and limits in guide. |
 | [`devin`](devin-integration.md) | [File contract](../test/hosts/devin.test.ts) | Hook lifecycle only; selected native/cloud environment unqualified. |
 | [`dot-agents`](dot-agents-integration.md) | [File contract](../test/hosts/dot-agents.test.ts) | Unqualified; see guide. |
 | [`docker-agent`](docker-agent-integration.md), `dockeragent`, `cagent` | [File contract](../test/hosts/docker-agent.test.ts) | Unqualified; see guide. |

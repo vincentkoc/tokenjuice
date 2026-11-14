@@ -61,6 +61,33 @@ response without changing tool input. The hook does not grant permission.
 Adapter tests cover the documented JSON contract, lifecycle, custom settings,
 disable controls, symlinks, raw bypass, and preservation of other tool arguments.
 These fixtures do not prove Codely's configuration discovery or model-visible
-results. A native session must still verify a noisy successful command, an exact
-read, raw bypass, and a long failing command, plus hook removal. Cowork desktop
-requires its own acceptance session.
+results.
+
+A native probe used the public
+[`@unity-china/codely-cli@1.0.0-rc.73`](https://www.npmjs.com/package/@unity-china/codely-cli/v/1.0.0-rc.73)
+distribution, an empty temporary home and project, and a loopback HTTP endpoint.
+The package tarball was verified against its registry SHA-512 integrity:
+
+```text
+sha512-Df8STLvf9qOiZj8S0UX8vW+pu/F20ZX7mIcIDeZpJPGoP6985F00HupudOYmSH+SnaAsWIbn93vjKY6FUzHzRQ==
+```
+
+With `CUSTOM_AUTH=1`, a dummy `OPENAI_API_KEY`, and `OPENAI_BASE_URL` pointing to
+the loopback endpoint, the native invocation was:
+
+```bash
+codely --auth openai --wire-api responses -m fixture \
+  -p 'Run pwd with run_shell_command, then finish.' \
+  --output-format json --approval-mode yolo
+```
+
+It exited with status 1 because Codely OAuth was required first. The loopback
+endpoint received zero requests. Custom provider configuration therefore does
+not provide credential-free native acceptance for this release. No credentials
+or authentication state were fabricated for the probe.
+
+An authorized, authenticated Codely session must still verify settings and hook
+discovery, policy checks after rewriting, a noisy successful command, an exact
+read, raw bypass, a long failing command, and hook removal in subsequent model
+requests. These checks remain unverified. Cowork desktop requires its own
+acceptance session.

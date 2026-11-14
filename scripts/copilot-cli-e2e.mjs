@@ -142,6 +142,19 @@ async function session({ trustFolder = adapter === "copilot-agent" } = {}) {
   return new Map(observed);
 }
 
+function assertSameFailureOutput(actual, expected) {
+  // Independent stdout/stderr pipes may arrive in either order across runs.
+  // Keep stdout and the native completion footer exact, and require stderr once.
+  for (const result of [actual, expected]) {
+    assert.equal(result.match(/^failure-stderr$/gmu)?.length, 1);
+  }
+  assert.equal(
+    actual.replace(/^failure-stderr\n/mu, ""),
+    expected.replace(/^failure-stderr\n/mu, ""),
+    "failure stdout and completion footer",
+  );
+}
+
 try {
   await mkdir(configDir, { recursive: true });
   await mkdir(env.TMPDIR, { recursive: true });
@@ -180,7 +193,10 @@ process.stdout.write(output);
   await writeFile(hooksPath, JSON.stringify(hooks));
   if (adapter === "copilot-agent") {
     const untrusted = await session({ trustFolder: false });
-    assert.deepEqual(untrusted, baseline, "untrusted repository hooks must not execute");
+    for (const { id } of cases) {
+      if (id === "failure") assertSameFailureOutput(untrusted.get(id), baseline.get(id));
+      else assert.equal(untrusted.get(id), baseline.get(id), "untrusted repository hooks must not execute");
+    }
     await assert.rejects(readFile(receipt), { code: "ENOENT" });
   }
   const installed = await session();
@@ -201,16 +217,7 @@ process.stdout.write(output);
   assert.ok(installed.get("listing").length < baseline.get("listing").length);
   assert.match(installed.get("listing"), /^80 matches\n/u);
   for (const id of ["exact", "wrapped", "raw"]) assert.equal(installed.get(id), baseline.get(id), id);
-  // Independent stdout/stderr pipes may arrive in either order across runs.
-  // Keep stdout and the native completion footer exact, and require stderr once.
-  for (const result of [baseline.get("failure"), installed.get("failure")]) {
-    assert.equal(result.match(/^failure-stderr$/gmu)?.length, 1);
-  }
-  assert.equal(
-    installed.get("failure").replace(/^failure-stderr\n/mu, ""),
-    baseline.get("failure").replace(/^failure-stderr\n/mu, ""),
-    "failure stdout and completion footer",
-  );
+  assertSameFailureOutput(installed.get("failure"), baseline.get("failure"));
   assert.ok(baseline.get("wrapped").length < baseline.get("listing").length);
   assert.match(baseline.get("wrapped"), /80 matches/u);
   const failed = baseline.get("failure");

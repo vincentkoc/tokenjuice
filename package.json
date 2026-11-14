@@ -74,7 +74,8 @@
     "test": "pnpm generate:builtin-rules && vitest run",
     "typecheck": "pnpm generate:builtin-rules && tsc -p tsconfig.json --noEmit",
     "verify": "pnpm lint && pnpm lint:circular && pnpm typecheck && pnpm test",
-    "verify:package": "pnpm build && pnpm contracts && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula"
+    "verify:package": "pnpm build && pnpm contracts && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula",
+    "bench:quality": "node scripts/bench-quality.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
@@ -84,7 +85,8 @@
     "publint": "^0.3.25",
     "typescript": "^7.0.2",
     "vitest": "5.0.5",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "gpt-tokenizer": "4.1.2"
   },
   "pnpm": {
     "overrides": {

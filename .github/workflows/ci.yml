@@ -273,6 +273,9 @@ jobs:
       - name: Verify package outputs
         run: pnpm verify:package
 
+      - name: Measure delivered-output token quality
+        run: pnpm bench:quality
+
       - name: Setup Go
         uses: actions/setup-go@v7
         with:

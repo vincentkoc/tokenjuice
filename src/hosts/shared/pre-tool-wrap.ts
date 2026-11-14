@@ -155,13 +155,15 @@ export function buildWrappedCommand(params: {
   command: string;
   source?: string;
   nodePath?: string;
+  /** Preserve hosts that execute a non-login shell instead of loading a profile. */
+  loginShell?: boolean;
 }): string {
   const nodePath = params.nodePath ?? process.execPath;
   const launcherCommand = params.wrapLauncher.endsWith(".js")
     ? `${posixShellQuote(nodePath)} ${posixShellQuote(params.wrapLauncher)}`
     : posixShellQuote(params.wrapLauncher);
   const sourceArgs = params.source ? ` --source ${posixShellQuote(params.source)}` : "";
-  return `${launcherCommand} wrap --keep-failures${sourceArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
+  return `${launcherCommand} wrap --keep-failures${sourceArgs} -- ${posixShellQuote(params.shellPath)} ${params.loginShell === false ? "-c" : "-lc"} ${posixShellQuote(params.command)}`;
 }
 
 /**

@@ -24,12 +24,19 @@ PTY and `write_stdin` results pass through. Exact reads and explicit
 `tokenjuice wrap --raw -- <command>` calls retain their output. Existing
 content fields and execution metadata survive replacement.
 
-Unit tests cover the callback contract and all of these exclusions. Real Hana
-plugin loading, full-access admission, final model requests and UI consistency
-remain unverified. Qualify a fresh disposable session with a noisy successful
-command, an exact read, raw bypass, nonzero exit and an interactive command
-before relying on a given Hana version. Do not infer support from standalone
-Pi: Hana has its own `exec_command` schema and plugin lifecycle.
+Unit tests cover the callback contract and all of these exclusions. The
+`openhanako-native` CI job runs `scripts/openhanako-e2e.mjs` against pinned Hana
+v0.450.0 app-core source (`9a6cabf8c513db5edc6cf8179a538c9075885c6e`). It uses the
+real `PluginManager`, preferences, resource loader, session adapter and
+`exec_command` implementation with a loopback model endpoint. The fixture
+checks permission denial, grant and revocation, successful reduction, exact
+reads, raw bypass, nonzero exits and host truncation in isolated temporary
+state. It installs the delivered plugin bundle outside the source tree.
+
+Desktop UI consistency and interactive PTY behavior remain unverified. Qualify
+those in a fresh disposable desktop session before relying on a given Hana
+version. Do not infer support from standalone Pi: Hana has its own
+`exec_command` schema and plugin lifecycle.
 
 Contracts: [plugin SDK](https://github.com/liliMozi/openhanako/blob/main/PLUGIN_SDK.md),
 [plugin lifecycle](https://github.com/liliMozi/openhanako/blob/main/PLUGINS_EN.md),

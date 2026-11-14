@@ -68,6 +68,7 @@ describe("OmO result replacement", () => {
     const before = structuredClone(input);
     const result = await compactOmoResult(input, home);
     expect(result).toBeDefined();
+    expect(await compactOmoResult(input)).toBeDefined();
     expect(result!.content[0].text.length).toBeLessThan(input.content[0].text.length);
     expect(result!.content[0].text).toBe(result!.structuredContent.output);
     expect(result!.content[0].custom).toBe("keep");

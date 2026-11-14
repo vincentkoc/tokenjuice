@@ -18,7 +18,7 @@ export async function compactOmoResult(event: unknown, cwd?: string) {
     || (isRecord(event.details) && (event.details.truncation !== undefined || event.details.fullOutputPath !== undefined))) return undefined;
 
   const compacted = await compactBashResult({
-    source: "omo", command: event.input.command, cwd, visibleText: text, exitCode: 0,
+    source: "omo", command: event.input.command, ...(cwd === undefined ? {} : { cwd }), visibleText: text, exitCode: 0,
     inspectionPolicy: "allow-safe-inventory", maxInlineChars: 1200, skipCommandNames: ["tokenjuice"],
     genericFallbackMinSavedChars: 120, genericFallbackMaxRatio: 0.75, skipGenericFallbackForCompoundCommands: true,
   });

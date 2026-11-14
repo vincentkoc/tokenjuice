@@ -20,6 +20,10 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [repository guide](../AGENTS.md) — source layout and release procedure
 - [security](../SECURITY.md) — vulnerability reporting
 
+## research
+
+- [November 2026 compaction landscape](compaction-landscape-2026-11.md) — recent upstream changes, evidence limits, and prioritized tokenjuice follow-ups
+
 ## integration guides
 
 Some clients use automatic wrapping or result replacement. Others use guidance, manual imports, or explicit wrapping.

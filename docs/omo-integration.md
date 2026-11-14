@@ -47,8 +47,10 @@ and [extension discovery](https://github.com/code-yeongyu/senpi/blob/1f40baebd0c
 
 `scripts/omo-e2e.mjs` exercises the actual `omo-ai@5.1.70` launcher and its pinned
 `@code-yeongyu/senpi@2026.11.13` engine with a loopback model endpoint and dummy
-credentials. The local macOS run uses Node 26.7.0 and an isolated build of the
-current source. The CI job repeats it with the normal package build on Linux.
+credentials. Native acceptance passed on macOS with Node 26.7.0 and an isolated
+build of the current source. It also passed on Linux with Node 24 after the
+normal package build at commit `1608342e2c593b3e6a360d0900e8488d8d0d10ef`
+([native CI result](https://github.com/vincentkoc/tokenjuice/actions/runs/43574528156/job/132386008498)).
 
 Four fresh sessions with locally generated model responses verify the default `.omo/agent`
 discovery path, the `OMO_CODING_AGENT_DIR` override ahead of Senpi/Pi decoys,
@@ -60,5 +62,5 @@ adapter preserves that native baseline for exact/raw/failure cases.
 
 This pinned launcher emits text-only results; the adapter preserves that shape.
 The coherent structured variant is covered by core tests, not a claim that this
-launcher emits it. Other host versions, platforms and the terminal extension's
-PTY result schema require separate acceptance.
+launcher emits it. Other host versions, untested platform/runtime combinations
+and the terminal extension's PTY result schema require separate acceptance.

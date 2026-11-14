@@ -180,6 +180,7 @@ for truncation-related debugging, verify both boundaries explicitly:
 when adding a host integration, update:
 
 - [README integration catalog](../README.md#harness-and-framework-catalog) for the setup route and integration mode
+- [Logo sources](logos/README.md) for a verified, theme-safe mark; use a dash when no project mark is available
 - [documentation index](README.md) for the per-host guide
 - [support and verification](adapter-support-matrix.md) for test evidence and remaining acceptance work
 - the per-host guide for configuration, lifecycle, and runtime requirements

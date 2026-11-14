@@ -16,6 +16,8 @@
 
 - Lower allocation in text clipping and command analysis without changing compaction output.
 
+- Preserve diagnostic lines from the middle of failed generic logs, with nearby context and explicit omission markers.
+
 - Store telemetry command-family fixtures sequentially so a brief metadata-segment lock retry does not fail the test.
 
 - Measure complete text-mode wrapper output before accepting compaction, include recovery and tee overhead in statistics, and retain negative savings for expanded output.

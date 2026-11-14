@@ -52,11 +52,14 @@ describe("miniQ workspace skill", () => {
     }
     vi.stubEnv("HOME", project);
     vi.stubEnv("USERPROFILE", project);
+    for (const key of ["XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "APPDATA", "LOCALAPPDATA"]) {
+      vi.stubEnv(key, project);
+    }
     vi.resetModules();
     const { doctorInstalledHooks } = await import("../../src/hosts/shared/hook-doctor.js");
     const workspace = join(project, "other");
     const installed = await installMiniQSkill({ projectDir: workspace });
-    const report = await doctorInstalledHooks({ projectDir: workspace, homeDir: project });
+    const report = await doctorInstalledHooks({ projectDir: workspace, homeDir: project, binaryPath: process.execPath });
     expect(report.integrations.miniq.status).toBe("ok");
     expect(report.integrations.miniq.skillPath).toBe(installed.skillPath);
     expect((await doctorMiniQSkill()).status).toBe("disabled");

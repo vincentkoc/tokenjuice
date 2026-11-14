@@ -105,6 +105,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Ona integration](ona-integration.md)
 - [Open Interpreter integration](open-interpreter-integration.md)
 - [OpenCode V2 integration](opencode-v2-integration.md)
+- [OpenHanako integration](openhanako-integration.md)
 - [OpenHands integration](openhands-integration.md)
 - [Open WebUI integration](openwebui-integration.md)
 - [pi-go integration](pi-go-integration.md)

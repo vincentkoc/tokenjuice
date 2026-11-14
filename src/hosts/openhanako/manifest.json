@@ -1,0 +1,8 @@
+{
+  "id": "tokenjuice",
+  "name": "Tokenjuice",
+  "version": "0.0.0",
+  "description": "Compact completed successful shell output through Hana's native Pi extension API.",
+  "author": "Vincent Koc",
+  "trust": "full-access"
+}

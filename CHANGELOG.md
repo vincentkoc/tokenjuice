@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a native OpenHanako / HanaAgent result plugin for completed successful shell output, preserving execution metadata and bypassing partial or interactive results. A pinned Linux app-core fixture verifies native plugin permission gates and model-visible output; desktop and PTY acceptance remain unqualified.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

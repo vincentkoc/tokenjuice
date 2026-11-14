@@ -1,3 +1,4 @@
+import { installAtomCodeSkill } from "../hosts/atomcode/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1045,6 +1046,14 @@ const installQoderCliCommand = createHostCommand((args) => installQoderHook(unde
   process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
 });
 
+const installAtomCodeCommand = createHostCommand(() => installAtomCodeSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("atomcode", "project skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside AtomCode" },
+    { label: "Verify", value: "tokenjuice doctor atomcode" },
+  ]));
+});
+
 const installQoderWorkCommand = createHostCommand(() => installQoderWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qoderwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1273,6 +1282,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["agentsge", installAgentsgeCommand],
   ["agentsmesh", installAgentsmeshCommand],
   ["amazon-q", installAmazonQCommand],
+  ["atomcode", installAtomCodeCommand],
   ["amp", installAmpCommand],
   ["antigravity", installAntigravityCommand],
   ["anywhere-agents", installAnywhereAgentsCommand],

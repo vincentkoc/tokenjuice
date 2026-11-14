@@ -64,6 +64,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/amp.png" alt="Amp" /> | [Amp](docs/amp-integration.md) | Guidance | `tokenjuice install amp` | `AGENTS.md` / `AGENT.md` / `CLAUDE.md` |
 | <img width="48" height="48" src="docs/logos/ante.png" alt="Antigma Ante" /> | [Antigma Ante](docs/ante-integration.md) | Guidance | `tokenjuice install ante` | project `AGENTS.md` or `CLAUDE.md` |
 | <img width="48" height="48" src="docs/logos/anywhere-agents.png" alt="anywhere-agents" /> | [anywhere-agents](docs/anywhere-agents-integration.md) | Guidance | `tokenjuice install anywhere-agents` | `AGENTS.local.md`; run `anywhere-agents` after install or uninstall |
+| — | [AtomCode](docs/atomcode-integration.md) | Guidance skill | `tokenjuice install atomcode` | Project `.atomcode/skills/tokenjuice/SKILL.md` |
 | <img width="48" height="48" src="docs/logos/augment.png" alt="Augment" /> | [Augment](docs/augment-integration.md) | Guidance | `tokenjuice install augment` | `.augment/rules/tokenjuice.md` |
 | <img width="48" height="48" src="docs/logos/autoclaw.png" alt="AutoClaw" /> | [AutoClaw](docs/autoclaw-integration.md) | Manual skill setup | Create a custom skill using the [workflow](packaging/skills/autoclaw/tokenjuice-instructions.md) | Select the skill in a fresh conversation; execution unqualified |
 | <img width="48" height="48" src="docs/logos/avante.png" alt="Avante.nvim" /> | [Avante.nvim](docs/avante-integration.md) | Guidance | `tokenjuice install avante` | `avante.md` |

@@ -1,3 +1,4 @@
+import { doctorAtomCodeSkill } from "../atomcode/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -122,6 +123,7 @@ export type HookIntegrationDoctorReport = {
   agentsmesh: AgentsMeshDoctorReport;
   "amazon-q": AmazonQDoctorReport;
   amp: AmpDoctorReport;
+  atomcode: Awaited<ReturnType<typeof doctorAtomCodeSkill>>;
   antigravity: AntigravityDoctorReport;
   "anywhere-agents": AnywhereAgentsDoctorReport;
   augment: AugmentDoctorReport;
@@ -244,6 +246,7 @@ const hookDoctorIntegrationDoctors = {
   agentsge: (options) => doctorAgentsGeRule(undefined, getHookCommandOptions(options)),
   agentsmesh: (options) => doctorAgentsMeshRule(undefined, getHookCommandOptions(options)),
   "amazon-q": (options) => doctorAmazonQRule(undefined, getHookCommandOptions(options)),
+  atomcode: (options) => doctorAtomCodeSkill(options.projectDir === undefined ? {} : { projectDir: options.projectDir }),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   ante: (options) => doctorAnteInstructions(undefined, getHookCommandOptions(options)),
   antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),

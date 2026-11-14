@@ -137,6 +137,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/opencode.png" alt="OpenCode V1" /> | [OpenCode V1](docs/spec.md#install-doctor-and-uninstall) | Result replacement | `tokenjuice install opencode` | `~/.config/opencode/plugins/tokenjuice.js` |
 | <img width="48" height="48" src="docs/logos/opencode.png" alt="OpenCode V2" /> | [OpenCode V2](docs/opencode-v2-integration.md) | Result replacement | `tokenjuice install opencode-v2` | foreground `shell` result replacement; native v2.0.18 acceptance |
 | <img width="48" height="48" src="docs/logos/openhands.png" alt="OpenHands" /> | [OpenHands](docs/openhands-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | Manual wrapping; [legacy hook cleanup](docs/openhands-integration.md) |
+| — | [OmO](docs/omo-integration.md) | Result replacement | `tokenjuice install omo` | Native Senpi root Bash results; live acceptance pending |
 | <img width="48" height="48" src="docs/logos/pi.png" alt="pi" /> | [pi](docs/spec.md#install-doctor-and-uninstall) | Result replacement | `tokenjuice install pi` | `~/.pi/agent/extensions/tokenjuice.js` |
 | — | [pi-go](docs/pi-go-integration.md) | Guidance | `tokenjuice install pi-go` | `.pi/skills/tokenjuice/SKILL.md` |
 | <img width="48" height="48" src="docs/logos/plandex.png" alt="Plandex" /> | [Plandex](docs/plandex-integration.md) | Guidance | `tokenjuice install plandex` | `PLANDEX.tokenjuice.md` |

@@ -771,3 +771,6 @@ export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructi
 export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";
 export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/qoder/hook-install.js";
 export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";
+
+export { installOmoExtension, doctorOmoExtension, uninstallOmoExtension } from "./hosts/omo/index.js";
+export type { OmoExtensionOptions } from "./hosts/omo/index.js";

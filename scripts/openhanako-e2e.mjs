@@ -16,6 +16,7 @@ const home = join(root, "home");
 const project = join(root, "project");
 const agentDir = join(home, "pi-agent");
 const pluginsDir = join(home, "plugins");
+const builtinPluginsDir = join(root, "builtin-plugins");
 const quote = value => `'${value.replaceAll("'", "'\\''")}'`;
 const text = content => typeof content === "string" ? content
   : (content ?? []).filter(part => part.type === "text").map(part => part.text).join("\n");
@@ -67,7 +68,7 @@ const server = createServer(async (request, response) => {
 });
 
 try {
-  await Promise.all([home, project, agentDir, pluginsDir].map(path => mkdir(path, { recursive: true })));
+  await Promise.all([home, project, agentDir, pluginsDir, builtinPluginsDir].map(path => mkdir(path, { recursive: true })));
   await mkdir(join(project, "fixtures"));
   await mkdir(join(project, "large-fixtures"));
   await Promise.all(Array.from({ length: 80 }, (_, i) => writeFile(join(project, "fixtures", `example-${i}.json`), "{}\n")));
@@ -90,10 +91,12 @@ try {
   sdk = nativeSdk;
   const preferences = new PreferencesManager({ userDir: home, agentsDir: join(home, "agents") });
   const hostPackage = JSON.parse(await readFile(join(host, "package.json"), "utf8"));
-  const pluginManager = new PluginManager({ pluginsDir, dataDir: join(home, "plugin-data"),
+  // Hana reserves the first scan directory for builtins, which bypass the community permission gate.
+  const pluginManager = new PluginManager({ pluginsDirs: [builtinPluginsDir, pluginsDir], dataDir: join(home, "plugin-data"),
     bus: new EventBus(), preferencesManager: preferences, appVersion: hostPackage.version });
   pluginManager.scan();
   await pluginManager.loadAll();
+  assert.equal(pluginManager.getPlugin("tokenjuice").source, "community");
   assert.equal(pluginManager.getPlugin("tokenjuice").status, "restricted");
   assert.equal(pluginManager.getExtensionFactories().length, 0, "native permission gate must deny the plugin initially");
   await pluginManager.setFullAccess(true);

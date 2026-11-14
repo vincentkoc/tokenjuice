@@ -99,6 +99,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [LocalCode integration](localcode-integration.md)
 - [mcp-agent integration](mcp-agent-integration.md)
 - [mini-SWE-agent integration](mini-swe-agent-integration.md)
+- [MiMo Code integration](mimo-code-integration.md)
 - [Mistral Vibe integration](mistral-vibe-integration.md)
 - [Mux / Xum integration](mux-integration.md)
 - [NovaKit integration](novakit-integration.md)

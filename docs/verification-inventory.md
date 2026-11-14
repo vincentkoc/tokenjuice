@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 105 handlers
-and 123 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 106 handlers
+and 124 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -97,6 +97,7 @@ CLI compatibility; they are not E2E evidence.
 | [`kilo`](kilo-integration.md) | [File contract](../test/hosts/kilo.test.ts) | Unqualified; see guide. |
 | [`mcp-agent`](mcp-agent-integration.md), `mcpagent` | [File contract](../test/hosts/mcp-agent.test.ts) | Unqualified; see guide. |
 | [`mistral-vibe`](mistral-vibe-integration.md), `mistralvibe` | [File contract](../test/hosts/mistral-vibe.test.ts) | Unqualified; see guide. |
+| [`mimo-code`](mimo-code-integration.md) | [Native fixture](../scripts/mimo-e2e.mjs) | Pinned Linux x64 CLI `0.1.17` with loopback provider; see guide. |
 | [`mini-swe-agent`](mini-swe-agent-integration.md), `mini-sweagent` | [File contract](../test/hosts/mini-swe-agent.test.ts) | Unqualified; see guide. |
 | [`swe-agent`](swe-agent-integration.md), `sweagent` | [File contract](../test/hosts/swe-agent.test.ts) | Unqualified; see guide. |
 | [`stagewise`](stagewise-integration.md) | [File contract](../test/hosts/stagewise.test.ts) | Unqualified; see guide. |

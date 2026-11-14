@@ -55,7 +55,7 @@ describe("OpenHanako native result plugin", () => {
   });
 
   it("registers only a native tool_result callback", () => {
-    const on = vi.fn();
+    const on = vi.fn<Parameters<typeof openHanakoExtension>[0]["on"]>();
     openHanakoExtension({ on });
     expect(on).toHaveBeenCalledOnce();
     expect(on).toHaveBeenCalledWith("tool_result", expect.any(Function));

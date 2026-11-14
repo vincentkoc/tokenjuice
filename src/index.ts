@@ -771,3 +771,5 @@ export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructi
 export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";
 export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/qoder/hook-install.js";
 export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";
+
+export { installPaimonSkill, doctorPaimonSkill, uninstallPaimonSkill, type PaimonSkillOptions } from "./hosts/paimon/index.js";

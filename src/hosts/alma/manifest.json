@@ -1,0 +1,11 @@
+{
+  "id": "tokenjuice",
+  "name": "Tokenjuice",
+  "version": "0.0.0",
+  "description": "Compact successful foreground Bash output with tokenjuice.",
+  "author": { "name": "Vincent Koc" },
+  "main": "main.js",
+  "type": "transform",
+  "engines": { "alma": "*" },
+  "activationEvents": ["onStartup"]
+}

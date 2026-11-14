@@ -60,6 +60,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | — | [AI Memory Protocol](docs/ai-memory-protocol-integration.md) | Guidance | `tokenjuice install ai-memory-protocol` | `.memories/memory/preferences.rst` |
 | <img width="48" height="48" src="docs/logos/aictl.png" alt="aictl" /> | [aictl](docs/aictl-integration.md) | Guidance | `tokenjuice install aictl` | `AICTL.md` |
 | <img width="48" height="48" src="docs/logos/aider.png" alt="Aider" /> | [Aider](docs/aider-integration.md) | Guidance | `tokenjuice install aider` | `CONVENTIONS.tokenjuice.md` |
+| — | [Alma](docs/alma-integration.md) | Native pre-tool plugin | Copy `dist/hosts/alma/bundle/` into Alma’s plugin directory | Foreground Bash wrapping on macOS/Linux; native acceptance unverified |
 | <img width="48" height="48" src="docs/logos/amazon-q.png" alt="Amazon Q Developer CLI / Kiro compatibility" /> | [Amazon Q Developer CLI / Kiro compatibility](docs/amazon-q-integration.md) | Guidance | `tokenjuice install amazon-q` | `.amazonq/rules/tokenjuice.md` |
 | <img width="48" height="48" src="docs/logos/amp.png" alt="Amp" /> | [Amp](docs/amp-integration.md) | Guidance | `tokenjuice install amp` | `AGENTS.md` / `AGENT.md` / `CLAUDE.md` |
 | <img width="48" height="48" src="docs/logos/ante.png" alt="Antigma Ante" /> | [Antigma Ante](docs/ante-integration.md) | Guidance | `tokenjuice install ante` | project `AGENTS.md` or `CLAUDE.md` |

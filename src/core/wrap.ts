@@ -127,7 +127,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
         );
 
         const finalize = (ref?: StoredArtifactRef): CompactResult => {
-          const result = { ...reduced, ...(ref ? { rawRef: ref } : {}) };
+          const result = { ...reduced, ...(combined.truncated ? { captureTruncated: true } : {}), ...(ref ? { rawRef: ref } : {}) };
           if (!opts.includeCompactionNotice) return result;
           const decorated = decorateWrapInlineText(result, raw);
           const candidate = raw || (stderr.text.length === 0 && decorated === stdout.text)

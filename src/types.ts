@@ -154,6 +154,7 @@ export type ArtifactMetadataPageOptions = {
 
 export type CompactResult = {
   inlineText: string;
+  captureTruncated?: boolean;
   previewText?: string;
   facts?: Record<string, number>;
   compaction?: import("./core/compaction-metadata.js").CompactionMetadata;

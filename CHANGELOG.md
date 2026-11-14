@@ -14,6 +14,8 @@
 
 - Restore one complete README harness table, including framework adapters, desktop/manual routes, and explicit integration modes.
 
+- Make recovery commands include custom artifact directories and clearly label incomplete captures.
+
 - Lower allocation in text clipping and command analysis without changing compaction output.
 
 - Preserve diagnostic lines from the middle of failed generic logs, with nearby context and explicit omission markers.

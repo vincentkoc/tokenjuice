@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add project-local Empryo / SoulForge pre-tool wrapping with preserved shell inputs, shared failure handling, and owned-hook lifecycle commands.
+- Qualify Empryo / SoulForge 2.20.25 native hooks and model-visible output with an isolated CLI fixture; document the host's failure-output limits.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

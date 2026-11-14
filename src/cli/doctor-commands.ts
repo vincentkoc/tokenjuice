@@ -1,3 +1,4 @@
+import { doctorEmpryoHook } from "../hosts/empryo/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -647,6 +648,17 @@ const doctorCodegenCommand = createFileDoctorCommand("instructions", "instructio
 
 const doctorCoderAgentsCommand = createFileDoctorCommand("skill", "skillPath", () => doctorCoderAgentsSkill(), true);
 
+const doctorEmpryoCommand = createDoctorCommand((args) => doctorEmpryoHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorCodebuddyCommand = createDoctorCommand((args) => doctorCodeBuddyHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -796,6 +808,8 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["codegen", doctorCodegenCommand],
   ["coder-agents", doctorCoderAgentsCommand],
   ["coderagents", doctorCoderAgentsCommand],
+  ["empryo", doctorEmpryoCommand],
+  ["soulforge", doctorEmpryoCommand],
   ["codebuddy", doctorCodebuddyCommand],
   ["continue", doctorContinueCommand],
   ["droid", doctorDroidCommand],

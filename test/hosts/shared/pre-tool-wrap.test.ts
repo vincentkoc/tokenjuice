@@ -244,6 +244,12 @@ describe("buildWrapLauncherHookCommand", () => {
 });
 
 describe("buildWrappedCommand", () => {
+  it("supports a host's non-login shell without changing the default", () => {
+    const params = { wrapLauncher: "tokenjuice", shellPath: "/bin/sh", command: "printf hello" };
+    expect(parseWrappedCommand(buildWrappedCommand({ ...params, loginShell: false })).shellFlag).toBe("-c");
+    expect(parseWrappedCommand(buildWrappedCommand(params)).shellFlag).toBe("-lc");
+  });
+
   it("emits `<launcher> wrap --keep-failures -- <shell> -lc '<command>'` for a bare launcher", () => {
     const wrapped = buildWrappedCommand({
       wrapLauncher: "/usr/local/bin/tokenjuice",

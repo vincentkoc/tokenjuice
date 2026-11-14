@@ -1,3 +1,4 @@
+import { uninstallEmpryoHook } from "../hosts/empryo/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -254,6 +255,12 @@ const uninstallCodebuffCommand = createFileUninstallCommand("codebuff", "instruc
 const uninstallCodegenCommand = createFileUninstallCommand("codegen", "instructions", "instructionsPath", () => uninstallCodegenInstructions());
 
 const uninstallCoderAgentsCommand = createFileUninstallCommand("coder-agents", "skill", "skillPath", () => uninstallCoderAgentsSkill());
+
+const uninstallEmpryoCommand = createHostCommand(() => uninstallEmpryoHook(), (result) => {
+  process.stdout.write(`removed empryo hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  if (result.backupPath) process.stdout.write(`backup: ${result.backupPath}\n`);
+});
 
 const uninstallCodebuddyCommand = createHostCommand(() => uninstallCodeBuddyHook(), (result) => {
   process.stdout.write(`removed codebuddy hook: ${result.removed ? "yes" : "no"}\n`);
@@ -574,6 +581,8 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["codegen", uninstallCodegenCommand],
   ["coder-agents", uninstallCoderAgentsCommand],
   ["coderagents", uninstallCoderAgentsCommand],
+  ["empryo", uninstallEmpryoCommand],
+  ["soulforge", uninstallEmpryoCommand],
   ["codebuddy", uninstallCodebuddyCommand],
   ["command-code", uninstallCommandCodeCommand],
   ["commandcode", uninstallCommandCodeCommand],

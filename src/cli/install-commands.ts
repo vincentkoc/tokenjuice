@@ -1,3 +1,4 @@
+import { installEmpryoHook } from "../hosts/empryo/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -530,6 +531,16 @@ const installCoderAgentsCommand = createFileInstallCommand(() => installCoderAge
   pathLabel: "Skill",
   pathKey: "skillPath",
   beta: "workspace skill guidance; Coder Agents still owns shell execution",
+});
+
+const installEmpryoCommand = createHostCommand((args) => installEmpryoHook(undefined, { local: args.local }), (result, args) => {
+  process.stdout.write(formatInstallSuccess("empryo", "hook", [
+    { label: "Settings", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "SoulForge PreToolUse wrapping; native session acceptance is unqualified" },
+    { label: "Verify", value: `tokenjuice doctor empryo${args.local ? " --local" : ""}` },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
 });
 
 const installCodebuddyCommand = createHostCommand((args) => installCodeBuddyHook(undefined, { local: args.local }), (result, args) => {
@@ -1294,6 +1305,8 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["codegen", installCodegenCommand],
   ["coder-agents", installCoderAgentsCommand],
   ["coderagents", installCoderAgentsCommand],
+  ["empryo", installEmpryoCommand],
+  ["soulforge", installEmpryoCommand],
   ["codebuddy", installCodebuddyCommand],
   ["command-code", installCommandCodeCommand],
   ["commandcode", installCommandCodeCommand],

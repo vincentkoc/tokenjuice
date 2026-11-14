@@ -77,6 +77,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Droid integration](droid-integration.md)
 - [ECA integration](eca-integration.md)
 - [Elyra integration](elyra-integration.md)
+- [Empryo / SoulForge integration](empryo-integration.md)
 - [Firebase Studio integration](firebase-studio-integration.md)
 - [ForgeCode integration](forgecode-integration.md)
 - [Gemini CLI integration](gemini-cli-integration.md)

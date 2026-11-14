@@ -44,6 +44,8 @@ guide for its contract, install scope and verification steps.
 | [Grok Build](grok-build-integration.md) | Project `AGENTS.md` guidance; `install grok-build`. Passive hook stdout cannot replace tool results. | Instruction lifecycle tests. | Fresh Build session loading and command adherence; keep the instruction file visible to the host's ignore rules. |
 | [Community Grok CLI](grok-cli-integration.md) | Explicit `tokenjuice wrap`; automatic hook retired. Legacy uninstall remains available. | Native macOS arm64 standalone from npm `grok-dev@1.1.7` reports `1.1.4`: checks model requests, explicit wrapping, raw output and native failure flags; configured hooks do not run. | The separate JavaScript entrypoint, other versions/platforms and remote providers remain unqualified. This is not xAI Grok Build or Grok Bot. |
 
+| [Empryo / SoulForge](empryo-integration.md) | Project `PreToolUse` Bash input wrapping; `install empryo` or `soulforge`. | Native CLI `2.20.25` baseline/installed/uninstalled sessions verify hook loading, `sh -c`, retained inputs, default denial, 80-entry compaction, exact CRLF/raw bytes, and complete native failure results. Follow-up model requests are checked. | The host omits separate stderr/status from model context when stdout exists and can compress failed output. Native read/glob advice is lost after wrapping. Other versions, interactive permissions, remote providers and native Windows remain unqualified. |
+
 ## Acceptance record
 
 For a new host/version, record these facts without copying private transcripts:

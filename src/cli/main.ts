@@ -31,6 +31,7 @@ import { runDroidPostToolUseHook, runDroidPreToolUseHook } from "../hosts/droid/
 import { runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook } from "../hosts/gemini-cli/index.js";
 import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
+import { runMiniMaxCodePreToolUseHook } from "../hosts/minimax-code/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
 import { runOpenHandsPostToolUseHook } from "../hosts/openhands/index.js";
 import { runQwenCodePostToolUseHook, runQwenCodePreToolUseHook } from "../hosts/qwen-code/index.js";
@@ -1113,6 +1114,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "kimi-post-tool-use":
       return await runKimiPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "minimax-code-pre-tool-use":
+      return await runMiniMaxCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "mux-post-tool-use":
       return await runMuxPostToolUseHook();
     case "openhands-post-tool-use":

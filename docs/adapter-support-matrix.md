@@ -46,6 +46,18 @@ guide for its contract, install scope and verification steps.
 
 ## Acceptance record
 
+### MiniMax Code
+
+The [MiniMax Code plugin](minimax-code-integration.md) wraps native foreground
+`bash` inputs through the shared wrapper. Unit tests cover payload parsing,
+input preservation, raw/double-wrap bypass, missing shells and Windows bypass.
+The packaged hook contract executes rewritten commands for compaction, exact
+reads, raw output and complete failed streams. These are synthetic hook tests;
+native plugin discovery, permissions and next-model-request delivery remain
+unqualified. The audited source contract is MiniMax Code `0.7.2` at
+`3c21163c85a9684030cb147bfef48c6284fa3c46`.
+
+
 For a new host/version, record these facts without copying private transcripts:
 
 1. Host and tokenjuice versions, execution machine class, configuration scope and

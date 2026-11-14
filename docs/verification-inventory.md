@@ -138,6 +138,7 @@ CLI compatibility; they are not E2E evidence.
 
 | Product | Evidence and acceptance boundary |
 | --- | --- |
+| [MiniMax Code](minimax-code-integration.md) | Native local plugin package and synthetic hook contracts; actual discovery, activation, permissions and model delivery remain unqualified. Uses the host plugin manager rather than the installer registry. |
 | [DeepSeek Harness](deepseek-harness-integration.md) | [Native fixture](../scripts/deepseek-e2e.mjs) covers its pinned CLI/profile. The native plugin activation route is separate from `tokenjuice install`. Other versions and PTC sessions require separate acceptance. |
 | [OpenClaw](spec.md) | Plugin adapter tests cover result handling. Native installation/loading and model delivery are unqualified; a package install or doctor is insufficient. |
 | [T3 Code](t3-code-integration.md) | [Custom Codex fixture](../scripts/t3-codex-e2e.mjs) qualifies explicit wrapping through T3 `0.1.6` and Codex `0.166.0`. [Custom Claude fixture](../scripts/t3-claude-e2e.mjs) qualifies automatic hook loading/removal and native model-visible results with Claude Code `2.1.316`. [Managed OpenCode V2 fixture](../scripts/t3-opencode-v2-e2e.mjs) qualifies V2 `2.0.18` plugin loading/removal through T3. Shadow homes, OpenCode V1/other providers and existing shared/external servers and remote/desktop routes remain unqualified. |

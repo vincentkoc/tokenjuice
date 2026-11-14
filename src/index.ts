@@ -11,6 +11,7 @@ export { compactFrameworkResult } from "./core/integrations/compact-framework-re
 export type { FrameworkShellResult, FrameworkSource } from "./core/integrations/compact-framework-result.js";
 export { createCopilotSdkHooks } from "./hosts/copilot-sdk/index.js";
 export { createMastraProcessor } from "./hosts/mastra/index.js";
+export { runMiniMaxCodePreToolUseHook } from "./hosts/minimax-code/index.js";
 export type { MastraCompactorOptions, MastraToolResult } from "./hosts/mastra/index.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";

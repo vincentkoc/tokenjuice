@@ -276,3 +276,10 @@ Requires Node.js 22 or newer. The compiled JavaScript package follows one distri
 - generate a Homebrew formula from that tarball
 
 that keeps npm, `npx`, global installs, and Homebrew aligned around one executable surface instead of juggling a second native-binary path too early.
+
+
+## Delivered-output token benchmark
+
+Run `pnpm build && pnpm bench:quality` to check fixed CLI and Codex fixtures in an isolated home. The benchmark checks required content and passthrough behavior before reporting token counts from pinned `gpt-tokenizer` encodings (`o200k_base` and `cl100k_base`). It counts complete CLI stdout, including notices and tee output, or the complete Codex `stopReason` envelope. Passthroughs and negative savings remain in the totals.
+
+These are output-fixture measurements, not conversation replay, provider billing, cache savings, or a claim about other tokenizers. The run writes no raw-output artifacts or usage statistics. See the [tokenizer API](https://github.com/niieani/gpt-tokenizer#usage) for encoding details.

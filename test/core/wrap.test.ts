@@ -34,7 +34,7 @@ describe("runWrappedCommand", () => {
   });
 
   it("keeps the original when the complete notice costs more than the omitted lines", async () => {
-    const output = Array.from({ length: 40 }, (_, index) => `line ${index}`).join("\n") + "\n";
+    const output = Array.from({ length: 33 }, (_, index) => `line ${index}`).join("\n") + "\n";
     const wrapped = await runWrappedCommand([
       process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
     ], { includeCompactionNotice: true, recordStats: false });

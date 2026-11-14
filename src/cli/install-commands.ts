@@ -1,3 +1,4 @@
+import { installShelleySkill } from "../hosts/shelley/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1063,6 +1064,15 @@ const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (
   ]));
 });
 
+const installShelleyCommand = createHostCommand(() => installShelleySkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("shelley", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Shelley" },
+    { label: "Verify", value: "tokenjuice doctor shelley" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1359,6 +1369,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
+  ["shelley", installShelleyCommand],
   ["qoderwork", installQoderWorkCommand],
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],

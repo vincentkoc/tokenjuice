@@ -1,3 +1,4 @@
+import { doctorShelleySkill } from "../shelley/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -197,6 +198,7 @@ export type HookIntegrationDoctorReport = {
   qoderwork: Awaited<ReturnType<typeof doctorQoderWorkSkill>>;
   "qwen-code": QwenCodeDoctorReport;
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
+  shelley: Awaited<ReturnType<typeof doctorShelleySkill>>;
   replit: ReplitDoctorReport;
   roo: RooDoctorReport;
   rovo: RovoDoctorReport;
@@ -320,6 +322,7 @@ const hookDoctorIntegrationDoctors = {
   qoderwork: () => doctorQoderWorkSkill(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   qwenwork: () => doctorQwenWorkSkill(),
+  shelley: () => doctorShelleySkill(),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),
   rovo: (options) => doctorRovoInstructions(undefined, getHookCommandOptions(options)),

@@ -43,6 +43,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Ante integration](ante-integration.md)
 - [Antigravity integration](antigravity-integration.md)
 - [anywhere-agents integration](anywhere-agents-integration.md)
+- [AtomCode integration](atomcode-integration.md)
 - [Augment integration](augment-integration.md)
 - [AutoClaw integration](autoclaw-integration.md)
 - [Avante.nvim integration](avante-integration.md)

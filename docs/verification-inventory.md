@@ -42,6 +42,7 @@ CLI compatibility; they are not E2E evidence.
 | [`agentsge`](agentsge-integration.md) | [File contract](../test/hosts/agentsge.test.ts) | Unqualified; see guide. |
 | [`agentsmesh`](agentsmesh-integration.md) | [File contract](../test/hosts/agentsmesh.test.ts) | Unqualified; see guide. |
 | [`amazon-q`](amazon-q-integration.md) | [File contract](../test/hosts/amazon-q.test.ts) | Unqualified; see guide. |
+| [`atomcode`](atomcode-integration.md) | [File contract](../test/hosts/atomcode.test.ts) | Project skill; native execution unqualified. |
 | [`amp`](amp-integration.md) | [File contract](../test/hosts/amp.test.ts) | Unqualified; see guide. |
 | [`antigravity`](antigravity-integration.md) | [File contract](../test/hosts/antigravity.test.ts) | Unqualified; see guide. |
 | [`anywhere-agents`](anywhere-agents-integration.md) | [File contract](../test/hosts/anywhere-agents.test.ts) | Unqualified; see guide. |

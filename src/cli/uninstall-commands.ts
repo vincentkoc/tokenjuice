@@ -1,3 +1,4 @@
+import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -448,6 +449,8 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
 });
 
+const uninstallAtomCodeCommand = createFileUninstallCommand("atomcode", "skill", "skillPath", () => uninstallAtomCodeSkill());
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -553,6 +556,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["agentsge", uninstallAgentsgeCommand],
   ["agentsmesh", uninstallAgentsmeshCommand],
   ["amazon-q", uninstallAmazonQCommand],
+  ["atomcode", uninstallAtomCodeCommand],
   ["amp", uninstallAmpCommand],
   ["antigravity", uninstallAntigravityCommand],
   ["anywhere-agents", uninstallAnywhereAgentsCommand],

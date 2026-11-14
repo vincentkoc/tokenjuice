@@ -44,6 +44,8 @@ guide for its contract, install scope and verification steps.
 | [Grok Build](grok-build-integration.md) | Project `AGENTS.md` guidance; `install grok-build`. Passive hook stdout cannot replace tool results. | Instruction lifecycle tests. | Fresh Build session loading and command adherence; keep the instruction file visible to the host's ignore rules. |
 | [Community Grok CLI](grok-cli-integration.md) | Explicit `tokenjuice wrap`; automatic hook retired. Legacy uninstall remains available. | Native macOS arm64 standalone from npm `grok-dev@1.1.7` reports `1.1.4`: checks model requests, explicit wrapping, raw output and native failure flags; configured hooks do not run. | The separate JavaScript entrypoint, other versions/platforms and remote providers remain unqualified. This is not xAI Grok Build or Grok Bot. |
 
+| [AtomCode](atomcode-integration.md) | Project guidance skill; `install atomcode`. | Managed file lifecycle, unchanged project instructions, raw/failure guidance and symlink refusal tests. | Native discovery, model adherence and tool execution remain unqualified. |
+
 ## Acceptance record
 
 For a new host/version, record these facts without copying private transcripts:

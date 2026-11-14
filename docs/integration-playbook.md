@@ -179,12 +179,13 @@ for truncation-related debugging, verify both boundaries explicitly:
 
 when adding a host integration, update:
 
-- [integration catalog](integrations.md) for the setup route
+- [README integration catalog](../README.md#harness-and-framework-catalog) for the setup route and integration mode
+- [Logo sources](logos/README.md) for a verified, theme-safe mark; use a dash when no project mark is available
 - [documentation index](README.md) for the per-host guide
 - [support and verification](adapter-support-matrix.md) for test evidence and remaining acceptance work
 - the per-host guide for configuration, lifecycle, and runtime requirements
 
-Keep the root README focused on the quick start. Shared CLI and reducer behavior belongs in the [spec](spec.md).
+Keep the quick start ahead of the complete catalog in the root README. Shared CLI and reducer behavior belongs in the [spec](spec.md).
 
 ## installed hook contracts and live acceptance
 

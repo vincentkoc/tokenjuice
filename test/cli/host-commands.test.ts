@@ -98,6 +98,7 @@ const HOST_TARGETS = [
   "mini-sweagent",
   "mistral-vibe",
   "mistralvibe",
+  "muse-code",
   "mux",
   "novakit",
   "ona",

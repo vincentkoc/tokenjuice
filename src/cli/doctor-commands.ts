@@ -1,3 +1,4 @@
+import { doctorMuseCodeSkill } from "../hosts/muse-code/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -319,6 +320,8 @@ const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(unde
 });
 
 const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
+
+const doctorMuseCodeCommand = createFileDoctorCommand("skill", "skillPath", () => doctorMuseCodeSkill(), true);
 
 const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
 
@@ -719,6 +722,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
+  ["muse-code", doctorMuseCodeCommand],
   ["qwenwork", doctorQwenWorkCommand],
   ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],

@@ -45,7 +45,21 @@ pnpm verify
 pnpm verify:package
 ```
 
-Native Snow installation discovery, hook invocation and model-visible delivery
-remain unqualified. Verify a fresh isolated Snow session with a noisy success,
-an exact read, raw bypass and a long exit-7 failure before relying on automatic
-compaction. A passing doctor only establishes configuration health.
+The `snow-native` CI job pins `snow-ai@0.9.15` and uses isolated home/config
+paths plus a loopback chat-completions server with a dummy credential. It runs
+Snow's native `--ask` mode, discovers `terminal-execute` through `tool_search`,
+and checks actual next-model requests before installation, after installation,
+and after uninstall. The hook receipt must report exit 1 for the compacted
+listing and exit 0 for exact reads, raw bypass and a long exit-7 failure. Those
+three outputs retain complete stdout, stderr and status. No paid provider or
+existing host configuration is used.
+
+After building tokenjuice, run the same fixture with a separately installed
+pinned host:
+
+```sh
+node scripts/snow-cli-e2e.mjs /path/to/snow-ai/bundle/cli.mjs
+```
+
+Native acceptance is pending the hosted fixture result. A passing doctor alone
+establishes configuration health, not model-visible delivery.

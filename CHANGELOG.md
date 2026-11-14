@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
 - Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.

@@ -33,7 +33,8 @@ function smoke(cli, packageRoot, installed) {
   const assets = installed ? join(packageRoot, "node_modules/tokenjuice") : packageRoot;
   for (const path of ["python/pyproject.toml", "python/tokenjuice_integrations/bridge.py",
     "python/tokenjuice_integrations/langchain.py", "python/tokenjuice_integrations/fastmcp.py",
-    "hosts/hermes/bundle/plugin.yaml", "hosts/hermes/bundle/__init__.py"]) {
+    "hosts/hermes/bundle/plugin.yaml", "hosts/hermes/bundle/__init__.py",
+    "hosts/minimax-code/bundle/.minimax-plugin/plugin.json", "hosts/minimax-code/bundle/hooks/hooks.json"]) {
     assert.ok(existsSync(join(assets, "dist", path)), `packaged integration asset missing: ${path}`);
   }
   assert.equal(run(cli, ["--version"]).trim(), manifest.version);

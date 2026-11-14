@@ -12,6 +12,8 @@
 
 - Replace placeholder client logos with sourced brand assets in uniform, theme-safe tiles; document provenance and leave unverified marks blank.
 
+- Mark rule-based line filtering and output replacement as compaction so omitted content is not reported as an unchanged result.
+
 - Restore one complete README harness table, including framework adapters, desktop/manual routes, and explicit integration modes.
 
 - Make recovery commands include custom artifact directories and clearly label incomplete captures.

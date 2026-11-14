@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.
+
 - Preserve every search match and full matching rows when the complete formatted result fits the requested inline budget.
 
 - Preserve TypeScript diagnostic continuations and pytest traceback file locations for non-assertion exceptions.

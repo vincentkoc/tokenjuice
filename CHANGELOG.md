@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an oh-my-pi native package extension for eligible successful Bash output; preserve native failure, background and spill envelopes.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

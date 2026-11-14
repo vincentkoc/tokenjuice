@@ -18,6 +18,8 @@
 
 - Measure complete text-mode wrapper output before accepting compaction, include recovery and tee overhead in statistics, and retain negative savings for expanded output.
 
+- Include the complete Codex observation envelope in savings admission and stored statistics; keep original output when formatting removes the savings.
+
 ## 0.11.0 - 2026-11-08
 
 - Preserve OpenClaw Code Mode tool results by excluding JavaScript command aliases from shell-output compaction.

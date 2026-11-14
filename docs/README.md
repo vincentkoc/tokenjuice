@@ -132,3 +132,5 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [WorkBuddy desktop integration](workbuddy-integration.md)
 - [Zed integration](zed-integration.md)
 - [Zencoder integration](zencoder-integration.md)
+
+- [miniQ integration](miniq-integration.md) — project-local guidance skill.

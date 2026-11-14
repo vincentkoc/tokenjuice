@@ -1,3 +1,4 @@
+import { doctorMiniQSkill } from "../hosts/miniq/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -319,6 +320,8 @@ const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(unde
 });
 
 const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
+
+const doctorMiniQCommand = createFileDoctorCommand("skill", "skillPath", () => doctorMiniQSkill());
 
 const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
 
@@ -760,6 +763,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["openwebui", doctorOpenwebuiCommand],
   ["mcp-agent", doctorMcpAgentCommand],
   ["mcpagent", doctorMcpAgentCommand],
+  ["miniq", doctorMiniQCommand],
   ["mini-swe-agent", doctorMiniSweAgentCommand],
   ["mini-sweagent", doctorMiniSweAgentCommand],
   ["swe-agent", doctorSweAgentCommand],

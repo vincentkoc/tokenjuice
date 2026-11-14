@@ -94,6 +94,7 @@ const HOST_TARGETS = [
   "localcode",
   "mcp-agent",
   "mcpagent",
+  "miniq",
   "mini-swe-agent",
   "mini-sweagent",
   "mistral-vibe",

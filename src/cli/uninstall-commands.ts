@@ -1,3 +1,4 @@
+import { uninstallMiniQSkill } from "../hosts/miniq/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -453,6 +454,11 @@ const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkil
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
+const uninstallMiniQCommand = createHostCommand(() => uninstallMiniQSkill(), (result) => {
+  process.stdout.write(`removed miniq skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQwenWorkCommand = createHostCommand(() => uninstallQwenWorkSkill(), (result) => {
   process.stdout.write(`removed qwenwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -611,6 +617,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["mistralvibe", uninstallMistralVibeCommand],
   ["mcp-agent", uninstallMcpAgentCommand],
   ["mcpagent", uninstallMcpAgentCommand],
+  ["miniq", uninstallMiniQCommand],
   ["mini-swe-agent", uninstallMiniSweAgentCommand],
   ["mini-sweagent", uninstallMiniSweAgentCommand],
   ["swe-agent", uninstallSweAgentCommand],

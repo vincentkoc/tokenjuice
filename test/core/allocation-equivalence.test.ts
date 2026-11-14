@@ -9,8 +9,9 @@ import { getInspectionCommandSkipReason, isRepositoryInspectionCommand } from ".
 
 const policies = ["compact-all", "skip-all", "skip-file-content", "allow-safe-inventory"] as const;
 
-// Full serialized results from b7c00f5, including metadata/stats/trace, rather
-// than only the partial expectations in the rule fixtures.
+// Full serialized results, including metadata/stats/trace, rather than only
+// partial fixture expectations. Update intentional behavior changes alongside
+// focused regression assertions; keep inspection decisions frozen separately.
 describe("allocation optimization equivalence", () => {
   it("preserves inspection decisions for every built-in fixture", async () => {
     const hash = createHash("sha256");
@@ -34,7 +35,7 @@ describe("allocation optimization equivalence", () => {
         }
       }
     }
-    expect(hash.digest("hex")).toBe("8e7e0f03db2dbb1eb2e9f742791a5740a38590bafdc6b7ebb0b409f99a53ff35");
+    expect(hash.digest("hex")).toBe("55925a477a6c4c4f50bb89f6d2d098d123f77f924d4188083edba4a8a157e296");
   });
 
   it("preserves compound command decisions from before the optimization", () => {

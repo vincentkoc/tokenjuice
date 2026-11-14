@@ -5,13 +5,13 @@ The local plugin rewrites native foreground `bash` inputs through
 execution. Raw or already wrapped commands, background requests and native
 Windows sessions pass through unchanged.
 
-The source contract was checked against MiniMax Code `0.7.2`, revision
-`3c21163c85a9684030cb147bfef48c6284fa3c46`:
+The source contract and native headless fixture use MiniMax Code `0.7.2`, release
+revision `c6c7f28e73921d7295b9c060dee478ced75cf438`:
 
-- [native plugin reader](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/plugin-system/plugin/package/minimax-reader.ts)
-- [hook input and output parser](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/agent-modules/plugin-hooks/src/runner.ts)
-- [validated input application before permission checks](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/packages/local-runtime-v2/src/service/turn-system/agent-host/execution/plugin-hook-tool-lifecycle.ts)
-- [local plugin management](https://github.com/MiniMax-AI/minimax-code/blob/3c21163c85a9684030cb147bfef48c6284fa3c46/docs/examples.md#4-manage-plugins)
+- [native plugin reader](https://github.com/MiniMax-AI/minimax-code/blob/c6c7f28e73921d7295b9c060dee478ced75cf438/packages/local-runtime-v2/src/service/plugin-system/plugin/package/minimax-reader.ts)
+- [hook input and output parser](https://github.com/MiniMax-AI/minimax-code/blob/c6c7f28e73921d7295b9c060dee478ced75cf438/packages/agent-modules/plugin-hooks/src/runner.ts)
+- [validated input application before permission checks](https://github.com/MiniMax-AI/minimax-code/blob/c6c7f28e73921d7295b9c060dee478ced75cf438/packages/local-runtime-v2/src/service/turn-system/agent-host/execution/plugin-hook-tool-lifecycle.ts)
+- [local plugin management](https://github.com/MiniMax-AI/minimax-code/blob/c6c7f28e73921d7295b9c060dee478ced75cf438/docs/examples.md#4-manage-plugins)
 
 ## Install and verify
 
@@ -65,9 +65,20 @@ rewriting and does not claim post-tool result replacement.
 pnpm exec vitest run test/hosts/minimax-code.test.ts
 pnpm build
 node scripts/minimax-plugin-contract.mjs
+node scripts/minimax-e2e.mjs /path/to/mcode
 ```
 
-The tests exercise synthetic native payloads and the packaged command. They do
-not prove real MiniMax plugin discovery, permission behavior or model-visible
-delivery. Native Windows, other host versions, desktop sessions and cloud
-environments remain unqualified.
+The unit and packaged-command tests use synthetic native payloads. The separate
+[native fixture](../scripts/minimax-e2e.mjs) runs the released `mcode` binary with
+an isolated HOME, data directory and workspace, plus a loopback OpenAI-compatible
+provider. It copies the built plugin into the discovered local catalog and uses
+the native enable, disable and remove commands. It checks the actual next model
+request for compacted noisy output, byte-exact reads, raw bypass, all failed
+stdout/stderr and exit code 7. Disabled and removed sessions must restore the
+baseline output. No account or paid provider is used.
+
+CI qualifies this path on Ubuntu with Node 24. The release archive is pinned by
+SHA-256 `aa055b696945286cbab62f8b748835de1428e4d08a598bbf5de4c8a5de71f4e4`.
+The fixture explicitly selects `--permission full` for its disposable commands;
+it does not qualify default permission decisions. Native Windows, other host
+versions, desktop sessions and cloud environments remain unqualified.

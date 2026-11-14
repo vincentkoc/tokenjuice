@@ -1,16 +1,21 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import { lstat, open, readdir, rm } from "node:fs/promises";
+import { open, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 /** Remove a task-owned fixture tree, including native hosts' read-only caches. */
 export async function removeReadOnlyFixture(root) {
   async function makeDirectoriesWritable(path) {
-    const stat = await lstat(path);
-    if (!stat.isDirectory()) return; // Includes symlinks: never change their targets.
-    const handle = await open(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+    let handle;
     try {
-      await handle.chmod(stat.mode | 0o700);
+      // Open first: a separate stat would race with replacement of this entry.
+      handle = await open(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+    } catch (error) {
+      if (error.code === "ENOTDIR" || error.code === "ELOOP") return;
+      throw error;
+    }
+    try {
+      await handle.chmod(0o700);
     } finally {
       await handle.close();
     }

@@ -16,6 +16,8 @@
 
 - Store telemetry command-family fixtures sequentially so a brief metadata-segment lock retry does not fail the test.
 
+- Measure complete text-mode wrapper output before accepting compaction, include recovery and tee overhead in statistics, and retain negative savings for expanded output.
+
 ## 0.11.0 - 2026-11-08
 
 - Preserve OpenClaw Code Mode tool results by excluding JavaScript command aliases from shell-output compaction.

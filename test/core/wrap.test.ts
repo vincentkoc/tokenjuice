@@ -2,10 +2,11 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { listArtifactMetadata, listArtifacts, runWrappedCommand } from "../../src/index.js";
+import { getArtifact, listArtifactMetadata, listArtifacts, runWrappedCommand } from "../../src/index.js";
 import { WRAP_AUTHORITATIVE_FOOTER } from "../../src/core/compaction-metadata.js";
+import { countTextChars } from "../../src/core/text.js";
 
 const tempDirs: string[] = [];
 
@@ -20,6 +21,71 @@ afterEach(async () => {
 });
 
 describe("runWrappedCommand", () => {
+  it("keeps the original when the complete notice costs more than the omitted lines", async () => {
+    const output = Array.from({ length: 40 }, (_, index) => `line ${index}`).join("\n") + "\n";
+    const wrapped = await runWrappedCommand([
+      process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
+    ], { includeCompactionNotice: true, recordStats: false });
+
+    expect(wrapped.result.inlineText).toBe(output);
+    expect(wrapped.result.stats.ratio).toBe(1);
+    expect(wrapped.result.compaction?.authoritative).toBe(false);
+  });
+
+  it("records the complete emitted notice and recovery command in both storage paths", async () => {
+    const storeDir = await createTempDir();
+    const output = Array.from({ length: 60 }, (_, index) => `line ${index} ${"x".repeat(100)}`).join("\n") + "\n";
+    const wrapped = await runWrappedCommand([
+      process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
+    ], { includeCompactionNotice: true, store: true, recordStats: true, storeDir });
+
+    expect(wrapped.result.inlineText).toContain(WRAP_AUTHORITATIVE_FOOTER);
+    expect(wrapped.result.inlineText).toContain(`tokenjuice cat ${wrapped.result.rawRef!.id}`);
+    expect(wrapped.result.inlineText.endsWith("\n")).toBe(true);
+    const emittedChars = countTextChars(wrapped.result.inlineText);
+    expect(wrapped.result.stats.reducedChars).toBe(emittedChars);
+    const artifact = await getArtifact(wrapped.result.rawRef!.id, storeDir);
+    expect(artifact?.metadata.reducedChars).toBe(emittedChars);
+    const metadata = await listArtifactMetadata(storeDir);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]?.metadata.reducedChars).toBe(emittedChars);
+  });
+
+  it("counts tee output as well as the emitted summary", async () => {
+    const output = Array.from({ length: 60 }, (_, index) => `line ${index} ${"x".repeat(100)}`).join("\n") + "\n";
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const wrapped = await runWrappedCommand([
+        process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
+      ], { includeCompactionNotice: true, tee: true, recordStats: false });
+      expect(wrapped.result.stats.reducedChars).toBe(countTextChars(output) + countTextChars(wrapped.result.inlineText));
+      expect(wrapped.result.stats.ratio).toBeGreaterThan(1);
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it.each([false, true])("counts tee output beyond the capture limit (keepFailures=%s)", async (keepFailures) => {
+    const output = "x".repeat(10_000);
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const wrapped = await runWrappedCommand([
+        process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)}); process.exit(1)`,
+      ], { includeCompactionNotice: true, tee: true, keepFailures, maxCaptureBytes: 128, recordStats: false });
+      const previewChars = keepFailures ? 0 : countTextChars(wrapped.result.inlineText);
+      expect(wrapped.result.stats.reducedChars).toBe(output.length + previewChars);
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it("measures both separately emitted failure streams when the combined capture is capped", async () => {
+    const wrapped = await runWrappedCommand([
+      process.execPath, "-e", "process.stdout.write('x'.repeat(2000)); process.stderr.write('y'.repeat(2000)); process.exit(1)",
+    ], { includeCompactionNotice: true, keepFailures: true, maxCaptureBytes: 128, recordStats: false });
+    expect(wrapped.result.stats.reducedChars).toBe(countTextChars(wrapped.stdout) + countTextChars(wrapped.stderr));
+  });
+
   it("keeps long failure output intact when failure passthrough is requested", async () => {
     const stdout = Array.from({ length: 80 }, (_, index) => `failure-${index}`).join("\n") + "\n";
     const wrapped = await runWrappedCommand([process.execPath, "-e", `process.stdout.write(${JSON.stringify(stdout)}); process.stderr.write('failure-stderr\\n'); process.exit(7);`], { keepFailures: true, recordStats: false });

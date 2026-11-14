@@ -121,6 +121,12 @@ tokenjuice wrap --store -- pnpm test
 
 this is command wrapping, not command rewriting.
 
+Text-mode wrapping measures the complete emitted text, including the compaction
+notice, recovery command, and line ending. If that notice would erase the saving,
+the wrapper returns the captured output. `--tee` statistics include the streamed
+output as well as the final summary; expansion remains visible as negative
+savings. JSON and default library results continue to measure `inlineText`.
+
 ### artifact
 
 inspect stored raw output:

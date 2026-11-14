@@ -183,9 +183,14 @@ export function shouldRecordStats(env: NodeJS.ProcessEnv = process.env): boolean
   return value !== "0" && value !== "false" && value !== "no" && value !== "off";
 }
 
-export async function storeArtifact(input: StoredArtifactInput, storeDir?: string): Promise<StoredArtifactRef> {
+export async function storeArtifact(
+  input: StoredArtifactInput,
+  storeDir?: string,
+  statsForRef?: (ref: StoredArtifactRef) => StoredArtifactInput["stats"],
+): Promise<StoredArtifactRef> {
   const id = `tj_${randomUUID().slice(0, 12)}`;
   const ref = buildArtifactPaths(id, storeDir);
+  const stats = statsForRef ? statsForRef(ref) : input.stats;
   await mkdir(resolveArtifactBaseDir(storeDir), { recursive: true, mode: 0o700 });
   const captureTruncated = extractCaptureTruncatedFlag(input.input);
 
@@ -196,12 +201,12 @@ export async function storeArtifact(input: StoredArtifactInput, storeDir?: strin
       createdAt: new Date().toISOString(),
       source: resolveArtifactSource(input.input),
       classification: input.classification,
-      rawChars: input.stats?.rawChars ?? countTextChars(stripAnsi(input.rawText)),
+      rawChars: stats?.rawChars ?? countTextChars(stripAnsi(input.rawText)),
       ...(input.input.toolName ? { toolName: input.input.toolName } : {}),
       ...(input.input.command ? { command: input.input.command } : {}),
       ...(typeof input.input.exitCode === "number" ? { exitCode: input.input.exitCode } : {}),
       ...(captureTruncated !== undefined ? { captureTruncated } : {}),
-      ...(input.stats ? { reducedChars: input.stats.reducedChars, ratio: input.stats.ratio } : {}),
+      ...(stats ? { reducedChars: stats.reducedChars, ratio: stats.ratio } : {}),
     },
   };
 

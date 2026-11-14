@@ -231,6 +231,8 @@ export type RuleFixture = {
 };
 
 export type WrapOptions = {
+  /** Return the complete text-mode payload, including notices and its line ending. */
+  includeCompactionNotice?: boolean;
   keepFailures?: boolean;
   cwd?: string;
   source?: string;

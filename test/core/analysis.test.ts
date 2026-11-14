@@ -314,7 +314,7 @@ describe("analysis", () => {
     expect(statsArtifacts(entries).daily[0]?.day).toBe("2026-04-20");
   });
 
-  it("clamps expanded artifact ratios in stats and doctor output", () => {
+  it("includes expansion costs in stats and doctor output", () => {
     const entries = [
       {
         metadata: {
@@ -350,12 +350,18 @@ describe("analysis", () => {
     const doctor = doctorArtifacts(entries);
 
     expect(stats.totals.rawChars).toBe(300);
-    expect(stats.totals.reducedChars).toBe(150);
-    expect(stats.totals.savedChars).toBe(150);
-    expect(stats.totals.avgRatio).toBe(0.625);
-    expect(stats.totals.savingsPercent).toBe(0.5);
-    expect(stats.reducers.find((entry) => entry.reducer === "generic/fallback")?.savedChars).toBe(0);
-    expect(doctor.totals.avgRatio).toBe(0.625);
+    expect(stats.totals.reducedChars).toBe(300);
+    expect(stats.totals.savedChars).toBe(0);
+    expect(stats.totals.avgRatio).toBe(1.375);
+    expect(stats.totals.savingsPercent).toBe(0);
+    expect(stats.reducers.find((entry) => entry.reducer === "generic/fallback")?.savedChars).toBe(-150);
+    expect(stats.commands.find((entry) => entry.signature === "node")?.savedChars).toBe(-150);
+    expect(doctor.totals.avgRatio).toBe(1.375);
+    const expanded = statsArtifacts(entries.slice(0, 1));
+    expect(expanded.totals.savedChars).toBe(-150);
+    expect(expanded.totals.savingsPercent).toBe(-1.5);
+    expect(expanded.totals.observedSavedChars).toBe(-150);
+    expect(expanded.daily[0]?.savedChars).toBe(-150);
   });
 
   it("normalizes command signatures to the initial binary only", () => {

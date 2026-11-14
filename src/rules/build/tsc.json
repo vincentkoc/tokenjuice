@@ -3,8 +3,12 @@
   "family": "build-typescript",
   "description": "Compact TypeScript compiler output while preserving real diagnostics.",
   "match": {
-    "toolNames": ["exec"],
-    "commandIncludes": ["tsc"]
+    "toolNames": [
+      "exec"
+    ],
+    "commandIncludes": [
+      "tsc"
+    ]
   },
   "transforms": {
     "stripAnsi": true,
@@ -48,7 +52,8 @@
       "^.+\\(\\d+,\\d+\\):\\s+error TS\\d+: .+",
       "^.+\\(\\d+,\\d+\\):\\s+warning TS\\d+: .+",
       "^Found \\d+ errors?.+",
-      "^error TS\\d+: .+"
+      "^error TS\\d+: .+",
+      "^\\s{2,}\\S"
     ]
   },
   "summarize": {

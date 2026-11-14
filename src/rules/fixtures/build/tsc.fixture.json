@@ -4,12 +4,16 @@
   "input": {
     "toolName": "exec",
     "command": "pnpm tsc --noEmit",
-    "combinedText": "src/index.ts(1,1): error TS2322: Type 'string' is not assignable to type 'number'.\nFound 1 error.\n",
+    "combinedText": "src/index.ts(1,1): error TS2322: Type 'string' is not assignable to type 'number'.\n  Property requiredField is missing in type Source but required in type Target.\nFound 1 error.\n",
     "exitCode": 2
   },
   "expect": {
     "matchedReducer": "build/tsc",
     "family": "build-typescript",
-    "contains": ["exit 2", "TS2322"]
+    "contains": [
+      "exit 2",
+      "TS2322",
+      "Property requiredField is missing"
+    ]
   }
 }

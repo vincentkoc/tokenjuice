@@ -148,6 +148,7 @@ try {
     'process.exit(7);',
   ].join("\n"));
   await run("git", ["init", "--quiet", "--initial-branch=main", "--template="]);
+  await mkdir(join(project, ".git", "info"), { recursive: true });
   await writeFile(join(project, ".git", "info", "exclude"), ".mimocode/\n");
   await run("git", ["add", "."]);
   await run("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture"]);

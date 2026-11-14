@@ -5,7 +5,7 @@ import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } fro
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, collapseRepeatedEmojiBanner, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
-import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { NO_COMPACTION_METADATA, createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
 import { buildFailureSummary } from "./failure-summary.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
@@ -84,10 +84,13 @@ function applyRule(
     return {
       summary: matchedOutput.message,
       facts,
-      compaction: NO_COMPACTION_METADATA,
+      compaction: matchedOutput.message === outputMatchText
+        ? NO_COMPACTION_METADATA
+        : createCompactionMetadata("rule-output-replacement"),
     };
   }
 
+  const unfilteredLineCount = lines.length;
   if (!noOmit && rule.filters?.skipPatterns?.length) {
     lines = lines.filter((line) => !compiledRule.compiled.skipPatterns.some((pattern) => pattern.test(line)));
   }
@@ -99,6 +102,9 @@ function applyRule(
     if (kept.length > 0) {
       lines = kept;
     }
+  }
+  if (lines.length < unfilteredLineCount) {
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, createCompactionMetadata("rule-line-filter"));
   }
 
   if (rule.transforms?.trimEmptyEdges) {

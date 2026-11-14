@@ -1,5 +1,7 @@
 export type CompactionKind =
   | "failure-signal-filter"
+  | "rule-line-filter"
+  | "rule-output-replacement"
   | "head-tail-omission"
   | "middle-truncation"
   | "tail-truncation"

@@ -48,6 +48,8 @@ export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegen
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
 export { doctorCodeRabbitConfig, installCodeRabbitConfig, uninstallCodeRabbitConfig } from "./hosts/coderabbit/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook, uninstallCodeBuddyHook } from "./hosts/codebuddy/index.js";
+export { doctorZCodeHook, installZCodeHook, runZCodePreToolUseHook, uninstallZCodeHook } from "./hosts/zcode/index.js";
+export type { ZCodeDoctorReport, ZCodeHookCommandOptions, InstallZCodeHookResult, UninstallZCodeHookResult } from "./hosts/zcode/index.js";
 export { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "./hosts/command-code/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {

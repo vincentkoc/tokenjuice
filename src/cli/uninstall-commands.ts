@@ -1,3 +1,4 @@
+import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -428,6 +429,12 @@ const uninstallOpencodeV2Command = createHostCommand(() => uninstallOpenCodeV2Ex
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
 });
 
+const uninstallMimoCodeCommand = createHostCommand(() => uninstallMimoCodeHook(), (result) => {
+  process.stdout.write(`removed mimo-code hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`hook path: ${result.extensionPath}\n`);
+  process.stdout.write("enable: tokenjuice install mimo-code\n");
+});
+
 const uninstallOpencodeCommand = createHostCommand(() => uninstallOpenCodeExtension(), (result) => {
   process.stdout.write(`removed opencode extension: ${result.removed ? "yes" : "missing"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
@@ -626,6 +633,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["openinterpreter", uninstallOpenInterpreterCommand],
   ["openwebui", uninstallOpenwebuiCommand],
   ["pi", uninstallPiCommand],
+  ["mimo-code", uninstallMimoCodeCommand],
   ["opencode", uninstallOpencodeCommand],
   ["opencode-v2", uninstallOpencodeV2Command],
   ["plandex", uninstallPlandexCommand],

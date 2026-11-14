@@ -15,7 +15,7 @@ import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-po
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
 
 export type CompactBashResultInput = {
-  source: "hermes" | "copilot-sdk" | "langchain" | "mastra" | "fastmcp" | "claude-code" | "cline" | "codex" | "command-code" | "copilot-agent" | "copilot-cli" | "deepseek-harness" | "droid" | "gemini-cli" | "grok-cli" | "kimi" | "mux" | "openclaw" | "openhands" | "opencode" | "pi" | "qoder" | "qwen-code";
+  source: "hermes" | "copilot-sdk" | "langchain" | "mastra" | "mimo-code" | "fastmcp" | "claude-code" | "cline" | "codex" | "command-code" | "copilot-agent" | "copilot-cli" | "deepseek-harness" | "droid" | "gemini-cli" | "grok-cli" | "kimi" | "mux" | "openclaw" | "openhands" | "opencode" | "pi" | "qoder" | "qwen-code";
   command: string;
   cwd?: string;
   visibleText: string;

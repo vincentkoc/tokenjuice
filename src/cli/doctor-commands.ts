@@ -1,3 +1,4 @@
+import { doctorMimoCodeHook } from "../hosts/mimo-code/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -283,6 +284,14 @@ const doctorPiGoCommand = createFileDoctorCommand("skill", "skillPath", () => do
 
 const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Extension({ local: args.local }), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorMimoCodeCommand = createDoctorCommand((args) => doctorMimoCodeHook({ local: args.local }), (report) => {
+  process.stdout.write(`hook path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
@@ -710,6 +719,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pi", doctorPiCommand],
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],
+  ["mimo-code", doctorMimoCodeCommand],
   ["opencode", doctorOpencodeCommand],
   ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],

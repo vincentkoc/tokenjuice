@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

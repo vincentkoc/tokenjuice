@@ -21,6 +21,18 @@ afterEach(async () => {
 });
 
 describe("runWrappedCommand", () => {
+  it("exposes an incomplete capture in results and persisted metadata", async () => {
+    const storeDir = await createTempDir();
+    const output = Array.from({ length: 500 }, (_, index) => `line ${index} ${"x".repeat(100)}`).join("\n");
+    const wrapped = await runWrappedCommand([
+      process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
+    ], { includeCompactionNotice: true, store: true, storeDir, maxCaptureBytes: 10_000 });
+    expect(wrapped.result.captureTruncated).toBe(true);
+    expect(wrapped.result.inlineText).toContain("Capture limit reached");
+    const artifact = await getArtifact(wrapped.result.rawRef!.id, storeDir);
+    expect(artifact?.metadata.captureTruncated).toBe(true);
+  });
+
   it("keeps the original when the complete notice costs more than the omitted lines", async () => {
     const output = Array.from({ length: 40 }, (_, index) => `line ${index}`).join("\n") + "\n";
     const wrapped = await runWrappedCommand([

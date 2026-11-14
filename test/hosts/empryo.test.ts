@@ -78,7 +78,7 @@ describe("Empryo / SoulForge lifecycle", () => {
     expect(JSON.parse(await readFile(target, "utf8")).custom).toBe(true);
     for (const invalid of ["{", "[]", '{"hooks":[]}', '{"hooks":{"PreToolUse":{}}}']) {
       await writeFile(target, invalid);
-      await expect(installEmpryoHook(target, options)).rejects.toThrow();
+      await expect(installEmpryoHook(target, options)).rejects.toThrow(invalid === "{" ? SyntaxError : /Empryo/);
       expect(await readFile(target, "utf8")).toBe(invalid);
     }
   });

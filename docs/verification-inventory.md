@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 105 handlers
-and 123 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 106 handlers
+and 124 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -28,6 +28,7 @@ CLI compatibility; they are not E2E evidence.
 
 | Target and aliases | Recorded evidence | Native acceptance |
 | --- | --- | --- |
+| [`zcode`](zcode-integration.md) | [File and runtime contract](../test/hosts/zcode.test.ts) | Native discovery and model-visible delivery unqualified. |
 | [`adal`](adal-integration.md) | [File contract](../test/hosts/adal.test.ts) | Unqualified; see guide. |
 | [`aether`](aether-integration.md) | [File contract](../test/hosts/aether.test.ts) | Unqualified; see guide. |
 | [`aider`](aider-integration.md) | [File contract](../test/hosts/aider.test.ts) | Unqualified; see guide. |

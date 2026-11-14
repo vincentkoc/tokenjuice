@@ -16,6 +16,8 @@ These tiles were rasterized with resvg 2.6.2 and normalized with ImageMagick. So
 
 ## Missing and shared marks
 
+ZCode uses a dash until a verified, theme-safe project mark is added.
+
 AgentInit, AI Memory Protocol, the community Grok CLI, LeanCTL, NovaKit, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
 
 The GitHub product rows use the current GitHub mark from its brand kit; the old Copilot mascot is retired. Windsurf retains its official historical symbol rather than substituting the Devin logo now served by its redirected website. Some integrations use their official parent-project mark, such as AWS, OpenAI, JetBrains, and LangChain.

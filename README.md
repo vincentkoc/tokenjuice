@@ -58,6 +58,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/agents-md.png" alt="AGENTS.md" /> | [AGENTS.md](docs/agents-md-integration.md) | Guidance | `tokenjuice install agents-md` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/agentsmesh.png" alt="AgentsMesh" /> | [AgentsMesh](docs/agentsmesh-integration.md) | Guidance | `tokenjuice install agentsmesh` | `.agentsmesh/rules/tokenjuice.md`; run `agentsmesh generate` after install or uninstall |
 | — | [AI Memory Protocol](docs/ai-memory-protocol-integration.md) | Guidance | `tokenjuice install ai-memory-protocol` | `.memories/memory/preferences.rst` |
+| — | [ZCode](docs/zcode-integration.md) | Pre-tool wrapping | `tokenjuice install zcode` | User `~/.zcode/cli/config.json`; native acceptance pending |
 | <img width="48" height="48" src="docs/logos/aictl.png" alt="aictl" /> | [aictl](docs/aictl-integration.md) | Guidance | `tokenjuice install aictl` | `AICTL.md` |
 | <img width="48" height="48" src="docs/logos/aider.png" alt="Aider" /> | [Aider](docs/aider-integration.md) | Guidance | `tokenjuice install aider` | `CONVENTIONS.tokenjuice.md` |
 | <img width="48" height="48" src="docs/logos/amazon-q.png" alt="Amazon Q Developer CLI / Kiro compatibility" /> | [Amazon Q Developer CLI / Kiro compatibility](docs/amazon-q-integration.md) | Guidance | `tokenjuice install amazon-q` | `.amazonq/rules/tokenjuice.md` |

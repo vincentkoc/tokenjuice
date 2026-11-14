@@ -22,6 +22,8 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 
 ## integration guides
 
+- [ZCode integration](zcode-integration.md)
+
 Some clients use automatic wrapping or result replacement. Others use guidance, manual imports, or explicit wrapping.
 A client appearing here does not establish native acceptance. Each guide states its own requirements and limits.
 

@@ -1,3 +1,4 @@
+import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
@@ -448,6 +449,11 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
 });
 
+const uninstallCraftAgentsCommand = createHostCommand((args) => uninstallCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (result) => {
+  process.stdout.write(`removed craft-agents skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -581,6 +587,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["pigo", uninstallPiGoCommand],
   ["continue", uninstallContinueCommand],
   ["copilot-agent", uninstallCopilotAgentCommand],
+  ["craft-agents", uninstallCraftAgentsCommand],
   ["crush", uninstallCrushCommand],
   ["cursor", uninstallCursorCommand],
   ["firebase-studio", uninstallFirebaseStudioCommand],

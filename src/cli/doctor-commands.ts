@@ -1,3 +1,4 @@
+import { doctorCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -314,6 +315,14 @@ const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(unde
   }
   writeDoctorList("issues", report.issues);
   writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorCraftAgentsCommand = createDoctorCommand((args) => doctorCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (report) => {
+  process.stdout.write(`skill path: ${report.skillPath || "(workspace not selected)"}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
@@ -723,6 +732,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],
+  ["craft-agents", doctorCraftAgentsCommand],
   ["crush", doctorCrushCommand],
   ["cursor", doctorCursorCommand],
   ["deepagents", doctorDeepagentsCommand],

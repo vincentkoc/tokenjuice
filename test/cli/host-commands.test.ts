@@ -59,6 +59,7 @@ const HOST_TARGETS = [
   "continue",
   "copilot-agent",
   "copilot-cli",
+  "craft-agents",
   "crush",
   "cursor",
   "deepagents",
@@ -185,6 +186,7 @@ async function enterSandbox(): Promise<string> {
   env.XDG_CACHE_HOME = join(home, ".cache");
   env.PATH = bin;
   env.SHELL = "/bin/sh";
+  env.TOKENJUICE_CRAFT_WORKSPACE = project;
   env.TOKENJUICE_ARTIFACT_DIR = join(root, "artifacts");
   replaceEnv(env);
   process.chdir(project);

@@ -86,6 +86,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/command-code.png" alt="Command Code" /> | [Command Code](docs/command-code-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | Additive hook retired; scoped legacy cleanup remains available |
 | — | [Community Grok CLI](docs/grok-cli-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/grok-cli-integration.md) |
 | <img width="48" height="48" src="docs/logos/continue.png" alt="Continue" /> | [Continue](docs/continue-integration.md) | Guidance | `tokenjuice install continue` | `.continue/rules/tokenjuice.md` |
+| — | [Craft Agents](docs/craft-agents-integration.md) | Guidance skill | `tokenjuice install craft-agents <workspace-dir>` | Selected workspace `skills/tokenjuice/SKILL.md`; explicit selection required |
 | <img width="48" height="48" src="docs/logos/crush.png" alt="Crush" /> | [Crush](docs/crush-integration.md) | Guidance | `tokenjuice install crush` | `.crush/skills/tokenjuice/SKILL.md` |
 | <img width="48" height="48" src="docs/logos/cursor.png" alt="Cursor" /> | [Cursor](docs/cursor-integration.md) | Pre-tool wrapping | `tokenjuice install cursor` | `~/.cursor/hooks.json` |
 | <img width="48" height="48" src="docs/logos/deepagents.png" alt="Deep Agents Code" /> | [Deep Agents Code](docs/deepagents-integration.md) | Guidance | `tokenjuice install deepagents` | `.deepagents/AGENTS.md` |

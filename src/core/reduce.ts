@@ -6,6 +6,7 @@ import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, collapseRepeatedEmojiBanner, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
 import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { buildFailureSummary } from "./failure-summary.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
 import { buildInspectionSummary } from "./reduce-inspection-summary.js";
@@ -513,11 +514,12 @@ export async function reduceExecutionWithRules(
     throw new Error("missing generic fallback rule");
   }
 
-  const githubActionsFailureSummary = classification.matchedReducer === "generic/fallback"
+  const failureSummary = classification.matchedReducer === "generic/fallback"
     ? buildGithubActionsFailureSummary(reducerInput, rawText, opts.noOmit)
+      ?? buildFailureSummary(reducerInput, rawText, maxInlineChars, opts.noOmit)
     : null;
-  if (githubActionsFailureSummary) {
-    const inlineText = clampTextMiddleWithMetadata(githubActionsFailureSummary.text, maxInlineChars, opts.noOmit);
+  if (failureSummary) {
+    const inlineText = clampTextMiddleWithMetadata(failureSummary.text, maxInlineChars, opts.noOmit);
     const reducedChars = countTextChars(inlineText.text);
     const stats = {
       rawChars: measuredRawChars,
@@ -551,8 +553,8 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: inlineText.text,
-      previewText: githubActionsFailureSummary.text,
-      compaction: mergeCompactionMetadata(githubActionsFailureSummary.compaction, inlineText.compaction),
+      previewText: failureSummary.text,
+      compaction: mergeCompactionMetadata(failureSummary.compaction, inlineText.compaction),
       ...(trace ? { trace } : {}),
       ...(rawRef ? { rawRef } : {}),
       stats,

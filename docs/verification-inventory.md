@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 105 handlers
-and 123 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 106 handlers
+and 124 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -100,6 +100,7 @@ CLI compatibility; they are not E2E evidence.
 | [`mini-swe-agent`](mini-swe-agent-integration.md), `mini-sweagent` | [File contract](../test/hosts/mini-swe-agent.test.ts) | Unqualified; see guide. |
 | [`swe-agent`](swe-agent-integration.md), `sweagent` | [File contract](../test/hosts/swe-agent.test.ts) | Unqualified; see guide. |
 | [`stagewise`](stagewise-integration.md) | [File contract](../test/hosts/stagewise.test.ts) | Unqualified; see guide. |
+| [`muse-code`](muse-code-integration.md) | [File contract](../test/hosts/muse-code.test.ts) | Unqualified; project skill guidance only. |
 | [`mux`](mux-integration.md) | [Native fixture](../scripts/mux-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |
 | [`novakit`](novakit-integration.md) | [File contract](../test/hosts/novakit.test.ts) | Unqualified; see guide. |
 | [`knowns`](knowns-integration.md) | [File contract](../test/hosts/knowns.test.ts) | Unqualified; see guide. |

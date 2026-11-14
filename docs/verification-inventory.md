@@ -142,6 +142,7 @@ CLI compatibility; they are not E2E evidence.
 | [OpenClaw](spec.md) | Plugin adapter tests cover result handling. Native installation/loading and model delivery are unqualified; a package install or doctor is insufficient. |
 | [T3 Code](t3-code-integration.md) | [Custom Codex fixture](../scripts/t3-codex-e2e.mjs) qualifies explicit wrapping through T3 `0.1.6` and Codex `0.166.0`. [Custom Claude fixture](../scripts/t3-claude-e2e.mjs) qualifies automatic hook loading/removal and native model-visible results with Claude Code `2.1.316`. [Managed OpenCode V2 fixture](../scripts/t3-opencode-v2-e2e.mjs) qualifies V2 `2.0.18` plugin loading/removal through T3. Shadow homes, OpenCode V1/other providers and existing shared/external servers and remote/desktop routes remain unqualified. |
 | [WorkBuddy](workbuddy-integration.md) | Packaged skill metadata only; desktop import, enablement and actual model-visible tool output unqualified. |
+| [QwenPaw](qwenpaw-integration.md) | [Packaged skill tests](../test/packaging/qwenpaw-skill.test.ts) cover dependency and command guidance. Native workspace import, enablement and model-visible output remain unqualified. |
 | [Doubao Work](doubao-work-integration.md) | Packaged skill metadata only; personal importer and tool execution unqualified. |
 | [AutoClaw](autoclaw-integration.md) | Copyable workflow only; custom-skill creation/loading and runtime execution unqualified. |
 | [QClaw](qclaw-migration.md) | Migration guidance only; account migration does not qualify WorkBuddy. |

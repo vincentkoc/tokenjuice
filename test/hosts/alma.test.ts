@@ -7,7 +7,7 @@ describe("Alma pre-tool plugin", () => {
   it.skipIf(process.platform === "win32")("wraps the effective foreground command and preserves earlier hook changes", async () => {
     const output = { args: { command: "git status --short", timeout: 5000, description: "changed by another hook" } };
     await handler({ tool: "Bash", args: { command: "ignored" } }, output);
-    expect(output.args.command).toContain("wrap --keep-failures --source 'alma'");
+    expect(output.args.command).toContain("wrap --keep-failures --source alma");
     expect(output.args.command).toContain("'git status --short'");
     expect(output.args.timeout).toBe(5000);
     expect(output.args.description).toBe("changed by another hook");

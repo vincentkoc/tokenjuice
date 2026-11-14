@@ -116,6 +116,8 @@ async function session(model) {
       assert.equal(output.details.is_error, true);
       assert.equal(processOutput.stdout, failureStdout);
       assert.equal(processOutput.stderr, failureStderr);
+      assert.ok(observed.get(item.id).includes(failureStdout), "model must receive all failed stdout");
+      assert.ok(observed.get(item.id).includes(failureStderr), "model must receive all failed stderr");
       assert.ok(observed.get(item.id).endsWith("Command exited with code 7"));
     }
   }

@@ -14,6 +14,7 @@ beforeEach(async () => {
 afterEach(async () => {
   process.chdir(originalCwd);
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   await rm(project, { recursive: true, force: true });
 });
 
@@ -40,6 +41,24 @@ describe("miniQ workspace skill", () => {
   it("supports an explicit workspace without changing cwd", async () => {
     const result = await installMiniQSkill({ projectDir: join(project, "other") });
     expect(result.skillPath).toBe(join(project, "other", ".miniq", "skills", "tokenjuice", "SKILL.md"));
+    expect((await doctorMiniQSkill()).status).toBe("disabled");
+  });
+
+  it("checks the requested workspace through aggregate doctor", async () => {
+    for (const key of Object.keys(process.env)) {
+      if (key.endsWith("_HOME") || key.endsWith("_PROJECT_DIR") || key.endsWith("_CONFIG_DIR") || key.endsWith("_CODING_AGENT_DIR")) {
+        vi.stubEnv(key, undefined);
+      }
+    }
+    vi.stubEnv("HOME", project);
+    vi.stubEnv("USERPROFILE", project);
+    vi.resetModules();
+    const { doctorInstalledHooks } = await import("../../src/hosts/shared/hook-doctor.js");
+    const workspace = join(project, "other");
+    const installed = await installMiniQSkill({ projectDir: workspace });
+    const report = await doctorInstalledHooks({ projectDir: workspace, homeDir: project });
+    expect(report.integrations.miniq.status).toBe("ok");
+    expect(report.integrations.miniq.skillPath).toBe(installed.skillPath);
     expect((await doctorMiniQSkill()).status).toBe("disabled");
   });
 

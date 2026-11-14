@@ -1,3 +1,4 @@
+import { doctorOmoExtension } from "../hosts/omo/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -268,6 +269,14 @@ const doctorCodexCommand = createDoctorCommand((args) => doctorCodexHook(undefin
       `codex config: approval_policy=${report.runtimeConfig.approvalPolicy ?? "(default)"}, sandbox_mode=${report.runtimeConfig.sandboxMode ?? "(default)"}, approvals_reviewer=${report.runtimeConfig.approvalsReviewer ?? "(default)"}\n`,
     );
   }
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorOmoCommand = createDoctorCommand((args) => doctorOmoExtension({ local: args.local }), (report) => {
+  process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
@@ -707,6 +716,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["builder", doctorBuilderCommand],
   ["charlie", doctorCharlieCommand],
   ["codex", doctorCodexCommand],
+  ["omo", doctorOmoCommand],
   ["pi", doctorPiCommand],
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],

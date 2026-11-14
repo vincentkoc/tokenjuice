@@ -25,13 +25,17 @@ backup files. Doctor validates the installed bytes, not host discovery.
 
 ## Runtime boundary
 
-The extension uses native `tool_result` replacement. It accepts only successful
-root `bash` calls whose single text block matches `structuredContent.output`,
-with `exit_code: 0` and `truncated: false`. It replaces both text and structured
-output together, retaining other fields. Failures, unknown status, nested
-programmatic calls, mixed content, already-wrapped commands and truncated output
-remain unchanged. The shared reducer preserves exact-read and raw-bypass rules.
-For explicit raw output, use `tokenjuice wrap --raw -- <command>`.
+The extension uses native `tool_result` replacement for successful root `bash`
+calls with one text block. OmO 5.1.70 emits `isError: false` and
+`details.status: "completed"` without structured output. The adapter compacts
+that text without creating a structured field. When Senpi supplies structured
+output, `structuredContent.output` must match the text, with `exit_code: 0` and
+`truncated: false`; both projections are then replaced together.
+
+Failures, unknown status, nested programmatic calls, mixed content,
+already-wrapped commands and reported truncation remain unchanged. The shared
+reducer preserves exact-read and raw-bypass rules. For explicit raw output, use
+`tokenjuice wrap --raw -- <command>`.
 
 Source inspection used Senpi commit
 [`1f40baebd0cdfd120642bb6752a80c1976ef7fcf`](https://github.com/code-yeongyu/senpi/tree/1f40baebd0cdfd120642bb6752a80c1976ef7fcf):
@@ -39,7 +43,22 @@ Source inspection used Senpi commit
 [extension replacement](https://github.com/code-yeongyu/senpi/blob/1f40baebd0cdfd120642bb6752a80c1976ef7fcf/packages/coding-agent/src/core/extensions/runner.ts),
 and [extension discovery](https://github.com/code-yeongyu/senpi/blob/1f40baebd0cdfd120642bb6752a80c1976ef7fcf/packages/coding-agent/src/core/resource-loader.ts).
 
-Native acceptance is pending: in a disposable OmO home, verify extension loading,
-a noisy successful command, exact reads, explicit raw output, failures, and
-uninstall against the actual next model request. The terminal extension's PTY
-result schema is not qualified by this adapter.
+## Native acceptance
+
+`scripts/omo-e2e.mjs` exercises the actual `omo-ai@5.1.70` launcher and its pinned
+`@code-yeongyu/senpi@2026.11.13` engine with a loopback model endpoint and dummy
+credentials. The local macOS run uses Node 26.7.0 and an isolated build of the
+current source. The CI job repeats it with the normal package build on Linux.
+
+Four fresh sessions with locally generated model responses verify the default `.omo/agent`
+discovery path, the `OMO_CODING_AGENT_DIR` override ahead of Senpi/Pi decoys,
+noisy Git status compaction, long exact reads, explicit raw output, full exit-7
+output and uninstall restoring the baseline. A read-only observer loaded from
+the same native extension directory checks post-tool output against the next
+model request. Native Bash normalizes CRLF and trims trailing whitespace; the
+adapter preserves that native baseline for exact/raw/failure cases.
+
+This pinned launcher emits text-only results; the adapter preserves that shape.
+The coherent structured variant is covered by core tests, not a claim that this
+launcher emits it. Other host versions, platforms and the terminal extension's
+PTY result schema require separate acceptance.

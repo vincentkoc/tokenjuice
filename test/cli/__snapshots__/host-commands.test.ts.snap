@@ -9091,7 +9091,7 @@ exports[`host CLI commands > install, doctor, and uninstall omo 1`] = `
 [stdout] extension path: <SANDBOX>/home/.omo/agent/extensions/tokenjuice.js
 [stdout] health: disabled
 [stdout] advisories:
-[stdout] - OmO native extension: file validation only; live loading and model-visible delivery remain unverified.
+[stdout] - OmO native extension: file validation only; this command does not verify live loading or model-visible delivery.
 [stdout] repair: tokenjuice install omo
 exit 0
 
@@ -9107,7 +9107,7 @@ $ tokenjuice doctor omo
 [stdout] extension path: <SANDBOX>/home/.omo/agent/extensions/tokenjuice.js
 [stdout] health: ok
 [stdout] advisories:
-[stdout] - OmO native extension: file validation only; live loading and model-visible delivery remain unverified.
+[stdout] - OmO native extension: file validation only; this command does not verify live loading or model-visible delivery.
 [stdout] repair: tokenjuice install omo
 exit 0
 
@@ -9120,7 +9120,7 @@ $ tokenjuice doctor omo --format json
   ],
   \"missingPaths\": [],
   \"advisories\": [
-    \"OmO native extension: file validation only; live loading and model-visible delivery remain unverified.\"
+    \"OmO native extension: file validation only; this command does not verify live loading or model-visible delivery.\"
   ],
   \"hasTokenjuiceMarker\": true,
   \"status\": \"ok\",
@@ -9151,7 +9151,7 @@ $ tokenjuice doctor omo
 [stdout] extension path: <SANDBOX>/home/.omo/agent/extensions/tokenjuice.js
 [stdout] health: disabled
 [stdout] advisories:
-[stdout] - OmO native extension: file validation only; live loading and model-visible delivery remain unverified.
+[stdout] - OmO native extension: file validation only; this command does not verify live loading or model-visible delivery.
 [stdout] repair: tokenjuice install omo
 exit 0
 "

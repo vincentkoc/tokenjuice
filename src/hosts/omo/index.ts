@@ -60,7 +60,7 @@ export async function uninstallOmoExtension(options: OmoExtensionOptions = {}) {
 export async function doctorOmoExtension(options: OmoExtensionOptions = {}) {
   const extensionPath = getOmoExtensionPath(options);
   const base = { extensionPath, fixCommand: FIX_COMMAND, checkedPaths: [extensionPath], missingPaths: [] as string[],
-    advisories: ["OmO native extension: file validation only; live loading and model-visible delivery remain unverified."],
+    advisories: ["OmO native extension: file validation only; this command does not verify live loading or model-visible delivery."],
     hasTokenjuiceMarker: false };
   try {
     await assertSafePath(extensionPath);

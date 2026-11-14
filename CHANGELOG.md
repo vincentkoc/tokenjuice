@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add a native OmO extension for completed root Bash output with matching text and structured results; preserve failures, raw wrapping and nested calls.
+- Add a native OmO extension for completed root Bash output, including native text-only results and matching structured results; qualify the standalone launcher against a local model fixture.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 

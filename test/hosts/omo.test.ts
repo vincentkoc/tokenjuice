@@ -76,10 +76,22 @@ describe("OmO result replacement", () => {
     expect(result).toBeDefined();
     expect(await compactOmoResult(input)).toBeDefined();
     expect(result!.content[0].text.length).toBeLessThan(input.content[0].text.length);
-    expect(result!.content[0].text).toBe(result!.structuredContent.output);
+    expect(result!.content[0].text).toBe(result!.structuredContent!.output);
     expect(result!.content[0].custom).toBe("keep");
     expect(result!.structuredContent).toMatchObject({ exit_code: 0, truncated: false, wall_time_seconds: 1, custom: "keep" });
     expect(input).toEqual(before);
+  });
+
+  it("compacts completed native text-only results without inventing structured output", async () => {
+    const { structuredContent: _structured, ...input } = event();
+    const result = await compactOmoResult({ ...input, details: { status: "completed" } }, home);
+    expect(result).toBeDefined();
+    expect(result!.content[0].text.length).toBeLessThan(input.content[0].text.length);
+    expect(result).not.toHaveProperty("structuredContent");
+    expect(await compactOmoResult(input, home)).toBeUndefined();
+    expect(await compactOmoResult({ ...input, details: { status: "running" } }, home)).toBeUndefined();
+    expect(await compactOmoResult({ ...input, details: { status: "completed", exitCode: 7 } }, home)).toBeUndefined();
+    expect(await compactOmoResult({ ...input, details: { status: "completed", truncated: true } }, home)).toBeUndefined();
   });
 
   it("preserves failures, nested calls, incomplete output and mismatched projections", async () => {

@@ -66,6 +66,7 @@ CLI compatibility; they are not E2E evidence.
 | [`command-code`](command-code-integration.md), `commandcode` | [File contract](../test/hosts/command-code.test.ts) | Authentication blocks native tool execution; additive hook retired. |
 | [`continue`](continue-integration.md) | [File contract](../test/hosts/continue.test.ts) | Unqualified; see guide. |
 | [`copilot-agent`](copilot-agent-integration.md) | [Native fixture](../scripts/copilot-cli-e2e.mjs) | Local Copilot CLI repository hook only; cloud job unqualified. |
+| [`craft-agents`](craft-agents-integration.md) | [File contract](../test/hosts/craft-agents.test.ts) | Selected workspace skill; native execution unqualified. |
 | [`crush`](crush-integration.md) | [Native fixture](../scripts/crush-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`cursor`](cursor-integration.md) | [Hook contract](../scripts/hook-contracts.mjs) | Native loading/model delivery unqualified; see guide. |
 | [`deepagents`](deepagents-integration.md) | [File contract](../test/hosts/deepagents.test.ts) | Unqualified; see guide. |

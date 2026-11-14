@@ -1,3 +1,4 @@
+import { installCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1045,6 +1046,13 @@ const installQoderCliCommand = createHostCommand((args) => installQoderHook(unde
   process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
 });
 
+const installCraftAgentsCommand = createHostCommand((args) => installCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (result) => {
+  process.stdout.write(formatInstallSuccess("craft-agents", "workspace skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside the selected Craft workspace" },
+  ]));
+});
+
 const installQoderWorkCommand = createHostCommand(() => installQoderWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qoderwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1299,6 +1307,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["commandcode", installCommandCodeCommand],
   ["continue", installContinueCommand],
   ["copilot-agent", installCopilotAgentCommand],
+  ["craft-agents", installCraftAgentsCommand],
   ["crush", installCrushCommand],
   ["cursor", installCursorCommand],
   ["deepagents", installDeepagentsCommand],

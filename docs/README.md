@@ -66,6 +66,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Continue integration](continue-integration.md)
 - [GitHub Copilot Coding Agent Integration](copilot-agent-integration.md)
 - [GitHub Copilot CLI integration](copilot-cli-integration.md)
+- [Craft Agents integration](craft-agents-integration.md)
 - [Crush integration](crush-integration.md)
 - [cursor integration design](cursor-integration.md)
 - [Deep Agents Code integration](deepagents-integration.md)

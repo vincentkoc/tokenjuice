@@ -38,7 +38,7 @@ describe("rule filtering provenance", () => {
   it("declares an output-match replacement", async () => {
     const result = await reduceExecution({
       toolName: "exec", command: "pnpm install",
-      combinedText: "Already up to date, reused 123 packages from the disk cache", exitCode: 0,
+      combinedText: "Lockfile is up to date, resolution step is skipped\nAlready up to date\nDone in 612ms", exitCode: 0,
     });
     expect(result.compaction?.kinds).toContain("rule-output-replacement");
   });

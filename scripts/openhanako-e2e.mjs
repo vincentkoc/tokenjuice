@@ -29,6 +29,7 @@ const cases = [
 ];
 let activeCases = cases;
 let observed = new Map();
+const nativePayloads = new Map();
 let modelRequests = 0;
 let serverError;
 let session;
@@ -114,9 +115,20 @@ try {
   assert.ok(model);
   const createSession = async () => {
     const settings = sdk.SettingsManager.inMemory({ compaction: { enabled: false }, retry: { enabled: false } });
+    // Observe the real callback before the native-loaded plugin; never synthesize or alter a result.
+    const observeNativeResult = pi => pi.on("tool_result", event => {
+      if (event.toolName !== "exec_command") return;
+      nativePayloads.set(event.input.cmd, {
+        toolName: event.toolName, inputKeys: Object.keys(event.input).sort(),
+        rawText: text(event.content), contentCount: event.content.length,
+        isError: event.isError, execCommand: { ...event.details?.execCommand },
+        fullOutputPath: event.details?.fullOutputPath,
+      });
+    });
     const loader = new sdk.DefaultResourceLoader({ cwd: project, agentDir, settingsManager: settings,
       noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
-      extensionFactories: pluginManager.getExtensionFactories(), systemPrompt: "Run the requested fixture tools." });
+      extensionFactories: [observeNativeResult, ...pluginManager.getExtensionFactories()],
+      systemPrompt: "Run the requested fixture tools." });
     await loader.reload();
     const tools = createExecCommandTools({ bashTool: sdk.createBashTool(project), getCwd: () => project });
     return (await sdk.createAgentSession({ cwd: project, agentDir, authStorage: auth, modelRegistry: registry, model,
@@ -129,12 +141,22 @@ try {
   await session.prompt("Run every fixture command in order.");
   assert.ifError(serverError);
   assert.equal(observed.size, cases.length, "real tool results must reach the next model request");
-  assert.ok(observed.get("listing").includes("80 matches"));
-  assert.ok(observed.get("listing").includes("tokenjuice"));
+  const nativeListing = nativePayloads.get(cases[0].command);
+  const modelListing = observed.get("listing");
+  process.stdout.write(`${JSON.stringify({ nativeListing: {
+    toolName: nativeListing.toolName, inputKeys: nativeListing.inputKeys, contentCount: nativeListing.contentCount,
+    exitCode: nativeListing.execCommand.exitCode, tty: nativeListing.execCommand.tty,
+    transportError: nativeListing.execCommand.transportError, rawChars: nativeListing.rawText.length,
+  }, modelListing: { chars: modelListing.length, preview: modelListing.slice(0, 600) } })}\n`);
+  assert.equal(nativeListing.rawText.trimEnd().split("\n").length, 80);
+  assert.equal(nativeListing.execCommand.exitCode, 0);
+  assert.ok(modelListing.includes("80 matches"));
+  assert.ok(modelListing.length < nativeListing.rawText.length * 0.75, "model must receive substantially reduced native output");
   assert.equal(observed.get("exact"), exact);
   assert.equal(observed.get("raw").trimEnd().split("\n").length, 80);
-  assert.ok(!observed.get("raw").includes("tokenjuice"));
+  assert.equal(observed.get("raw"), nativePayloads.get(cases[2].command).rawText);
   assert.ok(observed.get("failure").includes("failure-output"));
+  assert.equal(observed.get("failure"), nativePayloads.get(cases[3].command).rawText);
   const failed = events.find(event => event.toolCallId === "failure");
   assert.equal(failed.isError, true);
   assert.equal(failed.result.details.execCommand.exitCode, 7);
@@ -143,7 +165,7 @@ try {
   assert.equal(completed.result.details.execCommand.tty, false);
   const truncated = events.find(event => event.toolCallId === "truncated");
   assert.ok(truncated.result.details.fullOutputPath, "real Bash tool must exercise its truncation boundary");
-  assert.ok(!observed.get("truncated").includes("[tokenjuice"), "truncated results must pass through");
+  assert.equal(observed.get("truncated"), nativePayloads.get(cases[4].command).rawText, "truncated results must pass through");
   await sdk.emitSessionShutdown(session);
   session.dispose();
   session = undefined;
@@ -156,7 +178,7 @@ try {
   await session.prompt("Run the listing again with the plugin disabled.");
   assert.ifError(serverError);
   assert.equal(observed.get("listing").trimEnd().split("\n").length, 80);
-  assert.ok(!observed.get("listing").includes("tokenjuice"));
+  assert.equal(observed.get("listing"), nativePayloads.get(cases[0].command).rawText);
   process.stdout.write(`${JSON.stringify({ ok: true, host: "openhanako-app-core", version: hostPackage.version,
     modelRequests, cases: cases.map(item => item.id), permissionGate: "deny-grant-revoke", desktopUi: "unverified" })}\n`);
 } finally {

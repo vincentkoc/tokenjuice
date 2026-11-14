@@ -115,6 +115,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Qodo integration](qodo-integration.md)
 - [Qwen Code integration](qwen-code-integration.md)
 - [QwenWork integration](qwenwork-integration.md)
+- [QwenPaw integration](qwenpaw-integration.md)
 - [Replit integration](replit-integration.md)
 - [Roo Code integration](roo-integration.md)
 - [Rovo integration](rovo-integration.md)

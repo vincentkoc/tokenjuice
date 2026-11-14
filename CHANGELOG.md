@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a QwenPaw workspace skill package with explicit-agent import, dependency checks and failure-preserving command guidance.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

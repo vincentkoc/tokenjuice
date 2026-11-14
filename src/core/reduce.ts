@@ -57,6 +57,7 @@ function applyRule(
   input: ToolExecutionInput,
   rawText: string,
   noOmit = false,
+  maxInlineChars = 1200,
 ): { summary: string; facts: Record<string, number>; compaction: CompactionMetadata } {
   const rule = compiledRule.rule;
   if (rule.transforms?.prettyPrintJson) {
@@ -120,11 +121,6 @@ function applyRule(
     lines = rewritten.lines;
     rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
-  if (rule.id === "search/rg") {
-    const rewritten = rewriteSearchLines(lines, noOmit);
-    lines = rewritten.lines;
-    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
-  }
   if (rule.id === "git/diff") {
     const rewritten = rewriteGitDiffLines(lines, noOmit);
     lines = rewritten.lines;
@@ -138,6 +134,15 @@ function applyRule(
       factLines = factLines.filter((line) => !line.startsWith("+++") && !line.startsWith("---"));
     }
     facts[counter.name] = factLines.filter((line) => pattern.test(line)).length;
+  }
+
+  const searchFits = rule.family === "search" && countTextChars(formatInline(
+    { family: rule.family, matchedReducer: rule.id }, input, lines.join("\n"), facts, noOmit,
+  )) <= maxInlineChars;
+  if (rule.id === "search/rg" && !searchFits) {
+    const rewritten = rewriteSearchLines(lines, noOmit);
+    lines = rewritten.lines;
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
 
   if (lines.length === 0 && rule.onEmpty) {
@@ -158,7 +163,9 @@ function applyRule(
         tail: rule.summarize?.tail ?? 6,
       };
 
-  const compacted = headTail(lines, summarize.head, summarize.tail, noOmit);
+  const compacted = searchFits
+    ? { lines, compaction: NO_COMPACTION_METADATA }
+    : headTail(lines, summarize.head, summarize.tail, noOmit);
   return {
     summary: compacted.lines.join("\n").trim(),
     facts,
@@ -604,7 +611,7 @@ export async function reduceExecutionWithRules(
     }
   }
 
-  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit);
+  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit, maxInlineChars);
   const compactText = formatInline(
     classification,
     reducerInput,

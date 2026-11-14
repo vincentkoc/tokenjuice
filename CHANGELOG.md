@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve every search match and full matching rows when the complete formatted result fits the requested inline budget.
+
 - Replace placeholder client logos with sourced brand assets in uniform, theme-safe tiles; document provenance and leave unverified marks blank.
 
 - Restore one complete README harness table, including framework adapters, desktop/manual routes, and explicit integration modes.

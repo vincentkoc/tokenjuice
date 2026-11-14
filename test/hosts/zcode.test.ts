@@ -91,7 +91,7 @@ describe("ZCode hook lifecycle", () => {
     await installZCodeHook(settingsPath, options);
     expect(JSON.parse(await readFile(target, "utf8")).custom).toBe(42);
     await rm(target);
-    await expect(installZCodeHook(settingsPath, options)).rejects.toThrow();
+    await expect(installZCodeHook(settingsPath, options)).rejects.toThrow(/ENOENT/);
   });
 });
 

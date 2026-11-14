@@ -12,6 +12,7 @@ beforeEach(async () => {
   vi.stubEnv("USERPROFILE", home);
   vi.stubEnv("SNOW_CONFIG_DIR", join(home, "config"));
   vi.stubEnv("TOKENJUICE_STATS", "off");
+  await writeFile(join(home, "tokenjuice"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 });
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -71,7 +72,7 @@ describe("Snow CLI native afterToolCall", () => {
     ]) expect(await invoke(value)).toEqual({ output: "", exitCode: 0 });
   });
   it("installs idempotently and preserves custom rules in the native file", async () => {
-    const options = { local: true, binaryPath: process.execPath };
+    const options = { local: true, binaryPath: join(home, "tokenjuice") };
     expect((await doctorSnowCliHook(undefined, options)).status).toBe("disabled");
     const result = await installSnowCliHook(undefined, options);
     expect(result.settingsPath).toBe(join(home, "config", "hooks", "afterToolCall.json"));
@@ -87,7 +88,7 @@ describe("Snow CLI native afterToolCall", () => {
     expect(JSON.parse(await readFile(result.settingsPath, "utf8"))).toEqual({ afterToolCall: [custom], extra: true });
   });
   it("accepts native array config and diagnoses disabled or malformed entries", async () => {
-    const options = { local: true, binaryPath: process.execPath };
+    const options = { local: true, binaryPath: join(home, "tokenjuice") };
     const result = await installSnowCliHook(undefined, options);
     const config = JSON.parse(await readFile(result.settingsPath, "utf8"));
     await writeFile(result.settingsPath, JSON.stringify(config.afterToolCall));

@@ -150,8 +150,11 @@ async function runCodexContracts() {
       "and have 8 and 642 different commits each, respectively.",
       "",
       "Changes not staged for commit:",
+      '  (use "git add <file>..." to update what will be committed)',
+      '  (use "git restore <file>..." to discard changes in working directory)',
       "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
       "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
+      ...Array.from({ length: 30 }, (_, index) => `\tmodified:   src/fixture-${index}.ts`),
       "",
       "no changes added to commit",
     ].join("\n"),
@@ -170,7 +173,7 @@ async function runCodexContracts() {
   const observation = JSON.parse(additionalContext.slice(observationPrefix.length, -observationSuffix.length));
   assert(observation.source === "codex-post-tool-use", "expected factual Codex observation source");
   assert(observation.exitCode === 0, "expected factual Codex observation exit code");
-  assert(observation.authority === "non-authoritative-rewrite", "expected non-authoritative rewrite label");
+  assert(observation.authority === "authoritative-omission", "expected omitted-output label");
   assert(observation.compactedOutput.includes("Changes not staged:"), "expected Codex hook output to retain status context");
   assert(
     observation.compactedOutput.includes("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts"),
@@ -179,7 +182,7 @@ async function runCodexContracts() {
   assert(!observation.compactedOutput.includes("and have 8 and 642"), "expected Codex hook output to omit noisy branch details");
   assert(
     observation.recoveryReference === undefined,
-    "expected non-authoritative Codex rewrites to omit recovery references",
+    "expected unstored Codex rewrites to omit recovery references",
   );
   assert(!hook.stdout.includes("\"decision\""), "Codex hook feedback must not emit JSON decision:block output");
 

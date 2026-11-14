@@ -1471,8 +1471,8 @@ export async function runCodexPostToolUseHook(
       ...(options.allowOmit ? { allowOmit: true } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
       ...(noOmit ? { noOmit: true } : {}),
-      storeRaw,
-      recordStats: shouldRecordStats(),
+      storeRaw: false,
+      recordStats: false,
       metadata: {
         source: "codex-post-tool-use",
       },
@@ -1496,30 +1496,52 @@ export async function runCodexPostToolUseHook(
     }
 
     if (outcome.action === "keep") {
-      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: outcome.reason });
+      await recordImmediateHookStats(executionInput, combinedText, false);
+      await writeDebug({ ...debug, ...buildImmediateSkipStats(combinedText), deliveryMode: "original-only", skipped: outcome.reason });
       return 0;
     }
 
-    const replacement = buildCodexReplacementOutput(
-      outcome.result.inlineText,
-      outcome.result.rawRef?.id,
-      outcome.result.compaction,
-      exitCode,
-      maxInlineChars,
-      noOmit,
-    );
-    if (!replacement) {
-      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: "observation-inline-limit" });
+    const rawChars = countTextChars(stripAnsi(combinedText));
+    const finalize = (rawRefId?: string) => {
+      const replacement = buildCodexReplacementOutput(
+        outcome.result.inlineText, rawRefId, outcome.result.compaction,
+        exitCode, maxInlineChars, noOmit,
+      );
+      const feedbackChars = replacement
+        ? countTextChars(replacement.payload.stopReason as string)
+        : rawChars;
+      const worthwhile = replacement && feedbackChars < rawChars;
+      const reducedChars = worthwhile ? feedbackChars : rawChars;
+      return {
+        replacement: worthwhile ? replacement : undefined,
+        reason: replacement ? "observation-no-savings" : "observation-inline-limit",
+        stats: { rawChars, reducedChars, ratio: rawChars === 0 ? 1 : reducedChars / rawChars },
+      };
+    };
+    let finalized = finalize();
+    const recordStats = shouldRecordStats();
+    const artifact = { input: executionInput, rawText: combinedText, classification: outcome.result.classification };
+    if (storeRaw && finalized.replacement) {
+      await storeArtifact({ ...artifact, recordStats }, undefined, (ref) => {
+        finalized = finalize(ref.id);
+        return finalized.stats;
+      });
+    } else if (recordStats) {
+      await tryStoreArtifactMetadata({ ...artifact, stats: finalized.stats });
+    }
+    const finalDebug = { ...debug, ...finalized.stats, savedChars: rawChars - finalized.stats.reducedChars };
+    if (!finalized.replacement) {
+      await writeDebug({ ...finalDebug, deliveryMode: "original-only", skipped: finalized.reason });
       return 0;
     }
 
-    process.stdout.write(`${JSON.stringify(replacement.payload)}\n`);
+    process.stdout.write(`${JSON.stringify(finalized.replacement.payload)}\n`);
     await writeDebug({
-      ...debug,
+      ...finalDebug,
       rewrote: true,
       deliveryMode: "replacement-feedback",
-      measurement: "pre-delivery-summary-characters",
-      feedbackTruncated: replacement.truncated,
+      measurement: "model-visible-feedback-characters",
+      feedbackTruncated: finalized.replacement.truncated,
     });
     return 0;
   } catch (error) {

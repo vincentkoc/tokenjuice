@@ -31,6 +31,11 @@ adding a second developer message or rejecting a nested tool promise. Explicit
 failures, raw bypasses, and exact reads retain their existing guards. See the
 [official hook output contract](https://learn.chatgpt.com/docs/hooks).
 
+The complete `stopReason` observation must be smaller than the original output.
+The hook keeps the original when the envelope removes the savings. Statistics
+measure the delivered observation, including its recovery command when raw
+retention is enabled; kept output records zero savings.
+
 ## Native acceptance test
 
 ```sh

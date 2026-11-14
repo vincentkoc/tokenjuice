@@ -1294,6 +1294,49 @@ describe("doctorCodexHook", () => {
 });
 
 describe("runCodexPostToolUseHook", () => {
+  it("keeps short output when the complete observation would cost more", async () => {
+    const home = await createTempDir();
+    const artifacts = await createTempDir();
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_ARTIFACT_DIR = artifacts;
+    process.env.TOKENJUICE_STATS = "1";
+    const raw = "On branch fixture\nChanges not staged for commit:\n\tmodified:   src/small.ts\n\nno changes added to commit\n";
+    const { stdout } = await captureStdio(() => runCodexPostToolUseHook(JSON.stringify({
+      hook_event_name: "PostToolUse", tool_name: "Bash", exit_code: 0,
+      tool_input: { command: "git status" }, tool_response: raw,
+    })));
+    expect(stdout).toBe("");
+    const metadata = await listArtifactMetadata(artifacts);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]?.metadata.reducedChars).toBe(countTextChars(raw));
+    expect(metadata[0]?.metadata.ratio).toBe(1);
+  });
+
+  it("records complete delivered observation and recovery overhead exactly once", async () => {
+    const home = await createTempDir();
+    const artifacts = await createTempDir();
+    process.env.CODEX_HOME = home;
+    process.env.TOKENJUICE_ARTIFACT_DIR = artifacts;
+    process.env.TOKENJUICE_STATS = "1";
+    process.env.TOKENJUICE_CODEX_STORE = "1";
+    const raw = Array.from({ length: 100 }, (_, index) => `${index.toString(16).padStart(7, "a")} feat: change ${index}`).join("\n");
+    const { stdout } = await captureStdio(() => runCodexPostToolUseHook(JSON.stringify({
+      hook_event_name: "PostToolUse", tool_name: "Bash", exit_code: 0,
+      tool_input: { command: "git log --oneline" }, tool_response: raw,
+    })));
+    const response = parseCodexReplacementOutput(stdout);
+    const observation = parseCodexObservation(response.stopReason);
+    expect(observation).toHaveProperty("recoveryReference");
+    const metadata = await listArtifactMetadata(artifacts);
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]?.metadata.reducedChars).toBe(countTextChars(response.stopReason));
+    expect(metadata[0]?.metadata.reducedChars).toBeLessThan(countTextChars(raw));
+    const stored = await listArtifacts(artifacts);
+    expect(stored).toHaveLength(1);
+    const sidecar = JSON.parse(await readFile(stored[0]!.metadataPath, "utf8"));
+    expect(sidecar.reducedChars).toBe(countTextChars(response.stopReason));
+  });
+
   it("skips oversized Bash output without adding developer context", async () => {
     const home = await createTempDir();
     process.env.CODEX_HOME = home;
@@ -1446,8 +1489,11 @@ describe("runCodexPostToolUseHook", () => {
         "and have 8 and 642 different commits each, respectively.",
         "",
         "Changes not staged for commit:",
+        '  (use "git add <file>..." to update what will be committed)',
+        '  (use "git restore <file>..." to discard changes in working directory)',
         "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
         "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
+        ...Array.from({ length: 30 }, (_, index) => `\tmodified:   src/fixture-${index}.ts`),
         "",
         "no changes added to commit",
       ].join("\n"),
@@ -1471,14 +1517,14 @@ describe("runCodexPostToolUseHook", () => {
     expect(response.continue).toBe(false);
     expect(observation.source).toBe("codex-post-tool-use");
     expect(observation.exitCode).toBe(0);
-    expect(observation.authority).toBe("non-authoritative-rewrite");
+    expect(observation.authority).toBe("authoritative-omission");
     expect(observation.compactedOutput).toContain("Changes not staged:");
     expect(observation.compactedOutput).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
     expect(observation.compactedOutput).not.toContain("and have 8 and 642");
     expect(observation).not.toHaveProperty("recoveryReference");
     expect(debug.rewrote).toBe(true);
     expect(debug.matchedReducer).toBe("git/status");
-    expect(debug.compaction?.authoritative).toBe(false);
+    expect(debug.compaction?.authoritative).toBe(true);
   });
 
   it("leaves machine-readable JSON in the original tool result only", async () => {
@@ -1826,9 +1872,9 @@ describe("runCodexPostToolUseHook", () => {
     expect(debug.skipped).toBe("no-compaction");
     expect(debug.matchedReducer).toBe("git/status");
     expect(debug.rawChars).toBe(28);
-    expect(debug.reducedChars).toBe(27);
-    expect(debug.savedChars).toBe(1);
-    expect(debug.ratio).toBeCloseTo(27 / 28, 5);
+    expect(debug.reducedChars).toBe(28);
+    expect(debug.savedChars).toBe(0);
+    expect(debug.ratio).toBe(1);
   });
 
   it("auto-rewrites large repository inventory commands", async () => {
@@ -2401,7 +2447,7 @@ describe("runCodexPostToolUseHook", () => {
     expect(sedEntry?.matchedReducer).toBeUndefined();
     expect(gitEntry?.rewrote).toBe(false);
     expect(gitEntry?.skipped).toBe("no-compaction");
-    expect(gitEntry?.savedChars).toBe(1);
+    expect(gitEntry?.savedChars).toBe(0);
   });
 
   it("leaves legacy malformed history untouched and starts bounded segments", async () => {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.
+
 - Preserve every search match and full matching rows when the complete formatted result fits the requested inline budget.
 
 - Replace placeholder client logos with sourced brand assets in uniform, theme-safe tiles; document provenance and leave unverified marks blank.

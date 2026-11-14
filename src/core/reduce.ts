@@ -79,7 +79,7 @@ function applyRule(
 
   const outputMatchText = trimEmptyEdges(lines).join("\n");
   const matchedOutput = compiledRule.compiled.outputMatches.find((entry) => entry.pattern.test(outputMatchText));
-  if (!noOmit && matchedOutput) {
+  if (!noOmit && input.exitCode === 0 && matchedOutput) {
     return {
       summary: matchedOutput.message,
       facts,

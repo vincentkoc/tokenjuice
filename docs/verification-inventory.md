@@ -76,6 +76,7 @@ CLI compatibility; they are not E2E evidence.
 | [`elyra`](elyra-integration.md) | [File contract](../test/hosts/elyra.test.ts) | Unqualified; see guide. |
 | [`firebase-studio`](firebase-studio-integration.md) | [File contract](../test/hosts/firebase-studio.test.ts) | Unqualified; see guide. |
 | [`forgecode`](forgecode-integration.md), `forge-code` | [File contract](../test/hosts/forgecode.test.ts) | Unqualified; see guide. |
+| [`fx`](fx-integration.md) | Instruction lifecycle and CLI contracts. | Native fx session and model-visible execution remain unqualified. |
 | [`gemini-cli`](gemini-cli-integration.md) | [Native fixture](../scripts/gemini-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`gitlab-duo`](gitlab-duo-integration.md) | [File contract](../test/hosts/gitlab-duo.test.ts) | Unqualified; see guide. |
 | [`grok-cli`](grok-cli-integration.md) | [Native fixture](../scripts/grok-cli-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |

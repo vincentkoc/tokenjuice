@@ -36,7 +36,24 @@ if compaction throws. Exact reads and `tokenjuice wrap --raw -- <command>` keep
 their output. No upstream output file is read to expand a truncated result.
 
 Doctor checks the installed file, not native discovery or model consumption.
-Unit and CLI tests cover the source contract and lifecycle. A fresh native
-DevEco session, released-binary compatibility and model-visible output remain
-unqualified. To accept a deployment, verify plugin loading, useful compaction,
-exact/raw output, failed-command bytes and exit status inside that DevEco build.
+Unit and CLI tests cover the source contract and lifecycle.
+
+## Native acceptance blocker
+
+The published macOS package `@deveco/deveco-code@0.3.0-stable` was tested with a
+fresh, isolated HOME, configuration directory and workspace. Its version and
+headless `run --help` commands work. A headless run configured for a local
+OpenAI-compatible model endpoint exits with status 1 before sending any request
+to that endpoint. The native error requires review of the product agreements
+through DevEco Code or `deveco auth consent` before continuing.
+
+No agreements were accepted, credentials supplied or consent state bypassed.
+This proves a consent prerequisite; it does not establish that a custom provider
+requires Huawei authentication. The package's `stable` tag resolves to
+`0.3.0-stable`; its `latest` tag resolved to the older `0.2.5` during this check.
+
+The owner must review and accept the vendor agreements through the native
+`deveco auth consent` flow in the isolated test environment before qualification
+can continue. Plugin loading, released-binary compatibility, model-visible
+compaction, exact/raw preservation, complete failed output and uninstall remain
+unqualified. A successful doctor report does not clear this acceptance gate.

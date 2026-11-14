@@ -41,10 +41,32 @@ The API and discovery paths were checked against
 [file hook loader](https://github.com/XiaomiMiMo/MiMo-Code/blob/5a538cb4f97b9c4c8eb09a845ec06c1e5f1f3e8f/packages/cli/src/plugin/index.ts),
 [Bash result metadata](https://github.com/XiaomiMiMo/MiMo-Code/blob/5a538cb4f97b9c4c8eb09a845ec06c1e5f1f3e8f/packages/cli/src/tool/bash.ts),
 and [config paths](https://github.com/XiaomiMiMo/MiMo-Code/blob/5a538cb4f97b9c4c8eb09a845ec06c1e5f1f3e8f/packages/shared/src/global.ts).
-The source package version is 0.1.17; this is not a published-version claim.
-
 Unit and installed-file tests cover lifecycle, object exports, coherent output,
-and failure/raw/exact-read preservation. Native discovery and the next model
-request remain unqualified. Before relying on automatic savings, verify a fresh
-isolated MiMo session with a successful noisy command, exact read, raw bypass,
-and failing command, then inspect the bytes in its next model request.
+and failure/raw/exact-read preservation.
+
+## Native acceptance
+
+```sh
+pnpm build
+node scripts/mimo-e2e.mjs /path/to/mimo
+```
+
+The [native fixture](../scripts/mimo-e2e.mjs) passed with the official
+**MiMo Code 0.1.17 Linux x64** executable in
+[CI](https://github.com/vincentkoc/tokenjuice/actions/runs/43574059537/job/132384593948).
+CI checks the release archive's SHA-256 before execution. Baseline, installed
+and uninstalled sessions use an isolated home, config directory and Git
+workspace, with fixed Bash calls from a loopback OpenAI-compatible endpoint.
+No real credentials or user settings are used. The fixture enables Bash
+permission for its fixed commands in the disposable workspace.
+
+The installed hook shortens Git status containing 80 modified files in the
+next model request. Exact reads retain CRLF and trailing blank lines;
+inventory and explicit raw output match the unhooked baseline. All 160 failure
+lines, stderr and exit status 7 remain intact. Native JSON events must agree
+with the model-visible output and metadata. After uninstall, a fresh session
+returns the baseline output and an unrelated custom hook remains unchanged.
+
+This qualifies native file discovery and result delivery for the pinned CLI
+and local provider route. Other versions, platforms, desktop/embedded contexts,
+remote providers and interactive permission modes need separate acceptance.

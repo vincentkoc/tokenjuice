@@ -127,7 +127,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/mastra.png" alt="Mastra" /> | [Mastra](docs/framework-integrations.md#mastra) | Output processor | `createMastraProcessor()` from `tokenjuice/mastra` | Add to `outputProcessors` with application decoder/replacement callbacks |
 | <img width="48" height="48" src="docs/logos/mcp-agent.png" alt="mcp-agent" /> | [mcp-agent](docs/mcp-agent-integration.md) | Guidance | `tokenjuice install mcp-agent` | `.mcp-agent/agents/tokenjuice.md` |
 | <img width="48" height="48" src="docs/logos/mini-swe-agent.png" alt="mini-SWE-agent" /> | [mini-SWE-agent](docs/mini-swe-agent-integration.md) | Guidance | `tokenjuice install mini-swe-agent` | `.mini-swe-agent/tokenjuice.yaml` |
-| — | [MiMo Code](docs/mimo-code-integration.md) | Result replacement (beta) | `tokenjuice install mimo-code` | Native file hook; session acceptance pending |
+| — | [MiMo Code](docs/mimo-code-integration.md) | Result replacement (beta) | `tokenjuice install mimo-code` | Native file hook; Linux x64 CLI `0.1.17` verified |
 | <img width="48" height="48" src="docs/logos/mistral-vibe.png" alt="Mistral Vibe" /> | [Mistral Vibe](docs/mistral-vibe-integration.md) | Guidance | `tokenjuice install mistral-vibe` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/mux-xum.png" alt="Mux / Xum" /> | [Mux / Xum](docs/mux-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/mux-integration.md) |
 | — | [NovaKit CLI](docs/novakit-integration.md) | Guidance | `tokenjuice install novakit` | `NOVAKIT.md` |

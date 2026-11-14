@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results.
+- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 

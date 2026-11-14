@@ -262,6 +262,23 @@ as described in the [OpenCode plugin contract](https://opencode.ai/docs/plugins/
 Reinstall and restart OpenCode after upgrading from an installation that exported
 an unsupported `{ id, setup }` object; doctor reports that older format as a warning.
 
+### MiMo Code session acceptance
+
+`node scripts/mimo-e2e.mjs /path/to/mimo` runs native MiMo Code 0.1.17 with an
+isolated home, config directory and Git workspace. CI verifies the official
+Linux x64 archive digest. A loopback OpenAI-compatible endpoint requests fixed
+Bash commands in baseline, installed and uninstalled sessions. Assertions check
+the actual next model request for 80-file Git status compaction, exact CRLF and
+trailing blank lines, unchanged inventory/raw output, and all 160 failure lines,
+stderr and exit status 7. Native JSON output and metadata must stay coherent.
+Uninstall restores baseline output and preserves an unrelated custom hook.
+
+The fixture enables Bash permission for its fixed commands in the disposable
+workspace, disables updates, telemetry and model catalog downloads, and uses no
+real credentials or user settings.
+Desktop/embedded contexts, other platforms and versions, remote providers and
+interactive permission modes need separate acceptance.
+
 ### Pi session acceptance
 
 `node scripts/pi-e2e.mjs /path/to/pi` runs Pi with an installed extension and a

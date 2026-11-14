@@ -70,6 +70,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [cursor integration design](cursor-integration.md)
 - [Deep Agents Code integration](deepagents-integration.md)
 - [DeepSeek Harness integration](deepseek-harness-integration.md)
+- [DevEco Code integration](deveco-integration.md)
 - [Devin for Terminal integration](devin-integration.md)
 - [Docker Agent integration](docker-agent-integration.md)
 - [dot-agents integration](dot-agents-integration.md)

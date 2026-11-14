@@ -1,3 +1,4 @@
+import { doctorDevEcoExtension } from "../deveco/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -148,6 +149,7 @@ export type HookIntegrationDoctorReport = {
   continue: ContinueDoctorReport;
   crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
+  deveco: Awaited<ReturnType<typeof doctorDevEcoExtension>>;
   deepagents: DeepAgentsDoctorReport;
   devin: DevinDoctorReport;
   "dot-agents": DotAgentsDoctorReport;
@@ -272,6 +274,7 @@ const hookDoctorIntegrationDoctors = {
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
   crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
+  deveco: (options) => doctorDevEcoExtension(getHookCommandOptions(options)),
   deepagents: (options) => doctorDeepAgentsInstructions(undefined, getHookCommandOptions(options)),
   devin: (options) => doctorDevinHook(undefined, getHookCommandOptions(options)),
   "dot-agents": (options) => doctorDotAgentsRule(undefined, getHookCommandOptions(options)),

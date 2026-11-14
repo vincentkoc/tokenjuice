@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a beta DevEco Code native Bash-result plugin with owned-file lifecycle and successful, complete-output checks.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

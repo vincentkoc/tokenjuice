@@ -75,11 +75,17 @@ try {
   });
 
   const status = "On branch quality-fixture\nChanges not staged for commit:\n\tmodified:   src/雪.ts\n\tmodified:   src/quoted-file.ts\n\nno changes added to commit\n";
-  const rewritten = hook("git status", status);
-  assert.equal(rewritten.rewritten, true, "exercise the actual Codex envelope");
-  record("codex-status-envelope", "Codex stopReason", status, rewritten.text, (text) => {
+  const statusResult = hook("git status", status);
+  record("codex-short-status", statusResult.rewritten ? "Codex stopReason" : "Codex original tool text", status, statusResult.text, (text) => {
     assert.ok(text.includes("src/雪.ts"));
     assert.ok(text.includes("src/quoted-file.ts"));
+  });
+  const log = Array.from({ length: 100 }, (_, index) => `${index.toString(16).padStart(7, "a")} feat: change ${index}`).join("\n");
+  const rewritten = hook("git log --oneline", log);
+  assert.equal(rewritten.rewritten, true, "exercise the actual Codex envelope");
+  record("codex-log-envelope", "Codex stopReason", log, rewritten.text, (text) => {
+    assert.ok(text.includes("feat: change 0"));
+    assert.ok(text.includes("feat: change 99"));
   });
   for (const [name, command, options] of [
     ["file-inspection-passthrough", "cat exact.txt", {}],

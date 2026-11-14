@@ -200,7 +200,17 @@ process.stdout.write(output);
   assert.equal(shellResult(baseline.get("raw")).output, shellResult(baseline.get("listing")).output);
   assert.ok(installed.get("listing").length < baseline.get("listing").length);
   assert.match(installed.get("listing"), /^80 matches\n/u);
-  for (const id of ["exact", "wrapped", "raw", "failure"]) assert.equal(installed.get(id), baseline.get(id), id);
+  for (const id of ["exact", "wrapped", "raw"]) assert.equal(installed.get(id), baseline.get(id), id);
+  // Independent stdout/stderr pipes may arrive in either order across runs.
+  // Keep stdout and the native completion footer exact, and require stderr once.
+  for (const result of [baseline.get("failure"), installed.get("failure")]) {
+    assert.equal(result.match(/^failure-stderr$/gmu)?.length, 1);
+  }
+  assert.equal(
+    installed.get("failure").replace(/^failure-stderr\n/mu, ""),
+    baseline.get("failure").replace(/^failure-stderr\n/mu, ""),
+    "failure stdout and completion footer",
+  );
   assert.ok(baseline.get("wrapped").length < baseline.get("listing").length);
   assert.match(baseline.get("wrapped"), /80 matches/u);
   const failed = baseline.get("failure");

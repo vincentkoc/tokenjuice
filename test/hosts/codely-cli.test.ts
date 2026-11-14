@@ -119,7 +119,7 @@ describe("Codely CLI integration", () => {
     "does not replace invalid user configuration: %s", async (text) => {
       const path = join(home, "settings.json");
       await writeFile(path, text);
-      await expect(installCodelyCliHook(path, local())).rejects.toThrow();
+      await expect(installCodelyCliHook(path, local())).rejects.toThrow(/JSON|must be an array/u);
       expect(await readFile(path, "utf8")).toBe(text);
     },
   );

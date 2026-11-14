@@ -58,6 +58,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [CodeAnt integration](codeant-integration.md)
 - [codebuddy integration design](codebuddy-integration.md)
 - [Codebuff integration](codebuff-integration.md)
+- [Tuanjie Codely CLI integration](codely-cli-integration.md)
 - [Codegen integration](codegen-integration.md)
 - [Coder Agents integration](coder-agents-integration.md)
 - [CodeRabbit integration](coderabbit-integration.md)

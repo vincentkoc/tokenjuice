@@ -157,6 +157,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/tabby.png" alt="Tabby" /> | [Tabby](docs/tabby-integration.md) | Guidance | `tokenjuice install tabby` | `~/.tabby/config.toml` |
 | <img width="48" height="48" src="docs/logos/tabnine.png" alt="Tabnine CLI" /> | [Tabnine CLI](docs/tabnine-integration.md) | Guidance | `tokenjuice install tabnine` | `TABNINE.md` |
 | <img width="48" height="48" src="docs/logos/trae.png" alt="Trae" /> | [Trae](docs/trae-integration.md) | Guidance | `tokenjuice install trae` | `.trae/rules/project_rules.md` |
+| — | [Tuanjie Codely CLI](docs/codely-cli-integration.md) | Pre-tool wrapping | `tokenjuice install codely-cli` | `~/.codely-cli/settings.json`; Cowork desktop acceptance unverified |
 | <img width="48" height="48" src="docs/logos/uipath.png" alt="UiPath for Coding Agents" /> | [UiPath for Coding Agents](docs/uipath-integration.md) | Guidance | `tokenjuice install uipath` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/copilot-cli.png" alt="VS Code Copilot Chat (Local)" /> | [VS Code Copilot Chat (Local)](docs/vscode-copilot-integration.md) | Pre-tool wrapping | `tokenjuice install vscode-copilot` | `~/.copilot/hooks/tokenjuice-vscode.json` |
 | <img width="48" height="48" src="docs/logos/warp.png" alt="Warp" /> | [Warp](docs/warp-integration.md) | Guidance | `tokenjuice install warp` | `AGENTS.md` / `WARP.md` |

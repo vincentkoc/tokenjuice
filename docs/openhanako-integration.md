@@ -33,6 +33,14 @@ checks permission denial, grant and revocation, successful reduction, exact
 reads, raw bypass, nonzero exits and host truncation in isolated temporary
 state. It installs the delivered plugin bundle outside the source tree.
 
+[Native acceptance passed on Linux with Node 24.22.2](https://github.com/vincentkoc/tokenjuice/actions/runs/43574528846/job/132386018883)
+at tokenjuice source `1503b461883bdc71c0791267f0c223f337629807`. Eight loopback
+model requests verified the complete fixture and disabled-plugin restoration.
+A read-only observer records the real pre-compaction callback; the model must
+receive an 80-entry summary at least 25% smaller than that native output.
+Raw, failed, truncated and disabled-plugin results must match native text
+byte for byte. Failure exit code and completed non-TTY metadata remain intact.
+
 Desktop UI consistency and interactive PTY behavior remain unverified. Qualify
 those in a fresh disposable desktop session before relying on a given Hana
 version. Do not infer support from standalone Pi: Hana has its own

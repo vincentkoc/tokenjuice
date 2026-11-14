@@ -61,5 +61,9 @@ pinned host:
 node scripts/snow-cli-e2e.mjs /path/to/snow-ai/bundle/cli.mjs
 ```
 
-Native acceptance is pending the hosted fixture result. A passing doctor alone
+The [hosted native fixture](https://github.com/vincentkoc/tokenjuice/actions/runs/43573813842/job/132383847990) passed for tokenjuice revision
+`1f02fc9c75555ea563fac5c40aec74db2f185e53` on Ubuntu with Node 26 and `snow-ai@0.9.15`.
+This qualifies local `--ask` execution, native hook discovery and the model-visible
+results above. Other Snow versions, interactive UI sessions, remote execution
+and real provider endpoints remain outside that proof. A passing doctor alone
 establishes configuration health, not model-visible delivery.

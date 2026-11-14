@@ -27,7 +27,7 @@ describe("Craft Agents workspace skill", () => {
   it("requires an explicit existing workspace and never guesses or creates one", async () => {
     expect((await doctorCraftAgentsSkill()).status).toBe("disabled");
     await expect(installCraftAgentsSkill()).rejects.toThrow("select an existing");
-    await expect(installCraftAgentsSkill({ workspaceDir: join(home, "missing") })).rejects.toThrow();
+    await expect(installCraftAgentsSkill({ workspaceDir: join(home, "missing") })).rejects.toThrow("ENOENT");
     expect((await doctorCraftAgentsSkill({ workspaceDir: join(home, "missing") })).status).toBe("broken");
   });
 

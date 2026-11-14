@@ -1,4 +1,24 @@
 import { spawn } from "node:child_process";
+import { constants } from "node:fs";
+import { lstat, open, readdir, rm } from "node:fs/promises";
+import { join } from "node:path";
+
+/** Remove a task-owned fixture tree, including native hosts' read-only caches. */
+export async function removeReadOnlyFixture(root) {
+  async function makeDirectoriesWritable(path) {
+    const stat = await lstat(path);
+    if (!stat.isDirectory()) return; // Includes symlinks: never change their targets.
+    const handle = await open(path, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+    try {
+      await handle.chmod(stat.mode | 0o700);
+    } finally {
+      await handle.close();
+    }
+    for (const entry of await readdir(path)) await makeDirectoriesWritable(join(path, entry));
+  }
+  await makeDirectoriesWritable(root);
+  await rm(root, { recursive: true, force: true });
+}
 
 export function createProcessRunner({ cwd, env }) {
   return async function run(command, args, timeout = 90_000) {

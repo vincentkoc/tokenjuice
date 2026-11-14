@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createProcessRunner } from "./e2e-process.mjs";
+import { createProcessRunner, removeReadOnlyFixture } from "./e2e-process.mjs";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
 const cli = join(repo, "dist/cli/main.js");
@@ -43,6 +43,7 @@ const cases = [
 const observed = new Map();
 let modelRequests = 0;
 let serverError;
+let receipt;
 const server = createServer(async (request, response) => {
   try {
     let body = "";
@@ -177,9 +178,10 @@ try {
   assert.deepEqual((await catalog()).installed, []);
   await assert.rejects(readFile(join(destination, ".minimax-plugin/plugin.json")), { code: "ENOENT" });
   assert.deepEqual(await session(model), baseline, "native removal must restore ordinary output");
-  process.stdout.write(`${JSON.stringify({ ok: true, host: "minimax-code", version, permission: "full", modelRequestsPerSession: modelRequests, results: [...installed.keys()], lifecycle: "enable-disable-remove" })}\n`);
+  receipt = { ok: true, host: "minimax-code", version, permission: "full", modelRequestsPerSession: modelRequests, results: [...installed.keys()], lifecycle: "enable-disable-remove" };
 } finally {
   server.closeAllConnections();
   await new Promise(done => server.close(done));
-  await rm(root, { recursive: true, force: true });
+  await removeReadOnlyFixture(root);
 }
+process.stdout.write(`${JSON.stringify(receipt)}\n`);

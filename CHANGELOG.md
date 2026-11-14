@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add an oh-my-pi native package extension for eligible successful Bash output; preserve native failure, background and spill envelopes.
+- Add an oh-my-pi native package extension for eligible successful Bash output; verify native package lifecycle, model-visible output and preserved replay metadata with OMP 18.20.0.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 

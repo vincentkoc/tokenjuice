@@ -55,8 +55,9 @@ includes them.
 
 ## Verification status
 
-The contract was inspected against OMP 18.20.0, source revision
-`dafe7eebfc2af04661f5edf4c86f19e61429c9df`:
+The design references were inspected at source revision
+`dafe7eebfc2af04661f5edf4c86f19e61429c9df`. Acceptance uses the published OMP
+18.20.0 package rather than assuming current source matches that binary:
 
 - [Native package installation and manifest loading](https://github.com/can1357/oh-my-pi/blob/dafe7eebfc2af04661f5edf4c86f19e61429c9df/docs/plugin-manager-installer-plumbing.md)
 - [Extension loading and profile paths](https://github.com/can1357/oh-my-pi/blob/dafe7eebfc2af04661f5edf4c86f19e61429c9df/docs/extension-loading.md)
@@ -67,6 +68,28 @@ The contract was inspected against OMP 18.20.0, source revision
 unmodified native metadata, raw/exact bypass, failure and background handling,
 and package declaration. These are adapter contracts, not native acceptance.
 
-A real isolated OMP session must still verify plugin discovery, final model
-requests, raw bypass, complete failing output, and disable/uninstall. Other
-versions are unqualified; 18.20.0 is the inspected version, not a claimed minimum.
+### Native session acceptance
+
+```sh
+pnpm build
+node scripts/omp-e2e.mjs /path/to/bun /path/to/omp/dist/cli.js
+```
+
+The fixture uses OMP 18.20.0 and Bun 1.4.4, isolated HOME/agent configuration
+and a loopback OpenAI-compatible model endpoint. It exercises the real plugin
+manager's link, list, doctor, disable, enable and uninstall operations. Five fresh
+sessions compare baseline, installed, disabled, re-enabled and uninstalled states.
+Each session executes a noisy listing, an exact CRLF read, explicit raw bypass,
+and complete 80-line failure output with stderr and exit code 7.
+
+Assertions inspect the subsequent model requests. Native observer extensions
+also compare each result before and after Tokenjuice, require a real replay trace,
+and verify unchanged metadata, failure flags, exact/raw bytes and failed output.
+The observers do not replace tools or modify results. OMP's own shell minimizer
+is disabled in the disposable fixture to keep its output reduction separate.
+
+This passes locally on macOS arm64 using the pinned native host/runtime. CI runs
+the same fixture against the standard package build on Linux. Other versions,
+remote providers, interactive permission modes and desktop sessions remain
+unqualified. No account credentials or paid model are used. 18.20.0 is a tested
+version, not a claimed minimum.

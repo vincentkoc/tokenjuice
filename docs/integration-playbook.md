@@ -262,6 +262,17 @@ as described in the [OpenCode plugin contract](https://opencode.ai/docs/plugins/
 Reinstall and restart OpenCode after upgrading from an installation that exported
 an unsupported `{ id, setup }` object; doctor reports that older format as a warning.
 
+### oh-my-pi session acceptance
+
+`node scripts/omp-e2e.mjs /path/to/bun /path/to/omp/dist/cli.js` runs OMP 18.20.0
+with Bun 1.4.4 against a loopback model endpoint. It uses the native plugin
+manager to link the built package, check it, disable, re-enable and uninstall it.
+Fresh sessions verify noisy compaction, exact/raw output and complete exit-7
+failures in follow-up model requests. Observer extensions verify unchanged
+native metadata and replay traces before and after Tokenjuice. The isolated
+fixture disables OMP's built-in shell minimizer; no real credentials are passed.
+See the [OMP guide](omp-integration.md) for the supported scope.
+
 ### Pi session acceptance
 
 `node scripts/pi-e2e.mjs /path/to/pi` runs Pi with an installed extension and a

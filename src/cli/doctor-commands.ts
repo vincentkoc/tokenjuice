@@ -54,6 +54,7 @@ import { doctorDotAgentsRule } from "../hosts/dot-agents/index.js";
 import { doctorDockerAgentPrompt } from "../hosts/docker-agent/index.js";
 import { doctorDroidHook } from "../hosts/droid/index.js";
 import { doctorEcaSkill } from "../hosts/eca/index.js";
+import { doctorNanobotSkill } from "../hosts/nanobot/index.js";
 import { doctorElyraSkill } from "../hosts/elyra/index.js";
 import { doctorFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { doctorForgeCodeInstructions } from "../hosts/forgecode/index.js";
@@ -402,6 +403,7 @@ const doctorCopilotAgentCommand = createDoctorCommand((args) => doctorCopilotAge
 });
 
 const doctorEcaCommand = createFileDoctorCommand("skill", "skillPath", () => doctorEcaSkill(), true);
+const doctorNanobotCommand = createFileDoctorCommand("skill", "skillPath", () => doctorNanobotSkill(), true);
 
 const doctorElyraCommand = createFileDoctorCommand("skill", "skillPath", () => doctorElyraSkill(), true);
 
@@ -733,6 +735,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["cagent", doctorDockerAgentCommand],
   ["copilot-agent", doctorCopilotAgentCommand],
   ["eca", doctorEcaCommand],
+  ["nanobot", doctorNanobotCommand],
   ["elyra", doctorElyraCommand],
   ["firebase-studio", doctorFirebaseStudioCommand],
   ["forgecode", doctorForgecodeCommand],

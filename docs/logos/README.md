@@ -21,3 +21,5 @@ AgentInit, AI Memory Protocol, the community Grok CLI, LeanCTL, NovaKit, pi-go, 
 The GitHub product rows use the current GitHub mark from its brand kit; the old Copilot mascot is retired. Windsurf retains its official historical symbol rather than substituting the Devin logo now served by its redirected website. Some integrations use their official parent-project mark, such as AWS, OpenAI, JetBrains, and LangChain.
 
 When replacing an image, verify its identity against the project source, update both hashes and the source URL, then recheck the table in both themes. A new hostname or a successful image download alone does not establish that an asset is the project's logo.
+
+- nanobot: no verified standalone mark included; the integration catalog uses a dash. [Project source](https://github.com/HKUDS/nanobot).

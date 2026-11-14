@@ -54,6 +54,7 @@ import { uninstallDotAgentsRule } from "../hosts/dot-agents/index.js";
 import { uninstallDockerAgentPrompt } from "../hosts/docker-agent/index.js";
 import { uninstallDroidHook } from "../hosts/droid/index.js";
 import { uninstallEcaSkill } from "../hosts/eca/index.js";
+import { uninstallNanobotSkill } from "../hosts/nanobot/index.js";
 import { uninstallElyraSkill } from "../hosts/elyra/index.js";
 import { uninstallFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { uninstallForgeCodeInstructions } from "../hosts/forgecode/index.js";
@@ -519,6 +520,8 @@ const uninstallEcaCommand = createHostCommand(() => uninstallEcaSkill(), (result
   process.stdout.write("enable: tokenjuice install eca\n");
 });
 
+const uninstallNanobotCommand = createFileUninstallCommand("nanobot", "skill", "skillPath", () => uninstallNanobotSkill());
+
 const uninstallElyraCommand = createHostCommand(() => uninstallElyraSkill(), (result) => {
   process.stdout.write(`removed Elyra skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -655,6 +658,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["dockeragent", uninstallDockerAgentCommand],
   ["cagent", uninstallDockerAgentCommand],
   ["eca", uninstallEcaCommand],
+  ["nanobot", uninstallNanobotCommand],
   ["elyra", uninstallElyraCommand],
   ["droid", uninstallDroidCommand],
   ["zed", uninstallZedCommand],

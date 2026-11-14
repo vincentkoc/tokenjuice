@@ -55,6 +55,7 @@ import { installDotAgentsRule } from "../hosts/dot-agents/index.js";
 import { installDockerAgentPrompt } from "../hosts/docker-agent/index.js";
 import { installDroidHook } from "../hosts/droid/index.js";
 import { installEcaSkill } from "../hosts/eca/index.js";
+import { installNanobotSkill } from "../hosts/nanobot/index.js";
 import { installElyraSkill } from "../hosts/elyra/index.js";
 import { installFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { installForgeCodeInstructions } from "../hosts/forgecode/index.js";
@@ -641,6 +642,14 @@ const installEcaCommand = createFileInstallCommand(() => installEcaSkill(), {
   pathLabel: "Skill",
   pathKey: "skillPath",
   beta: "project skill guidance; ECA still owns shell execution",
+});
+
+const installNanobotCommand = createFileInstallCommand(() => installNanobotSkill(), {
+  target: "nanobot",
+  noun: "skill",
+  pathLabel: "Skill",
+  pathKey: "skillPath",
+  beta: "workspace skill guidance; nanobot still owns shell execution",
 });
 
 const installElyraCommand = createFileInstallCommand(() => installElyraSkill(), {
@@ -1308,6 +1317,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["dockeragent", installDockerAgentCommand],
   ["cagent", installDockerAgentCommand],
   ["eca", installEcaCommand],
+  ["nanobot", installNanobotCommand],
   ["elyra", installElyraCommand],
   ["firebase-studio", installFirebaseStudioCommand],
   ["forgecode", installForgecodeCommand],

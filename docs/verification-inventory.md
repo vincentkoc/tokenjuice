@@ -101,6 +101,7 @@ CLI compatibility; they are not E2E evidence.
 | [`swe-agent`](swe-agent-integration.md), `sweagent` | [File contract](../test/hosts/swe-agent.test.ts) | Unqualified; see guide. |
 | [`stagewise`](stagewise-integration.md) | [File contract](../test/hosts/stagewise.test.ts) | Unqualified; see guide. |
 | [`mux`](mux-integration.md) | [Native fixture](../scripts/mux-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |
+| [`nanobot`](nanobot-integration.md) | Workspace skill lifecycle and CLI contracts. | Native nanobot session and model-visible execution remain unqualified. |
 | [`novakit`](novakit-integration.md) | [File contract](../test/hosts/novakit.test.ts) | Unqualified; see guide. |
 | [`knowns`](knowns-integration.md) | [File contract](../test/hosts/knowns.test.ts) | Unqualified; see guide. |
 | [`ona`](ona-integration.md) | [File contract](../test/hosts/ona.test.ts) | Unqualified; see guide. |

@@ -129,6 +129,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | <img width="48" height="48" src="docs/logos/mini-swe-agent.png" alt="mini-SWE-agent" /> | [mini-SWE-agent](docs/mini-swe-agent-integration.md) | Guidance | `tokenjuice install mini-swe-agent` | `.mini-swe-agent/tokenjuice.yaml` |
 | <img width="48" height="48" src="docs/logos/mistral-vibe.png" alt="Mistral Vibe" /> | [Mistral Vibe](docs/mistral-vibe-integration.md) | Guidance | `tokenjuice install mistral-vibe` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/mux-xum.png" alt="Mux / Xum" /> | [Mux / Xum](docs/mux-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/mux-integration.md) |
+| — | [nanobot](docs/nanobot-integration.md) | Guidance | `tokenjuice install nanobot` | `<workspace>/skills/tokenjuice/SKILL.md`; set `NANOBOT_WORKSPACE` for custom workspaces |
 | — | [NovaKit CLI](docs/novakit-integration.md) | Guidance | `tokenjuice install novakit` | `NOVAKIT.md` |
 | <img width="48" height="48" src="docs/logos/ona.png" alt="Ona Agent" /> | [Ona Agent](docs/ona-integration.md) | Guidance | `tokenjuice install ona` | `.ona/skills/tokenjuice/SKILL.md` |
 | <img width="48" height="48" src="docs/logos/open-interpreter.png" alt="Open Interpreter" /> | [Open Interpreter](docs/open-interpreter-integration.md) | Guidance | `tokenjuice install open-interpreter` | `AGENTS.md` |

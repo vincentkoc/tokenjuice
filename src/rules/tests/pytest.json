@@ -4,8 +4,12 @@
   "description": "Compact pytest output while preserving failures and final summary.",
   "counterSource": "preKeep",
   "match": {
-    "toolNames": ["exec"],
-    "commandIncludes": ["pytest"]
+    "toolNames": [
+      "exec"
+    ],
+    "commandIncludes": [
+      "pytest"
+    ]
   },
   "transforms": {
     "stripAnsi": true,
@@ -27,7 +31,8 @@
       "^E\\s+.+",
       "AssertionError",
       "^.+::.+ (FAILED|ERROR)$",
-      "^>\\s+.+"
+      "^>\\s+.+",
+      "^\\S.*\\.py:\\d+:\\s+\\S"
     ]
   },
   "summarize": {

@@ -88,8 +88,8 @@ and verify unchanged metadata, failure flags, exact/raw bytes and failed output.
 The observers do not replace tools or modify results. OMP's own shell minimizer
 is disabled in the disposable fixture to keep its output reduction separate.
 
-This passes locally on macOS arm64 using the pinned native host/runtime. CI runs
-the same fixture against the standard package build on Linux. Other versions,
+This passes on macOS arm64 with the pinned native host/runtime and on Linux x64
+against the standard package build in [native CI](https://github.com/vincentkoc/tokenjuice/actions/runs/43573866426/job/132384027141). Other versions,
 remote providers, interactive permission modes and desktop sessions remain
 unqualified. No account credentials or paid model are used. 18.20.0 is a tested
 version, not a claimed minimum.

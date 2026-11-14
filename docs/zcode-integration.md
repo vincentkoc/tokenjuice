@@ -49,9 +49,27 @@ pnpm verify
 pnpm verify:package
 ```
 
-Tests cover configuration lifecycle, mixed custom hooks, disabled settings,
-symlink safety, full input preservation, malformed input and raw bypass. They
-do not establish native ZCode discovery or model-visible delivery. A native
-session still needs to verify listing compaction, exact reads, raw bypass and
-complete failed output against the actual model request. No native acceptance
-is claimed for this adapter yet.
+Unit tests cover configuration lifecycle, mixed custom hooks, disabled settings,
+symlink safety, full input preservation, malformed input and raw bypass.
+
+The [native fixture](../scripts/zcode-e2e.mjs) runs the actual agent from the
+official ZCode **3.18.2 macOS arm64** package (agent version **0.17.1**), against
+a loopback OpenAI-compatible endpoint. It uses temporary home, data and project
+directories and a fixture-only key. It observes all eight tool results in the
+next model requests across baseline, installed and uninstalled sessions:
+
+- automatic hook discovery and 80-file listing compaction;
+- exact CRLF content and explicit raw output, relative to native delivery;
+- all 80 failed stdout lines, stderr and exit status 7;
+- `cd`, a compound command and working-directory state between tool calls;
+- restored baseline results after uninstall and disabled doctor status.
+
+ZCode itself trims trailing whitespace from model-visible results; the fixture
+compares exact reads to that native baseline. CI runs this fixture with Bash and
+Zsh. It extracts the bundled Node agent and provider definitions without launching
+the desktop app. The pinned
+[official package](https://cdn-zcode.z.ai/zcode/electron/releases/3.18.2/macos-arm64/ZCode-3.18.2-mac-arm64.dmg)
+has SHA-256 `0fd13032e3c24dc172615a0c6b3e9477b0af287d87af0c973129ee15c32f7d40`.
+
+Other ZCode versions, desktop UI sessions, Linux/WSL, Windows, custom shell
+functions and aliases remain unqualified by this fixture.

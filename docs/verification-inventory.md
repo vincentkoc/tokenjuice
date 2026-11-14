@@ -28,7 +28,7 @@ CLI compatibility; they are not E2E evidence.
 
 | Target and aliases | Recorded evidence | Native acceptance |
 | --- | --- | --- |
-| [`zcode`](zcode-integration.md) | [File and runtime contract](../test/hosts/zcode.test.ts) | Native discovery and model-visible delivery unqualified. |
+| [`zcode`](zcode-integration.md) | [File and runtime contract](../test/hosts/zcode.test.ts), [native fixture](../scripts/zcode-e2e.mjs) | Pinned 3.18.2 macOS agent: discovery, model-visible output, cwd and uninstall; see guide for limits. |
 | [`adal`](adal-integration.md) | [File contract](../test/hosts/adal.test.ts) | Unqualified; see guide. |
 | [`aether`](aether-integration.md) | [File contract](../test/hosts/aether.test.ts) | Unqualified; see guide. |
 | [`aider`](aider-integration.md) | [File contract](../test/hosts/aider.test.ts) | Unqualified; see guide. |

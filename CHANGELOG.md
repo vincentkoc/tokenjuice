@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add ZCode native pre-tool Bash wrapping with configuration lifecycle checks, full input preservation, and explicit native acceptance limits.
+- Add ZCode native pre-tool Bash wrapping with configuration lifecycle checks, full input preservation, and native model-visible acceptance for the pinned macOS agent.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 

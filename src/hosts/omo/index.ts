@@ -60,14 +60,16 @@ export async function uninstallOmoExtension(options: OmoExtensionOptions = {}) {
 export async function doctorOmoExtension(options: OmoExtensionOptions = {}) {
   const extensionPath = getOmoExtensionPath(options);
   const base = { extensionPath, fixCommand: FIX_COMMAND, checkedPaths: [extensionPath], missingPaths: [] as string[],
-    advisories: ["OmO native extension: file validation only; live loading and model-visible delivery remain unverified."] };
+    advisories: ["OmO native extension: file validation only; live loading and model-visible delivery remain unverified."],
+    hasTokenjuiceMarker: false };
   try {
     await assertSafePath(extensionPath);
     const file = await readSettingsFile(extensionPath);
     if (!file.data) return { ...base, status: "disabled" as const, issues: [], missingPaths: [extensionPath] };
+    base.hasTokenjuiceMarker = owns(file.data.toString("utf8"));
+    if (!base.hasTokenjuiceMarker) return { ...base, status: "warn" as const, issues: ["extension path contains an unowned file"] };
     const expected = `${MARKER}\n${await loadExtensionRuntimeSource("omo", import.meta.url, options.local)}\n`;
-    const issues = !owns(file.data.toString("utf8")) ? ["extension path contains an unowned file"]
-      : file.data.toString("utf8") !== expected ? ["installed extension differs from the current runtime; reinstall"] : [];
+    const issues = file.data.toString("utf8") !== expected ? ["installed extension differs from the current runtime; reinstall"] : [];
     return { ...base, status: issues.length ? "warn" as const : "ok" as const, issues };
   } catch (error) {
     return { ...base, status: "broken" as const, issues: [error instanceof Error ? error.message : String(error)] };

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { doctorOmoExtension, getOmoExtensionPath, installOmoExtension, uninstallOmoExtension } from "../../src/hosts/omo/index.js";
+import { isInstalledHookIntegration } from "../../src/hosts/shared/hook-doctor.js";
 import { compactOmoResult } from "../../src/core/integrations/compact-omo-result.js";
 
 let home: string;
@@ -34,6 +35,7 @@ describe("OmO native integration", () => {
     const first = await installOmoExtension({ local: true });
     expect((await installOmoExtension({ local: true })).backupPath).toBeUndefined();
     expect((await doctorOmoExtension({ local: true })).status).toBe("ok");
+    expect(isInstalledHookIntegration(await doctorOmoExtension({ local: true }))).toBe(true);
     await writeFile(first.extensionPath, `${await readFile(first.extensionPath, "utf8")}\n// changed`);
     expect((await doctorOmoExtension({ local: true })).status).toBe("warn");
     const sibling = join(dirname(first.extensionPath), "user.js");
@@ -49,6 +51,10 @@ describe("OmO native integration", () => {
     await writeFile(path, "user code");
     await expect(installOmoExtension()).rejects.toThrow("unowned");
     expect((await uninstallOmoExtension()).removed).toBe(false);
+    const report = await doctorOmoExtension();
+    expect(report.status).toBe("warn");
+    expect(report.hasTokenjuiceMarker).toBe(false);
+    expect(isInstalledHookIntegration(report)).toBe(false);
     await rm(path);
     await symlink(join(home, "target.js"), path);
     await expect(installOmoExtension()).rejects.toThrow("unsafe");

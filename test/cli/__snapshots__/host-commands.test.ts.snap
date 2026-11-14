@@ -9122,6 +9122,7 @@ $ tokenjuice doctor omo --format json
   \"advisories\": [
     \"OmO native extension: file validation only; live loading and model-visible delivery remain unverified.\"
   ],
+  \"hasTokenjuiceMarker\": true,
   \"status\": \"ok\",
   \"issues\": []
 }

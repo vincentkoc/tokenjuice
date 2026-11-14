@@ -16,7 +16,8 @@ file is `~/.omo/agent/extensions/tokenjuice.js`. The installer follows the
 launcher's `OMO_CODING_AGENT_DIR`, `SENPI_CODING_AGENT_DIR`, then
 `PI_CODING_AGENT_DIR` overrides. Set the same environment for tokenjuice and OmO.
 An explicit shared Pi directory means both hosts discover that extension; prefer
-separate agent directories.
+separate agent directories. Aggregate doctor counts the file as an OmO installation
+only when it contains the OmO ownership marker.
 
 Install is idempotent. It refuses to replace foreign code or write through a
 symlink; uninstall removes only its owned extension and preserves siblings and

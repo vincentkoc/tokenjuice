@@ -13,12 +13,11 @@ import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { readNoOmissionFromEnv } from "../core/env.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
-import { WRAP_AUTHORITATIVE_FOOTER } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { UNKNOWN_ARTIFACT_SOURCE } from "../core/source.js";
 import { runWrappedCommand } from "../core/wrap.js";
-import type { WrapResult } from "../types.js";
+export { decorateWrapInlineText } from "../core/wrap-format.js";
 import { runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
 import { runClinePreToolUseHook, runClinePostToolUseHook } from "../hosts/cline/index.js";
 import { runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
@@ -650,6 +649,7 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
 async function runWrap(args: ParsedArgs): Promise<number> {
   const noOmit = resolveNoOmit(args.noOmit);
   const wrapped = await runWrappedCommand(args.passthrough, {
+    includeCompactionNotice: args.format === "text",
     tee: args.tee,
     ...(args.keepFailures ? { keepFailures: true } : {}),
     ...(args.raw ? { raw: true } : {}),
@@ -670,29 +670,12 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     }
     return wrapped.exitCode;
   }
-  const inlineText = decorateWrapInlineText(wrapped.result, args.raw || failedPassthrough);
-  // Passthrough output already has the command's exact line endings.
-  const exactText = args.raw || (wrapped.stderr.length === 0 && inlineText === wrapped.stdout);
-  emit(args.format, wrapped, inlineText, exactText);
+  emit(args.format, wrapped, wrapped.result.inlineText, true);
   return wrapped.exitCode;
 }
 
 export function resolveNoOmit(noOmitFlag: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
   return noOmitFlag || readNoOmissionFromEnv(env);
-}
-
-export function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): string {
-  const { rawChars, reducedChars } = result.stats;
-  if (raw || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
-    return result.inlineText;
-  }
-  const footer = [
-    "",
-    "---",
-    WRAP_AUTHORITATIVE_FOOTER,
-    ...(result.rawRef?.id ? [`Raw output is available locally: tokenjuice cat ${result.rawRef.id}`] : []),
-  ].join("\n");
-  return `${result.inlineText}${footer}`;
 }
 
 async function runInstall(args: ParsedArgs): Promise<number> {

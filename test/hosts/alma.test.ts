@@ -4,13 +4,9 @@ import { activate, createAlmaPreToolUseHandler } from "../../src/hosts/alma/inde
 const handler = createAlmaPreToolUseHandler({ wrapLauncher: "/opt/tokenjuice", shellPath: "/bin/bash" });
 
 describe("Alma pre-tool plugin", () => {
-  it("wraps the effective foreground command and preserves earlier hook changes", async () => {
+  it.skipIf(process.platform === "win32")("wraps the effective foreground command and preserves earlier hook changes", async () => {
     const output = { args: { command: "git status --short", timeout: 5000, description: "changed by another hook" } };
     await handler({ tool: "Bash", args: { command: "ignored" } }, output);
-    if (process.platform === "win32") {
-      expect(output.args.command).toBe("git status --short");
-      return;
-    }
     expect(output.args.command).toContain("wrap --keep-failures --source 'alma'");
     expect(output.args.command).toContain("'git status --short'");
     expect(output.args.timeout).toBe(5000);

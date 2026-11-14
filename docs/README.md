@@ -1,13 +1,13 @@
 # documentation
 
-Start with the [project quick start](../README.md#install), then choose a client from the [integration catalog](integrations.md).
+Start with the [project quick start](../README.md#install), then choose a client from the [integration catalog](../README.md#harness-and-framework-catalog).
 Check [support and verification](adapter-support-matrix.md) for the scope of recorded tests before relying on an integration.
 
 ## reference
 
 - [spec](spec.md) — CLI commands, adapter JSON, compaction, rules, and storage
 - [rules](rules.md) — JSON rule schema and authoring
-- [integration catalog](integrations.md) — setup routes and configuration locations
+- [integration catalog](../README.md#harness-and-framework-catalog) — setup routes and configuration locations
 - [framework integrations](framework-integrations.md) — Hermes, Copilot SDK, LangChain, Mastra, and FastMCP
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work
 - [complete verification inventory](verification-inventory.md) — every installer target, aliases and evidence level

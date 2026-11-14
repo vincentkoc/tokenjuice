@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restore one complete README harness table, including framework adapters, desktop/manual routes, and explicit integration modes.
+
 - Lower allocation in text clipping and command analysis without changing compaction output.
 
 - Store telemetry command-family fixtures sequentially so a brief metadata-segment lock retry does not fail the test.

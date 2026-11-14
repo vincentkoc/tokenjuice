@@ -68,6 +68,7 @@ const HOST_TARGETS = [
   "dot-agents",
   "droid",
   "eca",
+  "nanobot",
   "elyra",
   "firebase-studio",
   "forge-code",
@@ -185,6 +186,7 @@ async function enterSandbox(): Promise<string> {
   env.XDG_CACHE_HOME = join(home, ".cache");
   env.PATH = bin;
   env.SHELL = "/bin/sh";
+  env.NANOBOT_WORKSPACE = project;
   env.TOKENJUICE_ARTIFACT_DIR = join(root, "artifacts");
   replaceEnv(env);
   process.chdir(project);

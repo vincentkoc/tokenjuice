@@ -101,6 +101,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [mini-SWE-agent integration](mini-swe-agent-integration.md)
 - [Mistral Vibe integration](mistral-vibe-integration.md)
 - [Mux / Xum integration](mux-integration.md)
+- [nanobot integration](nanobot-integration.md)
 - [NovaKit integration](novakit-integration.md)
 - [Ona integration](ona-integration.md)
 - [Open Interpreter integration](open-interpreter-integration.md)

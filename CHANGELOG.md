@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep compacted OpenClaw exec text and its structured `aggregated` projection in sync, including the compaction notice, without retaining a duplicate raw body.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

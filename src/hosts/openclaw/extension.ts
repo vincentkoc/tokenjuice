@@ -131,14 +131,19 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
           return undefined;
         }
 
+        const deliveredText = `${outcome.result.inlineText}\n\n[${buildCompactionNotice(outcome.result)}]`;
         return {
           content: [
             {
               type: "text",
-              text: `${outcome.result.inlineText}\n\n[${buildCompactionNotice(outcome.result)}]`,
+              text: deliveredText,
             },
           ],
-          details: mergeDetails(event.details, buildTokenjuiceDetails(outcome.result)),
+          details: {
+            ...mergeDetails(event.details, buildTokenjuiceDetails(outcome.result)),
+            // Structured consumers use aggregated instead of the content projection.
+            ...(typeof event.details.aggregated === "string" ? { aggregated: deliveredText } : {}),
+          },
         };
       } catch (error) {
         throw new Error(`tokenjuice failed to compact OpenClaw exec output: ${formatErrorMessage(error)}`);

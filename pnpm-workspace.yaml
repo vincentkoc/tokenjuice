@@ -1,0 +1,8 @@
+# pnpm audit exceptions. Keep each entry scoped, explained and dated.
+auditConfig:
+  ignoreGhsas:
+    # picomatch ReDoS (<=4.0.7, no patched release yet). Reached only through
+    # dev tooling (madge, vite/vitest via tinyglobby/fdir); not in the published
+    # package, which has no runtime dependencies.
+    # Remove once picomatch ships a fix; re-review by 2027-02-18.
+    - GHSA-fc5q-39xc-vjpf

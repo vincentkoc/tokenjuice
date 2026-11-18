@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Point the wrap footer at the stored-output command only when one is shown.
+
 - Resolve npm's `tokenjuice.cmd` shim on Windows in the Python bridge used by Hermes, LangChain and FastMCP, and log one warning when the CLI cannot start, exits nonzero, times out or returns an invalid response instead of failing silently.
 
 ## 0.11.1 - 2026-11-18

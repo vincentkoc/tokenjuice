@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.1 - 2026-11-18
+
 - Keep compacted OpenClaw exec text and its structured `aggregated` projection in sync, including the compaction notice, without retaining a duplicate raw body.
 
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.

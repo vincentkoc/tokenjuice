@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Point the wrap footer at the stored-output command only when one is shown.
+
 ## 0.11.1 - 2026-11-18
 
 - Keep compacted OpenClaw exec text and its structured `aggregated` projection in sync, including the compaction notice, without retaining a duplicate raw body.

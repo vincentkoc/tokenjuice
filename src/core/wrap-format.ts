@@ -35,7 +35,9 @@ export function decorateWrapInlineText(result: CompactResult, raw: boolean): str
     result.captureTruncated
       ? "[tokenjuice] Capture limit reached. This summary and any stored output are incomplete."
       : buildCompactionFooter(rawChars, reducedChars),
-    ...(recovery ? [`Captured output is available locally${process.platform === "win32" ? " (PowerShell)" : ""}: ${recovery}`] : result.captureTruncated ? [] : ["Full output: re-run with tokenjuice wrap --raw -- <command>"]),
+    // No "re-run with --raw" line: hosts with untrusted-context tracking (Gemini CLI 0.66+)
+    // deny a later command whose flags appeared in tool output, so the hint blocks itself.
+    ...(recovery ? [`Captured output is available locally${process.platform === "win32" ? " (PowerShell)" : ""}: ${recovery}`] : []),
   ].join("\n");
   return `${result.inlineText}${footer}`;
 }

@@ -1,10 +1,23 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath, rename, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  findAvailableBackupPath,
+  writeTextFileWithoutBackup,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -13,25 +26,12 @@ export type LeanCtlInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallLeanCtlInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallLeanCtlInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallLeanCtlInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallLeanCtlInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type LeanCtlDoctorReport = {
-  instructionsPath: string;
+export type LeanCtlDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_LEANCTL_FIX_COMMAND = "tokenjuice install leanctl";
@@ -50,154 +50,21 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return match?.[1];
 }
 
-function getExplicitProjectDir(options: LeanCtlInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.LEANCTL_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("LEANCTL_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: LeanCtlInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use LeanCTL instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use LeanCTL instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
   await rejectInstructionSymlink(`${filePath}.tmp`);
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseLeanCtlBackupPath(instructionsPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${instructionsPath}.bak` : `${instructionsPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
-}
-
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use LeanCTL instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
-async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use LeanCTL instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use LeanCTL instructions ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectInstructionSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectInstructionSymlink(resolvedPath);
-  return resolvedPath;
-}
+const resolveSafeProjectInstructionsPath = createProjectInstructionPathResolver(
+  "LeanCTL instructions",
+  rejectInstructionSymlink,
+);
 
 async function getDefaultInstructionsPath(options: LeanCtlInstructionsOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);
@@ -256,7 +123,7 @@ export async function installLeanCtlInstructions(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseLeanCtlBackupPath(resolvedInstructionsPath);
+    const backupPath = await findAvailableBackupPath(resolvedInstructionsPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeTextFileWithoutBackup(
       resolvedInstructionsPath,
@@ -342,8 +209,9 @@ export async function doctorLeanCtlInstructions(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "LeanCTL instructions",
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_LEANCTL_OWNERSHIP_MARKER,
         missingIssue: "configured LeanCTL instructions are missing the tokenjuice ownership marker",
@@ -352,23 +220,11 @@ export async function doctorLeanCtlInstructions(
         requiredText: TOKENJUICE_LEANCTL_INSTRUCTIONS_MARKER,
         missingIssue: "configured LeanCTL instructions do not look like the tokenjuice instructions",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured LeanCTL instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured LeanCTL instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".leanctl/instructions.md",
         missingIssue: "configured LeanCTL instructions are missing project instruction path guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured LeanCTL instructions still suggest the full escape hatch",
       },
     ],
   });

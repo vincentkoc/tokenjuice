@@ -1,4 +1,5 @@
 export type CompactionKind =
+  | "failure-signal-filter"
   | "head-tail-omission"
   | "middle-truncation"
   | "tail-truncation"
@@ -11,7 +12,9 @@ export type CompactionKind =
   | "github-status-check-rollup-omission"
   | "no-omit-head-tail-passthrough"
   | "no-omit-char-clip-passthrough"
-  | "no-omit-domain-passthrough";
+  | "no-omit-domain-passthrough"
+  | "rule-line-filter"
+  | "rule-output-replacement";
 
 export type CompactionMetadata = {
   authoritative: boolean;

@@ -1,8 +1,13 @@
 import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -21,15 +26,7 @@ export type UninstallKiroSteeringResult = {
   removed: boolean;
 };
 
-export type KiroDoctorReport = {
-  steeringPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type KiroDoctorReport = PathDoctorReport<"steeringPath">;
 
 const TOKENJUICE_KIRO_FIX_COMMAND = "tokenjuice install kiro";
 const TOKENJUICE_KIRO_STEERING_MARKER = "tokenjuice terminal output compaction";
@@ -125,25 +122,13 @@ export async function doctorKiroSteering(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Kiro steering file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_KIRO_STEERING_MARKER,
         missingIssue: "configured Kiro steering file does not look like the tokenjuice steering file",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Kiro steering file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Kiro steering file is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Kiro steering file still suggests the full escape hatch",
       },
     ],
   });

@@ -1,9 +1,22 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { findGitRoot } from "../shared/project-root.js";
+
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_RAW_COMMAND,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  pathTargetExists as pathExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
 } from "../shared/instruction-doctor.js";
 
@@ -23,15 +36,8 @@ export type UninstallAgentsMeshRuleResult = {
   syncCommand: string;
 };
 
-export type AgentsMeshDoctorReport = {
-  rulePath: string;
+export type AgentsMeshDoctorReport = PathDoctorReport<"rulePath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type AgentsMeshDoctorReportFields = Omit<AgentsMeshDoctorReport, "rulePath" | "hasTokenjuiceMarker">;
@@ -50,41 +56,6 @@ const AGENTSMESH_REQUIRED_PROJECT_FILES = ["agentsmesh.yaml"] as const;
 
 function getExplicitProjectDir(options: AgentsMeshRuleOptions = {}): string | undefined {
   return options.projectDir || process.env.AGENTSMESH_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function findAgentsMeshProjectRoot(startDir: string): Promise<string | undefined> {
@@ -405,29 +376,19 @@ export async function doctorAgentsMeshRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "AgentsMesh rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_AGENTSMESH_RULE_MARKER,
         missingIssue: "configured AgentsMesh rule file does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured AgentsMesh rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured AgentsMesh rule file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "agentsmesh generate",
         missingIssue: "configured AgentsMesh rule file is missing generate guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured AgentsMesh rule file still suggests the full escape hatch",
       },
     ],
   });

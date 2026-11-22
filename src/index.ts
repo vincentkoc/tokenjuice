@@ -1,6 +1,17 @@
+export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
+export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
+export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";
+export type { QwenWorkSkillOptions } from "./hosts/qwenwork/index.js";
+export { installOpenCodeV2Extension, doctorOpenCodeV2Extension, uninstallOpenCodeV2Extension } from "./hosts/opencode/v2/index.js";
+export type { OpenCodeV2Options } from "./hosts/opencode/v2/index.js";
 export { ARTIFACT_DIR_ENV, STATS_ENABLED_ENV, getArtifact, isValidArtifactId, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, resolveArtifactBaseDir, shouldRecordStats, storeArtifact, storeArtifactMetadata } from "./core/artifacts.js";
 export { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "./core/analysis.js";
 export { classifyExecution } from "./core/classify.js";
+export { compactFrameworkResult } from "./core/integrations/compact-framework-result.js";
+export type { FrameworkShellResult, FrameworkSource } from "./core/integrations/compact-framework-result.js";
+export { createCopilotSdkHooks } from "./hosts/copilot-sdk/index.js";
+export { createMastraProcessor } from "./hosts/mastra/index.js";
+export type { MastraCompactorOptions, MastraToolResult } from "./hosts/mastra/index.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
 export { doctorAetherPrompt, installAetherPrompt, uninstallAetherPrompt } from "./hosts/aether/index.js";
@@ -30,7 +41,7 @@ export { doctorBobInstructions, installBobInstructions, uninstallBobInstructions
 export { doctorBuilderRule, installBuilderRule, uninstallBuilderRule } from "./hosts/builder/index.js";
 export { doctorCharlieInstructions, installCharlieInstructions, uninstallCharlieInstructions } from "./hosts/charlie/index.js";
 export { doctorClaudeCodeHook, installClaudeCodeHook, runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook, uninstallClaudeCodeHook } from "./hosts/claude-code/index.js";
-export { doctorClineHook, installClineHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
+export { doctorClineHook, installClineHook, runClinePreToolUseHook, runClinePostToolUseHook, uninstallClineHook } from "./hosts/cline/index.js";
 export { doctorCodeAntInstructions, installCodeAntInstructions, uninstallCodeAntInstructions } from "./hosts/codeant/index.js";
 export { doctorCodebuffInstructions, installCodebuffInstructions, uninstallCodebuffInstructions } from "./hosts/codebuff/index.js";
 export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegenInstructions } from "./hosts/codegen/index.js";
@@ -67,12 +78,12 @@ export { doctorDeepAgentsInstructions, installDeepAgentsInstructions, uninstallD
 export { doctorDevinHook, installDevinHook, runDevinPreToolUseHook, uninstallDevinHook } from "./hosts/devin/index.js";
 export { doctorDotAgentsRule, installDotAgentsRule, uninstallDotAgentsRule } from "./hosts/dot-agents/index.js";
 export { doctorDockerAgentPrompt, installDockerAgentPrompt, uninstallDockerAgentPrompt } from "./hosts/docker-agent/index.js";
-export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
+export { doctorDroidHook, installDroidHook, runDroidPostToolUseHook, runDroidPreToolUseHook, uninstallDroidHook } from "./hosts/droid/index.js";
 export { doctorEcaSkill, installEcaSkill, uninstallEcaSkill } from "./hosts/eca/index.js";
 export { doctorElyraSkill, installElyraSkill, uninstallElyraSkill } from "./hosts/elyra/index.js";
 export { doctorFirebaseStudioRule, installFirebaseStudioRule, uninstallFirebaseStudioRule } from "./hosts/firebase-studio/index.js";
 export { doctorForgeCodeInstructions, installForgeCodeInstructions, uninstallForgeCodeInstructions } from "./hosts/forgecode/index.js";
-export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
+export { doctorGeminiCliHook, installGeminiCliHook, runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook, uninstallGeminiCliHook } from "./hosts/gemini-cli/index.js";
 export { doctorGitLabDuoRule, installGitLabDuoRule, uninstallGitLabDuoRule } from "./hosts/gitlab-duo/index.js";
 export { doctorGooseHints, installGooseHints, uninstallGooseHints } from "./hosts/goose/index.js";
 export { doctorGreptileRule, installGreptileRule, uninstallGreptileRule } from "./hosts/greptile/index.js";
@@ -111,6 +122,7 @@ export { doctorPiGoSkill, installPiGoSkill, uninstallPiGoSkill } from "./hosts/p
 export { doctorPlandexConvention, installPlandexConvention, uninstallPlandexConvention } from "./hosts/plandex/index.js";
 export { doctorQodoReviewConfig, installQodoReviewConfig, uninstallQodoReviewConfig } from "./hosts/qodo/index.js";
 export { doctorQoderInstructions, installQoderInstructions, uninstallQoderInstructions } from "./hosts/qoder/index.js";
+export { runQoderPostToolUseHook } from "./hosts/qoder/hook.js";
 export { doctorReplitInstructions, installReplitInstructions, uninstallReplitInstructions } from "./hosts/replit/index.js";
 export { doctorRooInstructions, installRooInstructions, uninstallRooInstructions } from "./hosts/roo/index.js";
 export { doctorRovoInstructions, installRovoInstructions, uninstallRovoInstructions } from "./hosts/rovo/index.js";
@@ -137,7 +149,7 @@ export {
   installOpenCodeExtension,
   uninstallOpenCodeExtension,
 } from "./hosts/opencode/index.js";
-export { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, uninstallQwenCodeHook } from "./hosts/qwen-code/index.js";
+export { doctorQwenCodeHook, installQwenCodeHook, runQwenCodePostToolUseHook, runQwenCodePreToolUseHook, uninstallQwenCodeHook } from "./hosts/qwen-code/index.js";
 export { doctorRulerRule, installRulerRule, uninstallRulerRule } from "./hosts/ruler/index.js";
 export { runReduceJsonCli } from "./core/cli-client.js";
 export { clearFixtureCache, loadBuiltinFixtures, verifyBuiltinFixtures } from "./core/fixtures.js";
@@ -755,3 +767,8 @@ export type {
   UninstallDevinHookResult,
 } from "./hosts/devin/index.js";
 export type { DiscoverOptions, StatsOptions, StatsReport, StatsSourceReport } from "./core/analysis.js";
+
+export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructions } from "./hosts/ante/index.js";
+export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";
+export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/qoder/hook-install.js";
+export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";

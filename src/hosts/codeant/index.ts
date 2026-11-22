@@ -1,19 +1,21 @@
-import { lstat, realpath, rm, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath, rm } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
 import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  pathEntryExists,
   assertSafeInstructionBackupPath,
-  collectGuidanceIssues,
   readInstructionFile,
   writeInstructionFile,
 } from "../shared/instruction-file.js";
@@ -22,26 +24,13 @@ export type CodeAntInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallCodeAntInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallCodeAntInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallCodeAntInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallCodeAntInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type CodeAntDoctorReport = {
-  instructionsPath: string;
+export type CodeAntDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type CodeAntInstruction = {
@@ -61,107 +50,24 @@ const TOKENJUICE_CODEANT_INSTRUCTION_ID = "tokenjuice-terminal-output-compaction
 const TOKENJUICE_CODEANT_ADVISORY =
   "CodeAnt support is beta and instructions-based; CodeAnt still owns review analysis, CLI execution, PR comments, and fixes.";
 
-function getExplicitProjectDir(options: CodeAntInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.CODEANT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: CodeAntInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("CODEANT_PROJECT_DIR");
 
 function getExpectedInstructionsPath(projectDir: string): string {
   return join(projectDir, ".codeant", "instructions.json");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionsSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use CodeAnt instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
-
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use CodeAnt instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const rejectInstructionsSymlink = createSymlinkGuard(
+  (filePath) => `cannot use CodeAnt instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   await rejectInstructionsSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use CodeAnt instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
   if (!isInsideOrEqual(realProjectDir, realParentDir)) {
     throw new Error(
@@ -187,18 +93,6 @@ async function getDefaultInstructionsPath(options: CodeAntInstructionsOptions = 
 
 async function getDefaultAliasPath(options: CodeAntInstructionsOptions = {}): Promise<string> {
   return getExpectedInstructionsPath(await resolveProjectDir(options));
-}
-
-async function instructionsArtifactExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveInstructionsPath(
@@ -347,7 +241,7 @@ export async function doctorCodeAntInstructions(
     resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   } catch (error) {
     const aliasPath = instructionsPath ?? (await getDefaultAliasPath(options));
-    if (!instructionsPath && !(await instructionsArtifactExists(aliasPath))) {
+    if (!instructionsPath && !(await pathEntryExists(aliasPath))) {
       return {
         instructionsPath: aliasPath,
         hasTokenjuiceMarker: false,
@@ -430,23 +324,8 @@ export async function doctorCodeAntInstructions(
   const scope = Array.isArray(instruction.scope) ? instruction.scope : [];
   const issues = [
     ...(tokenjuiceInstructions.length > 1 ? ["configured CodeAnt instructions contain multiple tokenjuice instructions"] : []),
-    ...collectGuidanceIssues(description, {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured CodeAnt instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured CodeAnt instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured CodeAnt instructions still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(description, {
+      configuredLabel: "CodeAnt instructions",
     }),
     ...(files.includes("**/*") ? [] : ["configured CodeAnt instructions are missing the all-files pattern"]),
     ...(scope.includes("ide") ? [] : ["configured CodeAnt instructions are missing IDE review scope"]),

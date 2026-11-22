@@ -19,6 +19,10 @@ pick one integration mode:
 
 - post-tool compaction (preferred when shell output can be replaced safely)
 - pre-tool command wrapping (use `tokenjuice wrap` when post replacement is unavailable)
+- instruction or skill guidance (when the documented host surface cannot rewrite commands/results)
+- provider configuration or migration guidance (when the product delegates execution or has retired)
+
+Automatic pre-tool wrappers pass `--keep-failures` so failed stdout/stderr and exit status survive without reduction (within the normal capture limit). Manual `tokenjuice wrap` keeps its existing default. Native acceptance must inspect all lines of a long failing command, not just a short error message.
 
 for pre-tool wrapping, preserve shell semantics (for example `bash -lc '<cmd>'`) and ensure classification normalization can recover the nested command.
 
@@ -43,6 +47,8 @@ for a new host adapter in `src/hosts/<host>/index.ts`:
   - never throw hard on hook input parse failures
 
 then wire CLI + exports:
+
+Application-owned SDK hooks and middleware use package exports and native application registration instead of CLI install/doctor/uninstall targets. A host-owned plugin manager can own that lifecycle. Document the native install, verification, disable, and removal route, package the required assets, and verify the real runtime boundary. Do not add fake configuration commands for application source code.
 
 - `src/cli/install-commands.ts`, `src/cli/uninstall-commands.ts`, `src/cli/doctor-commands.ts`
   - add a handler for `install <host>`, `uninstall <host>`, and `doctor <host>`
@@ -114,29 +120,39 @@ invoking it; split those commands into distinct matcher groups and retry.
 
 ## regression gates before merge
 
-minimum gate for a new host adapter:
+Use focused tests while iterating:
 
 ```bash
-pnpm typecheck
-pnpm vitest run test/hosts/<host>.test.ts
-pnpm vitest run test/hosts/codex.test.ts test/hosts/claude-code.test.ts test/hosts/codebuddy.test.ts test/hosts/cursor.test.ts test/hosts/pi.test.ts
+pnpm exec vitest run test/hosts/<host>.test.ts
+```
+
+Before handoff, run the gates in [CONTRIBUTING.md](../CONTRIBUTING.md):
+
+```bash
+pnpm verify
+pnpm verify:package
 ```
 
 if you changed normalization/classification paths, also run:
 
 ```bash
-pnpm vitest run test/core/command.test.ts test/core/classify.test.ts test/core/trace.test.ts
+pnpm exec vitest run test/core/command.test.ts test/core/classify.test.ts test/core/trace.test.ts
 ```
 
 ## manual verification flow
 
-run from repo root:
+Run from the repository root. Use disposable configuration and the local build, rather than the installed CLI.
+This example uses Claude Code:
 
 ```bash
 pnpm build
-node dist/cli/main.js install <host>
-node dist/cli/main.js doctor <host>
+fixture_home="$(mktemp -d)"
+HOME="$fixture_home" CLAUDE_CONFIG_DIR="$fixture_home/.claude" node dist/cli/main.js install claude-code --local
+HOME="$fixture_home" CLAUDE_CONFIG_DIR="$fixture_home/.claude" node dist/cli/main.js doctor claude-code --local
 ```
+
+For another host, use its guide to isolate every host-specific configuration variable.
+Keep the disposable home until verification and uninstall checks finish.
 
 for command-path diagnostics, use trace:
 
@@ -164,6 +180,174 @@ for truncation-related debugging, verify both boundaries explicitly:
 
 when adding a host integration, update:
 
-- `README.md` command examples and support table
-- `docs/spec.md` supported host hooks table
-- dedicated design doc if host behavior differs materially (like cursor pre-tool wrapping)
+- [README integration catalog](../README.md#harness-and-framework-catalog) for the setup route and integration mode
+- [Logo sources](logos/README.md) for a verified, theme-safe mark; use a dash when no project mark is available
+- [documentation index](README.md) for the per-host guide
+- [support and verification](adapter-support-matrix.md) for test evidence and remaining acceptance work
+- the per-host guide for configuration, lifecycle, and runtime requirements
+
+Keep the quick start ahead of the complete catalog in the root README. Shared CLI and reducer behavior belongs in the [spec](spec.md).
+
+## installed hook contracts and live acceptance
+
+Run `pnpm test:hook-contracts` on Linux, macOS, or WSL. CI runs this script after
+building the package. It installs into disposable homes, reads the generated
+hook commands, invokes them through a shell, and executes rewritten commands.
+No host CLI, model account, or developer config is required.
+
+Coverage includes default Claude Code PostToolUse result replacement, Codex feedback and fail-open limits, Qoder CLI result replacement, and the OpenCode V2 installed bundle.
+Pre-tool contracts cover Claude Code in opt-in mode, CodeBuddy, Cursor, Droid, and VS Code Copilot.
+They check listing compaction, exact reads, raw bypass, complete failure streams, malformed input, and lifecycle behavior.
+See `scripts/hook-contracts.mjs` for each host's assertions.
+
+These are installed-hook integration contracts. Payloads are synthetic; they do
+not prove that a host discovers the config, invokes a hook, accepts a rewrite,
+or delivers compacted output to the model. The former `e2e:local` command was
+renamed to `test:hook-contracts` to reflect that boundary.
+
+Live acceptance must use a real host session in an isolated home/workspace and
+record the host version, command, observed hook invocation, and model-visible
+output. Check raw bypass and failing commands too. Instruction/skill integrations
+also need evidence that the host loads the file and uses `tokenjuice wrap`.
+Record missing credentials or unavailable hosts as unverified; a passing doctor
+or a generated config snapshot cannot substitute for this evidence.
+
+### Gemini CLI session acceptance
+
+`node scripts/gemini-e2e.mjs /path/to/gemini` runs native Gemini CLI 0.66.0
+against a loopback Gemini API endpoint. Baseline and installed sessions execute
+shell commands in a disposable trusted workspace with an isolated
+`GEMINI_CLI_HOME` root. Assertions inspect follow-up model requests for listing
+compaction, exact reads, Bash syntax independent of the login shell, raw bypass,
+failure output and exit code 7. Native stream
+statuses must remain unchanged: Gemini reports shell execution successful even
+for nonzero command exit codes. A compacted success must not become a hook error.
+
+The host trims edge whitespace; exact reads match its baseline result. Raw results
+match except for the volatile native process-group footer ID. The fixture uses
+native `--skip-trust` and `--allowed-tools run_shell_command` only in its disposable
+environment. The hook rewrites `BeforeTool` input without granting permission.
+No real credentials are passed through; remote provider availability and model
+reasoning remain outside this test.
+
+### Qwen Code session acceptance
+
+`node scripts/qwen-e2e.mjs /path/to/qwen` runs Qwen Code with a disposable trusted
+home/workspace and a loopback OpenAI-compatible endpoint. CI pins 0.26.4. The real
+host executes shell commands in baseline and installed sessions, then sends their
+results to the model endpoint. Assertions cover listing compaction, exact reads,
+raw bypass, failure output, and native failure flags and exit status. Qwen Code
+trims edge whitespace; exact reads must match the baseline host result. Raw
+results must match the entire baseline result.
+
+The fixture uses native `--allowed-tools run_shell_command` in its disposable
+project. The hook supplies only `updatedInput` and leaves permission policy to
+Qwen Code. Reinstalling migrates tokenjuice's legacy context-only `PostToolUse`
+entries to `PreToolUse` wrapping. No remote model credentials are passed through;
+remote provider availability and model reasoning quality remain outside this test.
+
+### OpenCode session acceptance
+
+`node scripts/opencode-e2e.mjs /path/to/opencode` runs the real host with an
+installed plugin and disposable home/workspace. CI pins OpenCode 1.19.5. A
+loopback OpenAI-compatible fixture endpoint requests real bash commands and
+checks the tool results in the host's next model request: listing compaction,
+exact file bytes, raw bypass, and failing-command output and exit status.
+The host model endpoint is local; no model credentials are passed through.
+OpenCode may install its own plugin SDK dependencies during startup.
+
+This test covers host discovery, plugin initialization, shell execution, and
+model-visible delivery. It does not validate remote model-provider availability
+or model reasoning quality. The exported plugin must be an async initializer,
+as described in the [OpenCode plugin contract](https://opencode.ai/docs/plugins/).
+Reinstall and restart OpenCode after upgrading from an installation that exported
+an unsupported `{ id, setup }` object; doctor reports that older format as a warning.
+
+### Pi session acceptance
+
+`node scripts/pi-e2e.mjs /path/to/pi` runs Pi with an installed extension and a
+disposable home/workspace. A JavaScript CLI entry path is also accepted. CI pins
+`@earendil-works/pi-coding-agent@1.4.0` and passes its `dist/bundle/cli.js` entry.
+A loopback OpenAI-compatible fixture requests real bash commands and checks the
+results in Pi's next model request: listing compaction, exact file bytes, raw
+bypass, and failure output and exit status. A listing exceeding Pi's output
+limit also verifies that the extension reads the host's full-output file before
+compacting, preserving entries omitted from the visible tool result.
+
+The test uses automatic extension discovery and the real bash tool. Pi runs
+offline with a local model endpoint and isolated settings; no model credentials
+are passed through. This validates host loading and model-visible delivery,
+including Pi's failure flag, rather than remote provider availability or model
+reasoning quality.
+
+### Claude Code session acceptance
+
+`node scripts/claude-e2e.mjs /path/to/claude` runs the native CLI with a disposable
+home/workspace and a loopback Anthropic-compatible endpoint. CI pins Claude Code
+2.1.316 through `@anthropic-ai/claude-code-linux-x64`. No account credentials are
+passed through; nonessential host traffic and automatic updates are disabled.
+
+The fixture compares three native sessions: a baseline, the default PostToolUse
+hook, and opt-in PreToolUse wrapping. Follow-up model requests verify that the
+default hook compacts Git status over 16,384 characters while preserving the
+small listing, exact read, raw bypass, and failed command. The opt-in session
+uses a one-character fixture threshold to exercise compaction of the small
+listing. Claude trims edge whitespace and can add context reminders to Bash
+results, so these checks compare against the unhooked host result.
+
+### CodeBuddy session acceptance
+
+`node scripts/codebuddy-e2e.mjs /path/to/codebuddy` runs two real CLI sessions in
+an isolated home/workspace, before and after installing tokenjuice. CI pins
+`@tencent-ai/codebuddy-code@2.179.0`. A custom model in `models.json` points to a
+loopback OpenAI-compatible endpoint; no account credentials are passed through.
+Telemetry, error reporting, automatic updates, and the built-in marketplace are
+disabled for the fixture.
+
+The endpoint requests real Bash commands and checks their results in subsequent
+model requests: listing compaction, exact file bytes, raw bypass, and failing
+command output and exit status. The script also checks native exit/failure
+metadata in the CLI event stream. CodeBuddy wraps stdout/stderr/status in text
+and appends a reminder when a hook changes input; exact reads are checked inside
+the native stdout envelope, while raw results match the unhooked baseline.
+
+The installed hook returns `hookSpecificOutput.updatedInput`; the pinned CLI
+silently ignores `modifiedInput`. Permission decisions remain with CodeBuddy.
+This validates config discovery, hook execution, command rewriting, and
+model-visible delivery, rather than remote provider availability or reasoning.
+
+### Droid session acceptance
+
+`node scripts/droid-e2e.mjs /path/to/droid` runs the native CLI in a disposable
+home/workspace. CI pins `droid@1.1.0`. A custom model in `settings.json` points
+to a loopback OpenAI-compatible endpoint; no account credentials are passed
+through. Automatic updates are disabled and `DO_NOT_TRACK` is set.
+
+The endpoint requests real Execute commands before and after hook installation
+and checks results in subsequent model requests: listing compaction, exact
+file bytes including whitespace, raw bypass, and failing-command stdout,
+stderr and exit status. Native tool events must retain their success/error
+flags and agree with the results delivered to the model. Droid appends a
+process-exit marker; the exact-read assertion keeps that native envelope.
+
+The fixture also checks that Low autonomy rejects the rewritten command before
+execution. Droid 1.1.0 requires High autonomy for this input rewrite, so the
+installed session uses `--auto high` with only fixed disposable-fixture
+commands. The hook does not grant permission and the fixture does not disable
+host permission checks. This validates config discovery, hook execution,
+command rewriting and model-visible delivery; remote provider availability
+and model reasoning remain outside this fixture.
+
+## qualify the support claim
+
+Use [adapter support and verification](adapter-support-matrix.md) to distinguish
+file validation, installed-process contracts and real-host/model-request proof.
+A managed file passing doctor does not establish host discovery or execution.
+Preserve structured values, status, stderr, downstream policy decisions and raw
+escape hatches. If a host returns structured output and content projections,
+update both coherently or leave the result unchanged.
+
+For skill-only products, use documented discovery paths or manual import. Probe
+dependencies inside the actual tool environment; do not infer a cloud or VM PATH
+from the desktop. Keep personal import separate from marketplace publication.
+For versioned plugin APIs, qualify each API and loader separately.

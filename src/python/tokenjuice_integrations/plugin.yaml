@@ -1,0 +1,7 @@
+name: tokenjuice
+version: 0.10.0
+description: Compact successful terminal output before model consumption
+author: vincentkoc
+requires_hermes: ">=0.22.5"
+provides_hooks:
+  - transform_terminal_output

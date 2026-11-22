@@ -1,9 +1,19 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -22,16 +32,9 @@ export type UninstallBazSkillResult = {
   removed: boolean;
 };
 
-export type BazDoctorReport = {
-  skillPath: string;
+export type BazDoctorReport = PathDoctorReport<"skillPath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_BAZ_FIX_COMMAND = "tokenjuice install baz";
@@ -44,123 +47,28 @@ function isTokenjuiceBazSkillText(text: string): boolean {
   return text.includes(TOKENJUICE_BAZ_OWNERSHIP_MARKER);
 }
 
-function getExplicitProjectDir(options: BazSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.BAZ_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: BazSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("BAZ_PROJECT_DIR");
 
 function getExpectedSkillPath(projectDir: string): string {
   return join(projectDir, ".baz", "skills", "tokenjuice", "SKILL.md");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectSkillSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Baz skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSkillSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Baz skill ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.bak`);
   await rejectSkillSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Baz skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const resolveProjectSkillPath = createProjectInstructionPathResolver(
+  "Baz skill",
+  rejectSkillSymlink,
+);
 
 async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use Baz skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Baz skill ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectSkillSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectSkillSymlink(resolvedPath);
+  const resolvedPath = await resolveProjectSkillPath(filePath, projectDir, realProjectDir);
   const expectedSkillPath = getExpectedSkillPath(projectDir);
   if (resolvedPath !== expectedSkillPath) {
     throw new Error(`cannot use Baz skill ${resolvedPath}; tokenjuice only installs the project-local .baz/skills/tokenjuice/SKILL.md skill`);
@@ -176,18 +84,6 @@ async function getDefaultSkillPath(options: BazSkillOptions = {}): Promise<strin
 
 async function getDefaultAliasPath(options: BazSkillOptions = {}): Promise<string> {
   return getExpectedSkillPath(await resolveProjectDir(options));
-}
-
-async function pathExistsWithoutReading(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveSkillPath(skillPath?: string, options: BazSkillOptions = {}): Promise<string> {
@@ -246,7 +142,7 @@ export async function doctorBazSkill(skillPath?: string, options: BazSkillOption
     resolvedSkillPath = await resolveSkillPath(skillPath, options);
   } catch (error) {
     const aliasPath = skillPath ?? (await getDefaultAliasPath(options));
-    if (!skillPath && !(await pathExistsWithoutReading(aliasPath))) {
+    if (!skillPath && !(await pathEntryExists(aliasPath))) {
       return {
         skillPath: aliasPath,
         hasTokenjuiceMarker: false,
@@ -290,8 +186,10 @@ export async function doctorBazSkill(skillPath?: string, options: BazSkillOption
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Baz skill",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_BAZ_OWNERSHIP_MARKER,
         missingIssue: "configured Baz skill is missing the tokenjuice ownership marker",
@@ -308,23 +206,11 @@ export async function doctorBazSkill(skillPath?: string, options: BazSkillOption
         requiredText: TOKENJUICE_BAZ_SKILL_MARKER,
         missingIssue: "configured Baz skill does not look like the tokenjuice skill",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Baz skill is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Baz skill is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".baz/skills/tokenjuice/SKILL.md",
         missingIssue: "configured Baz skill is missing workspace skill path guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Baz skill still suggests the full escape hatch",
       },
     ],
   });

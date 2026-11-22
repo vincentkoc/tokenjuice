@@ -1,23 +1,25 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { join } from "node:path";
+
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, readInstructionFile } from "../shared/instruction-file.js";
 
 export type GreptileRuleOptions = {
   projectDir?: string;
@@ -33,16 +35,9 @@ export type UninstallGreptileRuleResult = {
   removed: boolean;
 };
 
-export type GreptileDoctorReport = {
-  rulePath: string;
+export type GreptileDoctorReport = PathDoctorReport<"rulePath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_GREPTILE_FIX_COMMAND = "tokenjuice install greptile";
@@ -51,123 +46,28 @@ const TOKENJUICE_GREPTILE_END = "<!-- tokenjuice:greptile end -->";
 const TOKENJUICE_GREPTILE_ADVISORY =
   "Greptile support is beta and rules-based; Greptile still owns PR review, runtime inspection, and comment delivery.";
 
-function getExplicitProjectDir(options: GreptileRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.GREPTILE_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: GreptileRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("GREPTILE_PROJECT_DIR");
 
 function getExpectedRulePath(projectDir: string): string {
   return join(projectDir, ".greptile", "rules.md");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectRuleSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Greptile rule ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectRuleSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Greptile rule ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectRuleSymlink(`${filePath}.bak`);
   await rejectRuleSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Greptile rule ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const resolveProjectRulePath = createProjectInstructionPathResolver(
+  "Greptile rule",
+  rejectRuleSymlink,
+);
 
 async function resolveSafeProjectRulePath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use Greptile rule ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Greptile rule ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectRuleSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectRuleSymlink(resolvedPath);
+  const resolvedPath = await resolveProjectRulePath(filePath, projectDir, realProjectDir);
   const expectedRulePath = getExpectedRulePath(projectDir);
   if (resolvedPath !== expectedRulePath) {
     throw new Error(`cannot use Greptile rule ${resolvedPath}; tokenjuice only installs the project-local .greptile/rules.md rule`);
@@ -183,18 +83,6 @@ async function getDefaultRulePath(options: GreptileRuleOptions = {}): Promise<st
 
 async function getDefaultAliasPath(options: GreptileRuleOptions = {}): Promise<string> {
   return getExpectedRulePath(await resolveProjectDir(options));
-}
-
-async function pathExistsWithoutReading(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveRulePath(rulePath?: string, options: GreptileRuleOptions = {}): Promise<string> {
@@ -223,28 +111,6 @@ const TOKENJUICE_GREPTILE_BLOCK_CONFIG = {
   block: TOKENJUICE_GREPTILE_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GREPTILE_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GREPTILE_END, beginIndex + TOKENJUICE_GREPTILE_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GREPTILE_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GREPTILE_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GREPTILE_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installGreptileRule(
   rulePath?: string,
   options: GreptileRuleOptions = {},
@@ -253,7 +119,7 @@ export async function installGreptileRule(
   await rejectInstallSidecarSymlinks(resolvedRulePath);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install greptile`,
     );
@@ -273,7 +139,7 @@ export async function uninstallGreptileRule(
   const resolvedRulePath = await resolveRulePath(rulePath, options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall greptile`,
     );
@@ -292,7 +158,7 @@ export async function doctorGreptileRule(
     resolvedRulePath = await resolveRulePath(rulePath, options);
   } catch (error) {
     const aliasPath = rulePath ?? (await getDefaultAliasPath(options));
-    if (!rulePath && !(await pathExistsWithoutReading(aliasPath))) {
+    if (!rulePath && !(await pathEntryExists(aliasPath))) {
       return {
         rulePath: aliasPath,
         hasTokenjuiceMarker: false,
@@ -341,27 +207,13 @@ export async function doctorGreptileRule(
     configuredLabel: "Greptile rule",
     repairCommand: TOKENJUICE_GREPTILE_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GREPTILE_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Greptile rule has malformed tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Greptile rule is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Greptile rule is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Greptile rule still suggests the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GREPTILE_BLOCK_CONFIG), {
+      configuredLabel: "Greptile rule",
+      singular: true,
     }),
   ];
 

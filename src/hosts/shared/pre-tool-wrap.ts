@@ -13,11 +13,10 @@
  * lives here.
  */
 
-import { constants as fsConstants } from "node:fs";
-import { access } from "node:fs/promises";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 
 import { stripLeadingCdPrefix, stripLeadingEnvAssignments } from "../../core/command.js";
+import { resolveCommandFromPath, isExecutableFile } from "./host-command.js";
 
 import {
   isNodeExecutablePath,
@@ -47,52 +46,14 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { isExecutableFile, pathExists } from "./host-command.js";
 
 /**
  * Walk `PATH` and return the first executable `tokenjuice` (or Windows
  * variant) found. Empty segments and missing entries are skipped.
  */
 export async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
+  return resolveCommandFromPath("tokenjuice");
 }
 
 /**
@@ -182,10 +143,11 @@ export async function buildWrapLauncherHookCommand(
  * Build the command the host should ask the agent to run — the original
  * command routed through `tokenjuice wrap` and the selected host shell:
  *
- *     <launcher-command> wrap -- <shell-path> -lc '<original>'
+ *     <launcher-command> wrap --keep-failures -- <shell-path> -lc '<original>'
  *
  * `wrapLauncher` comes from the PreToolUse hook's `--wrap-launcher` argv so
- * the dispatched binary matches the one the host installed.
+ * the dispatched binary matches the one the host installed. Automatic wrappers
+ * preserve failed stdout/stderr; only successful output is eligible for reduction.
  */
 export function buildWrappedCommand(params: {
   wrapLauncher: string;
@@ -204,7 +166,7 @@ export function buildWrappedCommand(params: {
   const gateArgs = typeof params.minReduceChars === "number" && params.minReduceChars > 0
     ? ` --min-reduce-chars ${params.minReduceChars}`
     : "";
-  return `${launcherCommand} wrap${sourceArgs}${gateArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
+  return `${launcherCommand} wrap --keep-failures${sourceArgs}${gateArgs} -- ${posixShellQuote(params.shellPath)} -lc ${posixShellQuote(params.command)}`;
 }
 
 /**
@@ -220,10 +182,10 @@ export function buildWrappedCommand(params: {
  * Avoids double-wrapping when a tool call is already routed through tokenjuice
  * (e.g. the user invoked `tokenjuice wrap --raw -- <cmd>` explicitly).
  */
-export function commandAlreadyWrapped(command: string): boolean {
-  // PreToolUse hosts execute this command through a POSIX shell, including
-  // Bash-compatible shells on Windows.
-  const argv = stripLeadingEnvAssignments(parseShellWords(stripLeadingCdPrefix(command), "linux"));
+export function commandAlreadyWrapped(command: string, platform: NodeJS.Platform = "linux"): boolean {
+  // Most adapters use POSIX shells even on Windows; native PowerShell callers
+  // select Windows parsing to preserve backslashes in executable paths.
+  const argv = stripLeadingEnvAssignments(parseShellWords(stripLeadingCdPrefix(command), platform));
   if (argv.length < 2) {
     return false;
   }

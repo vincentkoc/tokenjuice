@@ -1,26 +1,25 @@
 #!/usr/bin/env node
+import { compactFrameworkResult, type FrameworkSource } from "../core/integrations/compact-framework-result.js";
 
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stdin as inputStdin } from "node:process";
 import { fileURLToPath } from "node:url";
 import packageJson from "../../package.json" with { type: "json" };
 
-import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts } from "../core/artifacts.js";
-import { shouldRecordStats } from "../core/artifacts.js";
-import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts } from "../core/analysis.js";
-import type { StatsSourceReport } from "../core/analysis.js";
+import { getArtifact, listArtifactMetadata, listArtifactMetadataPage, listArtifacts, shouldRecordStats } from "../core/artifacts.js";
+import { readBoundedTextFile } from "../core/bounded-text-file.js";
+import { buildAnalysisEntry, discoverCandidates, doctorArtifacts, statsArtifacts, type StatsSourceReport } from "../core/analysis.js";
 import { verifyBuiltinFixtures } from "../core/fixtures.js";
 import { readNoOmissionFromEnv } from "../core/env.js";
 import { parseReduceJsonRequest } from "../core/json-protocol.js";
-import { buildCompactionFooter } from "../core/compaction-metadata.js";
 import { reduceExecution } from "../core/reduce.js";
 import { verifyRules } from "../core/rules.js";
 import { UNKNOWN_ARTIFACT_SOURCE } from "../core/source.js";
 import { runWrappedCommand } from "../core/wrap.js";
-import type { WrapResult } from "../types.js";
+export { decorateWrapInlineText } from "../core/wrap-format.js";
 import { runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
-import { runClinePostToolUseHook } from "../hosts/cline/index.js";
+import { runClinePreToolUseHook, runClinePostToolUseHook } from "../hosts/cline/index.js";
 import { runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
 import { runCommandCodePostToolUseHook } from "../hosts/command-code/index.js";
 import { runCodexPostToolUseHook } from "../hosts/codex/index.js";
@@ -28,13 +27,14 @@ import { runCopilotAgentPostToolUseHook } from "../hosts/copilot-agent/index.js"
 import { runCopilotCliPostToolUseHook } from "../hosts/copilot-cli/index.js";
 import { runCursorPreToolUseHook } from "../hosts/cursor/index.js";
 import { runDevinPreToolUseHook } from "../hosts/devin/index.js";
-import { runDroidPostToolUseHook } from "../hosts/droid/index.js";
-import { runGeminiCliAfterToolHook } from "../hosts/gemini-cli/index.js";
+import { runDroidPostToolUseHook, runDroidPreToolUseHook } from "../hosts/droid/index.js";
+import { runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook } from "../hosts/gemini-cli/index.js";
 import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
 import { runOpenHandsPostToolUseHook } from "../hosts/openhands/index.js";
-import { runQwenCodePostToolUseHook } from "../hosts/qwen-code/index.js";
+import { runQwenCodePostToolUseHook, runQwenCodePreToolUseHook } from "../hosts/qwen-code/index.js";
+import { runQoderPostToolUseHook } from "../hosts/qoder/hook.js";
 import { runVscodeCopilotPreToolUseHook } from "../hosts/vscode-copilot/index.js";
 import type { Format, ParsedArgs } from "./command-types.js";
 import { installCommands } from "./install-commands.js";
@@ -57,7 +57,8 @@ function printUsage(): void {
       "  tokenjuice --version",
       "  tokenjuice reduce [file] [--format text|json] [--classifier <id>] [--store] [--raw|--full] [--no-omit] [--no-stats]",
       "  tokenjuice reduce-json [file]",
-      "  tokenjuice wrap [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
+      "  tokenjuice compact-shell-result  (JSON stdin; captured output only)",
+      "  tokenjuice wrap [--keep-failures] [--raw|--full] [--no-omit] [--no-stats] [--source <name>] -- <command> [args...] [--tee] [--store] [--max-capture-bytes <n>]",
       "  tokenjuice <command> ... [--trace]",
       "  tokenjuice install adal",
       "  tokenjuice install aether",
@@ -74,6 +75,7 @@ function printUsage(): void {
       "  tokenjuice install agentsmesh",
       "  tokenjuice install amazon-q",
       "  tokenjuice install amp",
+      "  tokenjuice install ante",
       "  tokenjuice install antigravity",
       "  tokenjuice install anywhere-agents",
       "  tokenjuice install augment",
@@ -95,7 +97,6 @@ function printUsage(): void {
       "  tokenjuice install coder-agents",
       "  tokenjuice install coderabbit",
       "  tokenjuice install codebuddy [--local]",
-      "  tokenjuice install command-code [--local]",
       "  tokenjuice install continue",
       "  tokenjuice install copilot-agent [--local]",
       "  tokenjuice install crush",
@@ -115,14 +116,12 @@ function printUsage(): void {
       "  tokenjuice install greptile",
       "  tokenjuice install grok-build",
       "  tokenjuice install grok-bot",
-      "  tokenjuice install grok-cli [--local]",
       "  tokenjuice install gptme",
       "  tokenjuice install jean2",
       "  tokenjuice install jetbrains-ai",
       "  tokenjuice install junie",
       "  tokenjuice install jules",
       "  tokenjuice install leanctl",
-      "  tokenjuice install kimi [--local]",
       "  tokenjuice install kiro",
       "  tokenjuice install kilo",
       "  tokenjuice install localcode",
@@ -135,7 +134,6 @@ function printUsage(): void {
       "  tokenjuice install novakit",
       "  tokenjuice install knowns",
       "  tokenjuice install ona",
-      "  tokenjuice install openhands [--local]",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
       "  tokenjuice install pi [--local] [--skip-command <name>]",
@@ -143,8 +141,12 @@ function printUsage(): void {
       "  tokenjuice install plandex",
       "  tokenjuice install qodo",
       "  tokenjuice install qoder",
+      "  tokenjuice install qoder-cli [--local]",
+      "  tokenjuice install qwenwork",
+      "  tokenjuice install qoderwork",
       "  tokenjuice install replit",
       "  tokenjuice install opencode [--local]",
+      "  tokenjuice install opencode-v2 [--local]",
       "  tokenjuice install qwen-code [--local]",
       "  tokenjuice install roo",
       "  tokenjuice install rovo",
@@ -174,6 +176,7 @@ function printUsage(): void {
       "  tokenjuice uninstall agentsmesh",
       "  tokenjuice uninstall amazon-q",
       "  tokenjuice uninstall amp",
+      "  tokenjuice uninstall ante",
       "  tokenjuice uninstall antigravity",
       "  tokenjuice uninstall anywhere-agents",
       "  tokenjuice uninstall augment",
@@ -241,9 +244,13 @@ function printUsage(): void {
       "  tokenjuice uninstall pi",
       "  tokenjuice uninstall pi-go",
       "  tokenjuice uninstall opencode",
+      "  tokenjuice uninstall opencode-v2",
       "  tokenjuice uninstall plandex",
       "  tokenjuice uninstall qodo",
       "  tokenjuice uninstall qoder",
+      "  tokenjuice uninstall qoder-cli [--local]",
+      "  tokenjuice uninstall qwenwork",
+      "  tokenjuice uninstall qoderwork",
       "  tokenjuice uninstall replit",
       "  tokenjuice uninstall qwen-code",
       "  tokenjuice uninstall roo",
@@ -263,7 +270,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|plandex|qodo|qoder|qwen-code|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--pre-tool-use] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|qoderwork|qwen-code|qwenwork|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--pre-tool-use] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice doctor codex [--local] [--no-omit]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source] [--limit <n>] [--cursor <cursor>]",
     ].join("\n"),
@@ -286,6 +293,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let noStats = false;
   let tee = false;
   let raw = false;
+  let keepFailures = false;
   let noOmit = false;
   let allowOmit = false;
   let storeDir: string | undefined;
@@ -374,6 +382,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
       case "--raw":
       case "--full":
         raw = true;
+        index += 1;
+        break;
+      case "--keep-failures":
+        keepFailures = true;
         index += 1;
         break;
       case "--no-omit":
@@ -506,6 +518,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     noStats,
     tee,
     raw,
+    keepFailures,
     noOmit,
     allowOmit,
     storeDir,
@@ -575,12 +588,12 @@ async function readTextInput(file: string | undefined, maxBytes = DEFAULT_MAX_IN
     return await readStdin(maxBytes);
   }
 
-  const details = await stat(file);
-  if (details.size > maxBytes) {
+  const text = await readBoundedTextFile(file, maxBytes);
+  if (text === null) {
     throw new Error(`${file} exceeds max input size of ${maxBytes} bytes`);
   }
 
-  return await readFile(file, "utf8");
+  return text;
 }
 
 function emit(format: Format, value: unknown, text: string, exactText = false): void {
@@ -654,7 +667,9 @@ async function runReduceJson(args: ParsedArgs): Promise<number> {
 async function runWrap(args: ParsedArgs): Promise<number> {
   const noOmit = resolveNoOmit(args.noOmit);
   const wrapped = await runWrappedCommand(args.passthrough, {
+    includeCompactionNotice: args.format === "text",
     tee: args.tee,
+    ...(args.keepFailures ? { keepFailures: true } : {}),
     ...(args.raw ? { raw: true } : {}),
     ...(noOmit ? { noOmit: true } : {}),
     ...(args.trace ? { trace: true } : {}),
@@ -666,39 +681,20 @@ async function runWrap(args: ParsedArgs): Promise<number> {
     ...(typeof args.maxCaptureBytes === "number" ? { maxCaptureBytes: args.maxCaptureBytes } : {}),
     ...(args.source ? { source: args.source } : {}),
   });
-  const inlineText = decorateWrapInlineText(wrapped.result, args.raw);
-  emit(args.format, wrapped, inlineText, args.raw);
+  const failedPassthrough = args.keepFailures === true && wrapped.exitCode !== 0;
+  if (failedPassthrough && args.format === "text") {
+    if (!args.tee) {
+      process.stdout.write(wrapped.stdout);
+      process.stderr.write(wrapped.stderr);
+    }
+    return wrapped.exitCode;
+  }
+  emit(args.format, wrapped, wrapped.result.inlineText, true);
   return wrapped.exitCode;
 }
 
 export function resolveNoOmit(noOmitFlag: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
   return noOmitFlag || readNoOmissionFromEnv(env);
-}
-
-// Only annotate wrap output when compaction removed a substantial amount, so
-// small or barely-reduced outputs are returned verbatim without a footer.
-const FOOTER_MIN_SAVED_CHARS = 512;
-const FOOTER_MIN_SAVED_RATIO = 0.2;
-
-export function decorateWrapInlineText(result: WrapResult["result"], raw: boolean): string {
-  const { rawChars, reducedChars } = result.stats;
-  if (raw || !result.compaction?.authoritative || reducedChars === 0 || reducedChars >= rawChars) {
-    return result.inlineText;
-  }
-  const savedChars = rawChars - reducedChars;
-  const savedRatio = rawChars > 0 ? savedChars / rawChars : 0;
-  if (savedChars < FOOTER_MIN_SAVED_CHARS || savedRatio < FOOTER_MIN_SAVED_RATIO) {
-    return result.inlineText;
-  }
-  const footer = [
-    "",
-    "---",
-    buildCompactionFooter(rawChars, reducedChars),
-    result.rawRef?.id
-      ? `Raw output is available locally: tokenjuice cat ${result.rawRef.id}`
-      : "Full output: re-run with tokenjuice wrap --raw -- <command>",
-  ].join("\n");
-  return `${result.inlineText}${footer}`;
 }
 
 async function runInstall(args: ParsedArgs): Promise<number> {
@@ -710,7 +706,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -722,7 +718,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1075,6 +1071,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return 0;
     case "reduce":
       return await runReduce(args);
+    case "compact-shell-result": {
+      const request = JSON.parse(await readStdin(args.maxInputBytes)) as { source: FrameworkSource; result: unknown };
+      const text = await compactFrameworkResult(request?.source, request?.result);
+      process.stdout.write(`${JSON.stringify(text === undefined ? { action: "keep" } : { action: "rewrite", text })}\n`);
+      return 0;
+    }
     case "reduce-json":
       return await runReduceJson(args);
     case "wrap":
@@ -1109,9 +1111,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "claude-code-pre-tool-use":
       return await runClaudeCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "claude-code-post-tool-use":
-      return await runClaudeCodePostToolUseHook(
-        await readStdin(args.maxInputBytes ?? CLAUDE_CODE_MAX_INPUT_BYTES),
-      );
+      return await runClaudeCodePostToolUseHook(await readStdin(args.maxInputBytes ?? CLAUDE_CODE_MAX_INPUT_BYTES));
+    case "cline-pre-tool-use":
+      return await runClinePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "cline-post-tool-use":
       return await runClinePostToolUseHook(await readStdin(args.maxInputBytes));
     case "codebuddy-pre-tool-use":
@@ -1122,6 +1124,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "devin-pre-tool-use":
       return await runDevinPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "gemini-cli-before-tool":
+      return await runGeminiCliBeforeToolHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":
       return await runGeminiCliAfterToolHook(await readStdin(args.maxInputBytes));
     case "grok-cli-post-tool-use":
@@ -1132,6 +1136,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runMuxPostToolUseHook();
     case "openhands-post-tool-use":
       return await runOpenHandsPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "qwen-code-pre-tool-use":
+      return await runQwenCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "qwen-code-post-tool-use":
       return await runQwenCodePostToolUseHook(await readStdin(args.maxInputBytes));
     case "vscode-copilot-pre-tool-use":
@@ -1140,6 +1146,10 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCopilotAgentPostToolUseHook(await readStdin(args.maxInputBytes));
     case "copilot-cli-post-tool-use":
       return await runCopilotCliPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "droid-pre-tool-use":
+      return await runDroidPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "qoder-post-tool-use":
+      return await runQoderPostToolUseHook(await readStdin(args.maxInputBytes));
     case "droid-post-tool-use":
       return await runDroidPostToolUseHook(await readStdin(args.maxInputBytes));
     default:

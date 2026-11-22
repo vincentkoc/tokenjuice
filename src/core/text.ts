@@ -16,7 +16,7 @@ const graphemeSegmenter = typeof Intl !== "undefined" && "Segmenter" in Intl
   ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
   : null;
 
-function graphemes(text: string): string[] {
+export function segmentTextChars(text: string): string[] {
   if (!graphemeSegmenter) {
     return Array.from(text);
   }
@@ -51,11 +51,16 @@ export function stripAnsi(text: string): string {
 }
 
 export function countTextChars(text: string): number {
-  return graphemes(text).length;
+  const iterator = graphemeSegmenter
+    ? graphemeSegmenter.segment(text)[Symbol.iterator]()
+    : text[Symbol.iterator]();
+  let count = 0;
+  while (!iterator.next().done) count += 1;
+  return count;
 }
 
 export function sliceTextChars(text: string, start: number, end?: number): string {
-  return graphemes(text).slice(start, end).join("");
+  return segmentTextChars(text).slice(start, end).join("");
 }
 
 function codePointWidth(codePoint: number): number {
@@ -110,7 +115,7 @@ function graphemeWidth(segment: string): number {
 }
 
 export function countTerminalCells(text: string): number {
-  return graphemes(text).reduce((sum, segment) => sum + graphemeWidth(segment), 0);
+  return segmentTextChars(text).reduce((sum, segment) => sum + graphemeWidth(segment), 0);
 }
 
 export function normalizeLines(text: string): string[] {
@@ -155,7 +160,7 @@ function isEmojiGrapheme(text: string): boolean {
 export function collapseRepeatedEmojiBanner(lines: string[]): { lines: string[]; compaction?: CompactionMetadata } {
   let collapsed = false;
   const nextLines = lines.map((line) => {
-    const visibleSegments = graphemes(line).filter((segment) => !/^\s+$/u.test(segment));
+    const visibleSegments = segmentTextChars(line).filter((segment) => !/^\s+$/u.test(segment));
     const repeatedEmoji = visibleSegments[0];
     if (
       visibleSegments.length < REPEATED_EMOJI_BANNER_MIN_REPETITIONS
@@ -207,16 +212,22 @@ export function headTail(lines: string[], head: number, tail: number, noOmit = f
 }
 
 export function clampText(text: string, maxChars: number): string {
-  if (countTextChars(text) <= maxChars) {
+  const segments = segmentTextChars(text);
+  if (segments.length <= maxChars) {
     return text;
   }
+  return clampSegments(segments, maxChars);
+}
+
+function clampSegments(segments: string[], maxChars: number): string {
   const bodyChars = Math.max(0, maxChars - countTextChars(TRUNCATION_SUFFIX));
-  const head = trimHeadToLineBoundary(graphemes(text).slice(0, bodyChars).join(""));
+  const head = trimHeadToLineBoundary(segments.slice(0, bodyChars).join(""));
   return `${head}${TRUNCATION_SUFFIX}`;
 }
 
 export function clampTextWithMetadata(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
-  if (countTextChars(text) <= maxChars) {
+  const segments = segmentTextChars(text);
+  if (segments.length <= maxChars) {
     return { text };
   }
 
@@ -228,13 +239,14 @@ export function clampTextWithMetadata(text: string, maxChars: number, noOmit = f
   }
 
   return {
-    text: clampText(text, maxChars),
+    text: clampSegments(segments, maxChars),
     compaction: createCompactionMetadata("tail-truncation"),
   };
 }
 
 export function clampTextMiddleWithMetadata(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
-  if (countTextChars(text) <= maxChars) {
+  const segments = segmentTextChars(text);
+  if (segments.length <= maxChars) {
     return { text };
   }
 
@@ -249,7 +261,6 @@ export function clampTextMiddleWithMetadata(text: string, maxChars: number, noOm
   const bodyChars = Math.max(0, maxChars - markerChars);
   const headChars = Math.ceil(bodyChars * 0.7);
   const tailChars = Math.max(0, bodyChars - headChars);
-  const segments = graphemes(text);
   const head = trimHeadToLineBoundary(segments.slice(0, headChars).join(""));
   const tail = trimTailToLineBoundary(segments.slice(-tailChars).join(""));
 

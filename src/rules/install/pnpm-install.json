@@ -4,15 +4,23 @@
   "description": "Compact pnpm install output while preserving warnings and summary lines.",
   "matchOutput": [
     {
-      "pattern": "Already up to date",
+      "pattern": "^(?:Lockfile is up to date, resolution step is skipped\\n)?Already up to date(?:\\nDone in [^\\r\\n]+)?$",
       "message": "pnpm install: up to date",
       "flags": "i"
     }
   ],
   "match": {
-    "toolNames": ["exec"],
-    "argv0": ["pnpm"],
-    "argvIncludes": [["install"]]
+    "toolNames": [
+      "exec"
+    ],
+    "argv0": [
+      "pnpm"
+    ],
+    "argvIncludes": [
+      [
+        "install"
+      ]
+    ]
   },
   "transforms": {
     "stripAnsi": true,

@@ -4,21 +4,21 @@
 deterministically compacts shell output before the Copilot CLI agent
 sees it. Output that would otherwise consume thousands of tokens on
 verbose install logs, `find` listings, test dumps, etc. becomes a
-short summary plus a `[tokenjuice] ...` footer that explicitly
-instructs the agent not to retry for the omitted content.
+short summary with the native shell completion footer preserved.
 
 ## How it is installed
 
 - Hooks file: `$COPILOT_HOME/hooks/tokenjuice-cli.json`
   (defaults to `$HOME/.copilot/hooks/tokenjuice-cli.json`).
 - Event: `postToolUse`.
-- Matcher: `"shell"` (the Copilot CLI categorises `toolName: "bash"`
-  under this matcher alias).
+- Matcher: `"bash"`. Native matchers are anchored regular expressions against
+  the tool name; `"shell"` does not match `bash`. Reinstall to migrate the old
+  matcher; doctor warns when it remains installed.
 - Command: invokes the resolved-absolute `tokenjuice` binary with the
   `copilot-cli-post-tool-use` subcommand.
-- Payload compatibility: the runtime accepts both camelCase (live
-  Copilot CLI 1.0.35 wire format) and snake_case keys, and emits
-  both on the way back out so either parser accepts the response.
+- Payload compatibility: the runtime accepts the documented camelCase
+  `toolArgs`/`toolResult` envelope and its PascalCase-event snake_case equivalent.
+  It returns canonical `modifiedResult.resultType` and `textResultForLlm` fields.
 
 Install is atomic (temp-file + rename) and idempotent. Unrelated
 top-level keys (`version`, `disableAllHooks`) and sibling
@@ -33,9 +33,46 @@ The runtime emits `{}` (no rewrite) for any of:
 - empty or missing `tool_result` / command
 - non-`success` result types (`failure`, `rejected`, `denied` pass
   through untouched so the agent still sees raw error context)
+- missing, running, unrecognized or nonzero shell completion status
 - commands already wrapped with `tokenjuice wrap --raw --` /
   `--full` (explicit bypass)
 - malformed JSON stdin
+
+Copilot CLI 1.0.105 marks completed Bash invocations as `resultType: "success"`
+even when their shell command exits 7. Tokenjuice therefore also requires the
+host's final completion footer to prove exit 0. It removes that footer before
+counting and reducing command output, then appends it unchanged. The earlier
+`<exited with exit code 0>` footer remains supported. Unknown formats stay raw.
+
+See GitHub's [hook reference](https://docs.github.com/en/copilot/reference/hooks-reference)
+for input/output envelopes and native matcher semantics.
+
+## Native acceptance
+
+```bash
+pnpm build
+node scripts/copilot-cli-e2e.mjs /path/to/copilot
+```
+
+The fixture runs native **1.0.105** in baseline and installed-hook sessions, with
+a disposable home/project and a loopback Chat Completions endpoint. Custom
+provider configuration plus `COPILOT_OFFLINE=true` avoids real credentials and
+GitHub model routing. Built-in MCP servers and custom instructions are disabled;
+the fixture grants tool execution and access to the Node and test CLI directories.
+
+It captures the next model request for all 80 listing entries, an exact read,
+explicit wrapping, raw bypass and a large failed command. Installed hooks must
+run and shorten the listing to **80 matches**, excluding the native status
+footer from the count. Read, wrapped, raw and failed results must match baseline.
+All 80 failure lines, stderr, the exit-7 footer and numeric CLI exit metadata
+must survive. A disposable hook receipt records the actual input and forwarded
+hook output; direct calls with invented payloads do not establish acceptance.
+
+This host trims leading and trailing whitespace before appending its completion
+footer, so exact reads are qualified against native baseline rather than original
+file bytes. Other versions, remote provider availability, interactive permissions
+and sandbox execution remain unqualified. CI pins the Linux host separately from
+the macOS development run.
 
 ## Shared hooks dir hazard (read this if you also use VS Code Copilot Chat)
 

@@ -44,3 +44,17 @@ without one install replacing another host's tokenjuice guidance.
 Grok Build instructions are prompt guidance, not command hooks. This integration
 does not intercept or rewrite shell output; it gives Grok Build a stable project
 instruction to follow when it decides how to run terminal commands.
+
+## Current hook and loading boundaries
+
+Grok Build's official hooks use `.grok/hooks/*.json` at user/project scopes.
+Its passive post-tool events ignore stdout, so they do not provide a tool-result
+replacement route for tokenjuice. The community Grok CLI adapter uses a different
+settings/payload contract; do not install it as a Grok Build hook.
+[Official hooks](https://docs.x.ai/build/features/hooks).
+
+Grok Build loads project rules from its working directory hierarchy. Files
+ignored by `.gitignore` are skipped. Keep the managed `AGENTS.md` visible to the
+host and verify loaded instructions in a fresh session. Doctor validates the
+file only; live command adherence remains unqualified.
+[Project rule loading](https://docs.x.ai/build/features/project-rules).

@@ -32,3 +32,16 @@ describe("reduce-utils no-omit support", () => {
     });
   });
 });
+
+
+describe("JSON lexical preservation", () => {
+  it("preserves exact numbers, duplicate keys and string escapes while removing whitespace", () => {
+    const raw = String.raw`{
+      "big": 9007199254740993, "overflow": 1e400, "negativeZero": -0,
+      "same": 1, "same": 2, "text": "escaped \" quote and \\ slash",
+      "nested": [null, false, {"value": 0.00000000000000000001}]
+    }`;
+    const expected = String.raw`{"big":9007199254740993,"overflow":1e400,"negativeZero":-0,"same":1,"same":2,"text":"escaped \" quote and \\ slash","nested":[null,false,{"value":0.00000000000000000001}]}`;
+    expect(compactWholeJsonText(raw, 10_000).text).toBe(expected);
+  });
+});

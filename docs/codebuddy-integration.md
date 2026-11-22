@@ -31,6 +31,15 @@ this is deliberate:
 - tokenjuice resolves the host shell in this order: `tool_input.shell`, `TOKENJUICE_CODEBUDDY_SHELL`, `SHELL`, `bash`, then `sh`. the extra `bash` rung compared to cursor reflects codebuddy's bash-first default.
 - if no usable shell is found, tokenjuice leaves the command unchanged (no pre-tool rewrite).
 
+## runtime response field
+
+CodeBuddy Code 2.179.0 reads command rewrites from
+`hookSpecificOutput.updatedInput`. Its [public hook guide](https://www.codebuddy.ai/docs/cli/hooks) still shows
+`modifiedInput`, which this runtime silently ignores. Tokenjuice uses the
+runtime-supported field and leaves `permissionDecision` unset so CodeBuddy keeps
+its normal approval behavior. The [native session acceptance test](integration-playbook.md#codebuddy-session-acceptance)
+checks this with an installed hook and model-visible Bash results.
+
 ## settings file shape
 
 codebuddy's `~/.codebuddy/settings.json` uses the claude-code matcher-group shape:

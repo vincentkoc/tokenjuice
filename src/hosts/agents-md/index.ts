@@ -1,47 +1,39 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { realpath } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+
+import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  createMarkerInstructionCommands,
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AgentsMdInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAgentsMdInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAgentsMdInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAgentsMdInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAgentsMdInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type AgentsMdDoctorReport = {
-  instructionsPath: string;
+export type AgentsMdDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AGENTS_MD_FIX_COMMAND = "tokenjuice install agents-md";
@@ -50,78 +42,11 @@ const TOKENJUICE_AGENTS_MD_END = "<!-- tokenjuice:agents-md end -->";
 const TOKENJUICE_AGENTS_MD_ADVISORY =
   "AGENTS.md support is beta and instruction-based; it guides agents that read AGENTS.md but does not intercept tool output.";
 
-function getExplicitProjectDir(options: AgentsMdInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTS_MD_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("AGENTS_MD_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AgentsMdInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use AGENTS.md instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use AGENTS.md instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
@@ -176,27 +101,7 @@ const TOKENJUICE_AGENTS_MD_BLOCK_CONFIG = {
   block: TOKENJUICE_AGENTS_MD_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AGENTS_MD_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AGENTS_MD_END, beginIndex + TOKENJUICE_AGENTS_MD_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AGENTS_MD_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AGENTS_MD_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AGENTS_MD_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
+const markerInstructions = createMarkerInstructionCommands("agents-md", TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
 
 export async function installAgentsMdInstructions(
   instructionsPath?: string,
@@ -204,19 +109,7 @@ export async function installAgentsMdInstructions(
 ): Promise<InstallAgentsMdInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install agents-md`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallAgentsMdInstructions(
@@ -224,16 +117,7 @@ export async function uninstallAgentsMdInstructions(
   options: AgentsMdInstructionsOptions = {},
 ): Promise<UninstallAgentsMdInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall agents-md`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorAgentsMdInstructions(
@@ -278,29 +162,14 @@ export async function doctorAgentsMdInstructions(
     configuredLabel: "AGENTS.md instructions",
     repairCommand: TOKENJUICE_AGENTS_MD_FIX_COMMAND,
   });
-  const malformedMarkerIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+  const malformedMarkerIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG)
     ? ["configured AGENTS.md instructions have malformed tokenjuice marker nesting or extra markers"]
     : [];
   const issues = [
     ...markerIssues,
     ...malformedMarkerIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured AGENTS.md instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured AGENTS.md instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured AGENTS.md instructions still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG), {
+      configuredLabel: "AGENTS.md instructions",
     }),
   ];
 
@@ -311,7 +180,7 @@ export async function doctorAgentsMdInstructions(
       status: instructionDoctorStatusFromIssues(issues),
       issues,
       advisory: TOKENJUICE_AGENTS_MD_ADVISORY,
-      fixCommand: hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+      fixCommand: hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTS_MD_BLOCK_CONFIG)
         ? "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install agents-md"
         : TOKENJUICE_AGENTS_MD_FIX_COMMAND,
     }),

@@ -5,7 +5,8 @@ import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } fro
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, collapseRepeatedEmojiBanner, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
-import { NO_COMPACTION_METADATA, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { NO_COMPACTION_METADATA, createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { buildFailureSummary } from "./failure-summary.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
 import { buildInspectionSummary } from "./reduce-inspection-summary.js";
@@ -57,6 +58,7 @@ function applyRule(
   input: ToolExecutionInput,
   rawText: string,
   noOmit = false,
+  maxInlineChars = 1200,
 ): { summary: string; facts: Record<string, number>; compaction: CompactionMetadata } {
   const rule = compiledRule.rule;
   if (rule.transforms?.prettyPrintJson) {
@@ -78,14 +80,17 @@ function applyRule(
 
   const outputMatchText = trimEmptyEdges(lines).join("\n");
   const matchedOutput = compiledRule.compiled.outputMatches.find((entry) => entry.pattern.test(outputMatchText));
-  if (!noOmit && matchedOutput) {
+  if (!noOmit && input.exitCode === 0 && matchedOutput) {
     return {
       summary: matchedOutput.message,
       facts,
-      compaction: NO_COMPACTION_METADATA,
+      compaction: matchedOutput.message === outputMatchText
+        ? NO_COMPACTION_METADATA
+        : createCompactionMetadata("rule-output-replacement"),
     };
   }
 
+  const unfilteredLineCount = lines.length;
   if (!noOmit && rule.filters?.skipPatterns?.length) {
     lines = lines.filter((line) => !compiledRule.compiled.skipPatterns.some((pattern) => pattern.test(line)));
   }
@@ -97,6 +102,9 @@ function applyRule(
     if (kept.length > 0) {
       lines = kept;
     }
+  }
+  if (lines.length < unfilteredLineCount) {
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, createCompactionMetadata("rule-line-filter"));
   }
 
   if (rule.transforms?.trimEmptyEdges) {
@@ -120,11 +128,6 @@ function applyRule(
     lines = rewritten.lines;
     rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
-  if (rule.id === "search/rg") {
-    const rewritten = rewriteSearchLines(lines, noOmit);
-    lines = rewritten.lines;
-    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
-  }
   if (rule.id === "git/diff") {
     const rewritten = rewriteGitDiffLines(lines, noOmit);
     lines = rewritten.lines;
@@ -138,6 +141,15 @@ function applyRule(
       factLines = factLines.filter((line) => !line.startsWith("+++") && !line.startsWith("---"));
     }
     facts[counter.name] = factLines.filter((line) => pattern.test(line)).length;
+  }
+
+  const searchFits = rule.family === "search" && countTextChars(formatInline(
+    { family: rule.family, matchedReducer: rule.id }, input, lines.join("\n"), facts, noOmit,
+  )) <= maxInlineChars;
+  if (rule.id === "search/rg" && !searchFits) {
+    const rewritten = rewriteSearchLines(lines, noOmit);
+    lines = rewritten.lines;
+    rewriteCompaction = mergeCompactionMetadata(rewriteCompaction, rewritten.compaction);
   }
 
   if (lines.length === 0 && rule.onEmpty) {
@@ -158,7 +170,9 @@ function applyRule(
         tail: rule.summarize?.tail ?? 6,
       };
 
-  const compacted = headTail(lines, summarize.head, summarize.tail, noOmit);
+  const compacted = searchFits
+    ? { lines, compaction: NO_COMPACTION_METADATA }
+    : headTail(lines, summarize.head, summarize.tail, noOmit);
   return {
     summary: compacted.lines.join("\n").trim(),
     facts,
@@ -266,13 +280,13 @@ function selectInlineText(
   classification: { family: string },
   input: ToolExecutionInput,
   rawText: string,
+  rawChars: number,
   compactText: string,
   maxInlineChars: number,
   compactCompaction: CompactionMetadata,
   noOmit = false,
 ): { text: string; compaction: CompactionMetadata } {
   const passthroughText = buildPassthroughText(input, rawText);
-  const rawChars = countTextChars(stripAnsi(rawText));
   const compactChars = countTextChars(compactText);
   if (noOmit) {
     return {
@@ -299,13 +313,14 @@ function selectInlineText(
     };
   }
   const passthroughLimit = classification.family === "help" ? maxInlineChars : TINY_OUTPUT_MAX_CHARS;
-  if (countTextChars(passthroughText) > passthroughLimit) {
+  const passthroughChars = countTextChars(passthroughText);
+  if (passthroughChars > passthroughLimit) {
     return {
       text: compactText,
       compaction: compactCompaction,
     };
   }
-  if (countTextChars(passthroughText) <= countTextChars(compactText)) {
+  if (passthroughChars <= compactChars) {
     return {
       text: passthroughText,
       compaction: NO_COMPACTION_METADATA,
@@ -505,11 +520,12 @@ export async function reduceExecutionWithRules(
     throw new Error("missing generic fallback rule");
   }
 
-  const githubActionsFailureSummary = classification.matchedReducer === "generic/fallback"
+  const failureSummary = classification.matchedReducer === "generic/fallback"
     ? buildGithubActionsFailureSummary(reducerInput, rawText, opts.noOmit)
+      ?? buildFailureSummary(reducerInput, rawText, maxInlineChars, opts.noOmit)
     : null;
-  if (githubActionsFailureSummary) {
-    const inlineText = clampTextMiddleWithMetadata(githubActionsFailureSummary.text, maxInlineChars, opts.noOmit);
+  if (failureSummary) {
+    const inlineText = clampTextMiddleWithMetadata(failureSummary.text, maxInlineChars, opts.noOmit);
     const reducedChars = countTextChars(inlineText.text);
     const stats = {
       rawChars: measuredRawChars,
@@ -543,8 +559,8 @@ export async function reduceExecutionWithRules(
 
     return {
       inlineText: inlineText.text,
-      previewText: githubActionsFailureSummary.text,
-      compaction: mergeCompactionMetadata(githubActionsFailureSummary.compaction, inlineText.compaction),
+      previewText: failureSummary.text,
+      compaction: mergeCompactionMetadata(failureSummary.compaction, inlineText.compaction),
       ...(trace ? { trace } : {}),
       ...(rawRef ? { rawRef } : {}),
       stats,
@@ -603,7 +619,7 @@ export async function reduceExecutionWithRules(
     }
   }
 
-  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit);
+  const { summary, facts, compaction } = applyRule(matchedRule, reducerInput, rawText, opts.noOmit, maxInlineChars);
   const compactText = formatInline(
     classification,
     reducerInput,
@@ -611,7 +627,7 @@ export async function reduceExecutionWithRules(
     facts,
     opts.noOmit,
   );
-  const selectedText = selectInlineText(classification, reducerInput, rawText, compactText, maxInlineChars, compaction, opts.noOmit);
+  const selectedText = selectInlineText(classification, reducerInput, rawText, measuredRawChars, compactText, maxInlineChars, compaction, opts.noOmit);
   const clamp = classification.family === "help" || selectedText.text.includes("\n") ? clampTextMiddleWithMetadata : clampTextWithMetadata;
   const inlineText = clamp(selectedText.text, maxInlineChars, opts.noOmit);
   const reducedChars = countTextChars(inlineText.text);

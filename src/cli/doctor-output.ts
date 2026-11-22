@@ -1,5 +1,4 @@
-import { getAvailableHookIntegrationNames, getInstalledHookIntegrations } from "../hosts/shared/hook-doctor.js";
-import type { HookDoctorReport } from "../hosts/shared/hook-doctor.js";
+import { getAvailableHookIntegrationNames, getInstalledHookIntegrations, type HookDoctorReport } from "../hosts/shared/hook-doctor.js";
 
 type IntegrationDoctorReport = HookDoctorReport["integrations"][keyof HookDoctorReport["integrations"]];
 
@@ -102,4 +101,14 @@ export function formatHookDoctorReport(report: HookDoctorReport): string {
 
   appendInstallHint(lines);
   return `${lines.join("\n")}\n`;
+}
+
+export function writeDoctorList(label: string, items: readonly string[]): void {
+  if (items.length === 0) {
+    return;
+  }
+  process.stdout.write(`${label}:\n`);
+  for (const item of items) {
+    process.stdout.write(`- ${item}\n`);
+  }
 }

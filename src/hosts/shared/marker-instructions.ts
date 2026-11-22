@@ -30,6 +30,28 @@ export type UninstallMarkerDelimitedBlockResult = {
   removed: boolean;
 };
 
+function countMarker(text: string, marker: string): number {
+  return text.split(marker).length - 1;
+}
+
+export function getMarkerDelimitedBlockText(text: string, config: Pick<MarkerDelimitedBlockConfig, "beginMarker" | "endMarker">): string {
+  const beginIndex = text.indexOf(config.beginMarker);
+  if (beginIndex === -1) {
+    return "";
+  }
+  const endIndex = text.indexOf(config.endMarker, beginIndex + config.beginMarker.length);
+  if (endIndex === -1) {
+    return text.slice(beginIndex);
+  }
+  return text.slice(beginIndex, endIndex + config.endMarker.length);
+}
+
+export function hasMalformedMarkerDelimitedBlock(text: string, completeBlockCount: number, config: Pick<MarkerDelimitedBlockConfig, "beginMarker" | "endMarker">): boolean {
+  const beginCount = countMarker(text, config.beginMarker);
+  const endCount = countMarker(text, config.endMarker);
+  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
@@ -139,4 +161,32 @@ export async function uninstallMarkerDelimitedBlock(filePath: string, config: Ma
     await rm(filePath, { force: true });
   }
   return { filePath, removed: true };
+}
+
+export function createMarkerInstructionCommands(host: string, config: MarkerDelimitedBlockConfig) {
+  async function rejectMalformedMarkers(instructionsPath: string, action: "install" | "uninstall"): Promise<void> {
+    const existing = await readInstructionFile(instructionsPath);
+    const markerState = inspectMarkerDelimitedBlock(existing.text, config);
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, config)) {
+      throw new Error(
+        `cannot safely ${action === "install" ? "repair" : "uninstall"} malformed tokenjuice markers in ${instructionsPath}; remove the dangling marker manually, then rerun tokenjuice ${action} ${host}`,
+      );
+    }
+  }
+
+  return {
+    async install(instructionsPath: string) {
+      await rejectMalformedMarkers(instructionsPath, "install");
+      const result = await installMarkerDelimitedBlock(instructionsPath, config);
+      return {
+        instructionsPath: result.filePath,
+        ...(result.backupPath ? { backupPath: result.backupPath } : {}),
+      };
+    },
+    async uninstall(instructionsPath: string) {
+      await rejectMalformedMarkers(instructionsPath, "uninstall");
+      const result = await uninstallMarkerDelimitedBlock(instructionsPath, config);
+      return { instructionsPath: result.filePath, removed: result.removed };
+    },
+  };
 }

@@ -1,18 +1,18 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -41,16 +41,9 @@ export type UninstallBitoGuidelinesResult = {
   removed: boolean;
 };
 
-export type BitoDoctorReport = {
-  configPath: string;
+export type BitoDoctorReport = PathDoctorReport<"configPath"> & {
   guidelinesPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_BITO_FIX_COMMAND = "tokenjuice install bito";
@@ -61,98 +54,11 @@ const TOKENJUICE_BITO_GUIDELINES_RELATIVE_PATH = "./.bito/tokenjuice.md";
 const TOKENJUICE_BITO_ADVISORY =
   "Bito support is beta and custom-guidelines based; Bito still owns PR review, analysis settings, tools, and comment delivery.";
 
-function getExplicitProjectDir(options: BitoGuidelinesOptions = {}): string | undefined {
-  return options.projectDir || process.env.BITO_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("BITO_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: BitoGuidelinesOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string, label: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
-
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string, label: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath, label: string) => `cannot use Bito ${label} ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function resolveSafeProjectPath(filePath: string, projectDir: string, realProjectDir: string, label: string): Promise<string> {
   const resolvedPath = resolve(filePath);
@@ -160,7 +66,11 @@ async function resolveSafeProjectPath(filePath: string, projectDir: string, real
     throw new Error(`cannot use Bito ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
   }
   await rejectInstructionSymlink(projectDir, label);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir, label);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Bito ${label} ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
   if (!isInsideOrEqual(realProjectDir, realParentDir)) {
     throw new Error(
@@ -421,25 +331,12 @@ export async function doctorBitoGuidelines(options: BitoGuidelinesOptions = {}):
     ],
   });
   const guidelinesIssues = guidelines.exists
-    ? collectGuidanceIssues(guidelines.text, {
-        required: [
+    ? collectTokenjuiceGuidanceIssues(guidelines.text, {
+        configuredLabel: "Bito guidelines",
+        additionalRequired: [
           {
             requiredText: TOKENJUICE_BITO_GUIDELINES_MARKER,
             missingIssue: "configured Bito guidelines do not look like the tokenjuice guidelines",
-          },
-          {
-            requiredText: TOKENJUICE_WRAP_COMMAND,
-            missingIssue: "configured Bito guidelines are missing tokenjuice wrap guidance",
-          },
-          {
-            requiredText: TOKENJUICE_RAW_COMMAND,
-            missingIssue: "configured Bito guidelines are missing the raw escape hatch",
-          },
-        ],
-        forbidden: [
-          {
-            forbiddenText: TOKENJUICE_FULL_COMMAND,
-            presentIssue: "configured Bito guidelines still suggest the full escape hatch",
           },
         ],
       })

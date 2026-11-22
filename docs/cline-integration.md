@@ -1,16 +1,10 @@
 # Cline integration
 
-Cline support is beta.
-
-`tokenjuice install cline` writes a global hook script to
-`~/Documents/Cline/Hooks/tokenjuice-post-tool-use`. After install, enable that
-script as a `PostToolUse` hook in Cline's Hooks tab. When Cline returns noisy
-`execute_command` output, tokenjuice compacts it and returns the compacted result
-through `contextModification` with the raw-output escape hatch:
-
-```bash
-tokenjuice wrap --raw -- <command>
-```
+`tokenjuice install cline` installs an executable `~/.cline/hooks/PreToolUse`
+script. Cline CLI 3.0.74 discovers that filename and accepts `overrideInput`
+from its `tool_call` hook to replace the complete `run_commands` input.
+The hook wraps each command through the shared `tokenjuice wrap` pipeline before
+execution, so compacted output reaches the next model request.
 
 ## Install
 
@@ -19,25 +13,49 @@ tokenjuice install cline
 tokenjuice doctor cline
 ```
 
-For repo-local verification during development:
+Restart Cline after installation. For a repository build, run `pnpm build` and
+use `node dist/cli/main.js install cline --local` instead.
+`CLINE_HOOKS_DIR` overrides the installation directory; Cline must also discover
+that directory. Custom hook paths must end in `PreToolUse` or `PreToolUse.sh`.
 
-```bash
-pnpm build
-node dist/cli/main.js install cline --local
-node dist/cli/main.js doctor cline --local
-```
+Installation preserves an existing unmanaged `PreToolUse` script and reports a
+conflict. Merge wrapping into that script manually instead of overwriting it.
+Reinstallation removes only the exact old tokenjuice-generated
+`~/Documents/Cline/Hooks/tokenjuice-post-tool-use` script. Current Cline does not
+discover that old filename. Its stale handler returns no additional context.
+Uninstall removes recognized generated hooks and preserves custom files.
+Symlink hook files and directories are rejected for mutation.
 
 ## Behavior
 
-- Only `PostToolUse` payloads for `execute_command` are considered.
-- Empty output and low-savings reductions are left untouched.
-- Safe repository inventory commands can still be compacted.
-- Exact file-content inspection commands stay raw unless tokenjuice can build a
-  safe summary.
-- `CLINE_HOOKS_DIR` can override the global hooks directory for testing.
+- Only native `tool_call` events for `run_commands` with a nonempty string
+  `commands` array are rewritten. Other input fields are retained.
+- Already wrapped commands, including explicit `--raw` / `--full`, stay unchanged.
+- Successful noisy commands can shrink; exact file reads preserve their bytes.
+- Automatic wrapping uses `--keep-failures`: failed commands preserve stdout,
+  stderr and their exit status within the normal capture limit.
+- Native Windows installation is unsupported; use explicit wrapping there.
 
-## Current beta caveat
+```bash
+tokenjuice wrap --raw -- <command>
+tokenjuice wrap --keep-failures -- <command>
+```
 
-Cline discovers hook scripts from the Hooks tab and macOS/Linux hooks must be
-enabled there after install. This first cut injects compacted context through
-`contextModification`; it does not suppress the original tool result.
+## Native acceptance
+
+`scripts/cline-e2e.mjs <pinned-cline-binary>` runs real Cline CLI 3.0.74 against
+a disposable loopback OpenAI-compatible provider. No account credentials are
+needed. Baseline, ignored legacy-hook and installed-hook sessions capture the
+actual hook requests and follow-up model requests. They check an 80-file listing,
+exact CRLF content, explicit wrapping, raw bypass, complete exit-7 output with
+stderr, and a batch containing both compacted and raw commands. The fixture also
+checks migration and uninstall. Linux CI runs the pinned native package; macOS
+arm64 is checked locally.
+
+This qualifies the pinned CLI version. Desktop sessions, other versions, remote
+providers and interactive permission modes need separate acceptance. A healthy
+`doctor` report checks installation, not whether a desktop session loaded it.
+
+Contract references: [CLI reference](https://docs.cline.bot/cli/cli-reference.md),
+[hook filename discovery](https://github.com/cline/cline/blob/main/sdk/packages/core/src/hooks/hook-file-config.ts),
+and [input override handling](https://github.com/cline/cline/blob/main/sdk/packages/core/src/hooks/hook-file-hooks.ts).

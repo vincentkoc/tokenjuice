@@ -3,14 +3,17 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   removeMarkerDelimitedBlock,
   upsertMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import { readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -31,15 +34,8 @@ export type UninstallDotAgentsRuleResult = {
   syncCommand: string;
 };
 
-export type DotAgentsDoctorReport = {
-  rulePath: string;
+export type DotAgentsDoctorReport = PathDoctorReport<"rulePath"> & {
   syncCommand: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_DOT_AGENTS_FIX_COMMAND = "tokenjuice install dot-agents";
@@ -79,28 +75,6 @@ const TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG = {
   block: TOKENJUICE_DOT_AGENTS_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_DOT_AGENTS_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_DOT_AGENTS_END, beginIndex + TOKENJUICE_DOT_AGENTS_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_DOT_AGENTS_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_DOT_AGENTS_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_DOT_AGENTS_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 function ensureDotAgentsFrontmatter(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -119,7 +93,7 @@ export async function installDotAgentsRule(
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice install dot-agents`,
     );
@@ -148,7 +122,7 @@ export async function uninstallDotAgentsRule(
   const resolvedRulePath = rulePath ?? getDefaultRulePath(options);
   const existing = await readInstructionFile(resolvedRulePath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedRulePath}; remove the dangling marker manually, then rerun tokenjuice uninstall dot-agents`,
     );
@@ -190,36 +164,26 @@ export async function doctorDotAgentsRule(
     configuredLabel: "dot-agents global rules",
     repairCommand: TOKENJUICE_DOT_AGENTS_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG);
   const malformedMarkerIssues =
     hasMalformedMarkers && markerIssues.length === 0
       ? [
           "configured dot-agents global rules have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install dot-agents",
         ]
       : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-    required: [
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_DOT_AGENTS_BLOCK_CONFIG), {
+    configuredLabel: "dot-agents rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_DOT_AGENTS_RULE_MARKER,
         missingIssue: "configured dot-agents rule file does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured dot-agents rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured dot-agents rule file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "dot-agents sync",
         missingIssue: "configured dot-agents rule file is missing sync guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured dot-agents rule file still suggests the full escape hatch",
       },
     ],
   });

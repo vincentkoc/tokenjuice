@@ -1,0 +1,1298 @@
+{
+  "schema_version": 1,
+  "retrieved": "2026-11-14",
+  "tile": {
+    "width": 96,
+    "height": 96,
+    "display_width": 48,
+    "display_height": 48,
+    "background": "white",
+    "border": "#d0d7de",
+    "artwork_max": 72,
+    "inner_plate": 76
+  },
+  "assets": {
+    "adal": {
+      "file": "adal.png",
+      "source_url": "https://adalagent.ai/adal-icon-pink.svg",
+      "source_sha256": "ac65bf43418a5c6f83e4f3a006bad46fc903fbbfbb961f11c8803b8f6ebec72d",
+      "sha256": "f59f50906a2488d2ca07b7580e226e8f1e8880349ced72fe399a8a63e259cf30",
+      "source_page": "https://docs.sylph.ai/features/plugins-and-skills",
+      "inner_background": "white"
+    },
+    "aether": {
+      "file": "aether.png",
+      "source_url": "https://raw.githubusercontent.com/contextbridge/aether/main/packages/website/public/favicon.svg",
+      "source_sha256": "be2b36f0928e1d7f3b57f5dcbb3e726b707ce95b6a6570abaa9322fc3765b09c",
+      "sha256": "be4105e8cd5ee923048a5d6d74e66567c923e6693ff3bc2c9c1d202b11019442",
+      "source_page": "https://aether-agent.io/",
+      "inner_background": "white"
+    },
+    "agent-layer": {
+      "file": "agent-layer.png",
+      "source_url": "https://agent-layer.dev/img/favicon/apple-touch-icon.png",
+      "source_sha256": "8c0e68eaacfd106a14a15c3683a91a80923d3b5ee7ecf38d2c4acf7da18e8deb",
+      "sha256": "df93de8c9812699cca3b677250b3780321789bdc0afc0f47df1d99b8be49c5c9",
+      "source_page": "https://agent-layer.dev/docs/",
+      "inner_background": "white"
+    },
+    "agentlink": {
+      "file": "agentlink.png",
+      "source_url": "https://agentlink.run/favicon.svg",
+      "source_sha256": "edd98a4c252fc3e1f9087d0c868f641b9ee9a478b0c5d9ad1b00e4a2c04772f1",
+      "sha256": "c2f535b9c6c12d53f983302f976ecba9debf30fad5552ea16ccc61422a676533",
+      "source_page": "https://agentlink.run/",
+      "inner_background": "white"
+    },
+    "agentloom": {
+      "file": "agentloom.png",
+      "source_url": "https://agentloom.sh/icon.svg?fbe045c3469aed2d",
+      "source_sha256": "ba753c7036ae5433406a4e550c52231f3fe8fdb29bcb4d3e3b395f6423ef19b3",
+      "sha256": "f520685261a3f907b161926761902671e9763b9e07bcaa2d9a6e6e82ea122c7b",
+      "source_page": "https://agentloom.sh/docs",
+      "inner_background": "white"
+    },
+    "agents-cli": {
+      "file": "agents-cli.png",
+      "source_url": "https://agi-cli.sh/favicon.svg",
+      "source_sha256": "797a1c7cb7b2ae0d619d8d5814a1cc74f7331c7e08c18438863defde8586efc7",
+      "sha256": "d2420497620a9b6db9d8caefe3b30a47b06b2d6b6b7f2a680439fbae67c387bd",
+      "source_page": "https://agents-cli.sh/",
+      "inner_background": "white"
+    },
+    "agentsge": {
+      "file": "agentsge.png",
+      "source_url": "https://daliagents.com/apple-touch-icon.png",
+      "source_sha256": "d1825744d8fd66f23d9c33b78c35068aab065d26b82bc6cb9ff4b1b98f10220b",
+      "sha256": "6a707b715d2c2ad6e405e1f0491692427b8419b21023915155407b79442ce02e",
+      "source_page": "https://agents.ge/",
+      "inner_background": "#161b22"
+    },
+    "agents-md": {
+      "file": "agents-md.png",
+      "source_url": "https://agents.md/favicon-light.png",
+      "source_sha256": "fad4fde11675e060753c9366086ea23e853645be1f24f14e1d6bfc6512160f15",
+      "sha256": "88d52e12a26bc7d7e41b9b0893bfe00b4da44c9ce00de2891f164fd880312548",
+      "source_page": "https://agents.md/",
+      "inner_background": "white"
+    },
+    "agentsmesh": {
+      "file": "agentsmesh.png",
+      "source_url": "https://samplexbro.github.io/agentsmesh/favicon.svg",
+      "source_sha256": "04548638a218ee8e911166bbe2d4fe93285de8cd10f058176c067b3e126e99ed",
+      "sha256": "4824841167ae003a022e8a8735e4640577111521d72aa4fb2cade3e3d9739a98",
+      "source_page": "https://samplexbro.github.io/agentsmesh/",
+      "inner_background": "white"
+    },
+    "aictl": {
+      "file": "aictl.png",
+      "source_url": "https://www.aictl.app/apple-touch-icon.png",
+      "source_sha256": "d7cc6aa952bdab38f61146afa23081428c65124047f32c0f4469769aed3b47cc",
+      "sha256": "fe9d7c2a1f39b1d56b275c2b6fe3cec7000ad3b118e9f349126207016cf1461f",
+      "source_page": "https://www.aictl.app/",
+      "inner_background": "white"
+    },
+    "aider": {
+      "file": "aider.png",
+      "source_url": "https://aider.chat/assets/icons/android-chrome-384x384.png",
+      "source_sha256": "1bdc5eaa7b2cc20519b252288607caff2d0d1dfadc89bdc5a25f89e6e7f4d89c",
+      "sha256": "df9a63492952ece1de4473cd2d375a178676fe33a98f12074de8563708724a6e",
+      "source_page": "https://aider.chat/",
+      "inner_background": "white"
+    },
+    "amazon-q": {
+      "file": "amazon-q.png",
+      "source_url": "https://a0.awsstatic.com/libra-css/images/site/touch-icon-ipad-144-smile.png",
+      "source_sha256": "f80d3ec6c5b2adee55267ecfcf2fc4131aa8551a546b7a1971b5e465c05c2403",
+      "sha256": "87b2b543ce23ac2756ace838ad8ca1f800eabba6c8bcba4700d5b4d0eab3ca86",
+      "source_page": "https://aws.amazon.com/q/developer/",
+      "inner_background": "white"
+    },
+    "amp": {
+      "file": "amp.png",
+      "source_url": "https://ampcode.com/app-icon.png?v=4",
+      "source_sha256": "d4e6d7bab74bfcebf3edc2b14549d92b3e4384e6ec6629781a074a816d42ea08",
+      "sha256": "185768334bc0341f6e19098abbcca50cb917a94a7f41dc8d55fe587625a1c86f",
+      "source_page": "https://ampcode.com/manual",
+      "inner_background": "white"
+    },
+    "ante": {
+      "file": "ante.png",
+      "source_url": "https://antigma.ai/img/apple-touch-icon.png",
+      "source_sha256": "50fce1ac803589471be0ae7134d2a751a695ddf6c381c9dbe057f1b105e7ad0c",
+      "sha256": "33363468dc3f5cff800059e9363ee2c8de8095702999fb27fa44fa3cd765f3a9",
+      "source_page": "https://antigma.ai",
+      "inner_background": "white"
+    },
+    "anywhere-agents": {
+      "file": "anywhere-agents.png",
+      "source_url": "https://raw.githubusercontent.com/yzhao062/anywhere-agents/main/docs/assets/brand/favicon.svg",
+      "source_sha256": "043d89227d42f5211ded72d24ddd3b869ac47c7bbbfd9a8d7347f21f40c51320",
+      "sha256": "79458d821ce66607c97568ade8d0e1cde829f2f18ca6c8a7bafaed7a0de50a0f",
+      "source_page": "https://anywhere-agents.readthedocs.io/",
+      "inner_background": "white"
+    },
+    "augment": {
+      "file": "augment.png",
+      "source_url": "https://docs.augmentcode.com/mintlify-assets/_mintlify/favicons/augment-mtje7p526w/MMO3uIP-KlW_55xJ/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "7c126d7a7536e8df8fb836fa9b82c5bfe9502b2b021b66181acc7da9a8a5291e",
+      "sha256": "4ce7b42e7e6d1f4aa2aa8b0fc830573ab78bc0fc5a68962400a11faf6225706e",
+      "source_page": "https://docs.augmentcode.com/cli/rules",
+      "inner_background": "white"
+    },
+    "autoclaw": {
+      "file": "autoclaw.png",
+      "source_url": "https://autoclaw.zhipuai.cn/assets/app-icon-round.png",
+      "source_sha256": "d64ba8800b2100b9f73fbb044777c4fe7976aab95dd3021692db62c9d66e66b0",
+      "sha256": "934d18dfef6482fc3a64688c607b8d273892a038ca514d6c64ba694a16e9cb2f",
+      "source_page": "https://autoglm.zhipuai.cn",
+      "inner_background": "white"
+    },
+    "avante": {
+      "file": "avante.png",
+      "source_url": "https://github.com/user-attachments/assets/2e2f2a58-2b28-4d11-afd1-87b65612b2de",
+      "source_sha256": "d0b18461bf2b0fc0fc937a342b2e40c34c72904799d44cc2a4ca95697a5c0de9",
+      "sha256": "5c4fd1caefba08ad56a65358ab475ec8e0f92967118aa47aece6f0b93d875081",
+      "source_page": "https://github.com/yetone/avante.nvim",
+      "inner_background": "white"
+    },
+    "baz": {
+      "file": "baz.png",
+      "source_url": "https://baz.ai/docs/favicon.svg",
+      "source_sha256": "df4f8ad11f618c01a8cb15f4504eb88c525b25fa96a7f54acbab33ad01e6df9e",
+      "sha256": "655931198e6b175fd75b4d8dc431a239aec91a0d46d105ba58b9a6cbd680882a",
+      "source_page": "https://docs.baz.co/agents/skills-and-instructions",
+      "inner_background": "white"
+    },
+    "bito": {
+      "file": "bito.png",
+      "source_url": "https://docs.bito.ai/~gitbook/icon?size=medium&theme=light&border=false",
+      "source_sha256": "eaf05a9d1b5587f5289cb83aa3d0fe9d44ef8662ff4bd15cb0daac8c9a7c35cc",
+      "sha256": "4e210d6d197eb12bf8628c2add45445a6620d256aa02afae2612f3a48649965a",
+      "source_page": "https://docs.bito.ai/ai-code-reviews-in-git/agent-settings/repo-level-settings",
+      "inner_background": "white"
+    },
+    "blackbox": {
+      "file": "blackbox.png",
+      "source_url": "https://docs.blackbox.ai/favicon.svg",
+      "source_sha256": "7ed38882ee0b1a1f3703f75d3c95ba30c1b0e8bff0a24b15cf342d6bb1995cad",
+      "sha256": "60efbc3f29acb94825ff724239c8ea0dae911233e30a31d82cf40131ea11296b",
+      "source_page": "https://docs.blackbox.ai/features/blackbox-cli/skills",
+      "inner_background": "white"
+    },
+    "blocks": {
+      "file": "blocks.png",
+      "source_url": "https://docs.blocks.team/mintlify-assets/_mintlify/favicons/blocks/CzYW4MX8WiJzfatV/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "29d0413fb502e246a4339da2dfeb81fbe26f37e190c0c6c4f0720c237654adbc",
+      "sha256": "3c6031a0068feb10b15b1b63c290134eb00ba06ebb36270b28b2d09b95dae890",
+      "source_page": "https://docs.blocks.team/using-blocks/features/skills",
+      "inner_background": "white"
+    },
+    "builder": {
+      "file": "builder.png",
+      "source_url": "https://cdn.builder.io/api/v1/image/assets%2FYJIGb4i01jvw0SRdL5Bt%2Ffd572a39ff674ec88c50c33f33d9ca02",
+      "source_sha256": "616e91ab3f3dc1fac502f0826e452dfeecf9581e84883e1cbe645b36f029e659",
+      "sha256": "7d03e4d41a1d555aa70e24d17aa34d9c6ca89a24f26c6d6185a89aeb72d02739",
+      "source_page": "https://www.builder.io",
+      "inner_background": "white"
+    },
+    "charlie": {
+      "file": "charlie.png",
+      "source_url": "https://charlielabs.ai/favicon.svg",
+      "source_sha256": "acff25e2688b799d81bb0897225018d464fb6f0683576444df837122ef6e8782",
+      "sha256": "c2b048e5dd3c657cbfd487262bb596a91058ca59683c5e84fe08fc0cecd9697b",
+      "source_page": "https://docs.charlielabs.ai/customization/instructions",
+      "inner_background": "white",
+      "note": "Render the official SVG light scheme; no recoloring."
+    },
+    "claude-code": {
+      "file": "claude-code.png",
+      "source_url": "https://claude.com/icon.svg",
+      "source_sha256": "b150888bc7257af83e3b85d3c2be4294f88986026f8168f6c12fc1fde6697350",
+      "sha256": "2eef4c34136d12463545e6b84e16a2ed45e41b3af9acddc588ebe86225712324",
+      "source_page": "https://claude.com",
+      "inner_background": "white"
+    },
+    "clawdbot": {
+      "file": "clawdbot.png",
+      "source_url": "https://openclaw.ai/apple-touch-icon.png",
+      "source_sha256": "f8ee278185fe17050e3717adc36e97c4f0a6d96b50b8c5df509c6ae042d983d0",
+      "sha256": "83e3d7592944ff06038be89997dad60e11063669abc373fdec47101761e055a2",
+      "source_page": "https://openclaw.ai",
+      "inner_background": "white"
+    },
+    "cline": {
+      "file": "cline.png",
+      "source_url": "https://cline.bot/assets/branding/favicons/apple-touch-icon.png",
+      "source_sha256": "be425bfbb8df74e23618ea25a691a53036826ee36e0418fda78989144787924c",
+      "sha256": "73d097fc9e71b6e05cb5d7f4e55600a816d555f271bb72b7bf7cb091ffa65a1f",
+      "source_page": "https://cline.bot",
+      "inner_background": "white"
+    },
+    "codeant": {
+      "file": "codeant.png",
+      "source_url": "https://framerusercontent.com/images/AW7ZZfe75isjcBuCj9nz6WZ7Rrk.png",
+      "source_sha256": "2eec230f0f7ca739f79a7c9bc2f35bc105f7823bd6c2d34962c45cb9f47fcc36",
+      "sha256": "3c2b5e168038744d691283539102b37c92a6d8c7ef00535eede5769162878e33",
+      "source_page": "https://www.codeant.ai",
+      "inner_background": "white"
+    },
+    "codebuddy": {
+      "file": "codebuddy.png",
+      "source_url": "https://download.codebuddy.cn/web/website/8e036eb06f87c6b08437546b3cbd58e60af45b10/assets/logo.svg",
+      "source_sha256": "149baa45b9f9370c15f20d599afe381aa138e4fc13acf503f435c571ac93ecf5",
+      "sha256": "0bd36165a6df998eb5bddc3d76b41ca3ecd48ce1ab67e8b789dca077a497b1b9",
+      "source_page": "https://codebuddy.tencent.com/",
+      "inner_background": "white"
+    },
+    "codebuff": {
+      "file": "codebuff.png",
+      "source_url": "https://www.codebuff.com/favicon/apple-touch-icon.png",
+      "source_sha256": "6ac6bf242c038b3bf5a75591bff997209f9e1bd0dc8b740a6e95f7155260b751",
+      "sha256": "0a613043b4d83d855259eb24f347214bb15350dbde54571606bbf38cee0740b5",
+      "source_page": "https://www.codebuff.com/docs/help/quick-start",
+      "inner_background": "white"
+    },
+    "codegen": {
+      "file": "codegen.png",
+      "source_url": "https://docs.codegen.com/mintlify-assets/_mintlify/favicons/codegeninc/_lRXFMT4OI26HnBz/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "9f155b194f1539da830f0ef3b2b8273a0142321f106a4d98a1fd23c3e6633e2b",
+      "sha256": "d31c984947fba721a5a491c9a7e0340272ac66ac3c4824d80e7fa55c53e098e7",
+      "source_page": "https://docs.codegen.com/settings/repo-rules",
+      "inner_background": "white"
+    },
+    "coder-agents": {
+      "file": "coder-agents.png",
+      "source_url": "https://coder.com/docs/favicon-dark.svg",
+      "source_sha256": "b81d9520b5bff1aeddf6730d19cfb3ededd01b84075ffa0518f5b1c1ca904e80",
+      "sha256": "3ece2c42033058367548f8899889d5f7d5b86b3f72cfccf73f6dee32831601be",
+      "source_page": "https://coder.com/docs/ai-coder/agents",
+      "inner_background": "white"
+    },
+    "coderabbit": {
+      "file": "coderabbit.png",
+      "source_url": "https://www.coderabbit.ai/apple-touch-icon.png?v=4",
+      "source_sha256": "5d7519a5e048eeba852ec8f29de851ecda46bf04de0ede6fd8abf87b53f77107",
+      "sha256": "adbf5dd809b56f9dcf3fa250ce5dab0f40e3b80aec47dadb1aff09133d98e3b4",
+      "source_page": "https://www.coderabbit.ai",
+      "inner_background": "white"
+    },
+    "codex-cli": {
+      "file": "codex-cli.png",
+      "source_url": "https://developers.openai.com/favicon.svg",
+      "source_sha256": "8e1b976ba47e927ac2928303fd5362fcadfefd68743506510596f107df676e58",
+      "sha256": "38143ffe01d666fb64e5d4de768ccba89deadaec5a7638e606c55ff0c535ee54",
+      "source_page": "https://openai.com/codex/",
+      "inner_background": "white"
+    },
+    "command-code": {
+      "file": "command-code.png",
+      "source_url": "https://commandcode.ai/apple-touch-icon.png",
+      "source_sha256": "f3a50e2d93b0a50b937cf47f1a98c01274cc8bb660eef7a7e10b6a77fd9af771",
+      "sha256": "afaabbe819bcb84d806d25c17f44300ea2f978a4bed0d41d7c8b731f0ccb42b5",
+      "source_page": "https://commandcode.ai",
+      "inner_background": "white"
+    },
+    "continue": {
+      "file": "continue.png",
+      "source_url": "https://docs.continue.dev/favicon.ico?favicon.0jk6d3lxvxamz.ico",
+      "source_sha256": "3172a2258c17a2b948cc905593db6e4a5ba8f57c113c6a600f4d98b0996bebf8",
+      "sha256": "0d7459b6507c45fb4971776561970de49ba6dc6ee587c3e5b33189c2ddedf6b0",
+      "source_page": "https://docs.continue.dev/",
+      "inner_background": "white"
+    },
+    "crush": {
+      "file": "crush.png",
+      "source_url": "https://raw.githubusercontent.com/charmbracelet/crush/main/internal/ui/notification/crush-icon-solo.png",
+      "source_sha256": "a41177d5afbdbc6838526d0a1b62076a686a18d2949e262eb405a2142dd082f2",
+      "sha256": "0b02725a6c9dfa1d017abace8164d0c67dae48896125f46a3d6909b0d5e82751",
+      "source_page": "https://github.com/charmbracelet/crush",
+      "inner_background": "white"
+    },
+    "cursor": {
+      "file": "cursor.png",
+      "source_url": "https://cursor.com/docs-static/apple-touch-icon.png",
+      "source_sha256": "9c941729e51318224f1b6ea71d8ffc3b45dd4e6271653ed36d2a77e4066208a3",
+      "sha256": "9b2cc5f793f1ae6e389dc28432e7cf2b24771e712e47db5bc74f1e8086f30c66",
+      "source_page": "https://cursor.com/docs/hooks",
+      "inner_background": "white"
+    },
+    "deepagents": {
+      "file": "deepagents.png",
+      "source_url": "https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/69a17e4f0c916c644f4de1cd_webclip%20lg.png",
+      "source_sha256": "0c60295f8003df255890bff79d9b006d5b3459f90e02c31c850e05b4365c9029",
+      "sha256": "75c990a232f506d6e833746f83639c89d1d49497ec0cc4269606b9a91cfaea27",
+      "source_page": "https://www.langchain.com",
+      "inner_background": "white"
+    },
+    "deepseek-harness": {
+      "file": "deepseek-harness.png",
+      "source_url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/apps/web/public/icon-192.png",
+      "source_sha256": "dfbf42e79fa2a44fedb67497efa81e897e446f64b313531738f32974a117602c",
+      "sha256": "05885e64c06238b525677b119e72dee37a2f8f2c07a4c5b8326f6087842a73fd",
+      "source_page": "https://harness.deepseek.com",
+      "inner_background": "white"
+    },
+    "devin": {
+      "file": "devin.png",
+      "source_url": "https://devin.ai/apple-icon.png",
+      "source_sha256": "8724ba9cc5fbc34281500e69ca0a37954d391da196caa3909599962cbccd6c2d",
+      "sha256": "8bffc3658a4ebfa3dacfda6b77a62f93635893a2600363621d082fa9bd4f3444",
+      "source_page": "https://devin.ai",
+      "inner_background": "white"
+    },
+    "docker-agent": {
+      "file": "docker-agent.png",
+      "source_url": "https://www.docker.com/app/uploads/2024/02/cropped-docker-logo-favicon-180x180.png",
+      "source_sha256": "5cb5caeeef34a0979a0b21640ea6bbbfb8345a9fff0d0e910c345ce4d0b65718",
+      "sha256": "0c85be6c0110db65127b635851b0f8cc9f384c487db5394b263bad1503caece5",
+      "source_page": "https://www.docker.com",
+      "inner_background": "white"
+    },
+    "dot-agents": {
+      "file": "dot-agents.png",
+      "source_url": "https://www.dot-agents.com/icon.svg",
+      "source_sha256": "8cf6c25373c3fb0721af9a2dd532bddebad8f04f087af73400c2ed44f21e2c97",
+      "sha256": "a549632b42ab25258207005101c42f4a1c2f576048a10de1cfa030a34dc8e981",
+      "source_page": "https://www.dot-agents.com/",
+      "inner_background": "white"
+    },
+    "doubao-work": {
+      "file": "doubao-work.png",
+      "source_url": "https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/doubaowork_logo_new_76.png",
+      "source_sha256": "e357bea162b963de77526eabf91c7146000a289d7d95f0447c49beed8351f030",
+      "sha256": "049433cb64e0acd981e3af23ecf11d495552eba731425ac82f7a22a45c7d424a",
+      "source_page": "https://work.doubao.com",
+      "inner_background": "white"
+    },
+    "droid": {
+      "file": "droid.png",
+      "source_url": "https://factory.com/favicon.svg",
+      "source_sha256": "416ea4962d7b0b8be8bec7f7190c13c22d5f20fdcac401aa72886fd5c81d2fb2",
+      "sha256": "09586a512741b1e45fb3ea83439b0825664b7bc09e6b6104249bfe6d3d2fcaa5",
+      "source_page": "https://factory.ai",
+      "inner_background": "white"
+    },
+    "eca": {
+      "file": "eca.png",
+      "source_url": "https://eca.dev/images/logo.svg",
+      "source_sha256": "73d1f73f0b84ccea73fa71d08e572d1e01218e844be8fe7a821a5f39cb4b2b61",
+      "sha256": "653743d727d7a6336e4f8913ea70188830ce80564b9871e16a5aeadb02574a39",
+      "source_page": "https://eca.dev/",
+      "inner_background": "#161b22"
+    },
+    "elyra": {
+      "file": "elyra.png",
+      "source_url": "https://elyracode.com/favicon.svg",
+      "source_sha256": "27c08c650689e56924e1089d0626f2a5c62a0001e2d4ecd6b4f90024b19bd53a",
+      "sha256": "547ea5ac23b8fa07349aad2e1b950663f1faa8c0bc95e3a6dfd94873620dc9f0",
+      "source_page": "https://elyracode.com/",
+      "inner_background": "white"
+    },
+    "fastmcp": {
+      "file": "fastmcp.png",
+      "source_url": "https://gofastmcp.com/brand/favicon-dark.svg",
+      "source_sha256": "66a7e22377c12557ff399067b8088a7b2c6533fd30b940877e9e1cbdd720655a",
+      "sha256": "0283b6af4f02b2e2f4b9a648bbd4cd43d9b3badd20eae816477c006ae5d1ab25",
+      "source_page": "https://gofastmcp.com",
+      "inner_background": "white"
+    },
+    "firebase-studio": {
+      "file": "firebase-studio.png",
+      "source_url": "https://firebase.studio/apple-touch-icon.png",
+      "source_sha256": "e63193b15a3d622d7c670ead036839479e5625232dac719667843f721eada2bd",
+      "sha256": "6453f2ce4eaea592c4b5d0c8a708b9278239481fd874ace9cd615dc516c34cea",
+      "source_page": "https://firebase.studio",
+      "inner_background": "white"
+    },
+    "forgecode": {
+      "file": "forgecode.png",
+      "source_url": "https://forgecode.dev/shared/brand/apple-touch-icon.png",
+      "source_sha256": "aa05e7fa0d9a9a6f8908e39153a0988f1ac28a78e57e9d8ec3fbbfe6f3eee26b",
+      "sha256": "64ea906bc8d58690a0e4a1a34291948e72329ed9781ca4d8fb0711ea53dda031",
+      "source_page": "https://forgecode.dev/docs/custom-rules/",
+      "inner_background": "white"
+    },
+    "gemini-cli": {
+      "file": "gemini-cli.png",
+      "source_url": "https://geminicli.com/_astro/icon.Bo4M5sF3.png",
+      "source_sha256": "351e9f5b1bf863d738cd7be4ed040a625a1419450ae7fc490143e4042b7c2438",
+      "sha256": "ab9346100e3ed2dcf6860f82937550a1196871e2d815343a004e56984d6a158c",
+      "source_page": "https://geminicli.com",
+      "inner_background": "white"
+    },
+    "copilot-cli": {
+      "file": "copilot-cli.png",
+      "source_url": "https://brand.github.com/GitHub_Logos.zip",
+      "source_sha256": "693d7abe6f899646cc2e96856723b45e95f71885a54910b2749f6decdf7e1ee1",
+      "sha256": "4ba0c10de7ccf877335541abf41d04a7109b58ddcc30f8bf0244b72c20637247",
+      "source_page": "https://brand.github.com/brand-identity/copilot",
+      "inner_background": "white",
+      "archive_member": "GitHub Logos/SVG/GitHub_Invertocat_Black.svg",
+      "note": "Current GitHub mark replaces the retired Copilot mascot."
+    },
+    "gitlab-duo": {
+      "file": "gitlab-duo.png",
+      "source_url": "https://about.gitlab.com/images/ico/favicon-192x192.png",
+      "source_sha256": "8274a7c15c1c7c5a07fdb684f8a7e5b417fe74ea2321fdd1c830fc9b18b50cb0",
+      "sha256": "4e53f9d97194742904d891fc9d1653c78fb3ae914d32aa0073af3179092c8ddc",
+      "source_page": "https://about.gitlab.com",
+      "inner_background": "white"
+    },
+    "antigravity": {
+      "file": "antigravity.png",
+      "source_url": "https://antigravity.google/apple-touch-icon.png",
+      "source_sha256": "44e2199f65e2d66fb8134de2f28da020420760f59de8bcb4557365136cb38b24",
+      "sha256": "6a76c811834b697d24a56364491d9788d750cd9316b0ccb23c4a295b6033a764",
+      "source_page": "https://antigravity.google/",
+      "inner_background": "white"
+    },
+    "goose": {
+      "file": "goose.png",
+      "source_url": "https://goose-docs.ai/img/logo_light.png",
+      "source_sha256": "25660def84a6dc88634e8c545a73be461ac7990533de42e82be32f8d8f5c8b8b",
+      "sha256": "f2e10d3e34b1c15035567dc11aa2d315b31d05e150990ba4a4c8e40a6541ed2c",
+      "source_page": "https://goose-docs.ai/",
+      "inner_background": "white"
+    },
+    "gptme": {
+      "file": "gptme.png",
+      "source_url": "https://gptme.org/docs/_static/logo.png",
+      "source_sha256": "a53235b879bf0cc49ba3a981c3e71f7f2c5f38bcd2634d534ed3794e4a518565",
+      "sha256": "23d8116bf0275b7092dc058843b5430bb5701b9cb289c1551707f20eb2eb73b2",
+      "source_page": "https://gptme.org/docs/prompts.html",
+      "inner_background": "white"
+    },
+    "greptile": {
+      "file": "greptile.png",
+      "source_url": "https://www.greptile.com/docs/_mintlify/favicons/greptile/QaBG8Z17bTygCeqO/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "f24a170b73c9578609c17cde2f186d407145bbc1658678bd64898ed5907d1a6e",
+      "sha256": "715cbb0dc9b29367a1aa20685873d5ad75d7a3b0ccbbdfa9f275f6d11edb314e",
+      "source_page": "https://www.greptile.com/docs/code-review/greptile-config",
+      "inner_background": "white"
+    },
+    "grok-bot": {
+      "file": "grok-bot.png",
+      "source_url": "https://docs.x.ai/_next/static/media/icon.2jebtfdg6783w.png?dpl=12355879cfa544f7b5e4a3457d7939c14b96a94f",
+      "source_sha256": "e54b4baf2aaca29eb182cb51d22be3dbad5ab09c86ccee4183fefd8326e6ee28",
+      "sha256": "8a448b5752806b963cf77f7542c078aaecb38d09991dc64a472c006e87fe7c4e",
+      "source_page": "https://grok.com",
+      "inner_background": "white"
+    },
+    "hermes": {
+      "file": "hermes.png",
+      "source_url": "https://web-assets.nousresearch.com/marketing/efcd9b62d7bee4c15c650dc727c43b285b382213/assets/hermes-agent/icon.png",
+      "source_sha256": "5fbced606189c9bfc2925a16f8903333041cabbf1f8699fe9fe9b3e24504048f",
+      "sha256": "69f97090e58b52b826b78c0376496ab9f7298b4eb22e9f50bfcd4cb311f616b6",
+      "source_page": "https://hermes-agent.nousresearch.com",
+      "inner_background": "white"
+    },
+    "bob": {
+      "file": "bob.png",
+      "source_url": "https://bob.ibm.com/apple-touch-icon.png",
+      "source_sha256": "189122af3e74459c1f91070c85ea2e773b94b23c76c20938a5291f85fab9074e",
+      "sha256": "de5af8088c1ba449f0087ec0a63cefdde6d46947801a7a9380d0cb544ea2a765",
+      "source_page": "https://www.ibm.com/products/bob",
+      "inner_background": "white"
+    },
+    "jean2": {
+      "file": "jean2.png",
+      "source_url": "https://prokopai.dev/favicon.svg",
+      "source_sha256": "c6e6438702445bbbe06fa384dd1b6b023f9769224524eeb63fc7a8a4bfbfaee0",
+      "sha256": "36a88c213410852191e1a9f77fa541c750d77d291ab393af3e855ecdc9603a6e",
+      "source_page": "https://jean2.ai/docs/deep-dive/agents-md",
+      "inner_background": "white"
+    },
+    "jetbrains-ai": {
+      "file": "jetbrains-ai.png",
+      "source_url": "https://www.jetbrains.com/apple-touch-icon.png",
+      "source_sha256": "754e0bacaa46fa63273b1f6f7796bc917f6ed896f90bfeba16c7f0614ae21cee",
+      "sha256": "054c9c84dddde21b4d725c181cafa1d220468f12a0a626ba0d8821bd0eab8922",
+      "source_page": "https://www.jetbrains.com/ai/",
+      "inner_background": "white"
+    },
+    "jules": {
+      "file": "jules.png",
+      "source_url": "https://jules.google/favicon.svg",
+      "source_sha256": "d8c1f1d40fadd3d9a07702000a3a9724a7d1f69311014680cfa6123480b5e728",
+      "sha256": "42057da41ff35e18a38920b1bd8e247bc8a426ee4a0eafbdc0fea97bf1da5a35",
+      "source_page": "https://jules.google",
+      "inner_background": "white"
+    },
+    "junie": {
+      "file": "junie.png",
+      "source_url": "https://junie.jetbrains.com/favicons/apple-touch-icon.png",
+      "source_sha256": "dabe816a7607b378a386df4e548fef3d47d4ef2e2d2cfe2e2280ab69255ebb2b",
+      "sha256": "a935e3d8dfbbd133d90640b8f586f3e84e1499ce8a46f318bee0aa0f3f1be776",
+      "source_page": "https://junie.jetbrains.com",
+      "inner_background": "white"
+    },
+    "kilo": {
+      "file": "kilo.png",
+      "source_url": "https://kilo.ai/favicon/favicon.svg?v=3",
+      "source_sha256": "729bf088d9a114d567f133acf36f613cabd83662e4616afcea5ea403e87be8d2",
+      "sha256": "7c4f28730e2529089b8fd0f55ec8b4429f8b9a683cf0f5c3831043174e13c4e4",
+      "source_page": "https://kilocode.ai/",
+      "inner_background": "white"
+    },
+    "kimi-code-cli": {
+      "file": "kimi-code-cli.png",
+      "source_url": "https://www.kimi.com/pwa-192.png",
+      "source_sha256": "6c14f9c3062e953b3ed57ae3e19db931c1c1bba38d4d8d55550544f31d55e469",
+      "sha256": "aa9d522c299da1773d14161ab494612da0ef2a1b92adc78cea58c3a1d49e130b",
+      "source_page": "https://www.kimi.com",
+      "inner_background": "white"
+    },
+    "kiro": {
+      "file": "kiro.png",
+      "source_url": "https://kiro.dev/apple-icon.png?4cefa8c54a20b098",
+      "source_sha256": "eaf4e3a56ad089982e2b06d1d7bcbded64b24b7df946a3991ad8fcc778ee46c6",
+      "sha256": "3ead81fee6fe2d7e144c1cf16bfb73a94ec443e1e46cf18a52c3bdfe6ed3242b",
+      "source_page": "https://kiro.dev/",
+      "inner_background": "white"
+    },
+    "knowns": {
+      "file": "knowns.png",
+      "source_url": "https://knowns.sh/apple-touch-icon.png",
+      "source_sha256": "1c2730b2405de48d3c55cbc8e02913b47dde1f631678c9430d8d9bb6b0d41a00",
+      "sha256": "0177f5cd53424dfcfdabd09d6205c28fc8f5526775dd93d85d5d33b124ee0441",
+      "source_page": "https://knowns.sh/",
+      "inner_background": "white"
+    },
+    "localcode": {
+      "file": "localcode.png",
+      "source_url": "https://www.localcode.codes/logo.png",
+      "source_sha256": "3ff1edf1c8a29c10374c92bb8f5f199ba43469efbe53fa69298eeb65c9f56b38",
+      "sha256": "2f6554d4247c59691e8f4247d683b7e430dbfd7cc5ec79b2880293d268a01114",
+      "source_page": "https://www.localcode.codes/",
+      "inner_background": "white"
+    },
+    "mastra": {
+      "file": "mastra.png",
+      "source_url": "https://mastra.ai/favicon/new-brand/apple-touch-icon.png",
+      "source_sha256": "097784065966a83c7406ac59c3c2847619dd646a725dbbde5732ad35a357ecc7",
+      "sha256": "1f8a48e1f4178bd51f05c8232a57402760102e755f3c911472291c5931c1e659",
+      "source_page": "https://mastra.ai",
+      "inner_background": "white"
+    },
+    "mcp-agent": {
+      "file": "mcp-agent.png",
+      "source_url": "https://docs.mcp-agent.com/mintlify-assets/_mintlify/favicons/lastmileai-94a5811a/g1kO-kqQVAPr7mnh/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "72dac0fd3ce0c688e2ddea81f3820429a02b5bc350b70b3dd53ad03f7176656c",
+      "sha256": "063e07f0dca97b8abca07b08ee87276cc236485f460edfc1e8e4d5e604b89482",
+      "source_page": "https://docs.mcp-agent.com/",
+      "inner_background": "white"
+    },
+    "mini-swe-agent": {
+      "file": "mini-swe-agent.png",
+      "source_url": "https://swe-agent.com/latest/assets/mini_logo.svg",
+      "source_sha256": "14f549e2a0d3be26c587f188d467ef6ff1419f38671af3ca0dd86dd27ac76d02",
+      "sha256": "2cb4ca0c2c210dde318bef73292bcc5ba9e27750e9148197310ae702b27e2cb8",
+      "source_page": "https://mini-swe-agent.com",
+      "inner_background": "white"
+    },
+    "mistral-vibe": {
+      "file": "mistral-vibe.png",
+      "source_url": "https://docs.mistral.ai/favicons/apple-touch-icon.png",
+      "source_sha256": "c4f5b820c8892dc68e774fad7022f766f3e32f2fbdd34a2deb7926e105af6a0d",
+      "sha256": "b710e747553e945d23db304c71e7325fd90106f637dac31c938763d98d272d5b",
+      "source_page": "https://mistral.ai",
+      "inner_background": "white"
+    },
+    "mux-xum": {
+      "file": "mux-xum.png",
+      "source_url": "https://xum.cdr.dev/mintlify-assets/_mintlify/favicons/mux/GS1ENTRzNfmjaZsI/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "dda5c024af0edf3c4a8fb9290b152d9d8e36f32a2b72825aa08ea16f8835be6a",
+      "sha256": "fc0c081979d3c083ddec8ce0af7b4727e6469e36e30ca0c0a8f13e747caea162",
+      "source_page": "https://mux.coder.com",
+      "inner_background": "white"
+    },
+    "ona": {
+      "file": "ona.png",
+      "source_url": "https://ona.com/docs/mintlify-assets/_mintlify/favicons/gitpod-13c83c2b/TBHkobzFtW1BGitV/_generated/favicon/apple-touch-icon.png",
+      "source_sha256": "490c5889c316414afc1c34b082b51b70a812b7e37f72c9bd58e5777d115c9245",
+      "sha256": "8d5281a43f717be74a490dec3b60bbca5517b3d61081c56d3db3bb6a57d2d3d9",
+      "source_page": "https://ona.com/docs/ona/agents/overview",
+      "inner_background": "white"
+    },
+    "open-interpreter": {
+      "file": "open-interpreter.png",
+      "source_url": "https://www.openinterpreter.com/apple-icon?c4f9453b74d8034f",
+      "source_sha256": "7e987524bf996437389d18daa8bb946387edf3380541d6cec86f2e8c0da591e1",
+      "sha256": "b4700e2739ec3fd81a307a6b9da6cd20bb90cca76c2180a5264f0de0a382e137",
+      "source_page": "https://www.openinterpreter.com/docs/terminal/agents_md",
+      "inner_background": "#161b22"
+    },
+    "openwebui": {
+      "file": "openwebui.png",
+      "source_url": "https://openwebui.com/logo.png",
+      "source_sha256": "5037c863fbc23da7d70f03543f059c6e733e1d769bd7e56fd38a3c506f673f06",
+      "sha256": "4de8d290b11d79a6ce327ac90ea1d65e5d9b4c5e0805369aceda10d508b00474",
+      "source_page": "https://openwebui.com/",
+      "inner_background": "white"
+    },
+    "opencode": {
+      "file": "opencode.png",
+      "source_url": "https://opencode.ai/apple-touch-icon-v3.png",
+      "source_sha256": "2f2d5687a641f7fc1c3931072249a5984660375c091064fe8b374e4e43a8656c",
+      "sha256": "798f490cab2a0853c81e10bc6b38301ecbe51f7141985a72bb77e18d36162cd8",
+      "source_page": "https://opencode.ai/",
+      "inner_background": "white"
+    },
+    "openhands": {
+      "file": "openhands.png",
+      "source_url": "https://www.openhands.dev/favicon.svg",
+      "source_sha256": "c932042b36a7a18c8585dc41e0e03fbff86096ec78718243ccac9fe1c4e110b7",
+      "sha256": "6e89ba066bb11c2dc6d898a6bc56019f9f1b304556712ee953eda9ec30655865",
+      "source_page": "https://openhands.dev",
+      "inner_background": "white"
+    },
+    "pi": {
+      "file": "pi.png",
+      "source_url": "https://pi.dev/logo-auto.svg",
+      "source_sha256": "abd66e7868b2d24f0f0895f9237ee8a6dcb22337583b0dc54aeb595acecb4d6b",
+      "sha256": "686f99c3f7748b4bd442da5b594baf29c9e442b512f50eb9cffe0c9785dcc5cf",
+      "source_page": "https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent",
+      "inner_background": "white"
+    },
+    "plandex": {
+      "file": "plandex.png",
+      "source_url": "https://raw.githubusercontent.com/plandex-ai/plandex/main/docs/static/img/plandex-logo-thumb.png",
+      "source_sha256": "c4e34922108f7b18984ecc9939413bf94e5f5ba4185eb7348996f088a7422d5a",
+      "sha256": "038db67526d172deb10816b0d45ffae63b66e09823f2d326a09cb3bfdb74fe28",
+      "source_page": "https://docs.plandex.ai/",
+      "inner_background": "white"
+    },
+    "qclaw": {
+      "file": "qclaw.png",
+      "source_url": "https://cdn.qclaw.qq.com/qclaw/website/image/apple-touch-icon.png",
+      "source_sha256": "088ca595591e2eebd18ff6e7e142622c846ccc8dd7e4fe13733ffb67f5d08660",
+      "sha256": "e8d401aa88393abd58f530688d8edcc1026a1672ab7f3af2fc4b7fd621f791a7",
+      "source_page": "https://qclaw.qq.com",
+      "inner_background": "white"
+    },
+    "qoder": {
+      "file": "qoder.png",
+      "source_url": "https://img.alicdn.com/imgextra/i4/O1CN01QkSxiCocd3D0prc8_!!6000000008124-2-tps-412-412.png",
+      "source_sha256": "2276f0f8e6240959e70b83ebc48ec1dac1c0180e24528794f9a52b7386026f3d",
+      "sha256": "5484f88a8f5fbd1c9303a69f697d78c8c18984895115f7794865cfbf4ac72edb",
+      "source_page": "https://qoder.com",
+      "inner_background": "white"
+    },
+    "qodo": {
+      "file": "qodo.png",
+      "source_url": "https://www.qodo.ai/wp-content/uploads/2025/03/qodo-fav-300x300.png",
+      "source_sha256": "505d7841292488b3d76c2c3135253a6bdd804d771829cbba1f02c75287041cff",
+      "sha256": "e5a2a2d9baf678927e304d942c79560f0d4b122cf98ce30c35bacfde06b8581a",
+      "source_page": "https://www.qodo.ai",
+      "inner_background": "white"
+    },
+    "qwen-code": {
+      "file": "qwen-code.png",
+      "source_url": "https://qwenlm.github.io/qwen-code-docs/favicon.png?v=2",
+      "source_sha256": "ad7aaf529ec001319a5fdd5481a147d1293355a8c6619e65036eb459c8291521",
+      "sha256": "ace5df5ceda342ac5be49d0572c3930e3bb4530d34c5e4b4247f836405f48741",
+      "source_page": "https://qwenlm.github.io/qwen-code-docs",
+      "inner_background": "white"
+    },
+    "qwenwork": {
+      "file": "qwenwork.png",
+      "source_url": "https://img.alicdn.com/imgextra/i4/O1CN01OXv3EM1FN8t9W4P79_!!6000000000474-2-tps-80-80.png",
+      "source_sha256": "cd9390bc4209c319121d111f3a1f535b3c7dd909b8f860d41acc9744138d58df",
+      "sha256": "b2ef5c171c86ab40b6b21852ad7441613b26fca1be27a8f147ca5ed3eeda4594",
+      "source_page": "https://qwen.ai",
+      "inner_background": "white"
+    },
+    "replit": {
+      "file": "replit.png",
+      "source_url": "https://replit.com/public/icons/favicon-prompt-192-rebrand.png",
+      "source_sha256": "cbd9fa5be81f1b59919c3ac2a43a6c0b98dc7c873b325a526df214e9ef7afea4",
+      "sha256": "5b2f55477b48749b4a69ddf8c8f4fe221465f36fc6e5c6cf9ff84302aa841101",
+      "source_page": "https://replit.com",
+      "inner_background": "white"
+    },
+    "roo": {
+      "file": "roo.png",
+      "source_url": "https://roomote.dev/apple-touch-icon.png",
+      "source_sha256": "f58b80b1a92d174152f6bfc694870d7b2c26a2460fdb6caaf5f5ff304af8e918",
+      "sha256": "727b9029504ab7e08e3a67aad63f1582cc9a58d8865d5b4c5fc59ac3d178370f",
+      "source_page": "https://roocode.com/",
+      "inner_background": "white"
+    },
+    "rovo": {
+      "file": "rovo.png",
+      "source_url": "https://dam-cdn.atl.orangelogic.com/AssetLink/m075131gef201aeok8g484w063t363hc.svg",
+      "source_sha256": "a4b7995bea75f57785910eec154f3f8d18099e91a4156c861a9aa5f6e5752d34",
+      "sha256": "3da0d95a847c928ce41ac864ef76fdb3f8bcf808ae1d9677cc9b4ee11209586f",
+      "source_page": "https://www.atlassian.com/software/rovo",
+      "inner_background": "white"
+    },
+    "stagewise": {
+      "file": "stagewise.png",
+      "source_url": "https://www.stagewise.io/apple-touch-icon.png",
+      "source_sha256": "57762680485a04f0aa3fcacba9752e787d44d62dc3cf4c0d4497b5fe38c81c9a",
+      "sha256": "4ebca25c76280125c9cea8b0af6cadfa2b54452e6c98d43b03eb8b996837a8d9",
+      "source_page": "https://stagewise.io",
+      "inner_background": "white"
+    },
+    "swe-agent": {
+      "file": "swe-agent.png",
+      "source_url": "https://swe-agent.com/latest/assets/swe-agent.svg",
+      "source_sha256": "f06990595edd848ffb5d2794b117ce7f8b10e3dc4ca580d2d4ebcde31f092e2b",
+      "sha256": "d9b55d00e50c9e6234c28ac15c129f1d2db8bc7566fd44d5e141192b4f60df77",
+      "source_page": "https://swe-agent.com",
+      "inner_background": "white"
+    },
+    "t3-code": {
+      "file": "t3-code.png",
+      "source_url": "https://raw.githubusercontent.com/pingdotgg/t3code/main/assets/prod/t3-black-web-icon-192x192.png",
+      "source_sha256": "a96f75ed8b084f7753251df69e57dbad26bbdc35b70db0380379dd5d785cc2f9",
+      "sha256": "d37064f17794eb8d9e78f7dc7ee084ae33a2b40d0b3fb95589f51a16218ab6a2",
+      "source_page": "https://t3.codes",
+      "inner_background": "white"
+    },
+    "tabby": {
+      "file": "tabby.png",
+      "source_url": "https://cdn.prod.website-files.com/66d758dfc1a1472af872e216/672b539e0c3d3476d4f0800b_MediaClip.png",
+      "source_sha256": "270274b7e2367d53f28b2346c83a1cbd0e6f2d681dd428da1f8d3696fe423e0f",
+      "sha256": "15262caa81d0d7400514a4a862d62297a9c4e79d60c122f6c4e903accc371256",
+      "source_page": "https://www.tabbyml.com",
+      "inner_background": "white"
+    },
+    "tabnine": {
+      "file": "tabnine.png",
+      "source_url": "https://raw.githubusercontent.com/codota/tabnine-vscode/master/small_logo.png",
+      "source_sha256": "38bd7709fc28aa3167c93ef58c1de33f4be7b10627fff4a4284413c51a9c1167",
+      "sha256": "628983aaac851fcb82aa561e4ae2e6375be812a705f6d1c1de68bac5b59f3ae4",
+      "source_page": "https://www.tabnine.com",
+      "inner_background": "white"
+    },
+    "trae": {
+      "file": "trae.png",
+      "source_url": "https://aiidelist.com/apple-touch-icon.png",
+      "source_sha256": "313e6fc1e1e7469caf7d5c5b813f39f3c550c0ba44e0e695f00c5d92d61163a1",
+      "sha256": "806fa75b350eb84dd0ad5413d3a5b2f53bd413f7b924ac780741fcd76a2a7585",
+      "source_page": "https://traeide.com/",
+      "inner_background": "white"
+    },
+    "uipath": {
+      "file": "uipath.png",
+      "source_url": "https://uipath.com/cdn-cgi/image/format=auto/https://images.ctfassets.net/5965pury2lcm/1dSjfxSTeyEJjP3EZankgW/df65018369a2bca5ccc412ae5b338279/UiPath-Reg-Logo-White.svg",
+      "source_sha256": "4600849730cf6f9b90bafccc38e653980298a40e058c17ebac58a15626704f1c",
+      "sha256": "e7122b9c3d3988ace9c5e62a35254618557bee72e29884b3c618e7fce0711eb3",
+      "source_page": "https://www.uipath.com",
+      "inner_background": "#161b22"
+    },
+    "warp": {
+      "file": "warp.png",
+      "source_url": "https://www.warp.dev/apple-touch-icon-180x180.png",
+      "source_sha256": "ecc8232e177681aefc52c5df63ce41c89c9b30b62724150d619724fda9efe819",
+      "sha256": "aba29d872209edef56da31c06a3ec42681956a146ad4d192180b4e9ca1ab6570",
+      "source_page": "https://www.warp.dev",
+      "inner_background": "white"
+    },
+    "windsurf": {
+      "file": "windsurf.png",
+      "source_url": "https://exafunction.github.io/public/brand/windsurf-black-symbol.svg",
+      "source_sha256": "5cab2b369a377f5e37e2fb67d1855ecf2d69a08a25e8ef531a9439d0e020f69c",
+      "sha256": "ccda6e796f161fd8d319edcd52bd9e928c6ce11386c481b9cffdb725bd3e6b4f",
+      "source_page": "https://exafunction.github.io/public/brand/windsurf-black-symbol.svg",
+      "inner_background": "white",
+      "note": "Historical Windsurf mark; current site redirects to Devin."
+    },
+    "workbuddy": {
+      "file": "workbuddy.png",
+      "source_url": "https://assets.workbuddy.cn/web/workbuddy/8e036eb06f87c6b08437546b3cbd58e60af45b10/assets/logo.svg",
+      "source_sha256": "10ccbc099e7bc3d5ff12c315c4edd7b21386aa7166c1ec19997b3d55010d5c7d",
+      "sha256": "9325f4eeb499baa028725cc92e0e48e0c100697f4dde72ca613c958f5d6ded73",
+      "source_page": "https://www.codebuddy.cn/work/",
+      "inner_background": "white"
+    },
+    "zed": {
+      "file": "zed.png",
+      "source_url": "https://zed.dev/favicon_black_64.png",
+      "source_sha256": "e6d703fa4b26308665ef48a2a75029703f7efbafa4727095514a47f1838cace0",
+      "sha256": "3e81fc0e59791c967e6c638f04dfa691316d40827f78e1f1d630f436fba89e95",
+      "source_page": "https://zed.dev",
+      "inner_background": "white"
+    },
+    "zencoder": {
+      "file": "zencoder.png",
+      "source_url": "https://zencoder.ai/hubfs/export.png",
+      "source_sha256": "2af17f4227588cb0c37999e0c5c982761aa6886fbcd7e57c22cec6807e727ea1",
+      "sha256": "3ce5cc7a5819f194122ddab0993c0a6aa2bf0726576a4dd6fa11c3afbf2abbb0",
+      "source_page": "https://zencoder.ai",
+      "inner_background": "white"
+    }
+  },
+  "clients": {
+    "adal": {
+      "name": "AdaL CLI",
+      "asset": "adal"
+    },
+    "aether": {
+      "name": "Aether",
+      "asset": "aether"
+    },
+    "agent-layer": {
+      "name": "Agent Layer",
+      "asset": "agent-layer"
+    },
+    "agentinit": {
+      "name": "AgentInit",
+      "unavailable": "No project-specific mark in the linked PyPI/source repository."
+    },
+    "agentlink": {
+      "name": "Agentlink",
+      "asset": "agentlink"
+    },
+    "agentloom": {
+      "name": "Agentloom",
+      "asset": "agentloom"
+    },
+    "agents-cli": {
+      "name": "agents-cli",
+      "asset": "agents-cli"
+    },
+    "agentsge": {
+      "name": "agents.ge",
+      "asset": "agentsge"
+    },
+    "agents-md": {
+      "name": "AGENTS.md",
+      "asset": "agents-md"
+    },
+    "agentsmesh": {
+      "name": "AgentsMesh",
+      "asset": "agentsmesh"
+    },
+    "ai-memory-protocol": {
+      "name": "AI Memory Protocol",
+      "unavailable": "Official repository has badges but no project mark."
+    },
+    "aictl": {
+      "name": "aictl",
+      "asset": "aictl"
+    },
+    "aider": {
+      "name": "Aider",
+      "asset": "aider"
+    },
+    "amazon-q": {
+      "name": "Amazon Q Developer CLI / Kiro compatibility",
+      "asset": "amazon-q"
+    },
+    "amp": {
+      "name": "Amp",
+      "asset": "amp"
+    },
+    "ante": {
+      "name": "Antigma Ante",
+      "asset": "ante"
+    },
+    "anywhere-agents": {
+      "name": "anywhere-agents",
+      "asset": "anywhere-agents"
+    },
+    "augment": {
+      "name": "Augment",
+      "asset": "augment"
+    },
+    "autoclaw": {
+      "name": "AutoClaw",
+      "asset": "autoclaw"
+    },
+    "avante": {
+      "name": "Avante.nvim",
+      "asset": "avante"
+    },
+    "baz": {
+      "name": "Baz",
+      "asset": "baz"
+    },
+    "bito": {
+      "name": "Bito",
+      "asset": "bito"
+    },
+    "blackbox": {
+      "name": "Blackbox CLI",
+      "asset": "blackbox"
+    },
+    "blocks": {
+      "name": "Blocks",
+      "asset": "blocks"
+    },
+    "builder": {
+      "name": "Builder",
+      "asset": "builder"
+    },
+    "charlie": {
+      "name": "Charlie",
+      "asset": "charlie"
+    },
+    "claude-code": {
+      "name": "Claude Code",
+      "asset": "claude-code"
+    },
+    "clawdbot": {
+      "name": "Clawdbot",
+      "asset": "clawdbot"
+    },
+    "cline": {
+      "name": "Cline",
+      "asset": "cline"
+    },
+    "codeant": {
+      "name": "CodeAnt",
+      "asset": "codeant"
+    },
+    "codebuddy": {
+      "name": "CodeBuddy",
+      "asset": "codebuddy"
+    },
+    "codebuff": {
+      "name": "Codebuff",
+      "asset": "codebuff"
+    },
+    "codegen": {
+      "name": "Codegen",
+      "asset": "codegen"
+    },
+    "coder-agents": {
+      "name": "Coder Agents",
+      "asset": "coder-agents"
+    },
+    "coderabbit": {
+      "name": "CodeRabbit",
+      "asset": "coderabbit"
+    },
+    "codex-cli": {
+      "name": "Codex CLI",
+      "asset": "codex-cli"
+    },
+    "command-code": {
+      "name": "Command Code",
+      "asset": "command-code"
+    },
+    "community-grok-cli": {
+      "name": "Community Grok CLI",
+      "unavailable": "No project mark; project explicitly disclaims xAI affiliation."
+    },
+    "continue": {
+      "name": "Continue",
+      "asset": "continue"
+    },
+    "crush": {
+      "name": "Crush",
+      "asset": "crush"
+    },
+    "cursor": {
+      "name": "Cursor",
+      "asset": "cursor"
+    },
+    "deepagents": {
+      "name": "Deep Agents Code",
+      "asset": "deepagents"
+    },
+    "deepseek-harness": {
+      "name": "DeepSeek Harness",
+      "asset": "deepseek-harness"
+    },
+    "devin": {
+      "name": "Devin for Terminal",
+      "asset": "devin"
+    },
+    "docker-agent": {
+      "name": "Docker Agent",
+      "asset": "docker-agent"
+    },
+    "dot-agents": {
+      "name": "dot-agents",
+      "asset": "dot-agents"
+    },
+    "doubao-work": {
+      "name": "Doubao Work",
+      "asset": "doubao-work"
+    },
+    "droid": {
+      "name": "Droid (Factory CLI)",
+      "asset": "droid"
+    },
+    "eca": {
+      "name": "ECA",
+      "asset": "eca"
+    },
+    "elyra": {
+      "name": "Elyra",
+      "asset": "elyra"
+    },
+    "fastmcp": {
+      "name": "FastMCP",
+      "asset": "fastmcp"
+    },
+    "firebase-studio": {
+      "name": "Firebase Studio",
+      "asset": "firebase-studio"
+    },
+    "forgecode": {
+      "name": "ForgeCode",
+      "asset": "forgecode"
+    },
+    "gemini-cli": {
+      "name": "Gemini CLI",
+      "asset": "gemini-cli"
+    },
+    "copilot-cli": {
+      "name": "GitHub Copilot CLI",
+      "asset": "copilot-cli"
+    },
+    "copilot-agent": {
+      "name": "GitHub Copilot coding agent",
+      "asset": "copilot-cli"
+    },
+    "github-copilot-sdk": {
+      "name": "GitHub Copilot SDK",
+      "asset": "copilot-cli"
+    },
+    "gitlab-duo": {
+      "name": "GitLab Duo Agent Platform",
+      "asset": "gitlab-duo"
+    },
+    "antigravity": {
+      "name": "Google Antigravity",
+      "asset": "antigravity"
+    },
+    "goose": {
+      "name": "Goose",
+      "asset": "goose"
+    },
+    "gptme": {
+      "name": "gptme",
+      "asset": "gptme"
+    },
+    "greptile": {
+      "name": "Greptile",
+      "asset": "greptile"
+    },
+    "grok-bot": {
+      "name": "Grok Bot",
+      "asset": "grok-bot"
+    },
+    "grok-build": {
+      "name": "Grok Build",
+      "asset": "grok-bot"
+    },
+    "hermes": {
+      "name": "Hermes",
+      "asset": "hermes"
+    },
+    "bob": {
+      "name": "IBM Bob Shell",
+      "asset": "bob"
+    },
+    "jean2": {
+      "name": "Jean2",
+      "asset": "jean2"
+    },
+    "jetbrains-ai": {
+      "name": "JetBrains AI Assistant",
+      "asset": "jetbrains-ai"
+    },
+    "jules": {
+      "name": "Jules",
+      "asset": "jules"
+    },
+    "junie": {
+      "name": "Junie",
+      "asset": "junie"
+    },
+    "kilo": {
+      "name": "Kilo Code",
+      "asset": "kilo"
+    },
+    "kimi-code-cli": {
+      "name": "Kimi Code CLI",
+      "asset": "kimi-code-cli"
+    },
+    "kiro": {
+      "name": "Kiro",
+      "asset": "kiro"
+    },
+    "knowns": {
+      "name": "Knowns",
+      "asset": "knowns"
+    },
+    "langchain": {
+      "name": "LangChain",
+      "asset": "deepagents"
+    },
+    "leanctl": {
+      "name": "LeanCTL",
+      "unavailable": "Official source has no mark; original website is unavailable."
+    },
+    "localcode": {
+      "name": "LocalCode",
+      "asset": "localcode"
+    },
+    "mastra": {
+      "name": "Mastra",
+      "asset": "mastra"
+    },
+    "mcp-agent": {
+      "name": "mcp-agent",
+      "asset": "mcp-agent"
+    },
+    "mini-swe-agent": {
+      "name": "mini-SWE-agent",
+      "asset": "mini-swe-agent"
+    },
+    "mistral-vibe": {
+      "name": "Mistral Vibe",
+      "asset": "mistral-vibe"
+    },
+    "mux-xum": {
+      "name": "Mux / Xum",
+      "asset": "mux-xum"
+    },
+    "novakit": {
+      "name": "NovaKit CLI",
+      "unavailable": "Original domain is parked; official repository image is a terminal screenshot."
+    },
+    "ona": {
+      "name": "Ona Agent",
+      "asset": "ona"
+    },
+    "open-interpreter": {
+      "name": "Open Interpreter",
+      "asset": "open-interpreter"
+    },
+    "openwebui": {
+      "name": "Open WebUI",
+      "asset": "openwebui"
+    },
+    "openclaw": {
+      "name": "OpenClaw",
+      "asset": "clawdbot"
+    },
+    "opencode": {
+      "name": "OpenCode V1",
+      "asset": "opencode"
+    },
+    "opencode-v2": {
+      "name": "OpenCode V2",
+      "asset": "opencode"
+    },
+    "openhands": {
+      "name": "OpenHands",
+      "asset": "openhands"
+    },
+    "pi": {
+      "name": "pi",
+      "asset": "pi"
+    },
+    "pi-go": {
+      "name": "pi-go",
+      "unavailable": "No project-specific mark on the official website or linked repository."
+    },
+    "plandex": {
+      "name": "Plandex",
+      "asset": "plandex"
+    },
+    "qclaw": {
+      "name": "QClaw",
+      "asset": "qclaw"
+    },
+    "qoder": {
+      "name": "Qoder (guidance)",
+      "asset": "qoder"
+    },
+    "qoder-cli": {
+      "name": "Qoder CLI",
+      "asset": "qoder"
+    },
+    "qoderwork": {
+      "name": "QoderWork skills",
+      "asset": "qoder"
+    },
+    "qodo": {
+      "name": "Qodo Code Review",
+      "asset": "qodo"
+    },
+    "qwen-code": {
+      "name": "Qwen Code",
+      "asset": "qwen-code"
+    },
+    "qwenwork": {
+      "name": "QwenWork",
+      "asset": "qwenwork"
+    },
+    "replit": {
+      "name": "Replit Agent",
+      "asset": "replit"
+    },
+    "roo": {
+      "name": "Roo Code",
+      "asset": "roo"
+    },
+    "rovo": {
+      "name": "Rovo Dev CLI",
+      "asset": "rovo"
+    },
+    "ruler": {
+      "name": "Ruler",
+      "unavailable": "Official repository has no project mark; demo images are not logos."
+    },
+    "stagewise": {
+      "name": "Stagewise",
+      "asset": "stagewise"
+    },
+    "swe-agent": {
+      "name": "SWE-agent",
+      "asset": "swe-agent"
+    },
+    "t3-code": {
+      "name": "T3 Code",
+      "asset": "t3-code"
+    },
+    "tabby": {
+      "name": "Tabby",
+      "asset": "tabby"
+    },
+    "tabnine": {
+      "name": "Tabnine CLI",
+      "asset": "tabnine"
+    },
+    "trae": {
+      "name": "Trae",
+      "asset": "trae"
+    },
+    "uipath": {
+      "name": "UiPath for Coding Agents",
+      "asset": "uipath"
+    },
+    "vscode-copilot": {
+      "name": "VS Code Copilot Chat (Local)",
+      "asset": "copilot-cli"
+    },
+    "warp": {
+      "name": "Warp",
+      "asset": "warp"
+    },
+    "windsurf": {
+      "name": "Windsurf",
+      "asset": "windsurf"
+    },
+    "workbuddy": {
+      "name": "WorkBuddy",
+      "asset": "workbuddy"
+    },
+    "zed": {
+      "name": "Zed",
+      "asset": "zed"
+    },
+    "zencoder": {
+      "name": "Zencoder",
+      "asset": "zencoder"
+    }
+  }
+}

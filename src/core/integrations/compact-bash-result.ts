@@ -6,17 +6,17 @@ import {
   tokenizeCommand,
   unwrapShellRunner,
 } from "../command.js";
-import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv } from "../inventory-safety.js";
+import { isTokenjuiceExecutablePath } from "../command-identity.js";
+import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv, type InspectionCommandPolicy, type InspectionCommandSkipReason } from "../inventory-safety.js";
 import { readNoOmissionFromEnv } from "../env.js";
 import { shouldRecordStats, storeArtifact } from "../artifacts.js";
 import { reduceExecution } from "../reduce.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
-import type { InspectionCommandPolicy, InspectionCommandSkipReason } from "../inventory-safety.js";
 
 export type CompactBashResultInput = {
-  source: "claude-code" | "cline" | "codex" | "command-code" | "copilot-agent" | "copilot-cli" | "droid" | "gemini-cli" | "grok-cli" | "kimi" | "mux" | "openclaw" | "openhands" | "opencode" | "pi" | "qwen-code";
+  source: "hermes" | "copilot-sdk" | "langchain" | "mastra" | "fastmcp" | "claude-code" | "cline" | "codex" | "command-code" | "copilot-agent" | "copilot-cli" | "deepseek-harness" | "droid" | "gemini-cli" | "grok-cli" | "kimi" | "mux" | "openclaw" | "openhands" | "opencode" | "pi" | "qoder" | "qwen-code";
   command: string;
   cwd?: string;
   visibleText: string;
@@ -36,6 +36,7 @@ export type CompactBashResultInput = {
 } & RewritePolicyOptions;
 
 type CompactBashResultKeepReason =
+  | "raw-bypass"
   | "empty-output"
   | InspectionCommandSkipReason
   | "configured-command"
@@ -236,6 +237,33 @@ export function shouldSkipCommand(command: string, skipCommandNames?: readonly s
   return false;
 }
 
+function commandRequestsRawBypass(command: string): boolean {
+  let argv = getEffectiveCommandArgv({ command: stripLeadingCdPrefix(command) });
+  for (let depth = 0; depth < 16; depth++) {
+    const shellBody = unwrapShellRunner({ argv });
+    if (shellBody) {
+      argv = getEffectiveCommandArgv({ command: shellBody });
+      continue;
+    }
+    const name = getCommandName(argv)?.toLowerCase();
+    const wrapIndex = isTokenjuiceExecutablePath(argv[0] ?? "")
+      ? 1
+      : name && /^node(?:\.exe)?$/u.test(name) && argv[1]?.endsWith(".js") && /token(?:juice|-glace)/u.test(argv[1])
+        ? 2
+        : -1;
+    if (wrapIndex !== -1 && argv[wrapIndex] === "wrap") {
+      const end = argv.indexOf("--", wrapIndex + 1);
+      if (end === -1) return false;
+      const options = argv.slice(wrapIndex + 1, end);
+      return options.includes("--raw") || options.includes("--full");
+    }
+    const wrapped = getWrappedCommandArgv(argv);
+    if (!wrapped?.length) return false;
+    argv = wrapped;
+  }
+  return false;
+}
+
 export async function compactBashResult(input: CompactBashResultInput): Promise<CompactBashResultOutput> {
   const command = input.command.trim();
   if (!command) {
@@ -256,6 +284,10 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
       rawText,
       usedTrustedFullText,
     };
+  }
+
+  if (commandRequestsRawBypass(command)) {
+    return { action: "keep", reason: "raw-bypass", rawText, usedTrustedFullText };
   }
 
   const safeInventoryArgv = getSafeRepositoryInventorySourceArgv(command);

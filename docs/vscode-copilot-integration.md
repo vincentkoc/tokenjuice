@@ -1,5 +1,11 @@
 # VS Code Copilot Chat integration
 
+This adapter targets the older **Local** harness. Current VS Code also offers a
+**Copilot** harness with a separate hook contract; selecting a model does not
+select a harness. Do not treat this Local installer as a verified Copilot-harness
+integration. See [VS Code hook configuration](https://code.visualstudio.com/docs/agent-customization/hooks)
+for discovery and migration rules.
+
 `tokenjuice install vscode-copilot` wires a **PreToolUse** hook that
 wraps every `runTerminalCommand` command Copilot Chat asks VS Code to
 execute. The wrapped command routes through `tokenjuice wrap`,
@@ -14,7 +20,7 @@ terminal result itself is compacted.
 
 ## Preconditions
 
-Both **VS Code Stable** and **VS Code Insiders** are supported by a
+The Local harness in **VS Code Stable** and **VS Code Insiders** uses a
 single `tokenjuice install vscode-copilot`. Both editions read the
 same `~/.copilot/hooks/` directory, so one install covers both and
 uninstall removes the hook from both in the same step.
@@ -57,7 +63,7 @@ On a matching `runTerminalCommand` call, the adapter rewrites the
 `tool_input.command` field to:
 
 ```
-tokenjuice wrap -- <shell> -lc '<original command>'
+tokenjuice wrap --keep-failures --source vscode-copilot -- <shell> -lc '<original command>'
 ```
 
 where `<shell>` is `$SHELL` on POSIX (falling back to `sh`) or
@@ -75,7 +81,7 @@ The adapter emits `{}` (no rewrite) for any of:
 - commands already wrapped with `tokenjuice wrap ...`
 - commands explicitly bypassing with `tokenjuice wrap --raw --` /
   `--full`
-- malformed JSON stdin
+- malformed JSON or non-object stdin (including `null`)
 
 ## Shared hooks dir hazard (read this if you also use Copilot CLI)
 
@@ -135,3 +141,12 @@ Environment variables read by this adapter:
 - `process.platform` — drives the POSIX vs Windows wrapper branch.
 
 `COPILOT_HOME` is intentionally **not** read by this adapter.
+
+## Verification boundary
+
+Installed-hook child-process contracts check real installer commands, complete
+failed stdout/stderr and exit 7, exact reads, malformed/non-object payloads and
+absolute raw-wrapper bypass. Shared wrapper detection recognizes the executable
+path and Node subcommand position. These checks do not establish desktop
+conversation acceptance. Qualify the selected harness in a fresh trusted
+workspace and inspect the next model request.

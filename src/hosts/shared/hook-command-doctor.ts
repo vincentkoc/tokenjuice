@@ -1,5 +1,7 @@
-import { realpath } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
 import { isAbsolute } from "node:path";
+
+import type { InstructionDoctorReportFields, PathDoctorReport } from "./instruction-doctor.js";
 
 import {
   findMissingHookCommandPaths,
@@ -29,18 +31,12 @@ export type HookCommandInspection = {
   packageVersionMismatch?: HookCommandPackageVersionMismatch;
 };
 
-type HookCommandDoctorStatus = "ok" | "broken" | "disabled";
-
-export type HookCommandDoctorFields = {
-  status: HookCommandDoctorStatus;
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
+export type HookCommandDoctorFields = InstructionDoctorReportFields & {
   expectedCommand: string;
   detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
+
+export type HookCommandDoctorReport<PathKey extends string> = PathDoctorReport<PathKey> & Pick<HookCommandDoctorFields, "expectedCommand" | "detectedCommand">;
 
 function extractHomebrewCellarVersion(path: string): string | undefined {
   const normalized = path.replace(/\\/gu, "/");
@@ -67,7 +63,8 @@ async function isNodeInvokedJavaScriptLauncher(
     return false;
   }
   try {
-    return (await realpath(path)).endsWith(".js");
+    return (await stat(path)).isFile()
+      && (path.endsWith(".js") || (await realpath(path)).endsWith(".js"));
   } catch {
     return false;
   }
@@ -86,7 +83,6 @@ export async function inspectTokenjuiceHookCommand(options: {
   for (const path of parsed.checkedPaths) {
     if (
       missingPaths.includes(path)
-      || path.endsWith(".js")
       || await isNodeInvokedJavaScriptLauncher(path, parsed.runtimePath, parsed.launcherPath)
     ) {
       continue;

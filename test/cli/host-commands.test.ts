@@ -30,6 +30,7 @@ const HOST_TARGETS = [
   "aimemoryprotocol",
   "amazon-q",
   "amp",
+  "ante",
   "antigravity",
   "anywhere-agents",
   "augment",

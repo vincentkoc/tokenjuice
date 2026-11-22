@@ -1,18 +1,18 @@
-import { chmod, lstat, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, rm } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
+import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
+import { writePrivateConfigFile } from "../shared/private-config-file.js";
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
+import { getTomlStructureLines, isTomlTableHeader } from "../../core/toml-structure.js";
 
 type TabbyConfigSnapshot = Awaited<ReturnType<typeof readInstructionFile>>;
 
@@ -30,15 +30,8 @@ export type UninstallTabbySystemPromptResult = {
   removed: boolean;
 };
 
-export type TabbyDoctorReport = {
-  configPath: string;
+export type TabbyDoctorReport = PathDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_TABBY_FIX_COMMAND = "tokenjuice install tabby";
@@ -97,42 +90,8 @@ async function assertNoTabbyConfigSymlink(configPath: string, operation: string,
   }
 }
 
-async function getExistingFileMode(filePath: string, existing: TabbyConfigSnapshot): Promise<number | undefined> {
-  if (!existing.exists) {
-    return undefined;
-  }
-  return (await lstat(filePath)).mode & 0o777;
-}
-
-async function writeTabbyConfigAtomically(filePath: string, text: string, mode?: number): Promise<void> {
-  const fileMode = mode ?? 0o600;
-  await mkdir(dirname(filePath), { recursive: true, mode: 0o700 });
-  const tempDir = await mkdtemp(join(dirname(filePath), ".tokenjuice-"));
-  const tempPath = join(tempDir, "write");
-  try {
-    await writeFile(tempPath, text, { encoding: "utf8", flag: "wx", mode: fileMode });
-    await chmod(tempPath, fileMode);
-    await rename(tempPath, filePath);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
 async function chooseTabbyBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot safely install Tabby config through symlinked config backup ${candidate}; replace it with a regular path, then rerun tokenjuice install tabby`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, (candidate) => `cannot safely install Tabby config through symlinked config backup ${candidate}; replace it with a regular path, then rerun tokenjuice install tabby`);
 }
 
 async function writeTabbyConfigFile(
@@ -140,65 +99,16 @@ async function writeTabbyConfigFile(
   text: string,
   existing: TabbyConfigSnapshot,
 ): Promise<InstallTabbySystemPromptResult> {
-  const mode = await getExistingFileMode(filePath, existing);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = await chooseTabbyBackupPath(filePath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx", mode: mode ?? 0o600 });
-    await chmod(backupPath, mode ?? 0o600);
-  }
-  await writeTabbyConfigAtomically(filePath, text, mode);
-  return {
-    configPath: filePath,
-    ...(backupPath ? { backupPath } : {}),
-  };
+  return writePrivateConfigFile(filePath, text, existing, chooseTabbyBackupPath);
 }
 
-function getStructuralMarkerLines(text: string, marker: string): { lines: string[]; markerLines: number[] } {
-  const lines = text.split("\n");
-  const structureLines = getTomlStructureLines(lines);
-  return {
-    lines,
-    markerLines: structureLines.flatMap((line, index) => (line.trim() === marker ? [index] : [])),
-  };
-}
-
-function findTokenjuiceBlockLineRange(text: string): { lines: string[]; start: number; end: number } | undefined {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_TABBY_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_TABBY_END);
-  if (begin.markerLines.length !== 1 || end.markerLines.length !== 1 || end.markerLines[0]! < begin.markerLines[0]!) {
-    return undefined;
-  }
-  return {
-    lines: begin.lines,
-    start: begin.markerLines[0]!,
-    end: end.markerLines[0]! + 1,
-  };
-}
-
-function hasUnsafeMarkerStructure(text: string): boolean {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_TABBY_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_TABBY_END);
-  const beginCount = begin.markerLines.length;
-  const endCount = end.markerLines.length;
-  return beginCount !== endCount || beginCount > 1 || endCount > 1 || (beginCount === 1 && end.markerLines[0]! < begin.markerLines[0]!);
-}
-
-function hasStructuralTokenjuiceMarker(text: string): boolean {
-  return getStructuralMarkerLines(text, TOKENJUICE_TABBY_BEGIN).markerLines.length > 0 || getStructuralMarkerLines(text, TOKENJUICE_TABBY_END).markerLines.length > 0;
-}
-
-function hasTokenjuiceBlock(text: string): boolean {
-  return Boolean(findTokenjuiceBlockLineRange(text));
-}
-
-function getTokenjuiceBlockText(text: string): string {
-  const range = findTokenjuiceBlockLineRange(text);
-  if (!range) {
-    return "";
-  }
-  return range.lines.slice(range.start, range.end).join("\n");
-}
+const {
+  findTokenjuiceBlockLineRange,
+  hasMalformedMarkerStructure: hasUnsafeMarkerStructure,
+  hasStructuralTokenjuiceMarker,
+  hasTokenjuiceBlock,
+  getTokenjuiceBlockText,
+} = createStructuredMarkerInspector(TOKENJUICE_TABBY_BEGIN, TOKENJUICE_TABBY_END, getTomlStructureLines);
 
 function removeTokenjuiceBlock(text: string): { text: string; removed: boolean } {
   const range = findTokenjuiceBlockLineRange(text);
@@ -223,99 +133,6 @@ function readTableName(line: string): string | undefined {
     return "answer";
   }
   return name;
-}
-
-type TomlMultilineState = {
-  delimiter: "\"\"\"" | "'''" | undefined;
-};
-
-function isEscaped(text: string, index: number): boolean {
-  let slashCount = 0;
-  for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor -= 1) {
-    slashCount += 1;
-  }
-  return slashCount % 2 === 1;
-}
-
-function findTomlMultilineClose(line: string, delimiter: "\"\"\"" | "'''", fromIndex: number): number {
-  let searchIndex = fromIndex;
-  while (searchIndex < line.length) {
-    const closeIndex = line.indexOf(delimiter, searchIndex);
-    if (closeIndex === -1) {
-      return -1;
-    }
-    if (delimiter === "'''" || !isEscaped(line, closeIndex)) {
-      return closeIndex;
-    }
-    searchIndex = closeIndex + 1;
-  }
-  return -1;
-}
-
-function updateTomlMultilineState(line: string, state: TomlMultilineState): void {
-  let index = 0;
-  let inBasicString = false;
-  let inLiteralString = false;
-  while (index < line.length) {
-    if (state.delimiter) {
-      const closeIndex = findTomlMultilineClose(line, state.delimiter, index);
-      if (closeIndex === -1) {
-        return;
-      }
-      index = closeIndex + state.delimiter.length;
-      state.delimiter = undefined;
-      continue;
-    }
-
-    const next = line.slice(index, index + 3);
-    const char = line[index];
-    if (inBasicString) {
-      if (char === "\"" && !isEscaped(line, index)) {
-        inBasicString = false;
-      }
-      index += 1;
-      continue;
-    }
-    if (inLiteralString) {
-      if (char === "'") {
-        inLiteralString = false;
-      }
-      index += 1;
-      continue;
-    }
-
-    if (char === "#") {
-      return;
-    }
-    if (next === "\"\"\"" || next === "'''") {
-      const closeIndex = findTomlMultilineClose(line, next, index + next.length);
-      if (closeIndex === -1) {
-        state.delimiter = next;
-        return;
-      }
-      index = closeIndex + next.length;
-      continue;
-    }
-    if (char === "\"") {
-      inBasicString = true;
-    } else if (char === "'") {
-      inLiteralString = true;
-    }
-    index += 1;
-  }
-}
-
-function getTomlStructureLines(lines: readonly string[]): string[] {
-  const state: TomlMultilineState = { delimiter: undefined };
-  return lines.map((line) => {
-    const structuralLine = state.delimiter ? "" : line;
-    updateTomlMultilineState(line, state);
-    return structuralLine;
-  });
-}
-
-function isTomlTableHeader(line: string): boolean {
-  return /^\s*(?:\[[^\]\n]+\]|\[\[[^\]\n]+\]\])\s*(?:#.*)?$/u.test(line);
 }
 
 function findAnswerTableRange(lines: readonly string[]): { start: number; end: number } | undefined {
@@ -539,23 +356,9 @@ export async function doctorTabbySystemPrompt(
   const collisionIssues = hasUserOwnedSystemPrompt(removeTokenjuiceBlock(existing.text).text)
     ? ["configured Tabby [answer].system_prompt also exists outside tokenjuice markers"]
     : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-    required: [
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Tabby system prompt is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Tabby system prompt is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Tabby system prompt still suggests the full escape hatch",
-      },
-    ],
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+    configuredLabel: "Tabby system prompt",
+    singular: true,
   });
   const issues = [...collisionIssues, ...guidanceIssues];
 

@@ -1,23 +1,23 @@
-import { readdir, realpath, stat } from "node:fs/promises";
+import { readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { findGitRoot, hasGitMetadata } from "../shared/project-root.js";
+
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type OpenInterpreterInstructionsOptions = {
   projectDir?: string;
@@ -36,15 +36,7 @@ export type UninstallOpenInterpreterInstructionsResult = {
   removed: boolean;
 };
 
-export type OpenInterpreterDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type OpenInterpreterDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_OPEN_INTERPRETER_FIX_COMMAND = "tokenjuice install open-interpreter";
 const TOKENJUICE_OPEN_INTERPRETER_BEGIN = "<!-- tokenjuice:open-interpreter begin -->";
@@ -53,29 +45,6 @@ const TOKENJUICE_OPEN_INTERPRETER_ADVISORY = "Open Interpreter support is beta a
 
 function getExplicitProjectDir(options: OpenInterpreterInstructionsOptions = {}): string | undefined {
   return options.projectDir || process.env.OPEN_INTERPRETER_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: OpenInterpreterInstructionsOptions = {}): Promise<string> {
@@ -275,28 +244,6 @@ const TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG = {
   block: TOKENJUICE_OPEN_INTERPRETER_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_OPEN_INTERPRETER_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_OPEN_INTERPRETER_END, beginIndex + TOKENJUICE_OPEN_INTERPRETER_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_OPEN_INTERPRETER_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_OPEN_INTERPRETER_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_OPEN_INTERPRETER_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installOpenInterpreterInstructions(
   instructionsPath?: string,
   options: OpenInterpreterInstructionsOptions = {},
@@ -305,7 +252,7 @@ export async function installOpenInterpreterInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install open-interpreter`,
       );
@@ -333,7 +280,7 @@ export async function uninstallOpenInterpreterInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall open-interpreter`,
       );
@@ -372,29 +319,14 @@ async function inspectOpenInterpreterInstructionsPath(resolvedInstructionsPath: 
     configuredLabel: "Open Interpreter instructions",
     repairCommand: TOKENJUICE_OPEN_INTERPRETER_FIX_COMMAND,
   });
-  const malformedMarkerIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount) && markerIssues.length === 0
+  const malformedMarkerIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG) && markerIssues.length === 0
     ? ["configured Open Interpreter instructions have malformed tokenjuice markers"]
     : [];
   const issues = [
     ...markerIssues,
     ...malformedMarkerIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Open Interpreter instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Open Interpreter instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Open Interpreter instructions still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG), {
+      configuredLabel: "Open Interpreter instructions",
     }),
   ];
 
@@ -404,7 +336,7 @@ async function inspectOpenInterpreterInstructionsPath(resolvedInstructionsPath: 
       status: instructionDoctorStatusFromIssues(issues),
       issues,
       advisory: TOKENJUICE_OPEN_INTERPRETER_ADVISORY,
-      fixCommand: hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+      fixCommand: hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_OPEN_INTERPRETER_BLOCK_CONFIG)
         ? "remove unmatched tokenjuice markers from AGENTS.md, then run tokenjuice install open-interpreter"
         : TOKENJUICE_OPEN_INTERPRETER_FIX_COMMAND,
     }),

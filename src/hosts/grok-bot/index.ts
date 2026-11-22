@@ -1,18 +1,19 @@
 import { constants } from "node:fs";
-import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm, stat } from "node:fs/promises";
+import { link, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { findGitRoot } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues } from "../shared/instruction-file.js";
+
 
 export type GrokBotRuleOptions = {
   projectDir?: string;
@@ -29,15 +30,8 @@ export type UninstallGrokBotRuleResult = {
   restoredBackup: boolean;
 };
 
-export type GrokBotDoctorReport = {
-  rulePath: string;
+export type GrokBotDoctorReport = PathDoctorReport<"rulePath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_GROK_BOT_FIX_COMMAND = "tokenjuice install grok-bot";
@@ -89,29 +83,6 @@ function getExplicitProjectDir(options: GrokBotRuleOptions = {}): string | undef
   return options.projectDir || process.env.GROK_BOT_PROJECT_DIR;
 }
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
 async function resolveProjectDir(options: GrokBotRuleOptions = {}): Promise<string> {
   const explicitProjectDir = getExplicitProjectDir(options);
   if (explicitProjectDir) {
@@ -120,41 +91,9 @@ async function resolveProjectDir(options: GrokBotRuleOptions = {}): Promise<stri
   return (await findGitRoot(process.cwd())) ?? process.cwd();
 }
 
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectSymlink(filePath: string): Promise<void> {
-  try {
-    if ((await lstat(filePath)).isSymbolicLink()) {
-      throw new Error(`cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`,
+);
 
 async function rejectHardlink(filePath: string): Promise<void> {
   try {
@@ -170,24 +109,6 @@ async function rejectHardlink(filePath: string): Promise<void> {
   }
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const segments = relative(projectDir, filePath).split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      if ((await lstat(currentPath)).isSymbolicLink()) {
-        throw new Error(`cannot use Grok Bot rule ${filePath}; tokenjuice will not read or write through symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
 async function resolveSafeRulePath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   if (projectDir !== realProjectDir) {
@@ -198,7 +119,11 @@ async function resolveSafeRulePath(filePath: string, projectDir: string, realPro
     throw new Error(`cannot use Grok Bot rule ${resolvedPath}; tokenjuice will not write outside ${realProjectDir}`);
   }
   await rejectSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Grok Bot rule ${resolvedPath}; tokenjuice will not read or write through symlinks`,
+  );
   await rejectSymlink(resolvedPath);
   await rejectHardlink(resolvedPath);
   try {
@@ -366,20 +291,7 @@ function snapshotsMatch(actual: VerifiedRuleSnapshot, expected: VerifiedRuleSnap
 }
 
 async function chooseBackupPath(filePath: string): Promise<string> {
-  for (let suffix = 0; ; suffix += 1) {
-    const candidate = suffix === 0 ? `${filePath}.bak` : `${filePath}.bak.${suffix}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot write Grok Bot rule backup ${candidate}; tokenjuice will not write through symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, (candidate) => `cannot write Grok Bot rule backup ${candidate}; tokenjuice will not write through symlinks`);
 }
 
 async function writeExclusiveFile(filePath: string, text: string, mode: number): Promise<void> {
@@ -687,8 +599,10 @@ export async function doctorGrokBotRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Grok Bot rule",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_GROK_BOT_OWNERSHIP_MARKER,
         missingIssue: "configured Grok Bot rule is missing the tokenjuice ownership marker",
@@ -697,23 +611,11 @@ export async function doctorGrokBotRule(
         requiredText: TOKENJUICE_GROK_BOT_RULE_MARKER,
         missingIssue: "configured Grok Bot rule does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Grok Bot rule is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Grok Bot rule is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "does not install an interception hook or rewrite Grok Bot tool results",
         missingIssue: "configured Grok Bot rule is missing the guidance-only boundary",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Grok Bot rule still suggests the full escape hatch",
       },
     ],
   });

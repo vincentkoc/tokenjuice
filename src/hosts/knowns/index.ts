@@ -1,47 +1,34 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { join } from "node:path";
+
+import { inspectMarkerInstructionDoctor } from "../shared/marker-instruction-doctor.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
+  createMarkerInstructionCommands,
 } from "../shared/marker-instructions.js";
+import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+} from "../shared/instruction-file.js";
 
 export type KnownsInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallKnownsInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallKnownsInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallKnownsInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallKnownsInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type KnownsDoctorReport = {
-  instructionsPath: string;
+export type KnownsDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_KNOWNS_FIX_COMMAND = "tokenjuice install knowns";
@@ -50,121 +37,21 @@ const TOKENJUICE_KNOWNS_END = "<!-- tokenjuice:knowns end -->";
 const TOKENJUICE_KNOWNS_ADVISORY =
   "Knowns support is beta and instruction-based; Knowns generates KNOWNS.md guidance and exposes memory, tasks, docs, and code intelligence through MCP, but tokenjuice does not intercept tool output.";
 
-function getExplicitProjectDir(options: KnownsInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.KNOWNS_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("KNOWNS_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: KnownsInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Knowns instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Knowns instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
   await rejectInstructionSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Knowns instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
-async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use Knowns instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Knowns instructions ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectInstructionSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectInstructionSymlink(resolvedPath);
-  return resolvedPath;
-}
+const resolveSafeProjectInstructionsPath = createProjectInstructionPathResolver(
+  "Knowns instructions",
+  rejectInstructionSymlink,
+);
 
 async function getDefaultInstructionsPath(options: KnownsInstructionsOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);
@@ -204,27 +91,7 @@ const TOKENJUICE_KNOWNS_BLOCK_CONFIG = {
   preserveSurroundingText: true,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_KNOWNS_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_KNOWNS_END, beginIndex + TOKENJUICE_KNOWNS_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_KNOWNS_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_KNOWNS_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_KNOWNS_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
+const markerInstructions = createMarkerInstructionCommands("knowns", TOKENJUICE_KNOWNS_BLOCK_CONFIG);
 
 export async function installKnownsInstructions(
   instructionsPath?: string,
@@ -232,19 +99,7 @@ export async function installKnownsInstructions(
 ): Promise<InstallKnownsInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_KNOWNS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install knowns`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_KNOWNS_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallKnownsInstructions(
@@ -252,16 +107,7 @@ export async function uninstallKnownsInstructions(
   options: KnownsInstructionsOptions = {},
 ): Promise<UninstallKnownsInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_KNOWNS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall knowns`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_KNOWNS_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorKnownsInstructions(
@@ -286,67 +132,31 @@ export async function doctorKnownsInstructions(
       }),
     };
   }
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_KNOWNS_BLOCK_CONFIG);
-  const hasTokenjuiceMarker = markerState.hasBegin || markerState.hasEnd;
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      hasTokenjuiceMarker,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Knowns instructions are not installed"],
-        advisory: TOKENJUICE_KNOWNS_ADVISORY,
-        fixCommand: TOKENJUICE_KNOWNS_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
-    configuredLabel: "Knowns instructions",
-    repairCommand: TOKENJUICE_KNOWNS_FIX_COMMAND,
-  });
-  const structureIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
-    ? ["configured Knowns instructions have unmatched tokenjuice markers"]
-    : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-    required: [
-      {
-        requiredText: "tokenjuice terminal output compaction",
-        missingIssue: "configured Knowns instructions do not look like the tokenjuice instructions",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Knowns instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Knowns instructions are missing the raw escape hatch",
-      },
-      {
-        requiredText: "Knowns uses this KNOWNS.md guidance",
-        missingIssue: "configured Knowns instructions are missing KNOWNS.md guidance context",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Knowns instructions still suggest the full escape hatch",
-      },
-    ],
-  });
-  const issues = [...markerIssues, ...structureIssues, ...guidanceIssues];
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    hasTokenjuiceMarker,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+  const { report, hasTokenjuiceMarker } = await inspectMarkerInstructionDoctor(
+    resolvedInstructionsPath,
+    TOKENJUICE_KNOWNS_BLOCK_CONFIG,
+    {
+      configuredLabel: "Knowns instructions",
       advisory: TOKENJUICE_KNOWNS_ADVISORY,
-      fixCommand: [...markerIssues, ...structureIssues].length > 0
-        ? "remove unmatched tokenjuice markers from KNOWNS.md, then run tokenjuice install knowns"
-        : TOKENJUICE_KNOWNS_FIX_COMMAND,
-    }),
-  };
+      fixCommand: TOKENJUICE_KNOWNS_FIX_COMMAND,
+      malformedFixCommand: "remove unmatched tokenjuice markers from KNOWNS.md, then run tokenjuice install knowns",
+      malformedMarkerIssue: "configured Knowns instructions have unmatched tokenjuice markers",
+      repairOnMarkerIssues: true,
+      guidanceOptions: {
+        additionalRequired: [
+          {
+            requiredText: "tokenjuice terminal output compaction",
+            missingIssue: "configured Knowns instructions do not look like the tokenjuice instructions",
+          },
+        ],
+        additionalRequiredAfter: [
+          {
+            requiredText: "Knowns uses this KNOWNS.md guidance",
+            missingIssue: "configured Knowns instructions are missing KNOWNS.md guidance context",
+          },
+        ],
+      },
+    },
+  );
+  return { instructionsPath: resolvedInstructionsPath, hasTokenjuiceMarker, ...report };
 }

@@ -1,41 +1,26 @@
 import { join } from "node:path";
 
 import {
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
+import { doctorMarkerStructure } from "../shared/marker-instruction-doctor.js";
 import {
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+} from "../shared/instruction-file.js";
 
 export type JunieInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallJunieInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallJunieInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallJunieInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallJunieInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type JunieDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type JunieDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_JUNIE_FIX_COMMAND = "tokenjuice install junie";
 const TOKENJUICE_JUNIE_BEGIN = "<!-- tokenjuice:begin -->";
@@ -86,32 +71,9 @@ export async function doctorJunieInstructions(
   options: JunieInstructionsOptions = {},
 ): Promise<JunieDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? getDefaultInstructionsPath(options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_JUNIE_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Junie instructions are not installed"],
-        advisory: TOKENJUICE_JUNIE_ADVISORY,
-        fixCommand: TOKENJUICE_JUNIE_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerStructure(resolvedInstructionsPath, TOKENJUICE_JUNIE_BLOCK_CONFIG, {
     configuredLabel: "Junie instructions",
-    repairCommand: TOKENJUICE_JUNIE_FIX_COMMAND,
+    advisory: TOKENJUICE_JUNIE_ADVISORY,
+    fixCommand: TOKENJUICE_JUNIE_FIX_COMMAND,
   });
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_JUNIE_ADVISORY,
-      fixCommand: TOKENJUICE_JUNIE_FIX_COMMAND,
-    }),
-  };
 }

@@ -110,7 +110,7 @@ const EXPECTED_HOOK_OUTPUT: Record<string, { stdout: string; stderr: string }> =
   "codex-post-tool-use": { stdout: "", stderr: "" },
   "claude-code-pre-tool-use": {
     stdout:
-      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"tokenjuice wrap --source claude-code --min-reduce-chars 16384 -- /bin/bash -lc \'echo hi\'"}}}\n',
+      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"tokenjuice wrap --keep-failures --source claude-code --min-reduce-chars 16384 -- /bin/bash -lc \'echo hi\'"}}}\n',
     stderr: "",
   },
   "claude-code-post-tool-use": {
@@ -123,7 +123,7 @@ const EXPECTED_HOOK_OUTPUT: Record<string, { stdout: string; stderr: string }> =
   },
   "codebuddy-pre-tool-use": {
     stdout:
-      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","modifiedInput":{"command":"tokenjuice wrap --source codebuddy -- /bin/bash -lc \'echo hi\'"}}}\n',
+      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","updatedInput":{"command":"tokenjuice wrap --keep-failures --source codebuddy -- /bin/bash -lc \'echo hi\'"}}}\n',
     stderr: "",
   },
   "command-code-post-tool-use": { stdout: "{}\n", stderr: "" },

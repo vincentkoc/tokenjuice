@@ -53,6 +53,10 @@ export function getCommandName(argv: string[]): string | null {
   return basename(first.replace(/^["']|["']$/gu, ""));
 }
 
+export function isTokenjuiceExecutablePath(value: string): boolean {
+  return /(?:^|[\\/])token(?:juice|-glace)(?:\.(?:exe|cmd|bat))?$/iu.test(value);
+}
+
 function gitGlobalOptionTakesValue(option: string): boolean {
   return option === "-C"
     || option === "-c"
@@ -220,8 +224,11 @@ function isRepositoryInspectionArgv(argv: string[]): boolean {
   return false;
 }
 
-function getMostDerivedCandidate(input: Pick<ToolExecutionInput, "argv" | "command">): CommandMatchCandidate {
-  return deriveCommandMatchCandidates(input).reduce((best, candidate) => (
+function getMostDerivedCandidate(
+  input: Pick<ToolExecutionInput, "argv" | "command">,
+  candidates = deriveCommandMatchCandidates(input),
+): CommandMatchCandidate {
+  return candidates.reduce((best, candidate) => (
     getSourcePriority(candidate.source) >= getSourcePriority(best.source) ? candidate : best
   ));
 }
@@ -270,8 +277,11 @@ function extractPipelineSourceCommand(command: string): string {
   return current.trim();
 }
 
-function getInspectionArgv(input: Pick<ToolExecutionInput, "argv" | "command">): string[] {
-  const candidate = getMostDerivedCandidate(input);
+function getInspectionArgv(
+  input: Pick<ToolExecutionInput, "argv" | "command">,
+  candidates = deriveCommandMatchCandidates(input),
+): string[] {
+  const candidate = getMostDerivedCandidate(input, candidates);
   if (candidate.argv.length > 0) {
     return candidate.argv;
   }
@@ -284,8 +294,9 @@ function getInspectionArgv(input: Pick<ToolExecutionInput, "argv" | "command">):
 }
 
 export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
-  return isFileContentInspectionArgv(getInspectionArgv(input))
-    || deriveCommandMatchCandidates(input).some((candidate) => isGhApiContentsDecodeCommand(candidate.command));
+  const candidates = deriveCommandMatchCandidates(input);
+  return isFileContentInspectionArgv(getInspectionArgv(input, candidates))
+    || candidates.some((candidate) => isGhApiContentsDecodeCommand(candidate.command));
 }
 
 function isVerbatimRemoteInspectionCommand(command: string): boolean {

@@ -84,6 +84,9 @@ jobs:
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.1
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      - name: Install Linux package inspectors
+        run: sudo apt-get update && sudo apt-get install --yes rpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -98,19 +101,7 @@ jobs:
           set -euo pipefail
           pnpm release:artifacts
 
-          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/all/g" \
-            packaging/nfpm.yaml > release/nfpm-deb.yaml
-          nfpm package \
-            --config release/nfpm-deb.yaml \
-            --packager deb \
-            --target "release/token-glace_${RELEASE_VERSION}_all.deb"
-
-          sed -e "s/__VERSION__/${RELEASE_VERSION}/g" -e "s/__ARCH__/noarch/g" \
-            packaging/nfpm.yaml > release/nfpm-rpm.yaml
-          nfpm package \
-            --config release/nfpm-rpm.yaml \
-            --packager rpm \
-            --target "release/token-glace-${RELEASE_VERSION}-1.noarch.rpm"
+          node scripts/build-linux-packages.mjs
 
           pnpm release:checksums
           pnpm release:formula
@@ -119,6 +110,9 @@ jobs:
         run: |
           set -euo pipefail
           (cd release && sha256sum -c sha256sums.txt)
+
+      - name: Verify extracted and installed packages
+        run: node scripts/package-e2e.mjs
 
       - name: Evaluate Cloudsmith configuration
         env:
@@ -193,7 +187,7 @@ jobs:
       - name: Publish release from Release Drafter
         if: steps.existing_release.outputs.found != '1'
         id: release_drafter
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7
         with:
           publish: true
           tag: ${{ env.RELEASE_TAG }}

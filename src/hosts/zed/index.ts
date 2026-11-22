@@ -1,41 +1,26 @@
 import { join } from "node:path";
 
 import {
-  collectMarkerDelimitedBlockIssues,
-  inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import type { InstructionsDoctorReport } from "../shared/instruction-doctor.js";
+import { doctorMarkerStructure } from "../shared/marker-instruction-doctor.js";
 import {
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
-import { readInstructionFile } from "../shared/instruction-file.js";
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+} from "../shared/instruction-file.js";
 
 export type ZedInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallZedInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallZedInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallZedInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallZedInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type ZedDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type ZedDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ZED_FIX_COMMAND = "tokenjuice install zed";
 const TOKENJUICE_ZED_BEGIN = "<!-- tokenjuice:begin -->";
@@ -86,32 +71,9 @@ export async function doctorZedInstructions(
   options: ZedInstructionsOptions = {},
 ): Promise<ZedDoctorReport> {
   const resolvedInstructionsPath = instructionsPath ?? getDefaultInstructionsPath(options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ZED_BLOCK_CONFIG);
-  if (!existing.exists || (!markerState.hasBegin && !markerState.hasEnd)) {
-    return {
-      instructionsPath: resolvedInstructionsPath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Zed rules are not installed"],
-        advisory: TOKENJUICE_ZED_ADVISORY,
-        fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectMarkerDelimitedBlockIssues(markerState, {
+  return doctorMarkerStructure(resolvedInstructionsPath, TOKENJUICE_ZED_BLOCK_CONFIG, {
     configuredLabel: "Zed rules",
-    repairCommand: TOKENJUICE_ZED_FIX_COMMAND,
+    advisory: TOKENJUICE_ZED_ADVISORY,
+    fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
   });
-
-  return {
-    instructionsPath: resolvedInstructionsPath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
-      advisory: TOKENJUICE_ZED_ADVISORY,
-      fixCommand: TOKENJUICE_ZED_FIX_COMMAND,
-    }),
-  };
 }

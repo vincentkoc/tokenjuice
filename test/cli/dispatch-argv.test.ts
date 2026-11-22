@@ -30,7 +30,7 @@ describe("argv dispatch contracts", () => {
   it("reduce reads stdin and exits 0", async () => {
     const result = await runDist(["reduce"], "hello\n");
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.endsWith("\n")).toBe(true);
+    expect(result.stdout).toBe("hello\n");
     expect(result.stderr).toBe("");
   });
 
@@ -44,7 +44,7 @@ describe("argv dispatch contracts", () => {
   it("wrap dispatches to the wrapped command", async () => {
     const result = await runDist(["wrap", "--", "printf", "wrapped"]);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.endsWith("\n")).toBe(true);
+    expect(result.stdout).toBe("wrapped");
     expect(result.stderr).toBe("");
   });
 

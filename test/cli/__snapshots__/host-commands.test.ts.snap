@@ -1457,6 +1457,79 @@ exit 0
 "
 `;
 
+exports[`host CLI commands > install, doctor, and uninstall ante 1`] = `
+"$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: disabled
+[stdout] issues:
+[stdout] - tokenjuice Ante instructions are not installed
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+
+$ tokenjuice install ante
+[stdout] success: ante instructions installed successfully
+
+  Instructions: <SANDBOX>/project/AGENTS.md
+  Beta        : instruction-based guidance; Ante still owns command execution
+  Verify      : tokenjuice doctor ante
+  Escape hatch: tokenjuice wrap --raw -- <command>
+exit 0
+
+$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: ok
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+
+$ tokenjuice doctor ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
+  "status": "ok",
+  "issues": [],
+  "advisories": [
+    "Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution."
+  ],
+  "fixCommand": "tokenjuice install ante",
+  "checkedPaths": [],
+  "missingPaths": []
+}
+exit 0
+
+$ tokenjuice install ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md"
+}
+exit 0
+
+$ tokenjuice uninstall ante
+[stdout] removed ante instructions: yes
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] enable: tokenjuice install ante
+exit 0
+
+$ tokenjuice uninstall ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
+  "removed": false
+}
+exit 0
+
+$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: disabled
+[stdout] issues:
+[stdout] - tokenjuice Ante instructions are not installed
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+"
+`;
+
 exports[`host CLI commands > install, doctor, and uninstall antigravity 1`] = `
 "$ tokenjuice doctor antigravity
 [stdout] rule path: <SANDBOX>/project/.agents/rules/tokenjuice.md
@@ -2512,47 +2585,47 @@ exit 0
 
 exports[`host CLI commands > install, doctor, and uninstall cline 1`] = `
 "$ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook script is not installed for Cline
+[stdout] - tokenjuice PreToolUse hook is not installed for Cline
 [stdout] advisories:
-[stdout] - Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 
 $ tokenjuice install cline
 [stdout] success: cline hook installed successfully
 
-  Hook        : <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
-  Command     : <NODE> '<LAUNCHER>' cline-post-tool-use
-  Beta        : enable this PostToolUse hook in Cline's Hooks tab after install
+  Hook        : <SANDBOX>/home/.cline/hooks/PreToolUse
+  Command     : <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
+  Beta        : PreToolUse wrapping; restart Cline after install
   Verify      : tokenjuice doctor cline
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
 
 $ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Cline support is beta and currently injects compacted context without suppressing the original tool result.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 
 $ tokenjuice doctor cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Cline support is beta and currently injects compacted context without suppressing the original tool result."
+    "Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance."
   ],
   "fixCommand": "tokenjuice install cline",
-  "expectedCommand": "<NODE> '<LAUNCHER>' cline-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' cline-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -2560,32 +2633,32 @@ exit 0
 
 $ tokenjuice install cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
-  "command": "<NODE> '<LAUNCHER>' cline-post-tool-use"
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
+  "command": "<NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
 $ tokenjuice uninstall cline
 [stdout] removed cline hook: yes
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] enable: tokenjuice install cline
 exit 0
 
 $ tokenjuice uninstall cline --format json
 [stdout] {
-  "hookPath": "<SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use",
+  "hookPath": "<SANDBOX>/home/.cline/hooks/PreToolUse",
   "removed": false
 }
 exit 0
 
 $ tokenjuice doctor cline
-[stdout] hook path: <SANDBOX>/home/Documents/Cline/Hooks/tokenjuice-post-tool-use
+[stdout] hook path: <SANDBOX>/home/.cline/hooks/PreToolUse
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' cline-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' cline-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook script is not installed for Cline
+[stdout] - tokenjuice PreToolUse hook is not installed for Cline
 [stdout] advisories:
-[stdout] - Cline support is beta; enable the generated PostToolUse hook in Cline's Hooks tab after install.
+[stdout] - Cline CLI 3.0.74 uses PreToolUse input rewriting; other versions and desktop sessions need separate acceptance.
 [stdout] repair: tokenjuice install cline
 exit 0
 "
@@ -3238,62 +3311,54 @@ exports[`host CLI commands > install, doctor, and uninstall command-code 1`] = `
 "$ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install command-code
-[stdout] success: command-code hook installed successfully
-
-  Hook        : <SANDBOX>/home/.commandcode/settings.json
-  Command     : <NODE> '<LAUNCHER>' command-code-post-tool-use
-  Beta        : PostToolUse shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor command-code
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' command-code-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor command-code --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Command Code support is beta and injects compacted context without suppressing the original tool result."
+    "Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install command-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install command-code --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "backupPath": "<SANDBOX>/home/.commandcode/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' command-code-post-tool-use"
-}
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall command-code
-[stdout] removed command-code entries: 1
+[stdout] removed command-code entries: 0
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] enable: tokenjuice install command-code
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall command-code --format json
@@ -3306,12 +3371,12 @@ exit 0
 $ tokenjuice doctor command-code
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -3320,62 +3385,54 @@ exports[`host CLI commands > install, doctor, and uninstall commandcode 1`] = `
 "$ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install commandcode
-[stdout] success: command-code hook installed successfully
-
-  Hook        : <SANDBOX>/home/.commandcode/settings.json
-  Command     : <NODE> '<LAUNCHER>' command-code-post-tool-use
-  Beta        : PostToolUse shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor command-code
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' command-code-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor commandcode --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Command Code support is beta and injects compacted context without suppressing the original tool result."
+    "Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install command-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' command-code-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.commandcode/settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install commandcode --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.commandcode/settings.json",
-  "backupPath": "<SANDBOX>/home/.commandcode/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' command-code-post-tool-use"
-}
-exit 0
+throws Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall commandcode
-[stdout] removed command-code entries: 1
+[stdout] removed command-code entries: 0
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
-[stdout] enable: tokenjuice install command-code
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall commandcode --format json
@@ -3388,12 +3445,12 @@ exit 0
 $ tokenjuice doctor commandcode
 [stdout] settings path: <SANDBOX>/home/.commandcode/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' command-code-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Command Code
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.commandcode/settings.json
 [stdout] advisories:
-[stdout] - Command Code support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install command-code
+[stdout] - Command Code automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -4144,11 +4201,11 @@ exports[`host CLI commands > install, doctor, and uninstall droid 1`] = `
 "$ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Droid
+[stdout] - tokenjuice PreToolUse hook is not installed for Droid
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook is not installed.
+[stdout] - Droid PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install droid
 exit 0
 
@@ -4156,7 +4213,7 @@ $ tokenjuice install droid
 [stdout] success: droid hook installed successfully
 
   Hook        : <SANDBOX>/home/.factory/settings.json
-  Command     : <NODE> '<LAUNCHER>' droid-post-tool-use
+  Command     : <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
   Verify      : tokenjuice doctor droid
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -4164,10 +4221,10 @@ exit 0
 $ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook compacts Execute shell output before it returns to the agent.
+[stdout] - Droid PreToolUse hook wraps Execute commands through tokenjuice before execution.
 [stdout] repair: tokenjuice install droid
 exit 0
 
@@ -4177,11 +4234,11 @@ $ tokenjuice doctor droid --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Droid PostToolUse hook compacts Execute shell output before it returns to the agent."
+    "Droid PreToolUse hook wraps Execute commands through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install droid",
-  "expectedCommand": "<NODE> '<LAUNCHER>' droid-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' droid-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -4191,7 +4248,7 @@ $ tokenjuice install droid --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.factory/settings.json",
   "backupPath": "<SANDBOX>/home/.factory/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' droid-post-tool-use"
+  "command": "<NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -4211,11 +4268,11 @@ exit 0
 $ tokenjuice doctor droid
 [stdout] settings path: <SANDBOX>/home/.factory/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' droid-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' droid-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Droid
+[stdout] - tokenjuice PreToolUse hook is not installed for Droid
 [stdout] advisories:
-[stdout] - Droid PostToolUse hook is not installed.
+[stdout] - Droid PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install droid
 exit 0
 "
@@ -4594,11 +4651,11 @@ exports[`host CLI commands > install, doctor, and uninstall gemini-cli 1`] = `
 "$ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice AfterTool hook is not installed for Gemini CLI
+[stdout] - tokenjuice BeforeTool hook is not installed for Gemini CLI
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; verify live hook behavior after install.
+[stdout] - Gemini CLI BeforeTool hook is not installed.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 
@@ -4606,8 +4663,8 @@ $ tokenjuice install gemini-cli
 [stdout] success: gemini-cli hook installed successfully
 
   Hook        : <SANDBOX>/home/.gemini/settings.json
-  Command     : <NODE> '<LAUNCHER>' gemini-cli-after-tool
-  Beta        : AfterTool output replacement is new; verify with a noisy shell command
+  Command     : <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
+  Beta        : BeforeTool wrapping; Gemini CLI retains permission policy
   Verify      : tokenjuice doctor gemini-cli
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -4615,10 +4672,10 @@ exit 0
 $ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
-[stdout] configured command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; AfterTool replacement depends on current hook semantics.
+[stdout] - Gemini CLI pre-tool wrapping is beta; shell commands run through tokenjuice before execution.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 
@@ -4628,11 +4685,11 @@ $ tokenjuice doctor gemini-cli --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Gemini CLI support is beta; AfterTool replacement depends on current hook semantics."
+    "Gemini CLI pre-tool wrapping is beta; shell commands run through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install gemini-cli",
-  "expectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-after-tool",
-  "detectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-after-tool",
+  "expectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -4642,7 +4699,7 @@ $ tokenjuice install gemini-cli --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.gemini/settings.json",
   "backupPath": "<SANDBOX>/home/.gemini/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' gemini-cli-after-tool"
+  "command": "<NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -4662,11 +4719,11 @@ exit 0
 $ tokenjuice doctor gemini-cli
 [stdout] settings path: <SANDBOX>/home/.gemini/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-after-tool
+[stdout] expected command: <NODE> '<LAUNCHER>' gemini-cli-before-tool --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice AfterTool hook is not installed for Gemini CLI
+[stdout] - tokenjuice BeforeTool hook is not installed for Gemini CLI
 [stdout] advisories:
-[stdout] - Gemini CLI support is beta; verify live hook behavior after install.
+[stdout] - Gemini CLI BeforeTool hook is not installed.
 [stdout] repair: tokenjuice install gemini-cli
 exit 0
 "
@@ -5120,60 +5177,52 @@ exports[`host CLI commands > install, doctor, and uninstall grok-cli 1`] = `
 "$ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Grok CLI
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install grok-cli
-[stdout] success: grok-cli hook installed successfully
-
-  Hook        : <SANDBOX>/home/.grok/user-settings.json
-  Command     : <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-  Beta        : user-level PostToolUse hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor grok-cli
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta and injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor grok-cli --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/home/.grok/user-settings.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Grok CLI support is beta and injects compacted context without suppressing the original tool result."
+    "Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install grok-cli",
-  "expectedCommand": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.grok/user-settings.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.grok/user-settings.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install grok-cli --format json
-[stdout] {
-  "settingsPath": "<SANDBOX>/home/.grok/user-settings.json",
-  "backupPath": "<SANDBOX>/home/.grok/user-settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' grok-cli-post-tool-use"
-}
-exit 0
+throws Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall grok-cli
-[stdout] removed grok-cli entries: 1
+[stdout] removed grok-cli entries: 0
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] enable: tokenjuice install grok-cli
 exit 0
@@ -5188,12 +5237,12 @@ exit 0
 $ tokenjuice doctor grok-cli
 [stdout] settings path: <SANDBOX>/home/.grok/user-settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' grok-cli-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Grok CLI
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.grok/user-settings.json
 [stdout] advisories:
-[stdout] - Grok CLI support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install grok-cli
+[stdout] - Grok CLI automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -5652,83 +5701,75 @@ exit 0
 
 exports[`host CLI commands > install, doctor, and uninstall kimi 1`] = `
 "$ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Kimi
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install kimi
-[stdout] success: kimi hook installed successfully
-
-  Config      : <SANDBOX>/home/.kimi/config.toml
-  Command     : <NODE> '<LAUNCHER>' kimi-post-tool-use
-  Beta        : PostToolUse Shell hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor kimi
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' kimi-post-tool-use
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta and injects compacted context after Shell tool output without suppressing the original result.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor kimi --format json
 [stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
-  "status": "ok",
+  "configPath": "<SANDBOX>/home/.kimi-code/config.toml",
+  "status": "disabled",
+  "hasTokenjuiceMarker": false,
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Kimi support is beta and injects compacted context after Shell tool output without suppressing the original result."
+    "Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install kimi",
-  "expectedCommand": "<NODE> '<LAUNCHER>' kimi-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' kimi-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": [],
-  "hasTokenjuiceMarker": true
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/home/.kimi-code/config.toml"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/home/.kimi-code/config.toml"
+  ]
 }
 exit 0
 
 $ tokenjuice install kimi --format json
-[stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
-  "backupPath": "<SANDBOX>/home/.kimi/config.toml.bak",
-  "command": "<NODE> '<LAUNCHER>' kimi-post-tool-use"
-}
-exit 0
+throws Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall kimi
-[stdout] removed kimi entries: 1
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] removed kimi entries: 0
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] enable: tokenjuice install kimi
 exit 0
 
 $ tokenjuice uninstall kimi --format json
 [stdout] {
-  "configPath": "<SANDBOX>/home/.kimi/config.toml",
+  "configPath": "<SANDBOX>/home/.kimi-code/config.toml",
   "removed": 0
 }
 exit 0
 
 $ tokenjuice doctor kimi
-[stdout] config path: <SANDBOX>/home/.kimi/config.toml
+[stdout] config path: <SANDBOX>/home/.kimi-code/config.toml
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' kimi-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Kimi
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/home/.kimi-code/config.toml
 [stdout] advisories:
-[stdout] - Kimi support is beta; verify live PostToolUse behavior after install.
-[stdout] repair: tokenjuice install kimi
+[stdout] - Kimi automatic compaction is unavailable: PostToolUse hooks cannot replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -6585,59 +6626,52 @@ exports[`host CLI commands > install, doctor, and uninstall mux 1`] = `
 "$ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice tool_post hook is not installed for Mux
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install mux
-[stdout] success: mux hook installed successfully
-
-  Hook        : <SANDBOX>/project/.mux/tool_post
-  Command     : <NODE> '<LAUNCHER>' mux-post-tool-use
-  Beta        : project-local tool_post hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor mux
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' mux-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor mux --format json
 [stdout] {
   "hookPath": "<SANDBOX>/project/.mux/tool_post",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result."
+    "Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install mux",
-  "expectedCommand": "<NODE> '<LAUNCHER>' mux-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' mux-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/project/.mux/tool_post"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/project/.mux/tool_post"
+  ]
 }
 exit 0
 
 $ tokenjuice install mux --format json
-[stdout] {
-  "hookPath": "<SANDBOX>/project/.mux/tool_post",
-  "command": "<NODE> '<LAUNCHER>' mux-post-tool-use"
-}
-exit 0
+throws Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall mux
-[stdout] removed mux hook: yes
+[stdout] removed mux hook: no
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] enable: tokenjuice install mux
 exit 0
@@ -6652,12 +6686,12 @@ exit 0
 $ tokenjuice doctor mux
 [stdout] hook path: <SANDBOX>/project/.mux/tool_post
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' mux-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice tool_post hook is not installed for Mux
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.mux/tool_post
 [stdout] advisories:
-[stdout] - Mux support is beta; .mux/tool_post adds compacted hook output but does not suppress the original tool result.
-[stdout] repair: tokenjuice install mux
+[stdout] - Mux/Xum automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -6954,62 +6988,54 @@ exports[`host CLI commands > install, doctor, and uninstall openhands 1`] = `
 "$ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for OpenHands
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice install openhands
-[stdout] success: openhands hook installed successfully
-
-  Hook        : <SANDBOX>/project/.openhands/hooks.json
-  Command     : <NODE> '<LAUNCHER>' openhands-post-tool-use
-  Beta        : project-local PostToolUse hook; compacted context is injected alongside original output
-  Verify      : tokenjuice doctor openhands
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
+throws OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
-[stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' openhands-post-tool-use
+[stdout] health: disabled
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice doctor openhands --format json
 [stdout] {
   "hooksPath": "<SANDBOX>/project/.openhands/hooks.json",
-  "status": "ok",
+  "status": "disabled",
+  "expectedCommand": "tokenjuice wrap -- <command>",
   "issues": [],
   "advisories": [
-    "OpenHands support is beta and currently injects compacted context without suppressing the original tool result."
+    "OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>."
   ],
-  "fixCommand": "tokenjuice install openhands",
-  "expectedCommand": "<NODE> '<LAUNCHER>' openhands-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' openhands-post-tool-use",
-  "checkedPaths": [],
-  "missingPaths": []
+  "fixCommand": "tokenjuice wrap -- <command>",
+  "checkedPaths": [
+    "<SANDBOX>/project/.openhands/hooks.json"
+  ],
+  "missingPaths": [
+    "<SANDBOX>/project/.openhands/hooks.json"
+  ]
 }
 exit 0
 
 $ tokenjuice install openhands --format json
-[stdout] {
-  "hooksPath": "<SANDBOX>/project/.openhands/hooks.json",
-  "backupPath": "<SANDBOX>/project/.openhands/hooks.json.bak",
-  "command": "<NODE> '<LAUNCHER>' openhands-post-tool-use"
-}
-exit 0
+throws OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
 
 $ tokenjuice uninstall openhands
-[stdout] removed openhands entries: 1
+[stdout] removed openhands entries: 0
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
-[stdout] enable: tokenjuice install openhands
+[stdout] use: tokenjuice wrap -- <command>
 exit 0
 
 $ tokenjuice uninstall openhands --format json
@@ -7022,12 +7048,12 @@ exit 0
 $ tokenjuice doctor openhands
 [stdout] hooks path: <SANDBOX>/project/.openhands/hooks.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' openhands-post-tool-use
-[stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for OpenHands
+[stdout] expected command: tokenjuice wrap -- <command>
+[stdout] missing paths:
+[stdout] - <SANDBOX>/project/.openhands/hooks.json
 [stdout] advisories:
-[stdout] - OpenHands support is beta and currently injects compacted context without suppressing the original tool result.
-[stdout] repair: tokenjuice install openhands
+[stdout] - OpenHands automatic compaction is unavailable: additive hooks do not replace tool output. Use tokenjuice wrap -- <command>.
+[stdout] repair: tokenjuice wrap -- <command>
 exit 0
 "
 `;
@@ -7616,11 +7642,11 @@ exports[`host CLI commands > install, doctor, and uninstall qwen-code 1`] = `
 "$ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Qwen Code
+[stdout] - tokenjuice PreToolUse hook is not installed for Qwen Code
 [stdout] advisories:
-[stdout] - Qwen Code support is beta; verify live PostToolUse behavior after install.
+[stdout] - Qwen Code PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 
@@ -7628,8 +7654,8 @@ $ tokenjuice install qwen-code
 [stdout] success: qwen-code hook installed successfully
 
   Hook        : <SANDBOX>/project/.qwen/settings.json
-  Command     : <NODE> '<LAUNCHER>' qwen-code-post-tool-use
-  Beta        : project-local PostToolUse hook; compacted context is injected alongside original output
+  Command     : <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
+  Beta        : project-local PreToolUse wrapping; Qwen Code retains permission policy
   Verify      : tokenjuice doctor qwen-code
   Escape hatch: tokenjuice wrap --raw -- <command>
 exit 0
@@ -7637,10 +7663,10 @@ exit 0
 $ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: ok
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
-[stdout] configured command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
+[stdout] configured command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] advisories:
-[stdout] - Qwen Code support is beta and injects compacted context without suppressing the original tool result.
+[stdout] - Qwen Code pre-tool wrapping is beta; shell commands run through tokenjuice before execution.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 
@@ -7650,11 +7676,11 @@ $ tokenjuice doctor qwen-code --format json
   "status": "ok",
   "issues": [],
   "advisories": [
-    "Qwen Code support is beta and injects compacted context without suppressing the original tool result."
+    "Qwen Code pre-tool wrapping is beta; shell commands run through tokenjuice before execution."
   ],
   "fixCommand": "tokenjuice install qwen-code",
-  "expectedCommand": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use",
-  "detectedCommand": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use",
+  "expectedCommand": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'",
+  "detectedCommand": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'",
   "checkedPaths": [],
   "missingPaths": []
 }
@@ -7664,7 +7690,7 @@ $ tokenjuice install qwen-code --format json
 [stdout] {
   "settingsPath": "<SANDBOX>/project/.qwen/settings.json",
   "backupPath": "<SANDBOX>/project/.qwen/settings.json.bak",
-  "command": "<NODE> '<LAUNCHER>' qwen-code-post-tool-use"
+  "command": "<NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'"
 }
 exit 0
 
@@ -7684,11 +7710,11 @@ exit 0
 $ tokenjuice doctor qwen-code
 [stdout] settings path: <SANDBOX>/project/.qwen/settings.json
 [stdout] health: disabled
-[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-post-tool-use
+[stdout] expected command: <NODE> '<LAUNCHER>' qwen-code-pre-tool-use --wrap-launcher '<LAUNCHER>'
 [stdout] issues:
-[stdout] - tokenjuice PostToolUse hook is not installed for Qwen Code
+[stdout] - tokenjuice PreToolUse hook is not installed for Qwen Code
 [stdout] advisories:
-[stdout] - Qwen Code support is beta; verify live PostToolUse behavior after install.
+[stdout] - Qwen Code PreToolUse hook is not installed.
 [stdout] repair: tokenjuice install qwen-code
 exit 0
 "
@@ -9033,19 +9059,19 @@ exit 0
 
 exports[`host CLI commands > rejects unknown or missing targets 1`] = `
 "$ tokenjuice install not-a-host
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice install
-throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall not-a-host
-throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice uninstall
-throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, plandex, qodo, qoder, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
+throws uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder
 
 $ tokenjuice doctor not-a-host
-throws ENOENT: no such file or directory, stat 'not-a-host'
+throws ENOENT: no such file or directory, open 'not-a-host'
 "
 `;
 
@@ -9054,7 +9080,7 @@ exports[`host CLI commands > reports hook health across hosts 1`] = `
 [stdout] hook health: disabled
 no tokenjuice hooks installed
 
-available integrations: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, plandex, qodo, qoder, qwen-code, replit, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli
+available integrations: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, opencode-v2, pi, pi-go, plandex, qodo, qoder, qoder-cli, qoderwork, qwen-code, qwenwork, replit, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, zed, zencoder, copilot-cli
 enable another integration: tokenjuice install <host>
 exit 0
 "

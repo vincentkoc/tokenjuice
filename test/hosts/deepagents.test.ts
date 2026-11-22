@@ -177,7 +177,11 @@ describe("Deep Agents Code instructions", () => {
     const doctor = await doctorDeepAgentsInstructions(instructionsPath);
 
     expect(doctor.status).toBe("broken");
-    expect(doctor.issues[0]).toContain("without an end marker");
+    expect(doctor.issues).toEqual([
+      "configured Deep Agents Code instructions have a tokenjuice start marker without an end marker",
+      "configured Deep Agents Code instructions are missing tokenjuice wrap guidance",
+      "configured Deep Agents Code instructions are missing the raw escape hatch",
+    ]);
     expect(doctor.fixCommand).toContain("remove unmatched tokenjuice markers");
   });
 

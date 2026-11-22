@@ -1,4 +1,5 @@
-import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { lstat, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export type InstructionFileSnapshot = {
@@ -6,13 +7,11 @@ export type InstructionFileSnapshot = {
   exists: boolean;
 };
 
-export type WriteInstructionFileResult = {
-  filePath: string;
+export type WriteInstructionFileResult<PathKey extends string = "filePath"> = Record<PathKey, string> & {
   backupPath?: string;
 };
 
-export type RemoveInstructionFileResult = {
-  filePath: string;
+export type RemoveInstructionFileResult<PathKey extends string = "filePath"> = Record<PathKey, string> & {
   removed: boolean;
 };
 
@@ -53,14 +52,18 @@ async function writeInstructionFileAtomically(filePath: string, text: string): P
   }
 }
 
-async function resolveBackupPath(filePath: string): Promise<string> {
+export async function findSafeInstructionBackupPath(
+  filePath: string,
+  symlinkError: (backupPath: string) => string = (candidate) =>
+    `cannot write instruction backup ${candidate}; tokenjuice will not write through instruction symlinks`,
+): Promise<string> {
   let suffix = 0;
   while (true) {
     const candidate = suffix === 0 ? `${filePath}.bak` : `${filePath}.bak.${suffix}`;
     try {
       const stats = await lstat(candidate);
       if (stats.isSymbolicLink()) {
-        throw new Error(`cannot write instruction backup ${candidate}; tokenjuice will not write through instruction symlinks`);
+        throw new Error(symlinkError(candidate));
       }
       suffix += 1;
     } catch (error) {
@@ -81,12 +84,12 @@ export async function assertSafeInstructionBackupPath(filePath: string): Promise
     }
     throw error;
   }
-  await resolveBackupPath(filePath);
+  await findSafeInstructionBackupPath(filePath);
 }
 
 async function writeInstructionBackup(filePath: string, text: string): Promise<string> {
   while (true) {
-    const backupPath = await resolveBackupPath(filePath);
+    const backupPath = await findSafeInstructionBackupPath(filePath);
     try {
       await writeFile(backupPath, text, { encoding: "utf8", flag: "wx" });
       return backupPath;
@@ -112,6 +115,85 @@ export async function writeInstructionFile(filePath: string, text: string): Prom
     filePath,
     ...(backupPath ? { backupPath } : {}),
   };
+}
+
+export function createRestorableInstructionCommands(config: {
+  buildText: (options?: { restoreBackupSuffix?: string | undefined }) => string;
+  isManagedText: (text: string) => boolean;
+  readRestoreBackupSuffix: (text: string) => string | undefined;
+  writeWithoutBackup: (filePath: string, text: string) => Promise<void>;
+}) {
+  return {
+    async install(filePath: string): Promise<WriteInstructionFileResult> {
+      const existing = await readInstructionFile(filePath);
+      if (existing.exists && config.isManagedText(existing.text)) {
+        const restoreBackupSuffix = config.readRestoreBackupSuffix(existing.text);
+        if (existing.text === config.buildText({ restoreBackupSuffix })) {
+          return { filePath };
+        }
+
+        return writeInstructionFile(filePath, config.buildText({ restoreBackupSuffix }));
+      }
+
+      if (existing.exists) {
+        const backupPath = await findAvailableBackupPath(filePath);
+        await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
+        await config.writeWithoutBackup(
+          filePath,
+          config.buildText({ restoreBackupSuffix: backupPath.slice(filePath.length) }),
+        );
+        return { filePath, backupPath };
+      }
+
+      return writeInstructionFile(filePath, config.buildText());
+    },
+    async uninstall(filePath: string): Promise<RemoveInstructionFileResult> {
+      const existing = await readInstructionFile(filePath);
+      if (!existing.exists || !config.isManagedText(existing.text)) {
+        return { filePath, removed: false };
+      }
+
+      const restoreBackupSuffix = config.readRestoreBackupSuffix(existing.text);
+      if (restoreBackupSuffix) {
+        const backupPath = `${filePath}${restoreBackupSuffix}`;
+        const backup = await readInstructionFile(backupPath);
+        if (backup.exists && !config.isManagedText(backup.text)) {
+          await rm(filePath, { force: true });
+          await rename(backupPath, filePath);
+          return { filePath, removed: true };
+        }
+      }
+
+      return removeInstructionFile(filePath);
+    },
+  };
+}
+
+export async function installManagedInstructionFile(
+  filePath: string,
+  text: string,
+  isManagedText: (text: string) => boolean,
+): Promise<WriteInstructionFileResult> {
+  const existing = await readInstructionFile(filePath);
+  if (existing.exists && isManagedText(existing.text)) {
+    if (existing.text === text) {
+      return { filePath };
+    }
+
+    const primaryBackupPath = `${filePath}.bak`;
+    const primaryBackup = await readInstructionFile(primaryBackupPath);
+    const backupPath = primaryBackup.exists && !isManagedText(primaryBackup.text)
+      ? `${filePath}.tokenjuice.bak`
+      : primaryBackupPath;
+    await writeFile(backupPath, existing.text, "utf8");
+    await mkdir(dirname(filePath), { recursive: true });
+    const tempPath = `${filePath}.tmp`;
+    await writeFile(tempPath, text, "utf8");
+    await rename(tempPath, filePath);
+    return { filePath, backupPath };
+  }
+
+  return writeInstructionFile(filePath, text);
 }
 
 export async function removeInstructionFile(filePath: string): Promise<RemoveInstructionFileResult> {
@@ -156,4 +238,73 @@ export function collectGuidanceIssues(text: string, options: GuidanceIssueOption
     }
   }
   return issues;
+}
+
+/** Counts symlinks, including dangling ones, as existing entries. */
+export async function pathEntryExists(filePath: string): Promise<boolean> {
+  try {
+    await lstat(filePath);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/** Follows symlinks and propagates errors other than ENOENT. */
+export async function pathTargetExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/** Finds a name without reserving it; callers must use an exclusive write. */
+export async function findAvailableBackupPath(filePath: string): Promise<string> {
+  for (let index = 0; ; index += 1) {
+    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
+    if (!(await pathEntryExists(candidate))) {
+      return candidate;
+    }
+  }
+}
+
+export async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
+  try {
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true });
+    throw error;
+  }
+}
+
+export async function uninstallManagedInstructionFile(
+  filePath: string,
+  isManagedText: (text: string) => boolean,
+  refusalMessage: string,
+): Promise<RemoveInstructionFileResult> {
+  const existing = await readInstructionFile(filePath);
+  if (existing.exists && !isManagedText(existing.text)) {
+    throw new Error(refusalMessage);
+  }
+
+  const backupPath = `${filePath}.bak`;
+  const backup = await readInstructionFile(backupPath);
+  if (existing.exists && backup.exists && !isManagedText(backup.text)) {
+    await rm(filePath, { force: true });
+    await rename(backupPath, filePath);
+    return { filePath, removed: true };
+  }
+
+  return removeInstructionFile(filePath);
 }

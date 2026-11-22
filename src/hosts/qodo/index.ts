@@ -1,17 +1,21 @@
-import { chmod, lstat, mkdir, mkdtemp, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath, rm } from "node:fs/promises";
+import { join } from "node:path";
 
+import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
+import { writePrivateConfigFile } from "../shared/private-config-file.js";
+import { findSafeInstructionBackupPath } from "../shared/instruction-file.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
+import { getTomlStructureLines, isTomlTableHeader } from "../../core/toml-structure.js";
 
 type QodoConfigSnapshot = Awaited<ReturnType<typeof readInstructionFile>>;
 
@@ -29,15 +33,8 @@ export type UninstallQodoReviewConfigResult = {
   removed: boolean;
 };
 
-export type QodoDoctorReport = {
-  configPath: string;
+export type QodoDoctorReport = PathDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_QODO_FIX_COMMAND = "tokenjuice install qodo";
@@ -60,123 +57,28 @@ const INLINE_REVIEW_AGENT_TABLE_PATTERN = new RegExp(String.raw`^\s*${TOML_REVIE
 const ISSUES_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_ISSUES_GUIDELINES_KEY}\s*=`, "u");
 const COMPLIANCE_GUIDELINES_KEY_PATTERN = new RegExp(String.raw`^\s*${TOML_COMPLIANCE_GUIDELINES_KEY}\s*=`, "u");
 
-function getExplicitProjectDir(options: QodoReviewConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.QODO_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: QodoReviewConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("QODO_PROJECT_DIR");
 
 function getExpectedConfigPath(projectDir: string): string {
   return join(projectDir, ".pr_agent.toml");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectConfigSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectConfigSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectConfigSymlink(`${filePath}.bak`);
   await rejectConfigSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const resolveProjectConfigPath = createProjectInstructionPathResolver(
+  "Qodo config",
+  rejectConfigSymlink,
+);
 
 async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use Qodo config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use Qodo config ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectConfigSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectConfigSymlink(resolvedPath);
+  const resolvedPath = await resolveProjectConfigPath(filePath, projectDir, realProjectDir);
   const expectedConfigPath = getExpectedConfigPath(projectDir);
   if (resolvedPath !== expectedConfigPath) {
     throw new Error(`cannot use Qodo config ${resolvedPath}; tokenjuice only installs the project-local .pr_agent.toml config`);
@@ -203,42 +105,8 @@ async function resolveConfigPath(configPath?: string, options: QodoReviewConfigO
   return getDefaultConfigPath(options);
 }
 
-async function getExistingFileMode(filePath: string, existing: QodoConfigSnapshot): Promise<number | undefined> {
-  if (!existing.exists) {
-    return undefined;
-  }
-  return (await lstat(filePath)).mode & 0o777;
-}
-
-async function writeQodoConfigAtomically(filePath: string, text: string, mode?: number): Promise<void> {
-  const fileMode = mode ?? 0o600;
-  await mkdir(dirname(filePath), { recursive: true, mode: 0o700 });
-  const tempDir = await mkdtemp(join(dirname(filePath), ".tokenjuice-"));
-  const tempPath = join(tempDir, "write");
-  try {
-    await writeFile(tempPath, text, { encoding: "utf8", flag: "wx", mode: fileMode });
-    await chmod(tempPath, fileMode);
-    await rename(tempPath, filePath);
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
-}
-
 async function chooseQodoBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    try {
-      const stats = await lstat(candidate);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return candidate;
-      }
-      throw error;
-    }
-  }
+  return findSafeInstructionBackupPath(filePath, () => `cannot use Qodo config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
 }
 
 async function writeQodoConfigFile(
@@ -246,65 +114,16 @@ async function writeQodoConfigFile(
   text: string,
   existing: QodoConfigSnapshot,
 ): Promise<InstallQodoReviewConfigResult> {
-  const mode = await getExistingFileMode(filePath, existing);
-  let backupPath: string | undefined;
-  if (existing.exists) {
-    backupPath = await chooseQodoBackupPath(filePath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx", mode: mode ?? 0o600 });
-    await chmod(backupPath, mode ?? 0o600);
-  }
-  await writeQodoConfigAtomically(filePath, text, mode);
-  return {
-    configPath: filePath,
-    ...(backupPath ? { backupPath } : {}),
-  };
+  return writePrivateConfigFile(filePath, text, existing, chooseQodoBackupPath);
 }
 
-function getStructuralMarkerLines(text: string, marker: string): { lines: string[]; markerLines: number[] } {
-  const lines = text.split("\n");
-  const structureLines = getTomlStructureLines(lines);
-  return {
-    lines,
-    markerLines: structureLines.flatMap((line, index) => (line.trim() === marker ? [index] : [])),
-  };
-}
-
-function findTokenjuiceBlockLineRange(text: string): { lines: string[]; start: number; end: number } | undefined {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_QODO_END);
-  if (begin.markerLines.length !== 1 || end.markerLines.length !== 1 || end.markerLines[0]! < begin.markerLines[0]!) {
-    return undefined;
-  }
-  return {
-    lines: begin.lines,
-    start: begin.markerLines[0]!,
-    end: end.markerLines[0]! + 1,
-  };
-}
-
-function hasMalformedMarkerStructure(text: string): boolean {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_QODO_END);
-  const beginCount = begin.markerLines.length;
-  const endCount = end.markerLines.length;
-  return beginCount !== endCount || beginCount > 1 || endCount > 1 || (beginCount === 1 && end.markerLines[0]! < begin.markerLines[0]!);
-}
-
-function hasStructuralTokenjuiceMarker(text: string): boolean {
-  return getStructuralMarkerLines(text, TOKENJUICE_QODO_BEGIN).markerLines.length > 0 || getStructuralMarkerLines(text, TOKENJUICE_QODO_END).markerLines.length > 0;
-}
-
-function hasTokenjuiceBlock(text: string): boolean {
-  return Boolean(findTokenjuiceBlockLineRange(text));
-}
-
-function getTokenjuiceBlockText(text: string): string {
-  const range = findTokenjuiceBlockLineRange(text);
-  if (!range) {
-    return "";
-  }
-  return range.lines.slice(range.start, range.end).join("\n");
-}
+const {
+  findTokenjuiceBlockLineRange,
+  hasMalformedMarkerStructure,
+  hasStructuralTokenjuiceMarker,
+  hasTokenjuiceBlock,
+  getTokenjuiceBlockText,
+} = createStructuredMarkerInspector(TOKENJUICE_QODO_BEGIN, TOKENJUICE_QODO_END, getTomlStructureLines);
 
 function isTokenjuiceBlockInsideReviewAgentTable(text: string): boolean {
   const blockRange = findTokenjuiceBlockLineRange(text);
@@ -352,99 +171,6 @@ function readTableName(line: string): string | undefined {
     return "review_agent";
   }
   return name;
-}
-
-type TomlMultilineState = {
-  delimiter: "\"\"\"" | "'''" | undefined;
-};
-
-function isEscaped(text: string, index: number): boolean {
-  let slashCount = 0;
-  for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor -= 1) {
-    slashCount += 1;
-  }
-  return slashCount % 2 === 1;
-}
-
-function findTomlMultilineClose(line: string, delimiter: "\"\"\"" | "'''", fromIndex: number): number {
-  let searchIndex = fromIndex;
-  while (searchIndex < line.length) {
-    const closeIndex = line.indexOf(delimiter, searchIndex);
-    if (closeIndex === -1) {
-      return -1;
-    }
-    if (delimiter === "'''" || !isEscaped(line, closeIndex)) {
-      return closeIndex;
-    }
-    searchIndex = closeIndex + 1;
-  }
-  return -1;
-}
-
-function updateTomlMultilineState(line: string, state: TomlMultilineState): void {
-  let index = 0;
-  let inBasicString = false;
-  let inLiteralString = false;
-  while (index < line.length) {
-    if (state.delimiter) {
-      const closeIndex = findTomlMultilineClose(line, state.delimiter, index);
-      if (closeIndex === -1) {
-        return;
-      }
-      index = closeIndex + state.delimiter.length;
-      state.delimiter = undefined;
-      continue;
-    }
-
-    const next = line.slice(index, index + 3);
-    const char = line[index];
-    if (inBasicString) {
-      if (char === "\"" && !isEscaped(line, index)) {
-        inBasicString = false;
-      }
-      index += 1;
-      continue;
-    }
-    if (inLiteralString) {
-      if (char === "'") {
-        inLiteralString = false;
-      }
-      index += 1;
-      continue;
-    }
-
-    if (char === "#") {
-      return;
-    }
-    if (next === "\"\"\"" || next === "'''") {
-      const closeIndex = findTomlMultilineClose(line, next, index + next.length);
-      if (closeIndex === -1) {
-        state.delimiter = next;
-        return;
-      }
-      index = closeIndex + next.length;
-      continue;
-    }
-    if (char === "\"") {
-      inBasicString = true;
-    } else if (char === "'") {
-      inLiteralString = true;
-    }
-    index += 1;
-  }
-}
-
-function getTomlStructureLines(lines: readonly string[]): string[] {
-  const state: TomlMultilineState = { delimiter: undefined };
-  return lines.map((line) => {
-    const structuralLine = state.delimiter ? "" : line;
-    updateTomlMultilineState(line, state);
-    return structuralLine;
-  });
-}
-
-function isTomlTableHeader(line: string): boolean {
-  return /^\s*(?:\[[^\]\n]+\]|\[\[[^\]\n]+\]\])\s*(?:#.*)?$/u.test(line);
 }
 
 function findReviewAgentTableRange(lines: readonly string[]): { start: number; end: number } | undefined {
@@ -667,23 +393,9 @@ export async function doctorQodoReviewConfig(
   const issues = [
     ...placementIssues,
     ...collisionIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Qodo review guidance is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Qodo review guidance is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Qodo review guidance still suggests the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+      configuredLabel: "Qodo review guidance",
+      singular: true,
     }),
   ];
 

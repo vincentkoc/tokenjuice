@@ -1,23 +1,23 @@
-import { readdir, realpath, stat } from "node:fs/promises";
+import { readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { hasGitMetadata, createProjectDirResolver } from "../shared/project-root.js";
+
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
-import { buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
-import {
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type GooseHintsOptions = {
   projectDir?: string;
@@ -36,15 +36,7 @@ export type UninstallGooseHintsResult = {
   removed: boolean;
 };
 
-export type GooseDoctorReport = {
-  hintsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type GooseDoctorReport = PathDoctorReport<"hintsPath">;
 
 const TOKENJUICE_GOOSE_FIX_COMMAND = "tokenjuice install goose";
 const TOKENJUICE_GOOSE_BEGIN = "<!-- tokenjuice:begin -->";
@@ -53,41 +45,7 @@ const TOKENJUICE_GOOSE_ADVISORY = "Goose support is beta and hints-based; it gui
 const GOOSE_HINTS_FILENAME = ".goosehints";
 const GOOSE_HINTS_SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
 
-function getExplicitProjectDir(options: GooseHintsOptions = {}): string | undefined {
-  return options.projectDir || process.env.GOOSE_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: GooseHintsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("GOOSE_PROJECT_DIR");
 
 async function canonicalPath(path: string): Promise<string> {
   try {
@@ -209,28 +167,6 @@ async function getDefaultHintsPaths(
   return [rootHintsPath];
 }
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_GOOSE_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_GOOSE_END, beginIndex + TOKENJUICE_GOOSE_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_GOOSE_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_GOOSE_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_GOOSE_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 const TOKENJUICE_GOOSE_BLOCK = [
   TOKENJUICE_GOOSE_BEGIN,
   "## tokenjuice terminal output compaction",
@@ -254,7 +190,7 @@ export async function installGooseHints(
   for (const resolvedHintsPath of resolvedHintsPaths) {
     const existing = await readInstructionFile(resolvedHintsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely repair malformed tokenjuice markers in ${resolvedHintsPath}; remove the dangling marker manually, then rerun tokenjuice install goose`,
       );
@@ -282,7 +218,7 @@ export async function uninstallGooseHints(
   for (const resolvedHintsPath of resolvedHintsPaths) {
     const existing = await readInstructionFile(resolvedHintsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely uninstall malformed tokenjuice markers in ${resolvedHintsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall goose`,
       );
@@ -317,7 +253,7 @@ async function inspectGooseHintsPath(resolvedHintsPath: string): Promise<GooseDo
     };
   }
 
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_GOOSE_BLOCK_CONFIG);
   const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
     configuredLabel: "Goose hints",
     repairCommand: TOKENJUICE_GOOSE_FIX_COMMAND,
@@ -325,23 +261,8 @@ async function inspectGooseHintsPath(resolvedHintsPath: string): Promise<GooseDo
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Goose hints have unmatched tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Goose hints are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Goose hints are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Goose hints still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_GOOSE_BLOCK_CONFIG), {
+      configuredLabel: "Goose hints",
     }),
   ];
 
@@ -368,8 +289,28 @@ export async function doctorGooseHints(
     reports.push(await inspectGooseHintsPath(resolvedHintsPath));
   }
 
-  return reports.find((report) => report.status === "broken")
+  const report = reports.find((report) => report.status === "broken")
     ?? reports.find((report) => report.status === "warn")
     ?? reports.find((report) => report.status === "ok")
     ?? reports[0]!;
+  const configuredNames = process.env.CONTEXT_FILE_NAMES;
+  if (configuredNames === undefined || report.status === "disabled") return report;
+
+  let contextIssue: string | undefined;
+  try {
+    const names: unknown = JSON.parse(configuredNames);
+    if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
+      contextIssue = "CONTEXT_FILE_NAMES must be a JSON array of filenames; Goose hint loading is unverified";
+    } else if (!names.includes(GOOSE_HINTS_FILENAME)) {
+      contextIssue = "CONTEXT_FILE_NAMES excludes .goosehints; Goose will not discover the installed tokenjuice hints through this filename list";
+    }
+  } catch {
+    contextIssue = "CONTEXT_FILE_NAMES must be a JSON array of filenames; Goose hint loading is unverified";
+  }
+  return contextIssue ? {
+    ...report,
+    status: report.status === "broken" ? "broken" : "warn",
+    issues: [...report.issues, contextIssue],
+    advisories: [...report.advisories, "Include .goosehints in the Goose process's CONTEXT_FILE_NAMES array and restart the session; tokenjuice does not change this setting."],
+  } : report;
 }

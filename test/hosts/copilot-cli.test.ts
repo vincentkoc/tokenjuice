@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   doctorCopilotCliHook,
@@ -20,6 +20,8 @@ const originalCopilotHome = process.env.COPILOT_HOME;
 const originalPlatform = process.platform;
 const originalMaxInline = process.env.TOKENJUICE_COPILOT_CLI_MAX_INLINE_CHARS;
 const originalStore = process.env.TOKENJUICE_COPILOT_CLI_STORE;
+const originalStats = process.env.TOKENJUICE_STATS;
+beforeEach(() => { process.env.TOKENJUICE_STATS = "off"; });
 
 afterEach(async () => {
   process.env.PATH = originalPath;
@@ -48,6 +50,8 @@ afterEach(async () => {
   } else {
     process.env.TOKENJUICE_COPILOT_CLI_STORE = originalStore;
   }
+  if (originalStats === undefined) delete process.env.TOKENJUICE_STATS;
+  else process.env.TOKENJUICE_STATS = originalStats;
   Object.defineProperty(process, "platform", { value: originalPlatform });
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -74,7 +78,7 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("installCopilotCliHook", () => {
-  it("writes a postToolUse shell entry at the given path", async () => {
+  it("writes a postToolUse bash entry at the given path", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, ".copilot", "hooks", "tokenjuice-cli.json");
     process.env.PATH = "";
@@ -88,7 +92,7 @@ describe("installCopilotCliHook", () => {
     expect(result.hooksPath).toBe(hooksPath);
     expect(parsed.version).toBe(1);
     expect(parsed.hooks.postToolUse).toHaveLength(1);
-    expect(parsed.hooks.postToolUse[0]?.matcher).toBe("shell");
+    expect(parsed.hooks.postToolUse[0]?.matcher).toBe("bash");
     expect(parsed.hooks.postToolUse[0]?.type).toBe("command");
     expect(parsed.hooks.postToolUse[0]?.command).toContain("copilot-cli-post-tool-use");
     expect(parsed.hooks.postToolUse[0]?.timeoutSec).toBe(10);
@@ -313,6 +317,27 @@ describe("doctorCopilotCliHook", () => {
     expect(report.issues).toEqual([]);
   });
 
+  it("warns about the inactive shell matcher and migrates it on reinstall", async () => {
+    const home = await createTempDir();
+    const hooksPath = join(home, "hooks", "tokenjuice-cli.json");
+    const launcher = join(home, "tokenjuice");
+    process.env.PATH = "";
+    await writeFile(launcher, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const options = { local: true, binaryPath: launcher };
+    await installCopilotCliHook(hooksPath, options);
+    const config = JSON.parse(await readFile(hooksPath, "utf8"));
+    config.hooks.postToolUse[0].matcher = "shell";
+    await writeFile(hooksPath, JSON.stringify(config));
+    const report = await doctorCopilotCliHook(hooksPath, options);
+    expect(report.status).toBe("warn");
+    expect(report.issues).toEqual([
+      "configured copilot-cli tokenjuice hook matcher is stale; run tokenjuice install copilot-cli --local to match the bash tool",
+    ]);
+    await installCopilotCliHook(hooksPath, options);
+    expect((await doctorCopilotCliHook(hooksPath, options)).status).toBe("ok");
+    expect(JSON.parse(await readFile(hooksPath, "utf8")).hooks.postToolUse).toHaveLength(1);
+  });
+
   it("reports warn when the installed command drifts", async () => {
     const home = await createTempDir();
     const hooksPath = join(home, ".copilot", "hooks", "tokenjuice-cli.json");
@@ -467,159 +492,60 @@ describe("doctorCopilotCliHook", () => {
 });
 
 describe("runCopilotCliPostToolUseHook", () => {
-  it("rewrites compactable bash output into modifiedResult", async () => {
-    const longOutput = Array.from({ length: 120 }, (_, i) => `src/file-${i}.ts`).join("\n");
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "bash",
-      tool_input: { command: "git ls-files" },
-      tool_result: {
-        result_type: "success",
-        text_result_for_llm: longOutput,
-      },
-    });
+  const longOutput = ["On branch main", "Changes not staged for commit:",
+    ...Array.from({ length: 120 }, (_, i) => `  modified: src/file-${i}.ts`)].join("\n");
+  const payload = (footer = "\n<shellId: 0 completed with exit code 0>") => ({
+    toolName: "bash", toolArgs: { command: "git status" },
+    toolResult: { resultType: "success", textResultForLlm: longOutput + footer, metadata: { retained: true } },
+  });
 
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    const response = JSON.parse(output) as {
-      modifiedResult?: { text_result_for_llm?: string; textResultForLlm?: string };
+  it.each(["camelCase", "snake_case"])("rewrites documented %s input with canonical output and an unchanged status footer", async (format) => {
+    const input = payload();
+    const wire = format === "camelCase" ? input : {
+      hook_event_name: "PostToolUse", tool_name: input.toolName, tool_input: input.toolArgs,
+      tool_result: { result_type: "success", text_result_for_llm: input.toolResult.textResultForLlm, metadata: input.toolResult.metadata },
     };
-    expect(response.modifiedResult).toBeDefined();
-    const compacted = response.modifiedResult?.text_result_for_llm ?? "";
-    expect(compacted.length).toBeGreaterThan(0);
-    expect(compacted.length).toBeLessThan(longOutput.length);
-    // Both snake_case and camelCase keys are present for wire-format
-    // compatibility until the Copilot CLI stdout shape is pinned empirically.
-    expect(response.modifiedResult?.textResultForLlm).toBe(compacted);
+    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(JSON.stringify(wire)));
+    expect(code).toBe(0);
+    const { modifiedResult } = JSON.parse(output);
+    expect(modifiedResult.resultType).toBe("success");
+    expect(modifiedResult.textResultForLlm.length).toBeLessThan(input.toolResult.textResultForLlm.length);
+    expect(modifiedResult.textResultForLlm).toContain("lines omitted");
+    expect(modifiedResult.textResultForLlm).toMatch(/\n<shellId: 0 completed with exit code 0>$/u);
+    expect(modifiedResult.metadata).toEqual({ retained: true });
   });
 
-  it("rewrites camelCase live-wire payloads (Copilot CLI 1.0.35)", async () => {
-    // Live Copilot CLI PostToolUse payloads are camelCase on the wire,
-    // even though the design brief and captured fixture used snake_case.
-    const longOutput = Array.from({ length: 120 }, (_, i) => `src/file-${i}.ts`).join("\n");
-    const payload = JSON.stringify({
-      sessionId: "abc",
-      timestamp: 1700000000000,
-      cwd: "/tmp",
-      toolName: "bash",
-      toolArgs: { command: "git ls-files" },
-      toolResult: "raw tool result",
-      resultType: "success",
-      textResultForLlm: longOutput,
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    const response = JSON.parse(output) as {
-      modifiedResult?: { textResultForLlm?: string; text_result_for_llm?: string };
-    };
-    expect(response.modifiedResult).toBeDefined();
-    const compacted = response.modifiedResult?.textResultForLlm ?? "";
-    expect(compacted.length).toBeGreaterThan(0);
-    expect(compacted.length).toBeLessThan(longOutput.length);
-    expect(response.modifiedResult?.text_result_for_llm).toBe(compacted);
+  it("preserves the earlier completed-status format", async () => {
+    const { output } = await captureStdout(() => runCopilotCliPostToolUseHook(JSON.stringify(payload("\n<exited with exit code 0>"))));
+    expect(JSON.parse(output).modifiedResult.textResultForLlm).toMatch(/\n<exited with exit code 0>$/u);
   });
 
-  it("handles the captured Copilot CLI PostToolUse fixture without throwing", async () => {
-    const fixture = await readFile(resolve("test/hosts/fixtures/copilot-cli-posttool.json"), "utf8");
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(fixture));
-
-    expect(code).toBe(0);
-    // Fixture command is `echo hi` — nothing to compact, so skip.
-    expect(output.trim()).toBe("{}");
+  it.each(["\n<shellId: 0 completed with exit code 7>", "\n<exited with exit code 1>",
+    "\n<shellId: 0 running>", "", "\n<shellId: 0 completed with exit code 0>\nunknown",
+  ])("keeps nonzero or unproven shell completion: %j", async (footer) => {
+    const { output } = await captureStdout(() => runCopilotCliPostToolUseHook(JSON.stringify(payload(footer))));
+    expect(output).toBe("{}\n");
   });
 
-  it("handles the captured live camelCase PostToolUse fixture without throwing", async () => {
-    const fixture = await readFile(
-      resolve("test/hosts/fixtures/copilot-cli-posttool-live.json"),
-      "utf8",
-    );
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(fixture));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
+  it.each(["tokenjuice wrap --raw -- git status", "cd /repo && tokenjuice wrap --raw -- git status",
+    "node /opt/tokenjuice/dist/cli/main.js wrap --full -- git status", "cat exact.txt",
+  ])("preserves raw wrappers and exact reads: %s", async (command) => {
+    const input = payload();
+    input.toolArgs.command = command;
+    const { output } = await captureStdout(() => runCopilotCliPostToolUseHook(JSON.stringify(input)));
+    expect(output).toBe("{}\n");
   });
 
-  it("emits {} for non-bash tools", async () => {
-    const payload = JSON.stringify({
-      tool_name: "str_replace_editor",
-      tool_input: { command: "echo hi" },
-      tool_result: { result_type: "success", text_result_for_llm: "hi\n" },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("emits {} on malformed input", async () => {
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook("not-json"));
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("passes through failure result_type untouched", async () => {
-    const payload = JSON.stringify({
-      tool_name: "bash",
-      tool_input: { command: "exit 1" },
-      tool_result: {
-        result_type: "failure",
-        text_result_for_llm: "some error output\n<exited with exit code 1>",
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("honors explicit raw bypass in the command", async () => {
-    const payload = JSON.stringify({
-      tool_name: "bash",
-      tool_input: { command: "tokenjuice wrap --raw -- cat large.log" },
-      tool_result: {
-        result_type: "success",
-        text_result_for_llm: Array.from({ length: 200 }, (_, i) => `line ${i}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("honors explicit raw bypass after a leading cd prefix", async () => {
-    const payload = JSON.stringify({
-      tool_name: "bash",
-      tool_input: { command: "cd /repo && tokenjuice wrap --raw -- cat large.log" },
-      tool_result: {
-        result_type: "success",
-        text_result_for_llm: Array.from({ length: 200 }, (_, i) => `line ${i}`).join("\n"),
-      },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("emits {} when tool_result is absent", async () => {
-    const payload = JSON.stringify({
-      tool_name: "bash",
-      tool_input: { command: "echo hi" },
-    });
-
-    const { code, output } = await captureStdout(() => runCopilotCliPostToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
+  it("keeps malformed records, unrelated events/tools, missing status and unsuccessful result types", async () => {
+    const input = payload();
+    const values = [null, [], "text", 42, { ...input, toolName: "view" },
+      { ...input, hook_event_name: "PreToolUse" }, { ...input, toolArgs: {} }, { ...input, toolResult: undefined },
+      ...[undefined, "failure", "rejected", "denied"].map(resultType => ({ ...input, toolResult: { ...input.toolResult, resultType } }))];
+    for (const value of values) {
+      const { output } = await captureStdout(() => runCopilotCliPostToolUseHook(JSON.stringify(value)));
+      expect(output).toBe("{}\n");
+    }
+    expect((await captureStdout(() => runCopilotCliPostToolUseHook("not-json"))).output).toBe("{}\n");
   });
 });
 

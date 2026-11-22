@@ -1,15 +1,25 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
 import {
+  findAvailableBackupPath,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+
+import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import {
+  collectTokenjuiceGuidanceIssues,
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -28,15 +38,9 @@ export type UninstallMcpAgentDefinitionResult = {
   removed: boolean;
 };
 
-export type McpAgentDoctorReport = {
+export type McpAgentDoctorReport = InstructionDoctorReportFields & {
   agentPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_MCP_AGENT_FIX_COMMAND = "tokenjuice install mcp-agent";
@@ -62,27 +66,6 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return match?.[1];
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseMcpAgentBackupPath(agentPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${agentPath}.bak` : `${agentPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
 async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: string): Promise<void> {
   await mkdir(dirname(agentPath), { recursive: true });
   const tempPath = `${agentPath}.${process.pid}.${randomUUID()}.tmp`;
@@ -95,78 +78,11 @@ async function writeMcpAgentDefinitionWithoutBackup(agentPath: string, text: str
   }
 }
 
-function getExplicitProjectDir(options: McpAgentDefinitionOptions = {}): string | undefined {
-  return options.projectDir || process.env.MCP_AGENT_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("MCP_AGENT_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: McpAgentDefinitionOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectDefinitionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use mcp-agent definition ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectDefinitionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use mcp-agent definition ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectDefinitionSymlink(`${filePath}.bak`);
@@ -264,7 +180,7 @@ export async function installMcpAgentDefinition(
   }
 
   if (existing.exists) {
-    const backupPath = await chooseMcpAgentBackupPath(resolvedAgentPath);
+    const backupPath = await findAvailableBackupPath(resolvedAgentPath);
     await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
     await writeMcpAgentDefinitionWithoutBackup(
       resolvedAgentPath,
@@ -342,8 +258,10 @@ export async function doctorMcpAgentDefinition(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "mcp-agent definition",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_MCP_AGENT_MARKER,
         missingIssue: "configured mcp-agent definition does not look like the tokenjuice definition",
@@ -352,14 +270,8 @@ export async function doctorMcpAgentDefinition(
         requiredText: "name: tokenjuice",
         missingIssue: "configured mcp-agent definition is missing tokenjuice agent frontmatter",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured mcp-agent definition is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured mcp-agent definition is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: ".mcp-agent/agents",
         missingIssue: "configured mcp-agent definition is missing search path guidance",
@@ -367,12 +279,6 @@ export async function doctorMcpAgentDefinition(
       {
         requiredText: "agents.search_paths",
         missingIssue: "configured mcp-agent definition is missing load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured mcp-agent definition still suggests the full escape hatch",
       },
     ],
   });

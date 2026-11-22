@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,6 +50,20 @@ describe("isRecord", () => {
 });
 
 describe("isExecutableFile / pathExists", () => {
+  it("rejects directories and links to directories while accepting links to executable files", async () => {
+    const dir = await createTempDir();
+    const executable = join(dir, "runme");
+    const fileLink = join(dir, "file-link");
+    const directoryLink = join(dir, "directory-link");
+    await writeExecutable(executable);
+    await symlink(executable, fileLink);
+    await symlink(dir, directoryLink, "dir");
+
+    expect(await isExecutableFile(dir)).toBe(false);
+    expect(await isExecutableFile(directoryLink)).toBe(false);
+    expect(await isExecutableFile(fileLink)).toBe(true);
+  });
+
   it("isExecutableFile returns true for an executable file", async () => {
     const dir = await createTempDir();
     const exec = join(dir, "runme");
@@ -144,6 +158,14 @@ describe("resolveShellPath", () => {
 });
 
 describe("resolveHostShell", () => {
+  it("falls back past a shell directory to the next usable shell", async () => {
+    const dir = await createTempDir();
+    const shell = join(dir, "shell");
+    await writeExecutable(shell);
+    process.env.PATH = "";
+    expect(await resolveHostShell([dir, shell])).toBe(shell);
+  });
+
   it("tries candidates in order and returns the first resolvable one", async () => {
     const home = await createTempDir();
     const bin = join(home, "bin");
@@ -222,13 +244,13 @@ describe("buildWrapLauncherHookCommand", () => {
 });
 
 describe("buildWrappedCommand", () => {
-  it("emits `<launcher> wrap -- <shell> -lc '<command>'` for a bare launcher", () => {
+  it("emits `<launcher> wrap --keep-failures -- <shell> -lc '<command>'` for a bare launcher", () => {
     const wrapped = buildWrappedCommand({
       wrapLauncher: "/usr/local/bin/tokenjuice",
       shellPath: "/bin/bash",
       command: "git status --short",
     });
-    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap -- /bin/bash -lc 'git status --short'");
+    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --keep-failures -- /bin/bash -lc 'git status --short'");
   });
 
   it("dispatches a .js launcher through node", () => {
@@ -238,7 +260,7 @@ describe("buildWrappedCommand", () => {
       command: "echo hi",
       nodePath: "/usr/bin/node",
     });
-    expect(wrapped).toBe("/usr/bin/node /repo/dist/cli/main.js wrap -- /bin/bash -lc 'echo hi'");
+    expect(wrapped).toBe("/usr/bin/node /repo/dist/cli/main.js wrap --keep-failures -- /bin/bash -lc 'echo hi'");
   });
 
   it("adds a source tag before the wrapped shell command", () => {
@@ -248,7 +270,7 @@ describe("buildWrappedCommand", () => {
       command: "git status --short",
       source: "cursor",
     });
-    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --source cursor -- /bin/bash -lc 'git status --short'");
+    expect(wrapped).toBe("/usr/local/bin/tokenjuice wrap --keep-failures --source cursor -- /bin/bash -lc 'git status --short'");
   });
 
   // Regression: buildWrappedCommand used to quote the `-lc` payload with
@@ -337,7 +359,7 @@ describe("buildWrappedCommand", () => {
     // original command's argv. (Semantic check done in tests that exercise
     // the full wrap hooks; here we just pin the currently-emitted shape so a
     // change triggers deliberate review.)
-    expect(wrapped).toBe(`/usr/local/bin/tokenjuice wrap -- /bin/bash -lc 'echo it'\\''s raining'`);
+    expect(wrapped).toBe(`/usr/local/bin/tokenjuice wrap --keep-failures -- /bin/bash -lc 'echo it'\\''s raining'`);
   });
 });
 
@@ -356,6 +378,7 @@ describe("commandAlreadyWrapped", () => {
     ["node /abs/dist/cli/main.js wrap -- git status", true, "node dispatch"],
     ["/usr/bin/node /abs/dist/cli/main.js wrap --raw -- git status", true, "absolute node dispatch"],
     ["git status", false, "plain command"],
+    ["node /repo/dist/cli/main.js inspect wrap", false, "wrap is an argument to another subcommand"],
     ["tokenjuice ls", false, "non-wrap subcommand"],
     ["token-glace doctor", false, "primary non-wrap subcommand"],
     ["env FOO=1 some-other-binary --raw -- git status", false, "env-wrapped unrecognized launcher"],

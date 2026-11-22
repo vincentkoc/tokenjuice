@@ -5,15 +5,23 @@
   "onEmpty": "npm ci: ok",
   "matchOutput": [
     {
-      "pattern": "up to date, audited \\d+ package",
+      "pattern": "^up to date, audited \\d+ packages? in [^\\r\\n]+(?:\\n+found 0 vulnerabilities)?$",
       "message": "npm ci: up to date",
       "flags": "i"
     }
   ],
   "match": {
-    "toolNames": ["exec"],
-    "argv0": ["npm"],
-    "argvIncludes": [["ci"]]
+    "toolNames": [
+      "exec"
+    ],
+    "argv0": [
+      "npm"
+    ],
+    "argvIncludes": [
+      [
+        "ci"
+      ]
+    ]
   },
   "transforms": {
     "stripAnsi": true,

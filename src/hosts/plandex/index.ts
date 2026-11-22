@@ -1,9 +1,16 @@
-import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { findGitRoot } from "../shared/project-root.js";
+
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -22,15 +29,7 @@ export type UninstallPlandexConventionResult = {
   removed: boolean;
 };
 
-export type PlandexDoctorReport = {
-  conventionPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type PlandexDoctorReport = PathDoctorReport<"conventionPath">;
 
 const TOKENJUICE_PLANDEX_FIX_COMMAND = "tokenjuice install plandex";
 const TOKENJUICE_PLANDEX_MARKER = "tokenjuice terminal output compaction";
@@ -40,29 +39,6 @@ const TOKENJUICE_PLANDEX_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 
 function getExplicitProjectDir(options: PlandexConventionOptions = {}): string | undefined {
   return options.projectDir || process.env.PLANDEX_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: PlandexConventionOptions = {}): Promise<string> {
@@ -182,29 +158,19 @@ export async function doctorPlandexConvention(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Plandex convention file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_PLANDEX_MARKER,
         missingIssue: "configured Plandex convention file does not look like the tokenjuice convention",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Plandex convention file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Plandex convention file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: TOKENJUICE_PLANDEX_LOAD_COMMAND,
         missingIssue: "configured Plandex convention file is missing Plandex load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Plandex convention file still suggests the full escape hatch",
       },
     ],
   });

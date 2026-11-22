@@ -1,8 +1,9 @@
 import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
 import packageJson from "../../../package.json" with { type: "json" };
+
+import { loadExtensionRuntimeSource } from "../shared/bundle-runtime.js";
 
 export type PiExtensionCommandOptions = {
   local?: boolean;
@@ -63,66 +64,8 @@ export default createTokenjuicePiExtension(config);
 `;
 }
 
-async function resolvePiRuntimeEntryPoint(): Promise<string> {
-  const candidates = [
-    fileURLToPath(new URL("./extension/runtime.ts", import.meta.url)),
-    fileURLToPath(new URL("../../../src/hosts/pi/extension/runtime.ts", import.meta.url)),
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      await access(candidate);
-      return candidate;
-    } catch {
-      continue;
-    }
-  }
-
-  throw new Error(`unable to resolve pi runtime source entrypoint from ${candidates.join(", ")}`);
-}
-
-async function bundlePiExtensionRuntimeSource(): Promise<string> {
-  let esbuild;
-  try {
-    esbuild = await import("esbuild");
-  } catch (error) {
-    throw new Error(`unable to load esbuild to bundle the pi runtime from source: ${String(error)}`);
-  }
-
-  const entryPoint = await resolvePiRuntimeEntryPoint();
-  const result = await esbuild.build({
-    entryPoints: [entryPoint],
-    bundle: true,
-    format: "esm",
-    platform: "node",
-    target: "node20",
-    write: false,
-  });
-
-  const runtimeSource = result.outputFiles[0]?.text;
-  if (!runtimeSource) {
-    throw new Error("failed to bundle the pi runtime: esbuild produced no output");
-  }
-
-  return runtimeSource;
-}
-
 async function loadPiExtensionRuntimeSource(local = false): Promise<string> {
-  if (local) {
-    return await bundlePiExtensionRuntimeSource();
-  }
-
-  const runtimeAssetUrl = new URL("./extension/runtime.js", import.meta.url);
-
-  try {
-    return await readFile(runtimeAssetUrl, "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw error;
-    }
-  }
-
-  return await bundlePiExtensionRuntimeSource();
+  return loadExtensionRuntimeSource("pi", import.meta.url, local);
 }
 
 async function writeAtomically(path: string, content: string): Promise<void> {

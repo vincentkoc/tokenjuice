@@ -1,47 +1,37 @@
-import { lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { isAbsolute, join, resolve } from "node:path";
+
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
 
 import {
+  createMarkerInstructionCommands,
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
-  installMarkerDelimitedBlock,
-  uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type AictlInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallAictlInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallAictlInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallAictlInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallAictlInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type AictlDoctorReport = {
-  instructionsPath: string;
+export type AictlDoctorReport = InstructionsDoctorReport & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AICTL_FIX_COMMAND = "tokenjuice install aictl";
@@ -86,85 +76,19 @@ async function resolveProjectDir(options: AictlInstructionsOptions = {}): Promis
   return process.cwd();
 }
 
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use aictl instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use aictl instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
   await rejectInstructionSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use aictl instructions ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
-
-async function resolveSafeProjectInstructionsPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use aictl instructions ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use aictl instructions ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectInstructionSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectInstructionSymlink(resolvedPath);
-  return resolvedPath;
-}
+const resolveSafeProjectInstructionsPath = createProjectInstructionPathResolver(
+  "aictl instructions",
+  rejectInstructionSymlink,
+);
 
 async function getDefaultInstructionsPath(options: AictlInstructionsOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);
@@ -204,27 +128,7 @@ const TOKENJUICE_AICTL_BLOCK_CONFIG = {
   preserveSurroundingText: true,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AICTL_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AICTL_END, beginIndex + TOKENJUICE_AICTL_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AICTL_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AICTL_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AICTL_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
+const markerInstructions = createMarkerInstructionCommands("aictl", TOKENJUICE_AICTL_BLOCK_CONFIG);
 
 export async function installAictlInstructions(
   instructionsPath?: string,
@@ -232,19 +136,7 @@ export async function installAictlInstructions(
 ): Promise<InstallAictlInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AICTL_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install aictl`,
-    );
-  }
-
-  const result = await installMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AICTL_BLOCK_CONFIG);
-  return {
-    instructionsPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  return markerInstructions.install(resolvedInstructionsPath);
 }
 
 export async function uninstallAictlInstructions(
@@ -252,16 +144,7 @@ export async function uninstallAictlInstructions(
   options: AictlInstructionsOptions = {},
 ): Promise<UninstallAictlInstructionsResult> {
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
-  const existing = await readInstructionFile(resolvedInstructionsPath);
-  const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AICTL_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
-    throw new Error(
-      `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall aictl`,
-    );
-  }
-
-  const result = await uninstallMarkerDelimitedBlock(resolvedInstructionsPath, TOKENJUICE_AICTL_BLOCK_CONFIG);
-  return { instructionsPath: result.filePath, removed: result.removed };
+  return markerInstructions.uninstall(resolvedInstructionsPath);
 }
 
 export async function doctorAictlInstructions(
@@ -306,32 +189,21 @@ export async function doctorAictlInstructions(
     configuredLabel: "aictl instructions",
     repairCommand: TOKENJUICE_AICTL_FIX_COMMAND,
   });
-  const structureIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+  const structureIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AICTL_BLOCK_CONFIG)
     ? [`configured aictl instructions have malformed tokenjuice marker structure; ${TOKENJUICE_AICTL_FIX_COMMAND} cannot safely repair this automatically`]
     : [];
-  const guidanceIssues = collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-    required: [
+  const guidanceIssues = collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AICTL_BLOCK_CONFIG), {
+    configuredLabel: "aictl instructions",
+    additionalRequired: [
       {
         requiredText: "tokenjuice terminal output compaction",
         missingIssue: "configured aictl instructions do not look like the tokenjuice block",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured aictl instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured aictl instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "project prompt file",
         missingIssue: "configured aictl instructions are missing project prompt guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured aictl instructions still suggest the full escape hatch",
       },
     ],
   });

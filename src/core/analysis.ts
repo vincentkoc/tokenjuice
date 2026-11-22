@@ -110,20 +110,16 @@ const WEAK_RATIO_THRESHOLD = 0.65;
 const MISSING_RAW_CHARS_THRESHOLD = 200;
 const WEAK_RAW_CHARS_THRESHOLD = 500;
 
-function clampRatio(value: number): number {
-  return Math.min(Math.max(value, 0), 1);
-}
-
 function effectiveReducedChars(metadata: StoredArtifactMetadata): number {
   const reduced = metadata.reducedChars ?? metadata.rawChars;
-  return Math.min(Math.max(reduced, 0), metadata.rawChars);
+  return Math.max(reduced, 0);
 }
 
 function effectiveRatio(metadata: StoredArtifactMetadata): number | null {
   if (metadata.rawChars === 0) {
     return 1;
   }
-  return clampRatio(effectiveReducedChars(metadata) / metadata.rawChars);
+  return effectiveReducedChars(metadata) / metadata.rawChars;
 }
 
 export function buildAnalysisEntry(input: ToolExecutionInput, result: CompactResult): AnalysisEntry {
@@ -360,10 +356,10 @@ function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, sourc
     daily.set(day, addToStatsGroup(daily.get(day), entry.metadata.rawChars, reduced, ratio));
   }
 
-  const totalSavedChars = Math.max(rawChars - reducedChars, 0);
+  const totalSavedChars = rawChars - reducedChars;
   const avgRatio = ratioCount > 0 ? ratioSum / ratioCount : null;
   const savingsPercent = rawChars > 0 ? totalSavedChars / rawChars : null;
-  const observedSavedChars = Math.max(observedRawChars - observedReducedChars, 0);
+  const observedSavedChars = observedRawChars - observedReducedChars;
   const observedAvgRatio = observedRatioCount > 0 ? observedRatioSum / observedRatioCount : null;
   const observedSavingsPercent = observedRawChars > 0 ? observedSavedChars / observedRawChars : null;
 
@@ -390,7 +386,7 @@ function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, sourc
         count: group.count,
         rawChars: group.rawChars,
         reducedChars: group.reducedChars,
-        savedChars: Math.max(group.rawChars - group.reducedChars, 0),
+        savedChars: group.rawChars - group.reducedChars,
         avgRatio: avgRatioFromGroup(group),
       }))
       .sort((left, right) => right.savedChars - left.savedChars || right.count - left.count)
@@ -401,7 +397,7 @@ function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, sourc
         count: group.count,
         rawChars: group.rawChars,
         reducedChars: group.reducedChars,
-        savedChars: Math.max(group.rawChars - group.reducedChars, 0),
+        savedChars: group.rawChars - group.reducedChars,
         avgRatio: avgRatioFromGroup(group),
       }))
       .sort((left, right) => right.savedChars - left.savedChars || right.count - left.count)
@@ -412,7 +408,7 @@ function buildStatsReport(entries: AnalysisEntry[], options: StatsOptions, sourc
         count: group.count,
         rawChars: group.rawChars,
         reducedChars: group.reducedChars,
-        savedChars: Math.max(group.rawChars - group.reducedChars, 0),
+        savedChars: group.rawChars - group.reducedChars,
       }))
       .sort((left, right) => left.day.localeCompare(right.day)),
   };

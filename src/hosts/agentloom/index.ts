@@ -1,9 +1,15 @@
-import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
+
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -23,15 +29,7 @@ export type UninstallAgentloomRuleResult = {
   syncCommand: string;
 };
 
-export type AgentloomDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AgentloomDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_AGENTLOOM_FIX_COMMAND = "tokenjuice install agentloom";
 const TOKENJUICE_AGENTLOOM_RULE_MARKER = "tokenjuice terminal output compaction";
@@ -66,41 +64,7 @@ function parseLeadingFrontmatter(text: string): Map<string, string> | undefined 
   return fields;
 }
 
-function getExplicitProjectDir(options: AgentloomRuleOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTLOOM_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AgentloomRuleOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENTLOOM_PROJECT_DIR");
 
 async function getDefaultRulePath(options: AgentloomRuleOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".agents", "rules", "tokenjuice-agentloom.md");
@@ -166,29 +130,19 @@ export async function doctorAgentloomRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Agentloom rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_AGENTLOOM_RULE_MARKER,
         missingIssue: "configured Agentloom rule file does not look like the tokenjuice rule",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Agentloom rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Agentloom rule file is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "agentloom sync",
         missingIssue: "configured Agentloom rule file is missing sync guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Agentloom rule file still suggests the full escape hatch",
       },
     ],
   });

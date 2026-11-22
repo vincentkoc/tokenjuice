@@ -354,6 +354,7 @@ describe("Stagewise skill", () => {
   it.each([
     "description: [unterminated",
     "description: foo: bar",
+    "description: See https://docs.example.test for tokenjuice guidance",
     'description: "bad \\q"',
     'description: "bad " scalar"',
     "description: - broken",

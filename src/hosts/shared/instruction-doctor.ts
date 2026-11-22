@@ -9,6 +9,12 @@ export type InstructionDoctorReportFields = {
   missingPaths: string[];
 };
 
+export type PathDoctorReport<PathKey extends string> = Omit<InstructionDoctorReportFields, "status"> & Record<PathKey, string> & {
+  status: InstructionDoctorStatus | "warn";
+};
+
+export type InstructionsDoctorReport = PathDoctorReport<"instructionsPath">;
+
 export function instructionDoctorStatusFromIssues(issues: readonly unknown[]): "ok" | "broken" {
   return issues.length > 0 ? "broken" : "ok";
 }

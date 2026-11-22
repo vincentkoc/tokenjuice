@@ -1,23 +1,23 @@
-import { readdir, stat } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
+import { hasGitMetadata, createProjectDirResolver } from "../shared/project-root.js";
+
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AmpInstructionsOptions = {
   projectDir?: string;
@@ -36,15 +36,7 @@ export type UninstallAmpInstructionsResult = {
   removed: boolean;
 };
 
-export type AmpDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AmpDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_AMP_FIX_COMMAND = "tokenjuice install amp";
 const TOKENJUICE_AMP_BEGIN = "<!-- tokenjuice:begin -->";
@@ -57,37 +49,7 @@ function getExplicitProjectDir(options: AmpInstructionsOptions = {}): string | u
   return options.projectDir || process.env.AMP_PROJECT_DIR;
 }
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AmpInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AMP_PROJECT_DIR");
 
 type ParentInstructionSearchOptions = {
   includeShadowedFallbacks?: boolean;
@@ -268,28 +230,6 @@ const TOKENJUICE_AMP_BLOCK_CONFIG = {
   block: TOKENJUICE_AMP_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AMP_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AMP_END, beginIndex + TOKENJUICE_AMP_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AMP_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AMP_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AMP_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAmpInstructions(
   instructionsPath?: string,
   options: AmpInstructionsOptions = {},
@@ -298,7 +238,7 @@ export async function installAmpInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install amp`,
       );
@@ -326,7 +266,7 @@ export async function uninstallAmpInstructions(
   for (const resolvedInstructionsPath of resolvedInstructionsPaths) {
     const existing = await readInstructionFile(resolvedInstructionsPath);
     const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG);
-    if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+    if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG)) {
       throw new Error(
         `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall amp`,
       );
@@ -361,7 +301,7 @@ async function inspectAmpInstructionsPath(resolvedInstructionsPath: string): Pro
     };
   }
 
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AMP_BLOCK_CONFIG);
   const markerIssues = collectMarkerDelimitedBlockIssues(markerState, {
     configuredLabel: "Amp instructions",
     repairCommand: TOKENJUICE_AMP_FIX_COMMAND,
@@ -369,23 +309,8 @@ async function inspectAmpInstructionsPath(resolvedInstructionsPath: string): Pro
   const issues = uniquePaths([
     ...markerIssues,
     ...(hasMalformedMarkers ? ["configured Amp instructions have unmatched tokenjuice markers"] : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Amp instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Amp instructions are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Amp instructions still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AMP_BLOCK_CONFIG), {
+      configuredLabel: "Amp instructions",
     }),
   ]);
 

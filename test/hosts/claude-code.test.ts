@@ -11,7 +11,6 @@ import {
   installCodeBuddyHook,
   installCodexHook,
   installCursorHook,
-  installGrokCliHook,
   installPiExtension,
   installQwenCodeHook,
   runClaudeCodePostToolUseHook,
@@ -87,6 +86,37 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("installClaudeCodeHook", () => {
+  it.each(["post-tool-use", "pre-tool-use"] as const)(
+    "formats Windows paths for Git Bash in %s hooks",
+    async (mode) => {
+      const home = await createTempDir();
+      const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+      const settingsPath = join(home, "settings.json");
+      const binaryPath = join(home, "owner's build.js");
+      await writeFile(binaryPath, "");
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        const options = {
+          local: true,
+          binaryPath,
+          nodePath: "C:\\Node\\node.exe",
+          mode,
+        };
+        const { command } = await installClaudeCodeHook(settingsPath, options);
+        expect(command).toMatch(/^C:\/Node\/node\.exe /u);
+        const report = await doctorClaudeCodeHook(settingsPath, options);
+        expect(report.checkedPaths).toContain(binaryPath.replaceAll("\\", "/"));
+        const stale = await doctorClaudeCodeHook(settingsPath, {
+          ...options,
+          binaryPath: join(home, "new build.js"),
+        });
+        expect(stale.checkedPaths).toContain(binaryPath.replaceAll("\\", "/"));
+      } finally {
+        Object.defineProperty(process, "platform", platform);
+      }
+    },
+  );
+
   it("installs a non-mutating PostToolUse hook by default", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");
@@ -1085,7 +1115,7 @@ describe("doctorInstalledHooks", () => {
     expect(report.integrations.pi.status).toBe("ok");
   });
 
-  it("passes local hook expectations through to codex, claude-code, and cursor", async () => {
+  it("passes local hook expectations through aggregate doctor", async () => {
     const home = await createTempDir();
     const binDir = join(home, "bin");
     const launcherPath = join(binDir, "tokenjuice");
@@ -1138,11 +1168,6 @@ describe("doctorInstalledHooks", () => {
       binaryPath: localBinaryPath,
       nodePath: localNodePath,
     });
-    await installGrokCliHook(undefined, {
-      local: true,
-      binaryPath: localBinaryPath,
-      nodePath: localNodePath,
-    });
     await installQwenCodeHook(undefined, {
       projectDir: home,
       local: true,
@@ -1164,14 +1189,14 @@ describe("doctorInstalledHooks", () => {
     expect(report.integrations["claude-code"].status).toBe("ok");
     expect(report.integrations.codebuddy.status).toBe("ok");
     expect(report.integrations.cursor.status).toBe("ok");
-    expect(report.integrations["grok-cli"].status).toBe("ok");
+    expect(report.integrations["grok-cli"].status).toBe("disabled");
     expect(report.integrations["qwen-code"].status).toBe("ok");
     expect(report.integrations.pi.status).toBe("ok");
     expect(report.integrations.codex.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations["claude-code"].expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.codebuddy.expectedCommand).toContain(expectedHookPrefix);
     expect(report.integrations.cursor.expectedCommand).toContain(expectedHookPrefix);
-    expect(report.integrations["grok-cli"].expectedCommand).toContain(expectedHookPrefix);
+    expect(report.integrations["grok-cli"].expectedCommand).toBe("tokenjuice wrap -- <command>");
     expect(report.integrations["qwen-code"].expectedCommand).toContain(expectedHookPrefix);
   });
 });
@@ -1214,7 +1239,7 @@ describe("runClaudeCodePreToolUseHook", () => {
     expect(response.hookSpecificOutput?.updatedInput?.description).toBe("check status");
     expect(response.hookSpecificOutput?.updatedInput?.timeout).toBe(120000);
     expect(response.hookSpecificOutput?.updatedInput?.run_in_background).toBe(false);
-    expect(response.hookSpecificOutput?.updatedInput?.command).toContain("/usr/local/bin/tokenjuice wrap --source claude-code --");
+    expect(response.hookSpecificOutput?.updatedInput?.command).toContain("/usr/local/bin/tokenjuice wrap --keep-failures --source claude-code --min-reduce-chars 16384 --");
     expect(response.hookSpecificOutput?.updatedInput?.command).toContain("--min-reduce-chars 16384");
     expect(response.hookSpecificOutput?.updatedInput?.command).toContain(shellPath);
     expect(response.hookSpecificOutput?.updatedInput?.command).toContain("git status --short && pnpm test");
@@ -1261,7 +1286,7 @@ describe("resolveClaudeCodeMinReduceChars", () => {
     };
 
     expect(code).toBe(0);
-    expect(response.hookSpecificOutput?.updatedInput?.command).toContain(`${process.execPath} ${launcherPath} wrap --source claude-code --`);
+    expect(response.hookSpecificOutput?.updatedInput?.command).toContain(`${process.execPath} ${launcherPath} wrap --keep-failures --source claude-code --min-reduce-chars 16384 --`);
   });
 
   it("skips non-PreToolUse events", async () => {

@@ -1,27 +1,24 @@
 import { execFile } from "node:child_process";
 import { mkdir, lstat, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { delimiter, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import packageJson from "../../../package.json" with { type: "json" };
 
+import { readJsonHooksConfig } from "../shared/hooks-json-file.js";
 import { stripLeadingCdPrefix } from "../../core/command.js";
 import { getTelemetryCommandFamily, shouldRecordStats, storeArtifact, tryStoreArtifactMetadata } from "../../core/artifacts.js";
 import { appendBoundedJsonl } from "../../core/bounded-jsonl.js";
 import type { CompactionMetadata } from "../../core/compaction-metadata.js";
-import { readNoOmissionFromEnv } from "../../core/env.js";
+import { readPositiveIntegerEnv, readNoOmissionFromEnv } from "../../core/env.js";
 import { compactBashResult, getOutputAwareInspectionSkipReason } from "../../core/integrations/compact-bash-result.js";
 import { classifyOnly } from "../../core/reduce.js";
 import { countTextChars, sliceTextChars, stripAnsi } from "../../core/text.js";
 import { isNodeExecutablePath, parseShellWords } from "../shared/hook-command.js";
-import { buildTokenjuiceHookCommand, isExecutableFile } from "../shared/host-command.js";
-import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
+import { buildTokenjuiceHookCommand, resolveCommandFromPath } from "../shared/host-command.js";
+import { inspectTokenjuiceHookCommand, type HookCommandPackageVersionMismatch, type HookCommandRuntimeMismatch } from "../shared/hook-command-doctor.js";
 
 import type { ToolExecutionInput } from "../../types.js";
-import type {
-  HookCommandPackageVersionMismatch,
-  HookCommandRuntimeMismatch,
-} from "../shared/hook-command-doctor.js";
 
 type CodexHookCommand = Record<string, unknown> & {
   type?: string;
@@ -261,7 +258,8 @@ export function parseCodexFeatureFlag(
   const scopedRe = new RegExp(`^\\s*(${escapedKeys})\\s*=\\s*(true|false)\\b`, "u");
 
   for (const rawLine of lines) {
-    const line = rawLine.replace(/#.*$/u, "");
+    const commentStart = rawLine.indexOf("#");
+    const line = commentStart === -1 ? rawLine : rawLine.slice(0, commentStart);
     const header = /^\s*\[([^\]]+)\]/u.exec(line);
     if (header) {
       currentTablePath = header[1]!
@@ -675,27 +673,7 @@ async function loadHooksConfig(hooksPath: string): Promise<{
   }
 }
 
-async function resolveCodexHooksRenderer(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-  const names = process.platform === "win32"
-    ? ["codex-hooks.exe", "codex-hooks.cmd", "codex-hooks.bat", "codex-hooks"]
-    : ["codex-hooks"];
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-    for (const name of names) {
-      const candidate = join(segment, name);
-      if (await isExecutableFile(candidate)) {
-        return candidate;
-      }
-    }
-  }
-  return undefined;
-}
+
 
 const UNSAFE_WINDOWS_BATCH_ARGUMENT = /["&|<>()^%!\u0000-\u001F\u007F]/u;
 
@@ -808,22 +786,7 @@ async function writeStandaloneHooksConfig(
 }
 
 async function readHooksConfig(hooksPath: string): Promise<{ config: CodexHooksConfig; exists: boolean }> {
-  try {
-    const rawText = await readFile(hooksPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeHooksConfig(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read codex hooks from ${hooksPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return readJsonHooksConfig(hooksPath, "codex hooks", sanitizeHooksConfig, { hooks: {} });
 }
 
 function isTokenjuiceExecutableArg(value: string | undefined): boolean {
@@ -932,10 +895,9 @@ function buildCodexReplacementOutput(
   }
   return {
     payload: {
-      hookSpecificOutput: {
-        hookEventName: "PostToolUse",
-        additionalContext: feedback.text,
-      },
+      // Stop delivery of the original result without rejecting code-mode tool calls.
+      continue: false,
+      stopReason: feedback.text,
     },
     truncated: feedback.truncated,
   };
@@ -1045,7 +1007,7 @@ export async function installCodexHook(
   options: CodexHookCommandOptions = {},
 ): Promise<InstallCodexHookResult> {
   const command = await buildCodexHookCommand(options);
-  const rendererPath = await resolveCodexHooksRenderer();
+  const rendererPath = await resolveCommandFromPath("codex-hooks");
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
     const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);
@@ -1094,7 +1056,7 @@ export async function installCodexHook(
 export async function uninstallCodexHook(
   hooksPath = getDefaultHooksPath(),
 ): Promise<UninstallCodexHookResult> {
-  const rendererPath = await resolveCodexHooksRenderer();
+  const rendererPath = await resolveCommandFromPath("codex-hooks");
   if (rendererPath) {
     const { config } = await readHooksConfig(hooksPath);
     const split = splitTokenjuiceCodexHooks(config.hooks.PostToolUse ?? []);
@@ -1275,15 +1237,6 @@ export async function doctorCodexHook(
     featureFlag,
     runtimeConfig,
   };
-}
-
-function readPositiveIntegerEnv(name: string): number | undefined {
-  const value = process.env[name];
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function shouldStoreFromEnv(): boolean {
@@ -1495,6 +1448,19 @@ export async function runCodexPostToolUseHook(
     return 0;
   }
 
+  // Native Codex 0.166 omits status from Bash hook payloads. Replacing those
+  // results would discard the exit status that Codex adds for the model later.
+  if (exitCode === undefined) {
+    await recordImmediateHookStats(executionInput, combinedText, storeRaw);
+    await writeDebug({
+      ...debug,
+      ...buildImmediateSkipStats(combinedText),
+      deliveryMode: "original-only",
+      skipped: "missing-exit-code",
+    });
+    return 0;
+  }
+
   const maxInlineChars = readPositiveIntegerEnv("TOKENJUICE_CODEX_MAX_INLINE_CHARS");
 
   try {
@@ -1507,8 +1473,8 @@ export async function runCodexPostToolUseHook(
       ...(options.allowOmit ? { allowOmit: true } : {}),
       ...(typeof maxInlineChars === "number" ? { maxInlineChars } : {}),
       ...(noOmit ? { noOmit: true } : {}),
-      storeRaw,
-      recordStats: shouldRecordStats(),
+      storeRaw: false,
+      recordStats: false,
       metadata: {
         source: "codex-post-tool-use",
       },
@@ -1532,30 +1498,52 @@ export async function runCodexPostToolUseHook(
     }
 
     if (outcome.action === "keep") {
-      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: outcome.reason });
+      await recordImmediateHookStats(executionInput, combinedText, false);
+      await writeDebug({ ...debug, ...buildImmediateSkipStats(combinedText), deliveryMode: "original-only", skipped: outcome.reason });
       return 0;
     }
 
-    const replacement = buildCodexReplacementOutput(
-      outcome.result.inlineText,
-      outcome.result.rawRef?.id,
-      outcome.result.compaction,
-      exitCode,
-      maxInlineChars,
-      noOmit,
-    );
-    if (!replacement) {
-      await writeDebug({ ...debug, deliveryMode: "original-only", skipped: "observation-inline-limit" });
+    const rawChars = countTextChars(stripAnsi(combinedText));
+    const finalize = (rawRefId?: string) => {
+      const replacement = buildCodexReplacementOutput(
+        outcome.result.inlineText, rawRefId, outcome.result.compaction,
+        exitCode, maxInlineChars, noOmit,
+      );
+      const feedbackChars = replacement
+        ? countTextChars(replacement.payload.stopReason as string)
+        : rawChars;
+      const worthwhile = replacement && feedbackChars < rawChars;
+      const reducedChars = worthwhile ? feedbackChars : rawChars;
+      return {
+        replacement: worthwhile ? replacement : undefined,
+        reason: replacement ? "observation-no-savings" : "observation-inline-limit",
+        stats: { rawChars, reducedChars, ratio: rawChars === 0 ? 1 : reducedChars / rawChars },
+      };
+    };
+    let finalized = finalize();
+    const recordStats = shouldRecordStats();
+    const artifact = { input: executionInput, rawText: combinedText, classification: outcome.result.classification };
+    if (storeRaw && finalized.replacement) {
+      await storeArtifact({ ...artifact, recordStats }, undefined, (ref) => {
+        finalized = finalize(ref.id);
+        return finalized.stats;
+      });
+    } else if (recordStats) {
+      await tryStoreArtifactMetadata({ ...artifact, stats: finalized.stats });
+    }
+    const finalDebug = { ...debug, ...finalized.stats, savedChars: rawChars - finalized.stats.reducedChars };
+    if (!finalized.replacement) {
+      await writeDebug({ ...finalDebug, deliveryMode: "original-only", skipped: finalized.reason });
       return 0;
     }
 
-    process.stdout.write(`${JSON.stringify(replacement.payload)}\n`);
+    process.stdout.write(`${JSON.stringify(finalized.replacement.payload)}\n`);
     await writeDebug({
-      ...debug,
+      ...finalDebug,
       rewrote: true,
-      deliveryMode: "original-plus-additional-context",
-      measurement: "pre-delivery-summary-characters",
-      feedbackTruncated: replacement.truncated,
+      deliveryMode: "replacement-feedback",
+      measurement: "model-visible-feedback-characters",
+      feedbackTruncated: finalized.replacement.truncated,
     });
     return 0;
   } catch (error) {

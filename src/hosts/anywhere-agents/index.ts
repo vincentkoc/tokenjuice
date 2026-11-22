@@ -1,24 +1,26 @@
-import { lstat, realpath, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { lstat, realpath, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
+import { isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   removeMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AnywhereAgentsInstructionsOptions = {
   projectDir?: string;
@@ -36,15 +38,8 @@ export type UninstallAnywhereAgentsInstructionsResult = {
   syncCommand: string;
 };
 
-export type AnywhereAgentsDoctorReport = {
-  instructionsPath: string;
+export type AnywhereAgentsDoctorReport = InstructionsDoctorReport & {
   syncCommand: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_ANYWHERE_AGENTS_FIX_COMMAND = "tokenjuice install anywhere-agents";
@@ -54,64 +49,7 @@ const TOKENJUICE_ANYWHERE_AGENTS_END = "<!-- tokenjuice:anywhere-agents end -->"
 const TOKENJUICE_ANYWHERE_AGENTS_ADVISORY =
   "anywhere-agents support is beta and local-override based; anywhere-agents composes AGENTS.md plus AGENTS.local.md into downstream agent files, but each agent still owns command execution. Run `anywhere-agents` after install or uninstall.";
 
-function getExplicitProjectDir(options: AnywhereAgentsInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.ANYWHERE_AGENTS_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AnywhereAgentsInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
+const resolveProjectDir = createProjectDirResolver("ANYWHERE_AGENTS_PROJECT_DIR");
 
 type ResolvedInstructionsTarget = {
   filePath: string;
@@ -180,28 +118,6 @@ const TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG = {
   block: TOKENJUICE_ANYWHERE_AGENTS_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_ANYWHERE_AGENTS_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_ANYWHERE_AGENTS_END, beginIndex + TOKENJUICE_ANYWHERE_AGENTS_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_ANYWHERE_AGENTS_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_ANYWHERE_AGENTS_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_ANYWHERE_AGENTS_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAnywhereAgentsInstructions(
   instructionsPath?: string,
   options: AnywhereAgentsInstructionsOptions = {},
@@ -209,7 +125,7 @@ export async function installAnywhereAgentsInstructions(
   const resolvedInstructionsPath = instructionsPath ?? (await getDefaultInstructionsPath(options));
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install anywhere-agents`,
     );
@@ -233,7 +149,7 @@ export async function uninstallAnywhereAgentsInstructions(
   const resolvedInstructionsPath = target.filePath;
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall anywhere-agents`,
     );
@@ -301,7 +217,7 @@ export async function doctorAnywhereAgentsInstructions(
     configuredLabel: "anywhere-agents instructions",
     repairCommand: TOKENJUICE_ANYWHERE_AGENTS_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers && markerIssues.length === 0
@@ -309,25 +225,12 @@ export async function doctorAnywhereAgentsInstructions(
           "configured anywhere-agents instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install anywhere-agents",
         ]
       : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured anywhere-agents instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured anywhere-agents instructions are missing the raw escape hatch",
-        },
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ANYWHERE_AGENTS_BLOCK_CONFIG), {
+      configuredLabel: "anywhere-agents instructions",
+      additionalRequiredAfter: [
         {
           requiredText: "run `anywhere-agents`",
           missingIssue: "configured anywhere-agents instructions are missing sync guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured anywhere-agents instructions still suggest the full escape hatch",
         },
       ],
     }),

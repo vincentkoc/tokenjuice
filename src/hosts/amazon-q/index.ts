@@ -1,17 +1,21 @@
-import { mkdir, rename, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { rename } from "node:fs/promises";
+import { join, resolve } from "node:path";
+
+import { doctorOwnedInstructionFile } from "../shared/owned-instruction-doctor.js";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import {
+  collectTokenjuiceGuidanceIssues,
   buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
   TOKENJUICE_WRAP_COMMAND,
 } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
-  buildInstructionDoctorReportFields,
-  instructionDoctorStatusFromIssues,
-} from "../shared/instruction-doctor.js";
+  readInstructionFile,
+  removeInstructionFile,
+  installManagedInstructionFile,
+} from "../shared/instruction-file.js";
+import type { PathDoctorReport } from "../shared/instruction-doctor.js";
 
 export type AmazonQRuleOptions = {
   projectDir?: string;
@@ -27,49 +31,17 @@ export type UninstallAmazonQRuleResult = {
   removed: boolean;
 };
 
-export type AmazonQDoctorReport = {
-  rulePath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AmazonQDoctorReport = PathDoctorReport<"rulePath">;
 
 const TOKENJUICE_AMAZON_Q_FIX_COMMAND = "tokenjuice install amazon-q";
 const TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER = "<!-- tokenjuice:amazon-q-rule -->";
 const TOKENJUICE_AMAZON_Q_RULE_MARKER = "tokenjuice terminal output compaction";
 const TOKENJUICE_AMAZON_Q_RESOURCE_GLOB = "file://.amazonq/rules/**/*.md";
-const TOKENJUICE_AMAZON_Q_REINSTALL_BACKUP_SUFFIX = ".tokenjuice.bak";
 const TOKENJUICE_AMAZON_Q_ADVISORY =
   "Amazon Q support is beta and rule-based; Amazon Q CLI has been rebranded to Kiro, but Kiro can continue using Amazon Q rules. Include `file://.amazonq/rules/**/*.md` in the active agent resources so the rule is loaded.";
 
 function getExplicitProjectDir(options: AmazonQRuleOptions = {}): string | undefined {
   return options.projectDir || process.env.AMAZON_Q_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: AmazonQRuleOptions = {}): Promise<string> {
@@ -101,35 +73,16 @@ function isTokenjuiceAmazonQRuleText(text: string): boolean {
   return text.includes(TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER);
 }
 
-async function writeAmazonQRuleWithoutBackup(rulePath: string): Promise<void> {
-  await mkdir(dirname(rulePath), { recursive: true });
-  const tempPath = `${rulePath}.tmp`;
-  await writeFile(tempPath, TOKENJUICE_AMAZON_Q_RULE, "utf8");
-  await rename(tempPath, rulePath);
-}
-
 export async function installAmazonQRule(
   rulePath?: string,
   options: AmazonQRuleOptions = {},
 ): Promise<InstallAmazonQRuleResult> {
   const resolvedRulePath = rulePath ?? await getDefaultRulePath(options);
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (existing.exists && isTokenjuiceAmazonQRuleText(existing.text)) {
-    if (existing.text === TOKENJUICE_AMAZON_Q_RULE) {
-      return { rulePath: resolvedRulePath };
-    }
-
-    const primaryBackupPath = `${resolvedRulePath}.bak`;
-    const primaryBackup = await readInstructionFile(primaryBackupPath);
-    const backupPath = primaryBackup.exists && !isTokenjuiceAmazonQRuleText(primaryBackup.text)
-      ? `${resolvedRulePath}${TOKENJUICE_AMAZON_Q_REINSTALL_BACKUP_SUFFIX}`
-      : primaryBackupPath;
-    await writeFile(backupPath, existing.text, "utf8");
-    await writeAmazonQRuleWithoutBackup(resolvedRulePath);
-    return { rulePath: resolvedRulePath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedRulePath, TOKENJUICE_AMAZON_Q_RULE);
+  const result = await installManagedInstructionFile(
+    resolvedRulePath,
+    TOKENJUICE_AMAZON_Q_RULE,
+    isTokenjuiceAmazonQRuleText,
+  );
   return {
     rulePath: result.filePath,
     ...(result.backupPath ? { backupPath: result.backupPath } : {}),
@@ -164,68 +117,34 @@ export async function doctorAmazonQRule(
   options: AmazonQRuleOptions = {},
 ): Promise<AmazonQDoctorReport> {
   const resolvedRulePath = rulePath ?? await getDefaultRulePath(options);
-  const existing = await readInstructionFile(resolvedRulePath);
-  if (!existing.exists) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Amazon Q rule is not installed"],
-        advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
-        fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
-      }),
-    };
-  }
-  if (!isTokenjuiceAmazonQRuleText(existing.text)) {
-    return {
-      rulePath: resolvedRulePath,
-      ...buildInstructionDoctorReportFields({
-        status: "disabled",
-        issues: ["tokenjuice Amazon Q rule is not installed; existing rule file is not tokenjuice-managed"],
-        advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
-        fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
-      }),
-    };
-  }
-
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER,
-        missingIssue: "configured Amazon Q rule file is missing the tokenjuice ownership marker",
-      },
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_RULE_MARKER,
-        missingIssue: "configured Amazon Q rule file does not look like the tokenjuice rule",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Amazon Q rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Amazon Q rule file is missing the raw escape hatch",
-      },
-      {
-        requiredText: TOKENJUICE_AMAZON_Q_RESOURCE_GLOB,
-        missingIssue: "configured Amazon Q rule file is missing resource-loading guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Amazon Q rule file still suggests the full escape hatch",
-      },
-    ],
-  });
-
   return {
     rulePath: resolvedRulePath,
-    ...buildInstructionDoctorReportFields({
-      status: instructionDoctorStatusFromIssues(issues),
-      issues,
+    ...await doctorOwnedInstructionFile(resolvedRulePath, {
+      isManagedText: isTokenjuiceAmazonQRuleText,
+      missingIssue: "tokenjuice Amazon Q rule is not installed",
+      unmanagedIssue: "tokenjuice Amazon Q rule is not installed; existing rule file is not tokenjuice-managed",
       advisory: TOKENJUICE_AMAZON_Q_ADVISORY,
       fixCommand: TOKENJUICE_AMAZON_Q_FIX_COMMAND,
+      collectIssues: (text) => collectTokenjuiceGuidanceIssues(text, {
+        configuredLabel: "Amazon Q rule file",
+        singular: true,
+        additionalRequired: [
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_OWNERSHIP_MARKER,
+            missingIssue: "configured Amazon Q rule file is missing the tokenjuice ownership marker",
+          },
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_RULE_MARKER,
+            missingIssue: "configured Amazon Q rule file does not look like the tokenjuice rule",
+          },
+        ],
+        additionalRequiredAfter: [
+          {
+            requiredText: TOKENJUICE_AMAZON_Q_RESOURCE_GLOB,
+            missingIssue: "configured Amazon Q rule file is missing resource-loading guidance",
+          },
+        ],
+      }),
     }),
   };
 }

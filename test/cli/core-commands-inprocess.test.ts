@@ -108,7 +108,7 @@ describe("core command in-process dispatch", () => {
       const result = await runCli(["reduce", file]);
       expect(result.rejected).toBe(false);
       expect(result.exitCode).toBe(0);
-      expect(result.stdout.endsWith("\n")).toBe(true);
+      expect(result.stdout).toBe("hello\n");
       expect(result.stderr).toBe("");
     }, RUN_CLI_TIMEOUT_MS);
 
@@ -202,7 +202,7 @@ describe("core command in-process dispatch", () => {
     it("dispatches to the wrapped command", async () => {
       const result = await runCli(["wrap", "--", "printf", "wrapped"]);
       expect(result.exitCode).toBe(0);
-      expect(result.stdout.endsWith("\n")).toBe(true);
+      expect(result.stdout).toBe("wrapped");
       expect(result.stderr).toBe("");
     }, RUN_CLI_TIMEOUT_MS);
 

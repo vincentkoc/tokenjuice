@@ -133,23 +133,23 @@ describe("artifacts", () => {
     const storeDir = await createTempDir();
     const secret = "TOP_SECRET_VALUE";
     const privatePath = "/private/worktree";
-    const refs = await Promise.all([
-      storeArtifactMetadata({
+    const refs = [
+      await storeArtifactMetadata({
         input: { toolName: "exec", command: `API_TOKEN=${secret} git status`, exitCode: 0 },
         rawText: "clean",
         classification: { family: "git", confidence: 1 },
       }, storeDir),
-      storeArtifactMetadata({
+      await storeArtifactMetadata({
         input: { toolName: "exec", command: `cd ${privatePath} && pnpm test`, exitCode: 0 },
         rawText: "passed",
         classification: { family: "test-results", confidence: 1 },
       }, storeDir),
-      storeArtifactMetadata({
+      await storeArtifactMetadata({
         input: { toolName: "exec", command: `$(cat ${privatePath}/token) --dump`, exitCode: 0 },
         rawText: "opaque",
         classification: { family: "generic", confidence: 1 },
       }, storeDir),
-    ]);
+    ];
 
     const metadata = await listArtifactMetadata(storeDir);
     const families = metadata
@@ -280,5 +280,11 @@ describe("artifacts", () => {
     expect(normalizeArtifactSource("mux-post-tool-use")).toBe("mux");
     expect(normalizeArtifactSource("qoder")).toBe("qoder");
     expect(normalizeArtifactSource("vscode-copilot-pre-tool-use")).toBe("vscode-copilot");
+  });
+
+  it("preserves long internal hyphen runs while trimming source boundaries", () => {
+    const source = `custom${"-".repeat(100_000)}source`;
+    expect(normalizeArtifactSource(`--${source}--`)).toBe(source);
+    expect(normalizeArtifactSource("-".repeat(100_000))).toBeNull();
   });
 });

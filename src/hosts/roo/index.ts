@@ -1,46 +1,33 @@
 import { join } from "node:path";
 
 import {
+  getMarkerDelimitedBlockText,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import {
+  type RemoveInstructionFileResult,
+  type WriteInstructionFileResult,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
 
 export type RooInstructionsOptions = {
   projectDir?: string;
 };
 
-export type InstallRooInstructionsResult = {
-  instructionsPath: string;
-  backupPath?: string;
-};
+export type InstallRooInstructionsResult = WriteInstructionFileResult<"instructionsPath">;
 
-export type UninstallRooInstructionsResult = {
-  instructionsPath: string;
-  removed: boolean;
-};
+export type UninstallRooInstructionsResult = RemoveInstructionFileResult<"instructionsPath">;
 
-export type RooDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type RooDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_ROO_FIX_COMMAND = "tokenjuice install roo";
 const TOKENJUICE_ROO_BEGIN = "<!-- tokenjuice:begin -->";
@@ -72,18 +59,6 @@ const TOKENJUICE_ROO_BLOCK_CONFIG = {
   endMarker: TOKENJUICE_ROO_END,
   block: TOKENJUICE_ROO_BLOCK,
 };
-
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_ROO_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_ROO_END, beginIndex + TOKENJUICE_ROO_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_ROO_END.length);
-}
 
 export async function installRooInstructions(
   instructionsPath?: string,
@@ -128,23 +103,8 @@ export async function doctorRooInstructions(
       configuredLabel: "Roo Code rules",
       repairCommand: TOKENJUICE_ROO_FIX_COMMAND,
     }),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Roo Code rules are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Roo Code rules are missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Roo Code rules still suggest the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_ROO_BLOCK_CONFIG), {
+      configuredLabel: "Roo Code rules",
     }),
   ];
 

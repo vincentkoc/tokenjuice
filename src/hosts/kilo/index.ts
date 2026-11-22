@@ -1,9 +1,14 @@
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import { readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -28,15 +33,8 @@ export type UninstallKiloRuleResult = {
   configBackupPaths?: string[];
 };
 
-export type KiloDoctorReport = {
-  rulePath: string;
+export type KiloDoctorReport = PathDoctorReport<"rulePath"> & {
   configPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_KILO_FIX_COMMAND = "tokenjuice install kilo";
@@ -538,25 +536,13 @@ export async function doctorKiloRule(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Kilo Code rule file",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_KILO_RULE_MARKER,
         missingIssue: "configured Kilo Code rule file does not look like the tokenjuice rule",
-      },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Kilo Code rule file is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Kilo Code rule file is missing the raw escape hatch",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Kilo Code rule file still suggests the full escape hatch",
       },
     ],
   });

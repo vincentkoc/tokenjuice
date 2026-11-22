@@ -1,17 +1,18 @@
-import { lstat, realpath, rm, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath, rm } from "node:fs/promises";
+import { join } from "node:path";
 
+import { createStructuredMarkerInspector } from "../../core/structural-markers.js";
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { pathEntryExists, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type CodeRabbitConfigOptions = {
   projectDir?: string;
@@ -27,16 +28,9 @@ export type UninstallCodeRabbitConfigResult = {
   removed: boolean;
 };
 
-export type CodeRabbitDoctorReport = {
-  configPath: string;
+export type CodeRabbitDoctorReport = PathDoctorReport<"configPath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_CODERABBIT_FIX_COMMAND = "tokenjuice install coderabbit";
@@ -45,123 +39,28 @@ const TOKENJUICE_CODERABBIT_END = "# tokenjuice:coderabbit end";
 const TOKENJUICE_CODERABBIT_ADVISORY =
   "CodeRabbit support is beta and path-instruction based; CodeRabbit still owns pull-request review, tools, and comment delivery.";
 
-function getExplicitProjectDir(options: CodeRabbitConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.CODERABBIT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: CodeRabbitConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("CODERABBIT_PROJECT_DIR");
 
 function getExpectedConfigPath(projectDir: string): string {
   return join(projectDir, ".coderabbit.yaml");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectConfigSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use CodeRabbit config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectConfigSymlink = createSymlinkGuard(
+  (filePath) => `cannot use CodeRabbit config ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectConfigSymlink(`${filePath}.bak`);
   await rejectConfigSymlink(`${filePath}.tmp`);
 }
 
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use CodeRabbit config ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const resolveProjectConfigPath = createProjectInstructionPathResolver(
+  "CodeRabbit config",
+  rejectConfigSymlink,
+);
 
 async function resolveSafeProjectConfigPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use CodeRabbit config ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use CodeRabbit config ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectConfigSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectConfigSymlink(resolvedPath);
+  const resolvedPath = await resolveProjectConfigPath(filePath, projectDir, realProjectDir);
   const expectedConfigPath = getExpectedConfigPath(projectDir);
   if (resolvedPath !== expectedConfigPath) {
     throw new Error(`cannot use CodeRabbit config ${resolvedPath}; tokenjuice only installs the project-local .coderabbit.yaml config`);
@@ -177,18 +76,6 @@ async function getDefaultConfigPath(options: CodeRabbitConfigOptions = {}): Prom
 
 async function getDefaultAliasPath(options: CodeRabbitConfigOptions = {}): Promise<string> {
   return getExpectedConfigPath(await resolveProjectDir(options));
-}
-
-async function pathExistsWithoutReading(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function resolveConfigPath(configPath?: string, options: CodeRabbitConfigOptions = {}): Promise<string> {
@@ -229,51 +116,13 @@ function getYamlStructureLines(lines: readonly string[]): string[] {
   return structureLines;
 }
 
-function getStructuralMarkerLines(text: string, marker: string): { lines: string[]; markerLines: number[] } {
-  const lines = text.split("\n");
-  const structureLines = getYamlStructureLines(lines);
-  return {
-    lines,
-    markerLines: structureLines.flatMap((line, index) => (line.trim() === marker ? [index] : [])),
-  };
-}
-
-function findTokenjuiceBlockLineRange(text: string): { lines: string[]; start: number; end: number } | undefined {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_END);
-  if (begin.markerLines.length !== 1 || end.markerLines.length !== 1 || end.markerLines[0]! < begin.markerLines[0]!) {
-    return undefined;
-  }
-  return {
-    lines: begin.lines,
-    start: begin.markerLines[0]!,
-    end: end.markerLines[0]! + 1,
-  };
-}
-
-function hasMalformedMarkerStructure(text: string): boolean {
-  const begin = getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_BEGIN);
-  const end = getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_END);
-  const beginCount = begin.markerLines.length;
-  const endCount = end.markerLines.length;
-  return beginCount !== endCount || beginCount > 1 || endCount > 1 || (beginCount === 1 && end.markerLines[0]! < begin.markerLines[0]!);
-}
-
-function hasStructuralTokenjuiceMarker(text: string): boolean {
-  return getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_BEGIN).markerLines.length > 0 || getStructuralMarkerLines(text, TOKENJUICE_CODERABBIT_END).markerLines.length > 0;
-}
-
-function hasTokenjuiceBlock(text: string): boolean {
-  return Boolean(findTokenjuiceBlockLineRange(text));
-}
-
-function getTokenjuiceBlockText(text: string): string {
-  const range = findTokenjuiceBlockLineRange(text);
-  if (!range) {
-    return "";
-  }
-  return range.lines.slice(range.start, range.end).join("\n");
-}
+const {
+  findTokenjuiceBlockLineRange,
+  hasMalformedMarkerStructure,
+  hasStructuralTokenjuiceMarker,
+  hasTokenjuiceBlock,
+  getTokenjuiceBlockText,
+} = createStructuredMarkerInspector(TOKENJUICE_CODERABBIT_BEGIN, TOKENJUICE_CODERABBIT_END, getYamlStructureLines);
 
 function removeTokenjuiceBlock(text: string): { text: string; removed: boolean } {
   const range = findTokenjuiceBlockLineRange(text);
@@ -630,7 +479,7 @@ export async function doctorCodeRabbitConfig(
     resolvedConfigPath = await resolveConfigPath(configPath, options);
   } catch (error) {
     const aliasPath = configPath ?? (await getDefaultAliasPath(options));
-    if (!configPath && !(await pathExistsWithoutReading(aliasPath))) {
+    if (!configPath && !(await pathEntryExists(aliasPath))) {
       return {
         configPath: aliasPath,
         hasTokenjuiceMarker: false,
@@ -693,23 +542,9 @@ export async function doctorCodeRabbitConfig(
   ];
   const issues = [
     ...structuralIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured CodeRabbit review guidance is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured CodeRabbit review guidance is missing the raw escape hatch",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured CodeRabbit review guidance still suggests the full escape hatch",
-        },
-      ],
+    ...collectTokenjuiceGuidanceIssues(getTokenjuiceBlockText(existing.text), {
+      configuredLabel: "CodeRabbit review guidance",
+      singular: true,
     }),
   ];
 

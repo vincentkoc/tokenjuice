@@ -1,6 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
+
+import { pruneHookGroups, readJsonHooksConfig } from "../shared/hooks-json-file.js";
+import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 
 import { extractHookCommandPaths } from "../shared/hook-command.js";
 import { parseSettingsJson, readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
@@ -8,9 +10,7 @@ import {
   buildWrapLauncherHookCommand,
   buildWrappedCommand,
   commandAlreadyWrapped,
-  isExecutableFile,
   isRecord,
-  pathExists,
   resolveHostShell,
 } from "../shared/pre-tool-wrap.js";
 
@@ -178,22 +178,7 @@ function sanitizeCodeBuddySettings(raw: unknown): CodeBuddySettings {
 }
 
 async function readCodeBuddySettings(settingsPath: string): Promise<{ config: CodeBuddySettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeCodeBuddySettings(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read codebuddy settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return readJsonHooksConfig(settingsPath, "codebuddy settings", sanitizeCodeBuddySettings, { hooks: {} });
 }
 
 async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Promise<string | undefined> {
@@ -206,34 +191,6 @@ async function resolveCodeBuddyHostShell(toolInput: CodeBuddyBashToolInput): Pro
   ]);
 }
 
-/**
- * Return `groups` with every tokenjuice hook entry removed from each group's
- * `.hooks[]`. Unrelated hooks are preserved; groups that end up empty are
- * dropped.
- *
- * This is the surgical counterpart to a simple group-level filter — dropping
- * a whole group would silently delete any user-authored hook that happens to
- * share a matcher group with the tokenjuice entry.
- */
-function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
-  const pruned: unknown[] = [];
-  for (const group of groups) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      pruned.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceCodeBuddyHookEntry(hook));
-    if (retainedHooks.length === 0) {
-      continue;
-    }
-    if (retainedHooks.length === group.hooks.length) {
-      pruned.push(group);
-      continue;
-    }
-    pruned.push({ ...group, hooks: retainedHooks });
-  }
-  return pruned;
-}
 
 function removeTokenjuiceHookEvent(config: CodeBuddySettings, event: "PreToolUse" | "PostToolUse"): boolean {
   if (!Array.isArray(config.hooks[event])) {
@@ -241,7 +198,7 @@ function removeTokenjuiceHookEvent(config: CodeBuddySettings, event: "PreToolUse
   }
 
   const groups = config.hooks[event];
-  const pruned = pruneTokenjuiceHookEntries(groups);
+  const pruned = pruneHookGroups(groups, isTokenjuiceCodeBuddyHookEntry);
   const changed = pruned.length !== groups.length || pruned.some((group, index) => group !== groups[index]);
   if (!changed) {
     return false;
@@ -271,7 +228,7 @@ export async function installCodeBuddyHook(
   // version of this host, but preserve unrelated hooks that happen to live in
   // the same matcher group.
   if (Array.isArray(config.hooks.PostToolUse)) {
-    const prunedPost = pruneTokenjuiceHookEntries(config.hooks.PostToolUse);
+    const prunedPost = pruneHookGroups(config.hooks.PostToolUse, isTokenjuiceCodeBuddyHookEntry);
     if (prunedPost.length === 0) {
       delete config.hooks.PostToolUse;
     } else {
@@ -280,7 +237,7 @@ export async function installCodeBuddyHook(
   }
 
   const preToolUse = Array.isArray(config.hooks.PreToolUse) ? config.hooks.PreToolUse : [];
-  const retained = pruneTokenjuiceHookEntries(preToolUse);
+  const retained = pruneHookGroups(preToolUse, isTokenjuiceCodeBuddyHookEntry);
   retained.push(createTokenjuiceCodeBuddyHook(command));
   config.hooks.PreToolUse = retained;
 
@@ -355,13 +312,9 @@ export async function doctorCodeBuddyHook(
     };
   }
 
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
+  const inspection = await inspectTokenjuiceHookCommand({ command: detectedCommand });
+  const checkedPaths = inspection.checkedPaths;
+  const missingPaths = checkedPaths.filter(path => inspection.missingPaths.includes(path) || inspection.nonExecutablePaths.includes(path));
 
   const issues: string[] = [];
   if (detectedCommand !== expectedCommand) {
@@ -394,6 +347,8 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
   } catch {
     return 0;
   }
+
+  if (!isRecord(payload)) return 0;
 
   if (payload.hook_event_name !== "PreToolUse") {
     return 0;
@@ -432,7 +387,8 @@ export async function runCodeBuddyPreToolUseHook(rawText: string, wrapLauncher =
   const response = {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      modifiedInput: {
+      // The runtime reads updatedInput; modifiedInput is silently ignored.
+      updatedInput: {
         ...toolInput,
         command: wrappedCommand,
       },

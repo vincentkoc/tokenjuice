@@ -1,10 +1,10 @@
-import { constants as fsConstants } from "node:fs";
-import { access, mkdir, readFile, rename, rm } from "node:fs/promises";
-import { delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { mkdir, readFile, rename, rm } from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
-import { stripLeadingCdPrefix } from "../../core/command.js";
-import { extractHookCommandPaths, parseShellWords, shellQuote } from "../shared/hook-command.js";
+import { inspectTokenjuiceHookCommand, type HookCommandDoctorReport } from "../shared/hook-command-doctor.js";
+import { pathExists } from "../shared/host-command.js";
+import { shellQuote } from "../shared/hook-command.js";
 import {
   ensureHooksDir,
   findStrayTokenjuiceHookFiles,
@@ -13,8 +13,10 @@ import {
   readCopilotHooksConfig,
   sanitizeCopilotHooksConfig,
   writeCopilotHooksConfigAtomic,
+  type CopilotHooksConfig,
 } from "../shared/hooks-json-file.js";
-import type { CopilotHooksConfig } from "../shared/hooks-json-file.js";
+
+import { commandAlreadyWrapped, resolveInstalledTokenjuicePath } from "../shared/pre-tool-wrap.js";
 
 type VscodeCopilotHooksConfig = CopilotHooksConfig;
 
@@ -37,17 +39,7 @@ export type UninstallVscodeCopilotHookResult = {
   deletedFile: boolean;
 };
 
-export type VscodeCopilotDoctorReport = {
-  hooksPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  expectedCommand: string;
-  detectedCommand?: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type VscodeCopilotDoctorReport = HookCommandDoctorReport<"hooksPath">;
 
 type VscodeCopilotPreToolUsePayload = {
   hook_event_name?: unknown;
@@ -109,50 +101,6 @@ function getDefaultHooksPath(): string {
   return join(getVscodeCopilotHooksDir(), TOKENJUICE_VSCODE_COPILOT_FILENAME);
 }
 
-
-async function isExecutableFile(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
-  const pathValue = process.env.PATH;
-  if (!pathValue) {
-    return undefined;
-  }
-
-  const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
-
-  for (const segment of pathValue.split(delimiter)) {
-    if (!segment) {
-      continue;
-    }
-
-    for (const candidateName of candidateNames) {
-      const candidatePath = join(segment, candidateName);
-      if (await isExecutableFile(candidatePath)) {
-        return candidatePath;
-      }
-    }
-  }
-
-  return undefined;
-}
 
 async function buildVscodeCopilotHookCommand(
   options: VscodeCopilotHookCommandOptions = {},
@@ -388,13 +336,9 @@ export async function doctorVscodeCopilotHook(
   }
 
   const strayFiles = await findStrayVscodeCopilotHookFiles(dirname(hooksPath), hooksPath);
-  const checkedPaths = extractHookCommandPaths(detectedCommand);
-  const missingPaths: string[] = [];
-  for (const path of checkedPaths) {
-    if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-      missingPaths.push(path);
-    }
-  }
+  const inspection = await inspectTokenjuiceHookCommand({ command: detectedCommand });
+  const checkedPaths = inspection.checkedPaths;
+  const missingPaths = checkedPaths.filter(path => inspection.missingPaths.includes(path) || inspection.nonExecutablePaths.includes(path));
 
   const issues: string[] = [];
   if (detectedCommand !== expectedCommand) {
@@ -426,59 +370,6 @@ export async function doctorVscodeCopilotHook(
   };
 }
 
-function commandRequestsTokenjuiceRawBypass(command: string): boolean {
-  const argv = parseShellWords(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-
-  let wrapIndex = -1;
-  const first = argv[0];
-  const second = argv[1];
-
-  if (first === "tokenjuice") {
-    wrapIndex = 1;
-  } else if (
-    typeof first === "string"
-    && /(?:^|[\\/])node(?:\.exe)?$/iu.test(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    wrapIndex = 2;
-  }
-
-  if (wrapIndex === -1 || argv[wrapIndex] !== "wrap") {
-    return false;
-  }
-
-  const optionEndIndex = argv.indexOf("--", wrapIndex + 1);
-  const optionArgs = argv.slice(wrapIndex + 1, optionEndIndex === -1 ? undefined : optionEndIndex);
-  return optionArgs.includes("--raw") || optionArgs.includes("--full");
-}
-
-function commandAlreadyWrapped(command: string): boolean {
-  const argv = parseShellWords(stripLeadingCdPrefix(command));
-  if (argv.length < 2) {
-    return false;
-  }
-  if (argv[0] === "tokenjuice" && argv[1] === "wrap") {
-    return true;
-  }
-  const first = argv[0];
-  const second = argv[1];
-  if (
-    typeof first === "string"
-    && /(?:^|[\\/])node(?:\.exe)?$/iu.test(first)
-    && typeof second === "string"
-    && second.endsWith(".js")
-    && argv.slice(2).includes("wrap")
-  ) {
-    return true;
-  }
-  return false;
-}
-
 function resolveWrapperShell(): { path: string; flag: string; platform: "win32" | "posix" } {
   if (process.platform === "win32") {
     return { path: "powershell", flag: "-Command", platform: "win32" };
@@ -507,6 +398,11 @@ export async function runVscodeCopilotPreToolUseHook(
     return 0;
   }
 
+  if (!isRecord(payload)) {
+    process.stdout.write("{}\n");
+    return 0;
+  }
+
   const toolInputValue = readPayloadField(payload, "tool_input", "toolInput");
   if (!isTerminalToolName(readPayloadField(payload, "tool_name", "toolName")) || !isRecord(toolInputValue)) {
     process.stdout.write("{}\n");
@@ -519,11 +415,7 @@ export async function runVscodeCopilotPreToolUseHook(
     process.stdout.write("{}\n");
     return 0;
   }
-  if (commandAlreadyWrapped(command)) {
-    process.stdout.write("{}\n");
-    return 0;
-  }
-  if (commandRequestsTokenjuiceRawBypass(command)) {
+  if (commandAlreadyWrapped(command, process.platform)) {
     process.stdout.write("{}\n");
     return 0;
   }
@@ -533,7 +425,7 @@ export async function runVscodeCopilotPreToolUseHook(
     ? `${shellQuote(process.execPath)} ${shellQuote(wrapLauncher)}`
     : shellQuote(wrapLauncher);
   const wrappedCommand =
-    `${launcherCommand} wrap --source ${TOKENJUICE_VSCODE_COPILOT_SOURCE} -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
+    `${launcherCommand} wrap --keep-failures --source ${TOKENJUICE_VSCODE_COPILOT_SOURCE} -- ${shellQuote(shell.path)} ${shell.flag} ${shellQuote(command)}`;
 
   const updatedInput: Record<string, unknown> = {
     ...toolInput,

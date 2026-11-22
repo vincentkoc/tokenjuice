@@ -1,10 +1,21 @@
 import { randomUUID } from "node:crypto";
-import { lstat, mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
 import {
+  createRestorableInstructionCommands,
+  readInstructionFile,
+} from "../shared/instruction-file.js";
+
+import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_RAW_COMMAND,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -23,14 +34,8 @@ export type UninstallMiniSweAgentConfigResult = {
   removed: boolean;
 };
 
-export type MiniSweAgentDoctorReport = {
+export type MiniSweAgentDoctorReport = InstructionDoctorReportFields & {
   configPath: string;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_MINI_SWE_AGENT_FIX_COMMAND = "tokenjuice install mini-swe-agent";
@@ -48,27 +53,6 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return match?.[1];
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseMiniSweAgentBackupPath(configPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${configPath}.bak` : `${configPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
 async function writeMiniSweAgentConfigWithoutBackup(configPath: string, text: string): Promise<void> {
   await mkdir(dirname(configPath), { recursive: true });
   const tempPath = `${configPath}.${process.pid}.${randomUUID()}.tmp`;
@@ -81,41 +65,7 @@ async function writeMiniSweAgentConfigWithoutBackup(configPath: string, text: st
   }
 }
 
-function getExplicitProjectDir(options: MiniSweAgentConfigOptions = {}): string | undefined {
-  return options.projectDir || process.env.MINI_SWE_AGENT_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: MiniSweAgentConfigOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("MINI_SWE_AGENT_PROJECT_DIR");
 
 async function getDefaultConfigPath(options: MiniSweAgentConfigOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".mini-swe-agent", "tokenjuice.yaml");
@@ -168,43 +118,20 @@ function buildMiniSweAgentConfig(
   ].join("\n");
 }
 
+const restorableCommands = createRestorableInstructionCommands({
+  buildText: buildMiniSweAgentConfig,
+  isManagedText: isTokenjuiceMiniSweAgentConfigText,
+  readRestoreBackupSuffix,
+  writeWithoutBackup: writeMiniSweAgentConfigWithoutBackup,
+});
+
 export async function installMiniSweAgentConfig(
   configPath?: string,
   options: MiniSweAgentConfigOptions = {},
 ): Promise<InstallMiniSweAgentConfigResult> {
   const resolvedConfigPath = configPath ?? (await getDefaultConfigPath(options));
-  const existing = await readInstructionFile(resolvedConfigPath);
-  if (existing.exists && isTokenjuiceMiniSweAgentConfigText(existing.text)) {
-    const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-    if (existing.text === buildMiniSweAgentConfig({ restoreBackupSuffix })) {
-      return { configPath: resolvedConfigPath };
-    }
-
-    const result = await writeInstructionFile(
-      resolvedConfigPath,
-      buildMiniSweAgentConfig({ restoreBackupSuffix }),
-    );
-    return {
-      configPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await chooseMiniSweAgentBackupPath(resolvedConfigPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeMiniSweAgentConfigWithoutBackup(
-      resolvedConfigPath,
-      buildMiniSweAgentConfig({ restoreBackupSuffix: backupPath.slice(resolvedConfigPath.length) }),
-    );
-    return { configPath: resolvedConfigPath, backupPath };
-  }
-
-  const result = await writeInstructionFile(resolvedConfigPath, buildMiniSweAgentConfig());
-  return {
-    configPath: result.filePath,
-    ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-  };
+  const result = await restorableCommands.install(resolvedConfigPath);
+  return { configPath: result.filePath, ...(result.backupPath ? { backupPath: result.backupPath } : {}) };
 }
 
 export async function uninstallMiniSweAgentConfig(
@@ -212,23 +139,7 @@ export async function uninstallMiniSweAgentConfig(
   options: MiniSweAgentConfigOptions = {},
 ): Promise<UninstallMiniSweAgentConfigResult> {
   const resolvedConfigPath = configPath ?? (await getDefaultConfigPath(options));
-  const existing = await readInstructionFile(resolvedConfigPath);
-  if (!existing.exists || !isTokenjuiceMiniSweAgentConfigText(existing.text)) {
-    return { configPath: resolvedConfigPath, removed: false };
-  }
-
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedConfigPath}${restoreBackupSuffix}`;
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceMiniSweAgentConfigText(backup.text)) {
-      await rm(resolvedConfigPath, { force: true });
-      await rename(backupPath, resolvedConfigPath);
-      return { configPath: resolvedConfigPath, removed: true };
-    }
-  }
-
-  const result = await removeInstructionFile(resolvedConfigPath);
+  const result = await restorableCommands.uninstall(resolvedConfigPath);
   return { configPath: result.filePath, removed: result.removed };
 }
 
@@ -250,8 +161,10 @@ export async function doctorMiniSweAgentConfig(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "mini-SWE-agent config",
+    singular: true,
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_MINI_SWE_AGENT_MARKER,
         missingIssue: "configured mini-SWE-agent config does not look like the tokenjuice fragment",
@@ -260,23 +173,11 @@ export async function doctorMiniSweAgentConfig(
         requiredText: "observation_template",
         missingIssue: "configured mini-SWE-agent config is missing observation template wiring",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured mini-SWE-agent config is missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured mini-SWE-agent config is missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "mini -c mini.yaml -c .mini-swe-agent/tokenjuice.yaml",
         missingIssue: "configured mini-SWE-agent config is missing load guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured mini-SWE-agent config still suggests the full escape hatch",
       },
     ],
   });

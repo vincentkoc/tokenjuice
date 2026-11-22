@@ -441,7 +441,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
     };
     expect(response.hookSpecificOutput.hookEventName).toBe("PreToolUse");
     expect(response.hookSpecificOutput.updatedInput.command).toBe(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot -- /bin/bash -lc 'git status --short'",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot -- /bin/bash -lc 'git status --short'",
     );
     expect(response.hookSpecificOutput.updatedInput.explanation).toBe("List contents");
     expect(response.hookSpecificOutput.updatedInput.goal).toBe("check repo");
@@ -465,7 +465,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
 
     expect(code).toBe(0);
     expect(JSON.parse(output).hookSpecificOutput.updatedInput.command).toContain(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot --",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot --",
     );
   });
 
@@ -521,58 +521,23 @@ describe("runVscodeCopilotPreToolUseHook", () => {
     expect(output.trim()).toBe("{}");
   });
 
-  it("emits {} on malformed input", async () => {
-    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook("not-json"));
+  it.each(["not-json", "null", "[]", "true", "42", '"text"'])("emits {} on non-object input %s", async (raw) => {
+    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook(raw));
     expect(code).toBe(0);
     expect(output.trim()).toBe("{}");
   });
 
-  it("skips commands that are already wrapped", async () => {
-    const payload = JSON.stringify({
-      tool_name: "run_in_terminal",
-      tool_input: { command: "tokenjuice wrap -- git status" },
-    });
-
-    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("skips already wrapped commands after a leading cd prefix", async () => {
-    const payload = JSON.stringify({
-      tool_name: "run_in_terminal",
-      tool_input: { command: "cd /repo && tokenjuice wrap -- git status" },
-    });
-
-    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("honors explicit raw bypass inside the command", async () => {
-    const payload = JSON.stringify({
-      tool_name: "run_in_terminal",
-      tool_input: { command: "tokenjuice wrap --raw -- git status" },
-    });
-
-    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
-  });
-
-  it("honors explicit raw bypass after a leading cd prefix", async () => {
-    const payload = JSON.stringify({
-      tool_name: "run_in_terminal",
-      tool_input: { command: "cd /repo && tokenjuice wrap --raw -- git status" },
-    });
-
-    const { code, output } = await captureStdout(() => runVscodeCopilotPreToolUseHook(payload));
-
-    expect(code).toBe(0);
-    expect(output.trim()).toBe("{}");
+  it.each([
+    ["darwin", "tokenjuice wrap -- git status"],
+    ["darwin", "cd /repo && tokenjuice wrap --raw -- git status"],
+    ["darwin", "/opt/bin/tokenjuice wrap --raw -- git status"],
+    ["darwin", "'/opt/my tools/tokenjuice' wrap --full -- git status"],
+    ["darwin", "node '/opt/tokenjuice/dist/cli/main.js' wrap -- git status"],
+    ["win32", String.raw`"C:\Tools\tokenjuice.cmd" wrap --raw -- git status`],
+  ] as const)("leaves explicit wrapping unchanged on %s: %s", async (platform, command) => {
+    setPlatform(platform);
+    const payload = JSON.stringify({ tool_name: "runTerminalCommand", tool_input: { command } });
+    expect(await captureStdout(() => runVscodeCopilotPreToolUseHook(payload))).toEqual({ code: 0, output: "{}\n" });
   });
 
   it("handles the captured VS Code Copilot PreToolUse fixture", async () => {
@@ -591,7 +556,7 @@ describe("runVscodeCopilotPreToolUseHook", () => {
       };
     };
     expect(response.hookSpecificOutput.updatedInput.command).toContain(
-      "/usr/local/bin/tokenjuice wrap --source vscode-copilot --",
+      "/usr/local/bin/tokenjuice wrap --keep-failures --source vscode-copilot --",
     );
     expect(response.hookSpecificOutput.updatedInput.command).toContain("ls /tmp");
     expect(response.hookSpecificOutput.updatedInput.explanation).toBe("List contents of /tmp");

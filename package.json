@@ -24,7 +24,7 @@
   },
   "license": "MIT",
   "type": "module",
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@10.34.9",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -36,6 +36,14 @@
     "./openclaw": {
       "types": "./dist/hosts/openclaw/index.d.ts",
       "default": "./dist/hosts/openclaw/index.js"
+    },
+    "./copilot-sdk": {
+      "types": "./dist/hosts/copilot-sdk/index.d.ts",
+      "default": "./dist/hosts/copilot-sdk/index.js"
+    },
+    "./mastra": {
+      "types": "./dist/hosts/mastra/index.d.ts",
+      "default": "./dist/hosts/mastra/index.js"
     }
   },
   "files": [
@@ -52,11 +60,11 @@
     "bench:fixtures": "node scripts/bench.mjs fixtures",
     "bench:verify": "node scripts/bench.mjs verify",
     "contracts": "publint run --strict --pack pnpm",
-    "e2e:local": "pnpm build && node scripts/local-host-e2e.mjs",
+    "test:hook-contracts": "pnpm build && node scripts/hook-contracts.mjs",
     "generate:builtin-rules": "node scripts/generate-builtin-rules.mjs",
     "prepare": "pnpm repair:pnpm-bin-shims",
     "repair:pnpm-bin-shims": "node scripts/repair-pnpm-bin-shims.mjs",
-    "build": "node scripts/clean-dist.mjs && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && node scripts/build-opencode-runtime.mjs && node scripts/copy-rules.mjs",
+    "build": "node scripts/clean-dist.mjs && pnpm generate:builtin-rules && tsc -p tsconfig.json && node scripts/build-pi-runtime.mjs && node scripts/build-opencode-runtime.mjs && node scripts/build-opencode-v2-runtime.mjs && node scripts/build-deepseek-runtime.mjs && node scripts/copy-rules.mjs && node scripts/build-framework-adapters.mjs",
     "lint": "oxlint --deny-warnings src test scripts",
     "lint:circular": "madge --circular --extensions ts,mjs src",
     "release:artifacts": "node scripts/build-release.mjs",
@@ -67,7 +75,8 @@
     "test": "pnpm generate:builtin-rules && vitest run",
     "typecheck": "pnpm generate:builtin-rules && tsc -p tsconfig.json --noEmit",
     "verify": "pnpm lint && pnpm lint:circular && pnpm typecheck && pnpm test",
-    "verify:package": "pnpm build && pnpm contracts && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula"
+    "verify:package": "pnpm build && pnpm contracts && pnpm release:artifacts && pnpm release:checksums && pnpm release:formula",
+    "bench:quality": "node scripts/bench-quality.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
@@ -77,17 +86,7 @@
     "publint": "^0.3.25",
     "typescript": "^7.0.2",
     "vitest": "5.0.5",
-    "vite": "8.3.5"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "8.3.5",
-      "source-map-js": "1.2.2",
-      "nanoid@3": "3.3.20",
-      "postcss": "8.5.26",
-      "brace-expansion": "5.0.12",
-      "esbuild": "0.28.2",
-      "@vitest/mocker": "5.0.5"
-    }
+    "vite": "8.3.5",
+    "gpt-tokenizer": "4.1.2"
   }
 }

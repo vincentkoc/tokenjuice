@@ -1,18 +1,17 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { buildTokenjuiceHookCommand } from "../shared/host-command.js";
-import { extractHookCommandPaths } from "../shared/hook-command.js";
+import { parseShellWords, posixShellQuote } from "../shared/hook-command.js";
+import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
+import { pruneHookGroups, readJsonHooksConfig, sanitizeHooksSettings } from "../shared/hooks-json-file.js";
 import { parseSettingsJson, readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
 import {
   buildWrapLauncherHookCommand,
   buildWrappedCommand,
   commandAlreadyWrapped,
-  isExecutableFile,
   isRecord,
-  pathExists,
   resolveHostShell,
 } from "../shared/pre-tool-wrap.js";
 
@@ -121,14 +120,22 @@ function getDefaultSettingsPath(): string {
 }
 
 async function buildClaudeCodeHookCommand(options: ClaudeCodeHookCommandOptions = {}): Promise<string> {
-  if (options.mode === "pre-tool-use") {
-    return buildWrapLauncherHookCommand({
+  const command = options.mode === "pre-tool-use"
+    ? await buildWrapLauncherHookCommand({
       ...options,
       subcommand: TOKENJUICE_CLAUDE_CODE_PRE_SUBCOMMAND,
       hostName: "claude code",
-    });
+    })
+    : await buildTokenjuiceHookCommand(TOKENJUICE_CLAUDE_CODE_POST_SUBCOMMAND, "claude code", options);
+  if (process.platform !== "win32") {
+    return command;
   }
-  return buildTokenjuiceHookCommand(TOKENJUICE_CLAUDE_CODE_POST_SUBCOMMAND, "claude code", options);
+
+  // Claude Code runs hooks for the Bash tool through Git Bash on Windows.
+  return parseShellWords(command, "win32")
+    // Quote apostrophes without backslash escapes so Windows hook inspection can also read them.
+    .map((arg) => posixShellQuote(arg.replaceAll("\\", "/")).replaceAll("'\\''", "'\"'\"'"))
+    .join(" ");
 }
 
 function getClaudeCodeFixCommand(options: ClaudeCodeHookCommandOptions): string {
@@ -194,67 +201,13 @@ function findTokenjuiceClaudeCodeHooks(
   return detected;
 }
 
-function sanitizeHooksSubtree(raw: unknown): Record<string, unknown> {
-  return isRecord(raw) ? { ...raw } : {};
-}
-
-function sanitizeClaudeCodeSettings(raw: unknown): ClaudeCodeSettings {
-  if (!isRecord(raw)) {
-    return { hooks: {} };
-  }
-
-  return {
-    ...raw,
-    hooks: sanitizeHooksSubtree(raw.hooks),
-  };
-}
-
-async function readClaudeCodeSettings(settingsPath: string): Promise<{ config: ClaudeCodeSettings; exists: boolean }> {
-  try {
-    const rawText = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(rawText) as unknown;
-    return {
-      config: sanitizeClaudeCodeSettings(parsed),
-      exists: true,
-    };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return {
-        config: { hooks: {} },
-        exists: false,
-      };
-    }
-    throw new Error(`failed to read claude code settings from ${settingsPath}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-function pruneTokenjuiceHookEntries(groups: unknown[]): unknown[] {
-  const pruned: unknown[] = [];
-  for (const group of groups) {
-    if (!isRecord(group) || !Array.isArray(group.hooks)) {
-      pruned.push(group);
-      continue;
-    }
-    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceClaudeCodeHookEntry(hook));
-    if (retainedHooks.length === 0) {
-      continue;
-    }
-    if (retainedHooks.length === group.hooks.length) {
-      pruned.push(group);
-      continue;
-    }
-    pruned.push({ ...group, hooks: retainedHooks });
-  }
-  return pruned;
-}
-
 function removeTokenjuiceHookEvent(config: ClaudeCodeSettings, event: ClaudeCodeHookEvent): boolean {
   if (!Array.isArray(config.hooks[event])) {
     return false;
   }
 
   const groups = config.hooks[event];
-  const pruned = pruneTokenjuiceHookEntries(groups);
+  const pruned = pruneHookGroups(groups, isTokenjuiceClaudeCodeHookEntry);
   const changed = pruned.length !== groups.length || pruned.some((group, index) => group !== groups[index]);
   if (!changed) {
     return false;
@@ -294,20 +247,12 @@ export async function installClaudeCodeHook(
   options: ClaudeCodeHookCommandOptions = {},
 ): Promise<InstallClaudeCodeHookResult> {
   const settings = await readSettingsFile(settingsPath);
-  const config = sanitizeClaudeCodeSettings(parseSettingsJson(settings, "claude code"));
+  const config = sanitizeHooksSettings(parseSettingsJson(settings, "claude code"));
   const mode = options.mode ?? "post-tool-use";
   const command = await buildClaudeCodeHookCommand(options);
 
-  for (const event of ["PreToolUse", "PostToolUse"] as const) {
-    if (Array.isArray(config.hooks[event])) {
-      const pruned = pruneTokenjuiceHookEntries(config.hooks[event]);
-      if (pruned.length === 0) {
-        delete config.hooks[event];
-      } else {
-        config.hooks[event] = pruned;
-      }
-    }
-  }
+  removeTokenjuiceHookEvent(config, "PreToolUse");
+  removeTokenjuiceHookEvent(config, "PostToolUse");
 
   const event = mode === "pre-tool-use" ? "PreToolUse" : "PostToolUse";
   const retained = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
@@ -330,7 +275,7 @@ export async function uninstallClaudeCodeHook(
   if (!settings.data) {
     return { settingsPath, removed: false };
   }
-  const config = sanitizeClaudeCodeSettings(parseSettingsJson(settings, "claude code"));
+  const config = sanitizeHooksSettings(parseSettingsJson(settings, "claude code"));
   const removedPreToolUse = removeTokenjuiceHookEvent(config, "PreToolUse");
   const removedPostToolUse = removeTokenjuiceHookEvent(config, "PostToolUse");
   const removed = removedPreToolUse || removedPostToolUse;
@@ -363,7 +308,7 @@ export async function doctorClaudeCodeHook(
   };
   const expectedCommand = expectedCommands[expectedEvent];
   const fixCommand = getClaudeCodeFixCommand(options);
-  const { config, exists } = await readClaudeCodeSettings(settingsPath);
+  const { config, exists } = await readJsonHooksConfig(settingsPath, "claude code settings", sanitizeHooksSettings, { hooks: {} });
   const detectedHooks = findTokenjuiceClaudeCodeHooks(config, expectedEvent);
   const detectedCommand = detectedHooks
     .map(({ hook }) => typeof hook.command === "string" && hook.command.trim() ? hook.command : undefined)
@@ -442,12 +387,12 @@ export async function doctorClaudeCodeHook(
       continue;
     }
 
-    const commandPaths = extractHookCommandPaths(command);
-    for (const path of commandPaths) {
+    const inspection = await inspectTokenjuiceHookCommand({ command });
+    for (const path of inspection.checkedPaths) {
       checkedPathSet.add(path);
-      if (!(await isExecutableFile(path)) && !(path.endsWith(".js") && await pathExists(path))) {
-        missingPathSet.add(path);
-      }
+    }
+    for (const path of [...inspection.missingPaths, ...inspection.nonExecutablePaths]) {
+      missingPathSet.add(path);
     }
 
     if (hook.timeout !== TOKENJUICE_CLAUDE_CODE_HOOK_TIMEOUT_SECONDS) {
@@ -492,7 +437,7 @@ export async function runClaudeCodePreToolUseHook(rawText: string, wrapLauncher 
     return 0;
   }
 
-  if (payload.hook_event_name !== "PreToolUse") {
+  if (!isRecord(payload) || payload.hook_event_name !== "PreToolUse") {
     return 0;
   }
   if (payload.tool_name !== "Bash" || !isRecord(payload.tool_input)) {

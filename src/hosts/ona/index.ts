@@ -1,14 +1,23 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { lstat, realpath } from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
 
+import { inspectSkillFrontmatter } from "../shared/skill-frontmatter.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
-import { buildInstructionDoctorReportFields } from "../shared/instruction-doctor.js";
+  isValidDoubleQuotedYamlScalar,
+  stripYamlComment,
+} from "../../core/simple-yaml-frontmatter.js";
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor, findExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  pathEntryExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+import { type PathDoctorReport, buildInstructionDoctorReportFields } from "../shared/instruction-doctor.js";
 import {
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
@@ -43,16 +52,9 @@ export type UninstallOnaInstructionsResult = UninstallOnaSkillResult & {
   instructionsPath: string;
 };
 
-export type OnaDoctorReport = {
-  skillPath: string;
+export type OnaDoctorReport = PathDoctorReport<"skillPath"> & {
   hasTokenjuiceMarker: boolean;
   hasUnsafePathIssue: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_ONA_FIX_COMMAND = "tokenjuice install ona";
@@ -79,87 +81,12 @@ function hasMalformedLegacyMarkerStructure(text: string, completeBlockCount: num
   return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
 }
 
-function getExplicitProjectDir(options: OnaSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.ONA_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: OnaSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("ONA_PROJECT_DIR");
 
 async function resolveCanonicalProjectDir(options: OnaSkillOptions = {}): Promise<string> {
   const projectDir = await resolveProjectDir(options);
   await rejectSkillSymlink(projectDir);
   return realpath(projectDir).catch(() => projectDir);
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function findExistingAncestor(path: string): Promise<{ path: string; realPath: string }> {
-  let current = path;
-  while (true) {
-    try {
-      return { path: current, realPath: await realpath(current) };
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
 }
 
 async function resolveCanonicalInstructionPath(filePath: string): Promise<string> {
@@ -168,19 +95,9 @@ async function resolveCanonicalInstructionPath(filePath: string): Promise<string
   return join(existingAncestor.realPath, relative(existingAncestor.path, resolvedPath));
 }
 
-async function rejectSkillSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Ona skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSkillSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Ona skill ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function isSymlink(filePath: string): Promise<boolean> {
   try {
@@ -190,26 +107,6 @@ async function isSymlink(filePath: string): Promise<boolean> {
       return false;
     }
     throw error;
-  }
-}
-
-async function rejectSkillPathComponentSymlinks(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Ona skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
   }
 }
 
@@ -225,7 +122,11 @@ function getExpectedSkillPath(projectDir: string): string {
 async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
   const resolvedPath = resolve(filePath);
   await rejectSkillSymlink(projectDir);
-  await rejectSkillPathComponentSymlinks(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Ona skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
   if (!isInsideOrEqual(realProjectDir, realParentDir)) {
     throw new Error(`cannot use Ona skill ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`);
@@ -252,95 +153,12 @@ async function getDefaultAliasPath(options: OnaSkillOptions = {}): Promise<strin
   return getExpectedSkillPath(await resolveProjectDir(options));
 }
 
-async function skillArtifactExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
 async function resolveSkillPath(skillPath?: string, options: OnaSkillOptions = {}): Promise<string> {
   if (skillPath) {
     const projectDir = await resolveCanonicalProjectDir(options);
     return resolveSafeProjectSkillPath(await resolveCanonicalInstructionPath(skillPath), projectDir, projectDir);
   }
   return getDefaultSkillPath(options);
-}
-
-function stripYamlComment(value: string): { value: string; isValid: boolean } {
-  let quote: "\"" | "'" | undefined;
-  for (let index = 0; index < value.length; index += 1) {
-    const char = value[index];
-    if (quote === "\"") {
-      if (char === "\\" && index + 1 < value.length) {
-        index += 1;
-        continue;
-      }
-      if (char === "\"") {
-        quote = undefined;
-      }
-      continue;
-    }
-    if (quote === "'") {
-      if (char === "'" && value[index + 1] === "'") {
-        index += 1;
-        continue;
-      }
-      if (char === "'") {
-        quote = undefined;
-      }
-      continue;
-    }
-    if (char === "\"" || char === "'") {
-      quote = char;
-      continue;
-    }
-    if (char === "#" && (index === 0 || /\s/u.test(value[index - 1] ?? ""))) {
-      return { value: value.slice(0, index).trim(), isValid: true };
-    }
-  }
-
-  return { value: value.trim(), isValid: quote === undefined };
-}
-
-function hasHexDigits(value: string, start: number, length: number): boolean {
-  if (start + length > value.length) {
-    return false;
-  }
-  return /^[0-9A-Fa-f]+$/u.test(value.slice(start, start + length));
-}
-
-function isValidDoubleQuotedYamlScalar(value: string): boolean {
-  if (!value.startsWith("\"") || !value.endsWith("\"")) {
-    return false;
-  }
-  for (let index = 1; index < value.length - 1; index += 1) {
-    if (value[index] === "\"") {
-      return false;
-    }
-    if (value[index] !== "\\") {
-      continue;
-    }
-    const escape = value[index + 1];
-    if (!escape) {
-      return false;
-    }
-    if ("0abtnvfre\"/\\N_LP".includes(escape)) {
-      index += 1;
-      continue;
-    }
-    const hexLength = escape === "x" ? 2 : escape === "u" ? 4 : escape === "U" ? 8 : 0;
-    if (hexLength === 0 || !hasHexDigits(value, index + 2, hexLength)) {
-      return false;
-    }
-    index += 1 + hexLength;
-  }
-  return true;
 }
 
 function isValidSimpleYamlScalar(rawValue: string): boolean {
@@ -365,87 +183,6 @@ function isValidSimpleYamlScalar(rawValue: string): boolean {
     return false;
   }
   return !/^[@,&*!|>%`]/u.test(value);
-}
-
-function isYamlBlockScalarHeader(value: string): boolean {
-  return /^[|>](?:[+-][1-9]?|[1-9][+-]?)?$/u.test(value);
-}
-
-function normalizeYamlScalar(value: string): string {
-  if (value.startsWith("\"") && value.endsWith("\"")) {
-    return value.slice(1, -1).replace(/\\(["\\])/gu, "$1");
-  }
-  if (value.startsWith("'") && value.endsWith("'")) {
-    return value.slice(1, -1).replace(/''/gu, "'");
-  }
-  return value;
-}
-
-function parseSimpleYamlFrontmatter(frontmatter: string[]): { hasValidYaml: boolean; values: Map<string, string> } {
-  const values = new Map<string, string>();
-  for (let index = 0; index < frontmatter.length; index += 1) {
-    const line = frontmatter[index] ?? "";
-    const trimmedLine = line.trim();
-    if (trimmedLine === "" || trimmedLine.startsWith("#")) {
-      continue;
-    }
-    const match = /^\s*([A-Za-z0-9_-]+):\s*(.*)$/u.exec(line);
-    if (!match) {
-      return { hasValidYaml: false, values };
-    }
-    const key = match[1] ?? "";
-    if (values.has(key)) {
-      return { hasValidYaml: false, values };
-    }
-    const rawValue = match[2] ?? "";
-    const stripped = stripYamlComment(rawValue);
-    if (!stripped.isValid) {
-      return { hasValidYaml: false, values };
-    }
-    if (isYamlBlockScalarHeader(stripped.value)) {
-      const blockLines: string[] = [];
-      for (index += 1; index < frontmatter.length; index += 1) {
-        const blockLine = frontmatter[index] ?? "";
-        if (blockLine.trim() === "") {
-          blockLines.push("");
-          continue;
-        }
-        if (/^\s/u.test(blockLine)) {
-          blockLines.push(blockLine.trimEnd());
-          continue;
-        }
-        index -= 1;
-        break;
-      }
-      values.set(key, blockLines.join("\n").trim());
-      continue;
-    }
-    if (!isValidSimpleYamlScalar(rawValue)) {
-      return { hasValidYaml: false, values };
-    }
-    values.set(key, normalizeYamlScalar(stripped.value));
-  }
-  return { hasValidYaml: true, values };
-}
-
-function inspectSkillFrontmatter(text: string): { hasName: boolean; hasDescription: boolean; hasValidYaml: boolean } {
-  const lines = text.split(/\r?\n/u);
-  if (lines[0] !== "---") {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const endIndex = lines.findIndex((line, index) => index > 0 && line === "---");
-  if (endIndex < 0) {
-    return { hasName: false, hasDescription: false, hasValidYaml: false };
-  }
-
-  const frontmatter = lines.slice(1, endIndex);
-  const parsed = parseSimpleYamlFrontmatter(frontmatter);
-  return {
-    hasName: parsed.values.get("name") === "tokenjuice",
-    hasDescription: (parsed.values.get("description") ?? "") !== "",
-    hasValidYaml: parsed.hasValidYaml,
-  };
 }
 
 const TOKENJUICE_ONA_SKILL = [
@@ -570,7 +307,7 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
     resolvedSkillPath = await resolveSkillPath(skillPath, options);
   } catch (error) {
     const aliasPath = skillPath ?? (await getDefaultAliasPath(options));
-    if (!skillPath && !(await skillArtifactExists(aliasPath))) {
+    if (!skillPath && !(await pathEntryExists(aliasPath))) {
       return {
         skillPath: aliasPath,
         hasTokenjuiceMarker: false,
@@ -633,7 +370,7 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
   }
 
   const hasTokenjuiceMarker = existing.text.includes(TOKENJUICE_ONA_OWNERSHIP_MARKER);
-  const frontmatter = inspectSkillFrontmatter(existing.text);
+  const frontmatter = inspectSkillFrontmatter(existing.text, isValidSimpleYamlScalar);
   const legacy = await inspectLegacyOnaInstructions(options);
   const legacyIssues =
     legacy.hasLegacyBlock && legacy.issues.length === 0
@@ -643,8 +380,10 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
     ...(!frontmatter.hasValidYaml ? ["configured Ona skill has invalid discovery frontmatter"] : []),
     ...(!frontmatter.hasName ? ["configured Ona skill is missing the required tokenjuice skill name"] : []),
     ...(!frontmatter.hasDescription ? ["configured Ona skill is missing discovery frontmatter"] : []),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "Ona skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_ONA_OWNERSHIP_MARKER,
           missingIssue: "configured Ona skill is missing the tokenjuice ownership marker",
@@ -653,23 +392,11 @@ export async function doctorOnaSkill(skillPath?: string, options: OnaSkillOption
           requiredText: TOKENJUICE_ONA_SKILL_MARKER,
           missingIssue: "configured Ona skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured Ona skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured Ona skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: TOKENJUICE_ONA_SKILL_PATH,
           missingIssue: "configured Ona skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured Ona skill still suggests the full escape hatch",
         },
       ],
     }),

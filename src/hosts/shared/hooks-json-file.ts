@@ -1,15 +1,11 @@
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// Shared helpers for claude-code-style PostToolUse/PreToolUse hook JSON
-// files under `~/.copilot/hooks/`. Used by both the Copilot CLI and
-// VS Code Copilot Chat adapters; each adapter supplies its own filename
-// and its own command-marker substring so the two installs coexist in
-// the same directory without clobbering each other.
-//
-// The codex/claude-code adapters predate this helper and retain their
-// own serializers for historical reasons; migrating them belongs in a
-// separate refactor PR.
+export type HooksSettings = Record<string, unknown> & {
+  hooks: Record<string, unknown>;
+};
+
+// Copilot hook files share ~/.copilot/hooks; callers choose distinct filenames.
 
 export type CopilotHooksConfig = Record<string, unknown> & {
   version?: number;
@@ -21,6 +17,16 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export function sanitizeHooksSettings(raw: unknown): HooksSettings {
+  if (!isRecord(raw)) {
+    return { hooks: {} };
+  }
+  return {
+    ...raw,
+    hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
+  };
+}
+
 export function sanitizeCopilotHooksConfig(raw: unknown): CopilotHooksConfig {
   if (!isRecord(raw)) {
     return { version: 1, hooks: {} };
@@ -30,6 +36,36 @@ export function sanitizeCopilotHooksConfig(raw: unknown): CopilotHooksConfig {
     version: typeof raw.version === "number" ? raw.version : 1,
     hooks: isRecord(raw.hooks) ? { ...raw.hooks } : {},
   };
+}
+
+export async function readHooksSettings(settingsPath: string): Promise<{ config: HooksSettings; exists: boolean }> {
+  try {
+    const rawText = await readFile(settingsPath, "utf8");
+    return { config: sanitizeHooksSettings(JSON.parse(rawText) as unknown), exists: true };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { config: { hooks: {} }, exists: false };
+    }
+    throw error;
+  }
+}
+
+export async function readJsonHooksConfig<Config>(
+  filePath: string,
+  label: string,
+  sanitize: (raw: unknown) => Config,
+  missingConfig: Config,
+): Promise<{ config: Config; exists: boolean }> {
+  try {
+    const rawText = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(rawText) as unknown;
+    return { config: sanitize(parsed), exists: true };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return { config: missingConfig, exists: false };
+    }
+    throw new Error(`failed to read ${label} from ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 export async function readCopilotHooksConfig(
@@ -150,4 +186,74 @@ function hasTokenjuiceCommand(
     }
   }
   return false;
+}
+
+// Keep unchanged group identities so callers can detect actual settings edits.
+export function pruneHookGroups(
+  groups: unknown[],
+  isTokenjuiceHookEntry: (hook: unknown) => boolean,
+): unknown[] {
+  const pruned: unknown[] = [];
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      pruned.push(group);
+      continue;
+    }
+    const retainedHooks = group.hooks.filter((hook) => !isTokenjuiceHookEntry(hook));
+    if (retainedHooks.length === 0) {
+      continue;
+    }
+    if (retainedHooks.length === group.hooks.length) {
+      pruned.push(group);
+      continue;
+    }
+    pruned.push({ ...group, hooks: retainedHooks });
+  }
+  return pruned;
+}
+
+export function findHookCommand(
+  groups: unknown[],
+  isOwnedHook: (hook: unknown) => boolean,
+): string | undefined {
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      continue;
+    }
+    for (const hook of group.hooks) {
+      if (isOwnedHook(hook)) {
+        return (hook as { command: string }).command;
+      }
+    }
+  }
+  return undefined;
+}
+
+export function removeHookEntriesFromEvent(
+  config: HooksSettings,
+  event: string,
+  isOwnedHook: (hook: unknown) => boolean,
+): number {
+  let removed = 0;
+  const retainedGroups: unknown[] = [];
+  const groups = config.hooks[event];
+  for (const group of Array.isArray(groups) ? groups : []) {
+    if (!isRecord(group) || !Array.isArray(group.hooks)) {
+      retainedGroups.push(group);
+      continue;
+    }
+    const retainedHooks = group.hooks.filter((hook) => {
+      const remove = isOwnedHook(hook);
+      if (remove) {
+        removed += 1;
+      }
+      return !remove;
+    });
+    if (retainedHooks.length > 0) {
+      retainedGroups.push({ ...group, hooks: retainedHooks });
+    }
+  }
+  if (retainedGroups.length > 0) config.hooks[event] = retainedGroups;
+  else delete config.hooks[event];
+  return removed;
 }

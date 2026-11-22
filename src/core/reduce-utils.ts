@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { createCompactionMetadata, createPassthroughCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
-import { countTextChars, sliceTextChars } from "./text.js";
+import { countTextChars, segmentTextChars, sliceTextChars } from "./text.js";
 
 export function compactWhitespace(text: string): string {
   return text.replace(/\s+/gu, " ").trim();
@@ -12,7 +12,8 @@ function shortHash(text: string): string {
 }
 
 function clipMiddleWithHashStrict(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
-  if (countTextChars(text) <= maxChars) {
+  const segments = segmentTextChars(text);
+  if (segments.length <= maxChars) {
     return { text };
   }
 
@@ -23,7 +24,7 @@ function clipMiddleWithHashStrict(text: string, maxChars: number, noOmit = false
     };
   }
 
-  const omitted = countTextChars(text) - maxChars;
+  const omitted = segments.length - maxChars;
   const marker = `...[${omitted} chars omitted, sha256:${shortHash(text)}]...`;
   const markerChars = countTextChars(marker);
   if (maxChars <= markerChars) {
@@ -37,7 +38,7 @@ function clipMiddleWithHashStrict(text: string, maxChars: number, noOmit = false
   const headChars = Math.ceil(bodyChars * 0.7);
   const tailChars = Math.max(0, bodyChars - headChars);
   return {
-    text: `${sliceTextChars(text, 0, headChars)}${marker}${tailChars > 0 ? sliceTextChars(text, -tailChars) : ""}`,
+    text: `${segments.slice(0, headChars).join("")}${marker}${tailChars > 0 ? segments.slice(-tailChars).join("") : ""}`,
     compaction: createCompactionMetadata("hashed-middle-clip"),
   };
 }
@@ -78,7 +79,8 @@ function minifyJsonLexically(rawText: string): string {
 }
 
 export function clipMiddleWithHash(text: string, maxChars: number, noOmit = false): { text: string; compaction?: CompactionMetadata } {
-  if (countTextChars(text) <= maxChars) {
+  const segments = segmentTextChars(text);
+  if (segments.length <= maxChars) {
     return { text };
   }
   if (noOmit) {
@@ -87,11 +89,11 @@ export function clipMiddleWithHash(text: string, maxChars: number, noOmit = fals
       compaction: createPassthroughCompactionMetadata("no-omit-char-clip-passthrough"),
     };
   }
-  const omitted = countTextChars(text) - maxChars;
+  const omitted = segments.length - maxChars;
   const headChars = Math.max(20, Math.floor(maxChars * 0.55));
   const tailChars = Math.max(20, maxChars - headChars);
   return {
-    text: `${sliceTextChars(text, 0, headChars)} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${sliceTextChars(text, -tailChars)}`,
+    text: `${segments.slice(0, headChars).join("")} ...[${omitted} chars omitted, sha256:${shortHash(text)}]... ${segments.slice(-tailChars).join("")}`,
     compaction: createCompactionMetadata("hashed-middle-clip"),
   };
 }

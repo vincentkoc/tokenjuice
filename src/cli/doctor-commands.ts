@@ -1,3 +1,8 @@
+import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
+import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
+import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
+import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
+import { doctorQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice doctor <target>` (hosts plus `doctor hooks`).
 // Each handler is keyed by the target name and its aliases in doctorCommands.
 
@@ -87,6 +92,7 @@ import { doctorPiGoSkill } from "../hosts/pi-go/index.js";
 import { doctorPlandexConvention } from "../hosts/plandex/index.js";
 import { doctorQodoReviewConfig } from "../hosts/qodo/index.js";
 import { doctorQoderInstructions } from "../hosts/qoder/index.js";
+import { doctorAnteInstructions } from "../hosts/ante/index.js";
 import { doctorQwenCodeHook } from "../hosts/qwen-code/index.js";
 import { doctorReplitInstructions } from "../hosts/replit/index.js";
 import { doctorRooInstructions } from "../hosts/roo/index.js";
@@ -102,818 +108,149 @@ import { doctorWindsurfRule } from "../hosts/windsurf/index.js";
 import { doctorZedInstructions } from "../hosts/zed/index.js";
 import { doctorZencoderRule } from "../hosts/zencoder/index.js";
 import { doctorInstalledHooks } from "../hosts/shared/hook-doctor.js";
-import { formatHookDoctorReport } from "./doctor-output.js";
+import { formatHookDoctorReport, writeDoctorList } from "./doctor-output.js";
+import { createHostCommand } from "./host-command.js";
 import type { HostCommandHandler, ParsedArgs } from "./command-types.js";
 
-async function doctorHooksCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorInstalledHooks({ local: args.local });
+function createDoctorCommand<Report extends { status: string }>(
+  run: (args: ParsedArgs) => Promise<Report>,
+  writeText: (report: Report, args: ParsedArgs) => void,
+): HostCommandHandler {
+  return createHostCommand(run, writeText, (report) => report.status === "broken" ? 1 : 0);
+}
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+function createFileDoctorCommand<PathKey extends string>(
+  label: string,
+  pathKey: PathKey,
+  run: () => Promise<PathDoctorReport<PathKey>>,
+  showMissingPaths = false,
+): HostCommandHandler {
+  return createDoctorCommand(run, (report) => {
+    process.stdout.write(`${label} path: ${report[pathKey]}\n`);
+    process.stdout.write(`health: ${report.status}\n`);
+    writeDoctorList("issues", report.issues);
+    if (showMissingPaths) {
+      writeDoctorList("missing paths", report.missingPaths);
+    }
+    writeDoctorList("advisories", report.advisories);
+    process.stdout.write(`repair: ${report.fixCommand}\n`);
+  });
+}
 
+const doctorHooksCommand = createDoctorCommand((args) => doctorInstalledHooks({ local: args.local }), (report) => {
   process.stdout.write(formatHookDoctorReport(report));
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAdalCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAdalInstructions();
+const doctorAdalCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAdalInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAetherCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAetherPrompt();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAetherCommand = createDoctorCommand(() => doctorAetherPrompt(), (report) => {
   process.stdout.write(`prompt path: ${report.promptPath}\n`);
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAiderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAiderConvention();
+const doctorAiderCommand = createFileDoctorCommand("convention", "conventionPath", () => doctorAiderConvention());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorAictlCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAictlInstructions(), true);
 
-  process.stdout.write(`convention path: ${report.conventionPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorAiMemoryProtocolCommand = createFileDoctorCommand("memory", "memoryPath", () => doctorAiMemoryProtocolMemory(), true);
 
-async function doctorAictlCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAictlInstructions();
+const doctorAgentLayerCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAgentLayerInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentinitCommand = createDoctorCommand(() => doctorAgentInitInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAiMemoryProtocolCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAiMemoryProtocolMemory();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`memory path: ${report.memoryPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAgentLayerCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentLayerInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAgentinitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentInitInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentlinkCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentlinkInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentlinkCommand = createDoctorCommand(() => doctorAgentlinkInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentloomCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentloomRule();
+const doctorAgentloomCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAgentloomRule());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAgentsCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsCliMemory();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorAgentsCliCommand = createDoctorCommand(() => doctorAgentsCliMemory(), (report) => {
   process.stdout.write(`memory path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAgentsMdCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsMdInstructions();
+const doctorAgentsMdCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAgentsMdInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorAgentsgeCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAgentsGeRule());
 
+const doctorAgentsmeshCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAgentsMeshRule(), true);
+
+const doctorAmazonQCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAmazonQRule(), true);
+
+const doctorAmpCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAmpInstructions());
+
+const doctorAntigravityCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAntigravityRule());
+
+const doctorAnywhereAgentsCommand = createDoctorCommand(() => doctorAnywhereAgentsInstructions(), (report) => {
   process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAgentsgeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsGeRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAgentsmeshCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAgentsMeshRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAmazonQCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAmazonQRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAmpCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAmpInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAntigravityCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAntigravityRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorAnywhereAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAnywhereAgentsInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorAugmentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAugmentRule();
+const doctorAugmentCommand = createFileDoctorCommand("rule", "rulePath", () => doctorAugmentRule());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorAvanteCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAvanteInstructions());
 
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorBazCommand = createFileDoctorCommand("skill", "skillPath", () => doctorBazSkill(), true);
 
-async function doctorAvanteCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorAvanteInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorBazCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBazSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorBitoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBitoGuidelines();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorBitoCommand = createDoctorCommand(() => doctorBitoGuidelines(), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`guidelines path: ${report.guidelinesPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorBlackboxCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBlackboxSkill();
+const doctorBlackboxCommand = createFileDoctorCommand("skill", "skillPath", () => doctorBlackboxSkill(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorBlocksCommand = createFileDoctorCommand("skill", "skillPath", () => doctorBlocksSkill(), true);
 
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorClawdbotCommand = createFileDoctorCommand("skill", "skillPath", () => doctorClawdbotSkill(), true);
 
-async function doctorBlocksCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBlocksSkill();
+const doctorBobCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorBobInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorBuilderCommand = createFileDoctorCommand("rule", "rulePath", () => doctorBuilderRule());
 
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorCharlieCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCharlieInstructions());
 
-async function doctorClawdbotCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClawdbotSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorBobCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBobInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorBuilderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorBuilderRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCharlieCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCharlieInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCodexCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodexHook(undefined, {
+const doctorCodexCommand = createDoctorCommand((args) => doctorCodexHook(undefined, {
     local: args.local,
     ...(args.noOmit ? { noOmit: true } : {}),
-  });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+  }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   if (report.featureFlag.enabled) {
     const source = report.featureFlag.key ? `[features].${report.featureFlag.key}` : "default-on";
     process.stdout.write(
@@ -932,1303 +269,246 @@ async function doctorCodexCommand(args: ParsedArgs): Promise<number> {
     );
   }
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPiExtension();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorPiCommand = createDoctorCommand(() => doctorPiExtension(), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPiGoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPiGoSkill();
+const doctorPiGoCommand = createFileDoctorCommand("skill", "skillPath", () => doctorPiGoSkill(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorOpencodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenCodeExtension();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Extension({ local: args.local }), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorPlandexCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorPlandexConvention();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`convention path: ${report.conventionPath}\n`);
+const doctorOpencodeCommand = createDoctorCommand(() => doctorOpenCodeExtension(), (report) => {
+  process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorQoderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQoderInstructions();
+const doctorPlandexCommand = createFileDoctorCommand("convention", "conventionPath", () => doctorPlandexConvention());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorAnteCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorAnteInstructions(), true);
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
 
-async function doctorReplitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorReplitInstructions();
+const doctorQoderCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorQoderInstructions(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorReplitCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorReplitInstructions(), true);
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorQwenCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQwenCodeHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCommandCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCommandCodeHook(undefined, { local: args.local });
+const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
 
+const doctorQwenCodeCommand = createDoctorCommand((args) => doctorQwenCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCrushCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCrushSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
+const doctorCommandCodeCommand = createDoctorCommand((args) => doctorCommandCodeHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) {
+    process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCursorCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCursorHook(undefined, { local: args.local });
+const doctorCrushCommand = createFileDoctorCommand("skill", "skillPath", () => doctorCrushSkill(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCursorCommand = createDoctorCommand((args) => doctorCursorHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDeepagentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDeepAgentsInstructions();
+const doctorDeepagentsCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorDeepAgentsInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorDevinCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDevinHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDevinCommand = createDoctorCommand((args) => doctorDevinHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDotAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDotAgentsRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDotAgentsCommand = createDoctorCommand(() => doctorDotAgentsRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   process.stdout.write(`sync: ${report.syncCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorDockerAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDockerAgentPrompt();
+const doctorDockerAgentCommand = createFileDoctorCommand("prompt", "promptPath", () => doctorDockerAgentPrompt());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`prompt path: ${report.promptPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCopilotAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCopilotAgentHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCopilotAgentCommand = createDoctorCommand((args) => doctorCopilotAgentHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorEcaCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorEcaSkill();
+const doctorEcaCommand = createFileDoctorCommand("skill", "skillPath", () => doctorEcaSkill(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorElyraCommand = createFileDoctorCommand("skill", "skillPath", () => doctorElyraSkill(), true);
 
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorFirebaseStudioCommand = createFileDoctorCommand("rules", "rulePath", () => doctorFirebaseStudioRule(), true);
 
-async function doctorElyraCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorElyraSkill();
+const doctorForgecodeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorForgeCodeInstructions(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorFirebaseStudioCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorFirebaseStudioRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rules path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorForgecodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorForgeCodeInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorGeminiCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGeminiCliHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGeminiCliCommand = createDoctorCommand((args) => doctorGeminiCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGitlabDuoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGitLabDuoRule();
+const doctorGitlabDuoCommand = createFileDoctorCommand("rule", "rulePath", () => doctorGitLabDuoRule(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorGrokCliCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokCliHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorGrokCliCommand = createDoctorCommand((args) => doctorGrokCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorGptmeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGptmeInstructions();
+const doctorGptmeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGptmeInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorJean2Command = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJean2Instructions());
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorGrokBuildCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGrokBuildInstructions(), true);
 
-async function doctorJean2Command(args: ParsedArgs): Promise<number> {
-  const report = await doctorJean2Instructions();
+const doctorGrokBotCommand = createFileDoctorCommand("rule", "rulePath", () => doctorGrokBotRule(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorGooseCommand = createFileDoctorCommand("hints", "hintsPath", () => doctorGooseHints());
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorGreptileCommand = createFileDoctorCommand("rule", "rulePath", () => doctorGreptileRule(), true);
 
-async function doctorGrokBuildCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokBuildInstructions();
+const doctorQodoCommand = createFileDoctorCommand("config", "configPath", () => doctorQodoReviewConfig(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorCoderabbitCommand = createFileDoctorCommand("config", "configPath", () => doctorCodeRabbitConfig(), true);
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorJetbrainsAiCommand = createFileDoctorCommand("rule", "rulePath", () => doctorJetBrainsAiRule());
 
-async function doctorGrokBotCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGrokBotRule();
+const doctorJunieCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJunieInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorJulesCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJulesInstructions());
 
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorLeanctlCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorLeanCtlInstructions());
 
-async function doctorGooseCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGooseHints();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`hints path: ${report.hintsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorGreptileCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorGreptileRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorQodoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorQodoReviewConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`config path: ${report.configPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCoderabbitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeRabbitConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`config path: ${report.configPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorJetbrainsAiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJetBrainsAiRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorJunieCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJunieInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorJulesCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorJulesInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorLeanctlCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorLeanCtlInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorKimiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKimiHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKimiCommand = createDoctorCommand((args) => doctorKimiHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorLocalcodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorLocalCodePlugin();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorLocalcodeCommand = createDoctorCommand(() => doctorLocalCodePlugin(), (report) => {
   process.stdout.write(`plugin dir: ${report.pluginDir}\n`);
   process.stdout.write(`manifest path: ${report.manifestPath}\n`);
   process.stdout.write(`entrypoint path: ${report.indexPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpenhandsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenHandsHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorOpenhandsCommand = createDoctorCommand((args) => doctorOpenHandsHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hooks path: ${report.hooksPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorOpenwebuiCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenWebUITool();
+const doctorOpenwebuiCommand = createFileDoctorCommand("tool", "toolPath", () => doctorOpenWebUITool());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorMcpAgentCommand = createFileDoctorCommand("agent", "agentPath", () => doctorMcpAgentDefinition());
 
-  process.stdout.write(`tool path: ${report.toolPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorMiniSweAgentCommand = createFileDoctorCommand("config", "configPath", () => doctorMiniSweAgentConfig());
 
-async function doctorMcpAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMcpAgentDefinition();
+const doctorSweAgentCommand = createFileDoctorCommand("config", "configPath", () => doctorSweAgentConfig());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorStagewiseCommand = createFileDoctorCommand("skill", "skillPath", () => doctorStagewiseSkill(), true);
 
-  process.stdout.write(`agent path: ${report.agentPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorMiniSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMiniSweAgentConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`config path: ${report.configPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorSweAgentCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorSweAgentConfig();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`config path: ${report.configPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorStagewiseCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorStagewiseSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorOpenInterpreterCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOpenInterpreterInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorOpenInterpreterCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorOpenInterpreterInstructions());
 
 async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   if (args.printInstructions) {
@@ -2248,530 +528,66 @@ async function doctorVscodeCopilotCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
 
-async function doctorZedCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorZedInstructions();
+const doctorZedCommand = createFileDoctorCommand("rules", "instructionsPath", () => doctorZedInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorZencoderCommand = createFileDoctorCommand("rule", "rulePath", () => doctorZencoderRule());
 
-  process.stdout.write(`rules path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorRooCommand = createFileDoctorCommand("rules", "instructionsPath", () => doctorRooInstructions());
 
-async function doctorZencoderCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorZencoderRule();
+const doctorRovoCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorRovoInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorRulerCommand = createFileDoctorCommand("rule", "rulePath", () => doctorRulerRule());
 
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorTabnineCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorTabnineInstructions());
 
-async function doctorRooCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRooInstructions();
+const doctorTabbyCommand = createFileDoctorCommand("config", "configPath", () => doctorTabbySystemPrompt());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorTraeCommand = createFileDoctorCommand("rule", "rulePath", () => doctorTraeRule());
 
-  process.stdout.write(`rules path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorUipathCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorUiPathInstructions());
 
-async function doctorRovoCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRovoInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorRulerCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorRulerRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorTabnineCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTabnineInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorTabbyCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTabbySystemPrompt();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`config path: ${report.configPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorTraeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorTraeRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorUipathCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorUiPathInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorKiloCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKiloRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorKiloCommand = createDoctorCommand(() => doctorKiloRule(), (report) => {
   process.stdout.write(`rule path: ${report.rulePath}\n`);
   process.stdout.write(`config path: ${report.configPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorMistralVibeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMistralVibeInstructions();
+const doctorMistralVibeCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorMistralVibeInstructions(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorMuxCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorMuxHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorMuxCommand = createDoctorCommand((args) => doctorMuxHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hook path: ${report.hookPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorNovakitCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorNovaKitInstructions();
+const doctorNovakitCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorNovaKitInstructions(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorKnownsCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorKnownsInstructions(), true);
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorOnaCommand = createFileDoctorCommand("skill", "skillPath", () => doctorOnaSkill());
 
-async function doctorKnownsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKnownsInstructions();
+const doctorWarpCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorWarpInstructions(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorKiroCommand = createFileDoctorCommand("steering", "steeringPath", () => doctorKiroSteering());
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorOnaCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorOnaSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorWarpCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorWarpInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorKiroCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorKiroSteering();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`steering path: ${report.steeringPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorWindsurfCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorWindsurfRule();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorWindsurfCommand = createFileDoctorCommand("rule", "rulePath", () => doctorWindsurfRule());
 
 async function doctorCopilotCliCommand(args: ParsedArgs): Promise<number> {
   if (args.printInstructions) {
@@ -2791,298 +607,75 @@ async function doctorCopilotCliCommand(args: ParsedArgs): Promise<number> {
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
   return report.status === "broken" ? 1 : 0;
 }
 
-async function doctorClaudeCodeCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClaudeCodeHook(undefined, {
-    local: args.local,
-    mode: args.preToolUse ? "pre-tool-use" : "post-tool-use",
-  });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorClaudeCodeCommand = createDoctorCommand((args) => doctorClaudeCodeHook(undefined, {
+  local: args.local,
+  mode: args.preToolUse ? "pre-tool-use" : "post-tool-use",
+}), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorClineCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorClineHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorClineCommand = createDoctorCommand((args) => doctorClineHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`hook path: ${report.hookPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorCodebuffCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodebuffInstructions();
+const doctorCodebuffCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodebuffInstructions());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
+const doctorCodeantCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodeAntInstructions());
 
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+const doctorCodegenCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorCodegenInstructions());
 
-async function doctorCodeantCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeAntInstructions();
+const doctorCoderAgentsCommand = createFileDoctorCommand("skill", "skillPath", () => doctorCoderAgentsSkill(), true);
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCodegenCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodegenInstructions();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`instructions path: ${report.instructionsPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCoderAgentsCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCoderAgentsSkill();
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`skill path: ${report.skillPath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorCodebuddyCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorCodeBuddyHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorCodebuddyCommand = createDoctorCommand((args) => doctorCodeBuddyHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
-async function doctorContinueCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorContinueRule();
+const doctorContinueCommand = createFileDoctorCommand("rule", "rulePath", () => doctorContinueRule());
 
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
-  process.stdout.write(`rule path: ${report.rulePath}\n`);
-  process.stdout.write(`health: ${report.status}\n`);
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
-
-async function doctorDroidCommand(args: ParsedArgs): Promise<number> {
-  const report = await doctorDroidHook(undefined, { local: args.local });
-
-  if (args.format === "json") {
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return report.status === "broken" ? 1 : 0;
-  }
-
+const doctorDroidCommand = createDoctorCommand((args) => doctorDroidHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
   if (report.detectedCommand) {
     process.stdout.write(`configured command: ${report.detectedCommand}\n`);
   }
-  if (report.issues.length > 0) {
-    process.stdout.write("issues:\n");
-    for (const issue of report.issues) {
-      process.stdout.write(`- ${issue}\n`);
-    }
-  }
-  if (report.advisories.length > 0) {
-    process.stdout.write("advisories:\n");
-    for (const advisory of report.advisories) {
-      process.stdout.write(`- ${advisory}\n`);
-    }
-  }
-  if (report.missingPaths.length > 0) {
-    process.stdout.write("missing paths:\n");
-    for (const path of report.missingPaths) {
-      process.stdout.write(`- ${path}\n`);
-    }
-  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
-  return report.status === "broken" ? 1 : 0;
-}
+});
 
 export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<string, HostCommandHandler>([
   ["hooks", doctorHooksCommand],
@@ -3121,11 +714,16 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],
   ["opencode", doctorOpencodeCommand],
+  ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],
+  ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],
+  ["qoder-cli", doctorQoderCliCommand],
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
+  ["qwenwork", doctorQwenWorkCommand],
+  ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],
   ["crush", doctorCrushCommand],

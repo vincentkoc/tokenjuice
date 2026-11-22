@@ -1,8 +1,10 @@
-import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+
+import { findGitRoot } from "../shared/project-root.js";
 
 import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -21,14 +23,8 @@ export type UninstallOpenWebUIToolResult = {
   removed: boolean;
 };
 
-export type OpenWebUIDoctorReport = {
+export type OpenWebUIDoctorReport = InstructionDoctorReportFields & {
   toolPath: string;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_OPENWEBUI_FIX_COMMAND = "tokenjuice install openwebui";
@@ -37,29 +33,6 @@ const TOKENJUICE_OPENWEBUI_ADVISORY = "Open WebUI support is beta and exports a 
 
 function getExplicitProjectDir(options: OpenWebUIToolOptions = {}): string | undefined {
   return options.projectDir || process.env.OPENWEBUI_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
 }
 
 async function resolveProjectDir(options: OpenWebUIToolOptions = {}): Promise<string> {

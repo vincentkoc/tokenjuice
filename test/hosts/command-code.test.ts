@@ -1,298 +1,129 @@
-import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "../../src/index.js";
+import * as settingsFiles from "../../src/hosts/shared/settings-file.js";
 
-import {
-  doctorCommandCodeHook,
-  installCommandCodeHook,
-  runCommandCodePostToolUseHook,
-  uninstallCommandCodeHook,
-} from "../../src/index.js";
-
-const tempDirs: string[] = [];
-const originalCommandCodeHome = process.env.COMMANDCODE_HOME;
-const originalCommandCodeProjectDir = process.env.COMMANDCODE_PROJECT_DIR;
-
+const directories: string[] = [];
+const keys = ["CODEX_HOME", "CLAUDE_CONFIG_DIR", "CURSOR_HOME", "PI_CODING_AGENT_DIR", "OPENCODE_CONFIG_DIR", "TOKENJUICE_CURSOR_SHELL", "SHELL", "HOME", "PATH", "COMMANDCODE_HOME", "COMMANDCODE_PROJECT_DIR"] as const;
+const originalEnv = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
 afterEach(async () => {
-  if (originalCommandCodeHome === undefined) {
-    delete process.env.COMMANDCODE_HOME;
-  } else {
-    process.env.COMMANDCODE_HOME = originalCommandCodeHome;
+  vi.restoreAllMocks();
+  Object.defineProperty(process, "platform", platform);
+  for (const key of keys) {
+    if (originalEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = originalEnv[key];
   }
-  if (originalCommandCodeProjectDir === undefined) {
-    delete process.env.COMMANDCODE_PROJECT_DIR;
-  } else {
-    process.env.COMMANDCODE_PROJECT_DIR = originalCommandCodeProjectDir;
-  }
-  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  await Promise.all(directories.splice(0).map(path => rm(path, { recursive: true, force: true })));
 });
 
-async function createTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "tokenjuice-command-code-test-"));
-  tempDirs.push(dir);
-  return dir;
+async function fixture() {
+  const home = await mkdtemp(join(tmpdir(), "tokenjuice-command-code-"));
+  directories.push(home);
+  process.env.HOME = home;
+  process.env.COMMANDCODE_HOME = join(home, ".commandcode");
+  delete process.env.COMMANDCODE_PROJECT_DIR;
+  return { home, path: join(home, ".commandcode", "settings.json") };
+}
+const owned = { type: "command", command: "tokenjuice command-code-post-tool-use", timeout: 10 };
+const config = (hooks: unknown[]) => ({ theme: "dark", hooks: { PreToolUse: [{ hooks: [{ command: "custom" }] }], PostToolUse: [{ matcher: "shell", hooks }] } });
+async function writeConfig(path: string, value: unknown) {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, JSON.stringify(value), { mode: 0o640 });
 }
 
-async function captureStdout(run: () => Promise<number>): Promise<{ code: number; output: string }> {
-  let output = "";
-  const originalWrite = process.stdout.write.bind(process.stdout);
-  process.stdout.write = ((chunk: string | Uint8Array) => {
-    output += typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
-    return true;
-  }) as typeof process.stdout.write;
-
-  try {
-    const code = await run();
-    return { code, output };
-  } finally {
-    process.stdout.write = originalWrite;
-  }
-}
-
-describe("Command Code hooks", () => {
-  it("installs a PostToolUse hook into user settings", async () => {
-    const home = await createTempDir();
-    const settingsPath = join(home, ".commandcode", "settings.json");
-    const launcherPath = join(home, "bin", "tokenjuice");
-    await mkdir(join(home, ".commandcode"), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      permissions: { mode: "standard" },
-      hooks: {
-        PreToolUse: [
-          {
-            matcher: "read",
-            hooks: [{ type: "command", command: "other-hook" }],
-          },
-        ],
-      },
-    }));
-
-    const result = await installCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      permissions: { mode: string };
-      hooks: {
-        PreToolUse: unknown[];
-        PostToolUse: Array<{ matcher: string; hooks: Array<{ command: string; type?: string; timeout?: number }> }>;
-      };
-    };
-
-    await expect(access(`${settingsPath}.bak`)).resolves.toBeUndefined();
-    expect(result.settingsPath).toBe(settingsPath);
-    expect(result.command).toBe(`${launcherPath} command-code-post-tool-use`);
-    expect(result.backupPath).toBe(`${settingsPath}.bak`);
-    expect(parsed.permissions.mode).toBe("standard");
-    expect(parsed.hooks.PreToolUse).toHaveLength(1);
-    expect(parsed.hooks.PostToolUse).toHaveLength(1);
-    expect(parsed.hooks.PostToolUse[0]?.matcher).toBe("shell");
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.type).toBe("command");
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.timeout).toBe(10);
-    expect(parsed.hooks.PostToolUse[0]?.hooks[0]?.command).toBe(`${launcherPath} command-code-post-tool-use`);
+describe("retired Command Code additive hooks", () => {
+  it("rejects installation before creating settings or backups", async () => {
+    const { path } = await fixture();
+    await expect(installCommandCodeHook()).rejects.toThrow("additive hooks do not replace tool output");
+    await expect(stat(dirname(path))).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await doctorCommandCodeHook()).status).toBe("disabled");
+    expect((await uninstallCommandCodeHook()).removed).toBe(0);
+    await expect(stat(dirname(path))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("backs up existing settings without clobbering older backups or tmp sidecars", async () => {
-    const home = await createTempDir();
-    const settingsPath = join(home, ".commandcode", "settings.json");
-    await mkdir(join(home, ".commandcode"), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({ hooks: {}, theme: "dark" }), "utf8");
-    await writeFile(`${settingsPath}.bak`, "{\"older\":true}\n", "utf8");
-    await writeFile(`${settingsPath}.tmp`, "do not touch\n", "utf8");
-
-    const result = await installCommandCodeHook(settingsPath, { local: true });
-
-    expect(result.backupPath).toBe(`${settingsPath}.bak.1`);
-    await expect(readFile(`${settingsPath}.bak`, "utf8")).resolves.toBe("{\"older\":true}\n");
-    await expect(readFile(`${settingsPath}.bak.1`, "utf8")).resolves.toBe(JSON.stringify({ hooks: {}, theme: "dark" }));
-    await expect(readFile(`${settingsPath}.tmp`, "utf8")).resolves.toBe("do not touch\n");
-  });
-
-  it("reports installed and uninstalled hook health", async () => {
-    const home = await createTempDir();
-    const settingsPath = join(home, ".commandcode", "settings.json");
-    const launcherPath = join(home, "tokenjuice");
-    await mkdir(join(home, ".commandcode"), { recursive: true });
-    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-
-    await installCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-    const installed = await doctorCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-
-    expect(installed.status).toBe("ok");
-    expect(installed.fixCommand).toBe("tokenjuice install command-code --local");
-    expect(installed.detectedCommand).toBe(`${launcherPath} command-code-post-tool-use`);
-    expect(installed.advisories[0]).toContain("beta");
-
-    const removed = await uninstallCommandCodeHook(settingsPath);
-    const disabled = await doctorCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-
-    expect(removed.removed).toBe(1);
-    expect(disabled.status).toBe("disabled");
-  });
-
-  it("reports tokenjuice hooks with the wrong matcher or type as broken", async () => {
-    const home = await createTempDir();
-    const settingsPath = join(home, ".commandcode", "settings.json");
-    const launcherPath = join(home, "tokenjuice");
-    await mkdir(join(home, ".commandcode"), { recursive: true });
-    await writeFile(launcherPath, "#!/usr/bin/env bash\nexit 0\n", { encoding: "utf8", mode: 0o755 });
-    await installCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-
-    const parsed = JSON.parse(await readFile(settingsPath, "utf8")) as {
-      hooks: {
-        PostToolUse: Array<{ matcher: string; hooks: Array<{ type: string }> }>;
-      };
-    };
-    parsed.hooks.PostToolUse[0]!.matcher = "write";
-    parsed.hooks.PostToolUse[0]!.hooks[0]!.type = "webhook";
-    await writeFile(settingsPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
-
-    const doctor = await doctorCommandCodeHook(settingsPath, { binaryPath: launcherPath, local: true });
-
+  it("removes only generated entries and preserves config, modes and existing sidecars", async () => {
+    const { path } = await fixture();
+    const custom = [
+      { type: "command", command: "echo tokenjuice command-code-post-tool-use" },
+      { type: "command", command: "tokenjuice command-code-post-tool-use && echo custom" },
+      { type: "command", command: "node custom.js command-code-post-tool-use" },
+      { type: "command", command: "tokenjuice 'command-code-post-tool-use" },
+      { type: "webhook", command: owned.command },
+    ];
+    const original = config([owned, { ...owned, command: "node '/opt/tokenjuice/dist/cli/main.js' command-code-post-tool-use" }, ...custom]);
+    original.hooks.PostToolUse.push({ matcher: "read", hooks: [] });
+    await writeConfig(path, original);
+    await writeFile(`${path}.bak`, "keep backup");
+    await writeFile(`${path}.tmp`, "keep sidecar");
+    const doctor = await doctorCommandCodeHook();
     expect(doctor.status).toBe("broken");
-    expect(doctor.detectedCommand).toBe(`${launcherPath} command-code-post-tool-use`);
-    expect(doctor.issues).toContain("configured Command Code hook is not scoped to the shell matcher");
-    expect(doctor.issues).toContain("configured Command Code hook entry is not a command hook");
+    expect(doctor.fixCommand).toBe("tokenjuice uninstall command-code");
+    expect((await uninstallCommandCodeHook()).removed).toBe(2);
+    original.hooks.PostToolUse[0]!.hooks = custom;
+    expect(JSON.parse(await readFile(path, "utf8"))).toEqual(original);
+    expect((await stat(path)).mode & 0o777).toBe(0o640);
+    expect(await readFile(`${path}.bak`, "utf8")).toBe("keep backup");
+    expect(await readFile(`${path}.tmp`, "utf8")).toBe("keep sidecar");
+    expect((await doctorCommandCodeHook()).status).toBe("disabled");
+    expect((await uninstallCommandCodeHook()).removed).toBe(0);
   });
 
-  it("uses COMMANDCODE_HOME for the default user settings file", async () => {
-    const home = await createTempDir();
-    process.env.COMMANDCODE_HOME = join(home, ".commandcode");
-
-    const installed = await installCommandCodeHook(undefined, { local: true });
-    const expectedSettingsPath = join(home, ".commandcode", "settings.json");
-    const doctor = await doctorCommandCodeHook(undefined, { local: true });
-
-    expect(installed.settingsPath).toBe(expectedSettingsPath);
-    expect(doctor.settingsPath).toBe(expectedSettingsPath);
-    expect(doctor.status).toBe("ok");
-  });
-
-  it("uses COMMANDCODE_PROJECT_DIR for project settings when provided", async () => {
-    const project = await createTempDir();
+  it("retains the project override and explicit settings path for scoped cleanup", async () => {
+    const { home, path } = await fixture();
+    await writeConfig(path, config([owned]));
+    const project = join(home, "project");
+    const projectPath = join(project, ".commandcode", "settings.json");
+    await writeConfig(projectPath, config([owned]));
     process.env.COMMANDCODE_PROJECT_DIR = project;
-
-    const installed = await installCommandCodeHook(undefined, { local: true });
-    const expectedSettingsPath = join(project, ".commandcode", "settings.json");
-
-    expect(installed.settingsPath).toBe(expectedSettingsPath);
+    expect((await uninstallCommandCodeHook()).settingsPath).toBe(projectPath);
+    expect((await doctorCommandCodeHook(path)).status).toBe("broken");
+    expect((await uninstallCommandCodeHook(path)).removed).toBe(1);
   });
 
-  it("rejects symlinked COMMANDCODE_PROJECT_DIR before reading or writing settings", async () => {
-    const home = await createTempDir();
-    const outside = await createTempDir();
-    const projectLink = join(home, "project");
-    process.env.COMMANDCODE_PROJECT_DIR = projectLink;
-    await symlink(outside, projectLink);
-
-    await expect(installCommandCodeHook(undefined, { local: true })).rejects.toThrow(/symlinked project directory/u);
-    await expect(uninstallCommandCodeHook(undefined)).rejects.toThrow(/symlinked project directory/u);
-    await expect(access(join(outside, ".commandcode", "settings.json"))).rejects.toMatchObject({ code: "ENOENT" });
-
-    const doctor = await doctorCommandCodeHook(undefined, { local: true });
-    expect(doctor.status).toBe("broken");
-    expect(doctor.issues[0]).toContain("symlinked project directory");
+  it("preserves targets behind file, directory and project symlinks", async () => {
+    const { home, path } = await fixture();
+    const outside = join(home, "outside");
+    await writeConfig(join(outside, "settings.json"), config([owned]));
+    await mkdir(dirname(path));
+    await symlink(join(outside, "settings.json"), path);
+    await expect(uninstallCommandCodeHook()).rejects.toThrow("symlink");
+    expect((await doctorCommandCodeHook()).status).toBe("broken");
+    await rm(dirname(path), { recursive: true });
+    await symlink(outside, dirname(path));
+    await expect(uninstallCommandCodeHook()).rejects.toThrow("symlink");
+    const project = join(home, "project-link");
+    await symlink(outside, project);
+    process.env.COMMANDCODE_PROJECT_DIR = project;
+    await expect(uninstallCommandCodeHook()).rejects.toThrow("symlink");
+    expect(JSON.parse(await readFile(join(outside, "settings.json"), "utf8"))).toEqual(config([owned]));
   });
 
-  it("rejects symlinked settings paths before install, doctor, or uninstall", async () => {
-    const home = await createTempDir();
-    const outside = await createTempDir();
-    const settingsDir = join(home, ".commandcode");
-    const settingsPath = join(settingsDir, "settings.json");
-    await mkdir(settingsDir, { recursive: true });
-    await writeFile(join(outside, "settings.json"), JSON.stringify({ hooks: {} }), "utf8");
-    await symlink(join(outside, "settings.json"), settingsPath);
-
-    await expect(installCommandCodeHook(settingsPath, { local: true })).rejects.toThrow(/symlinked settings file/u);
-    await expect(uninstallCommandCodeHook(settingsPath)).rejects.toThrow(/symlinked settings file/u);
-    await expect(access(`${settingsPath}.bak`)).rejects.toMatchObject({ code: "ENOENT" });
-
-    const doctor = await doctorCommandCodeHook(settingsPath, { local: true });
-    expect(doctor.status).toBe("broken");
-    expect(doctor.issues[0]).toContain("symlinked settings file");
-  });
-
-  it("rejects symlinked settings directories and sidecars before writing", async () => {
-    const home = await createTempDir();
-    const outside = await createTempDir();
-    const linkedSettingsDir = join(home, ".commandcode");
-    await mkdir(outside, { recursive: true });
-    await symlink(outside, linkedSettingsDir);
-
-    await expect(installCommandCodeHook(join(linkedSettingsDir, "settings.json"), { local: true })).rejects.toThrow(/symlinked settings directory/u);
-
-    await rm(linkedSettingsDir);
-    await mkdir(linkedSettingsDir, { recursive: true });
-    const settingsPath = join(linkedSettingsDir, "settings.json");
-    await writeFile(settingsPath, JSON.stringify({ hooks: {} }), "utf8");
-    await writeFile(join(outside, "backup.json"), "outside backup\n", "utf8");
-    await symlink(join(outside, "backup.json"), `${settingsPath}.bak`);
-
-    await expect(installCommandCodeHook(settingsPath, { local: true })).rejects.toThrow(/symlinked sidecar/u);
-    await expect(readFile(join(outside, "backup.json"), "utf8")).resolves.toBe("outside backup\n");
-
-    await rm(`${settingsPath}.bak`);
-    await writeFile(join(outside, "tmp.json"), "outside tmp\n", "utf8");
-    await symlink(join(outside, "tmp.json"), `${settingsPath}.tmp`);
-
-    await expect(installCommandCodeHook(settingsPath, { local: true })).rejects.toThrow(/symlinked sidecar/u);
-    await expect(readFile(join(outside, "tmp.json"), "utf8")).resolves.toBe("outside tmp\n");
-  });
-
-  it("injects compacted context for noisy shell output", async () => {
-    const payload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "shell_command",
-      tool_display_name: "SHELL",
-      cwd: "/repo",
-      tool_input: {
-        command: "git status",
-      },
-      tool_response: [
-        "On branch pr-65478-security-fix",
-        "Your branch and 'origin/pr-65478-security-fix' have diverged,",
-        "and have 8 and 642 different commits each, respectively.",
-        "",
-        "Changes not staged for commit:",
-        "\tmodified:   src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts",
-        "\tmodified:   src/agents/pi-embedded-runner/run/attempt.test.ts",
-        "",
-        "no changes added to commit",
-      ].join("\n"),
+  it("preserves malformed files and edits made after the cleanup read", async () => {
+    const { path } = await fixture();
+    await writeConfig(path, config([owned]));
+    const originalRead = settingsFiles.readSettingsFile;
+    vi.spyOn(settingsFiles, "readSettingsFile").mockImplementationOnce(async path => {
+      const file = await originalRead(path);
+      await writeFile(path, "concurrent user edit");
+      return file;
     });
-
-    const { code, output } = await captureStdout(() => runCommandCodePostToolUseHook(payload));
-    const response = JSON.parse(output) as {
-      hookSpecificOutput?: {
-        hookEventName?: string;
-        additionalContext?: string;
-      };
-    };
-
-    expect(code).toBe(0);
-    expect(response.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("Changes not staged:");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("M: src/agents/pi-embedded-runner/run/attempt.prompt-helpers.ts");
-    expect(response.hookSpecificOutput?.additionalContext).not.toContain("and have 8 and 642");
-    expect(response.hookSpecificOutput?.additionalContext).toContain("tokenjuice wrap --raw -- <command>");
+    await expect(uninstallCommandCodeHook()).rejects.toThrow("settings changed");
+    expect(await readFile(path, "utf8")).toBe("concurrent user edit");
+    await expect(uninstallCommandCodeHook()).rejects.toThrow(/JSON|Unexpected|token/u);
+    expect(await readFile(path, "utf8")).toBe("concurrent user edit");
   });
 
-  it("keeps unrelated and raw-bypass payloads silent", async () => {
-    const readPayload = JSON.stringify({
-      hook_event_name: "PostToolUse",
-      tool_name: "read_file",
-      tool_display_name: "READ",
-      tool_input: { absolute_path: "README.md" },
-      tool_response: "hello",
-    });
-    const rawPayload = JSON.stringify({
-      hookEventName: "PostToolUse",
-      toolName: "shell_command",
-      toolDisplayName: "SHELL",
-      toolInput: { command: "tokenjuice wrap --raw -- pnpm test" },
-      toolResponse: "Changes not staged for commit:\n\tmodified: README.md\n",
-    });
-
-    await expect(captureStdout(() => runCommandCodePostToolUseHook(readPayload))).resolves.toEqual({ code: 0, output: "{}\n" });
-    await expect(captureStdout(() => runCommandCodePostToolUseHook(rawPayload))).resolves.toEqual({ code: 0, output: "{}\n" });
+  it("keeps stale runtime hooks silent for all payloads", async () => {
+    let output = "";
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => { output += chunk.toString(); return true; });
+    for (const payload of ["{bad", "null", JSON.stringify({ hook_event_name: "PostToolUse", tool_name: "shell_command", tool_response: "noisy output" })]) {
+      expect(await runCommandCodePostToolUseHook(payload)).toBe(0);
+    }
+    spy.mockRestore();
+    expect(output).toBe("{}\n{}\n{}\n");
   });
 });

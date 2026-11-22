@@ -1,23 +1,25 @@
-import { lstat, realpath, stat } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { realpath } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+
+import { createSymlinkGuard, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
 
 export type AgentInitInstructionsOptions = {
   projectDir?: string;
@@ -35,16 +37,9 @@ export type UninstallAgentInitInstructionsResult = {
   syncCommand: string;
 };
 
-export type AgentInitDoctorReport = {
-  instructionsPath: string;
+export type AgentInitDoctorReport = InstructionsDoctorReport & {
   syncCommand: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AGENTINIT_FIX_COMMAND = "tokenjuice install agentinit";
@@ -54,78 +49,11 @@ const TOKENJUICE_AGENTINIT_END = "<!-- tokenjuice:agentinit end -->";
 const TOKENJUICE_AGENTINIT_ADVISORY =
   "AgentInit support is beta and source-instruction based; run `agentinit sync` after install so generated agent files receive the guidance.";
 
-function getExplicitProjectDir(options: AgentInitInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENTINIT_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("AGENTINIT_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AgentInitInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectInstructionSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use AgentInit source ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectInstructionSymlink = createSymlinkGuard(
+  (filePath) => `cannot use AgentInit source ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectInstructionSymlink(`${filePath}.bak`);
@@ -181,28 +109,6 @@ const TOKENJUICE_AGENTINIT_BLOCK_CONFIG = {
   block: TOKENJUICE_AGENTINIT_BLOCK,
 };
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AGENTINIT_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AGENTINIT_END, beginIndex + TOKENJUICE_AGENTINIT_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AGENTINIT_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AGENTINIT_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AGENTINIT_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 export async function installAgentInitInstructions(
   instructionsPath?: string,
   options: AgentInitInstructionsOptions = {},
@@ -211,7 +117,7 @@ export async function installAgentInitInstructions(
   await rejectInstallSidecarSymlinks(resolvedInstructionsPath);
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTINIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTINIT_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice install agentinit`,
     );
@@ -232,7 +138,7 @@ export async function uninstallAgentInitInstructions(
   const resolvedInstructionsPath = await resolveInstructionsPath(instructionsPath, options);
   const existing = await readInstructionFile(resolvedInstructionsPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AGENTINIT_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTINIT_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${resolvedInstructionsPath}; remove the dangling marker manually, then rerun tokenjuice uninstall agentinit`,
     );
@@ -286,7 +192,7 @@ export async function doctorAgentInitInstructions(
     configuredLabel: "AgentInit instructions",
     repairCommand: TOKENJUICE_AGENTINIT_FIX_COMMAND,
   });
-  const hasMalformedMarkers = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount);
+  const hasMalformedMarkers = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AGENTINIT_BLOCK_CONFIG);
   const issues = [
     ...markerIssues,
     ...(hasMalformedMarkers && markerIssues.length === 0
@@ -294,25 +200,12 @@ export async function doctorAgentInitInstructions(
           "configured AgentInit instructions have malformed tokenjuice markers; remove unmatched tokenjuice markers, then run tokenjuice install agentinit",
         ]
       : []),
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured AgentInit instructions are missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured AgentInit instructions are missing the raw escape hatch",
-        },
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AGENTINIT_BLOCK_CONFIG), {
+      configuredLabel: "AgentInit instructions",
+      additionalRequiredAfter: [
         {
           requiredText: "agentinit sync",
           missingIssue: "configured AgentInit instructions are missing sync guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured AgentInit instructions still suggest the full escape hatch",
         },
       ],
     }),

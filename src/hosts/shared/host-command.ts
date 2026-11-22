@@ -46,15 +46,15 @@ export async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function resolveInstalledTokenjuicePath(): Promise<string | undefined> {
+export async function resolveCommandFromPath(command: string): Promise<string | undefined> {
   const pathValue = process.env.PATH;
   if (!pathValue) {
     return undefined;
   }
 
   const candidateNames = process.platform === "win32"
-    ? ["tokenjuice.exe", "tokenjuice.cmd", "tokenjuice.bat", "tokenjuice"]
-    : ["tokenjuice"];
+    ? [`${command}.exe`, `${command}.cmd`, `${command}.bat`, command]
+    : [command];
 
   for (const segment of pathValue.split(delimiter)) {
     if (!segment) {
@@ -85,7 +85,7 @@ export async function buildTokenjuiceHookCommand(
 
   let launcher = binaryPath;
   if (!options.local) {
-    const installedBinaryPath = await resolveInstalledTokenjuicePath();
+    const installedBinaryPath = await resolveCommandFromPath("tokenjuice");
     launcher = installedBinaryPath ?? binaryPath;
   }
 

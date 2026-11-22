@@ -2,23 +2,21 @@ import { lstat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import {
+  getMarkerDelimitedBlockText,
+  hasMalformedMarkerDelimitedBlock,
   collectMarkerDelimitedBlockIssues,
   inspectMarkerDelimitedBlock,
   installMarkerDelimitedBlock,
   uninstallMarkerDelimitedBlock,
 } from "../shared/marker-instructions.js";
 import { shellQuote } from "../shared/hook-command.js";
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
-  buildTokenjuiceGuidanceBullets,
-  TOKENJUICE_FULL_COMMAND,
-  TOKENJUICE_RAW_COMMAND,
-  TOKENJUICE_WRAP_COMMAND,
-} from "../shared/instruction-guidance.js";
-import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
-import { collectGuidanceIssues, readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 
 export type AiMemoryProtocolOptions = {
   memoryDir?: string;
@@ -34,15 +32,8 @@ export type UninstallAiMemoryProtocolResult = {
   removed: boolean;
 };
 
-export type AiMemoryProtocolDoctorReport = {
-  memoryPath: string;
+export type AiMemoryProtocolDoctorReport = PathDoctorReport<"memoryPath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_AI_MEMORY_PROTOCOL_BEGIN = ".. tokenjuice:ai-memory-protocol begin";
@@ -295,28 +286,6 @@ function buildTargetedInstallCommand(memoryDir: string): string {
   return `AI_MEMORY_PROTOCOL_DIR=${shellQuote(memoryDir)} tokenjuice install ai-memory-protocol`;
 }
 
-function getTokenjuiceBlockText(text: string): string {
-  const beginIndex = text.indexOf(TOKENJUICE_AI_MEMORY_PROTOCOL_BEGIN);
-  if (beginIndex === -1) {
-    return "";
-  }
-  const endIndex = text.indexOf(TOKENJUICE_AI_MEMORY_PROTOCOL_END, beginIndex + TOKENJUICE_AI_MEMORY_PROTOCOL_BEGIN.length);
-  if (endIndex === -1) {
-    return text.slice(beginIndex);
-  }
-  return text.slice(beginIndex, endIndex + TOKENJUICE_AI_MEMORY_PROTOCOL_END.length);
-}
-
-function countMarker(text: string, marker: string): number {
-  return text.split(marker).length - 1;
-}
-
-function hasMalformedMarkerStructure(text: string, completeBlockCount: number): boolean {
-  const beginCount = countMarker(text, TOKENJUICE_AI_MEMORY_PROTOCOL_BEGIN);
-  const endCount = countMarker(text, TOKENJUICE_AI_MEMORY_PROTOCOL_END);
-  return beginCount !== endCount || beginCount !== completeBlockCount || endCount !== completeBlockCount;
-}
-
 function ensurePreferencesHeader(text: string): string {
   if (text.trim()) {
     return text;
@@ -333,7 +302,7 @@ export async function installAiMemoryProtocolMemory(
   await assertInitializedWorkspace(location);
   const existing = await readOptionalMemoryFile(location.memoryPath);
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely repair malformed tokenjuice markers in ${location.memoryPath}; remove the dangling marker manually, then rerun tokenjuice install ai-memory-protocol`,
     );
@@ -370,7 +339,7 @@ export async function uninstallAiMemoryProtocolMemory(
     return { memoryPath: location.memoryPath, removed: false };
   }
   const markerState = inspectMarkerDelimitedBlock(existing.text, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG);
-  if (existing.exists && hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)) {
+  if (existing.exists && hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG)) {
     throw new Error(
       `cannot safely uninstall malformed tokenjuice markers in ${location.memoryPath}; remove the dangling marker manually, then rerun tokenjuice uninstall ai-memory-protocol`,
     );
@@ -445,35 +414,25 @@ export async function doctorAiMemoryProtocolMemory(
     configuredLabel: "AI Memory Protocol memory",
     repairCommand: targetedInstallCommand,
   });
-  const malformedMarkerIssues = hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+  const malformedMarkerIssues = hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG)
     ? ["configured AI Memory Protocol memory has mismatched tokenjuice marker counts; remove unmatched tokenjuice markers before reinstalling"]
     : [];
   const issues = [
     ...markerIssues,
     ...malformedMarkerIssues,
-    ...collectGuidanceIssues(getTokenjuiceBlockText(existing.text), {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(getMarkerDelimitedBlockText(existing.text, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG), {
+      configuredLabel: "AI Memory Protocol memory",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_AI_MEMORY_PROTOCOL_ID,
           missingIssue: "configured AI Memory Protocol memory is missing the tokenjuice preference id",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured AI Memory Protocol memory is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured AI Memory Protocol memory is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: "memory rebuild",
           missingIssue: "configured AI Memory Protocol memory is missing rebuild guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured AI Memory Protocol memory still suggests the full escape hatch",
         },
       ],
     }),
@@ -486,7 +445,7 @@ export async function doctorAiMemoryProtocolMemory(
       status: instructionDoctorStatusFromIssues(issues),
       issues,
       advisory: TOKENJUICE_AI_MEMORY_PROTOCOL_ADVISORY,
-      fixCommand: hasMalformedMarkerStructure(existing.text, markerState.completeBlockCount)
+      fixCommand: hasMalformedMarkerDelimitedBlock(existing.text, markerState.completeBlockCount, TOKENJUICE_AI_MEMORY_PROTOCOL_BLOCK_CONFIG)
         ? `remove unmatched tokenjuice markers from AI Memory Protocol memory, then run ${targetedInstallCommand}`
         : targetedInstallCommand,
     }),

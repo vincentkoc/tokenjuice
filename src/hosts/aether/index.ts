@@ -1,10 +1,23 @@
-import { createHash, randomUUID } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { createHash } from "node:crypto";
+import { lstat, mkdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
 import {
+  findAvailableBackupPath,
+  writeTextFileWithoutBackup,
+  pathTargetExists as pathExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+
+import { createSymlinkGuard, rejectSymlinkPathComponents, isInsideOrEqual, realpathExistingAncestor } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
+import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -29,16 +42,10 @@ export type UninstallAetherPromptResult = {
   promptsRemoved: number;
 };
 
-export type AetherDoctorReport = {
+export type AetherDoctorReport = InstructionDoctorReportFields & {
   promptPath: string;
   settingsPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 type AetherSettings = Record<string, unknown> & {
@@ -141,135 +148,15 @@ function agentOwnershipSignature(agent: Record<string, unknown>): string {
   return createHash("sha256").update(descriptor).digest("hex");
 }
 
-function getExplicitProjectDir(options: AetherPromptOptions = {}): string | undefined {
-  return options.projectDir || process.env.AETHER_PROJECT_DIR;
-}
+const resolveProjectDir = createProjectDirResolver("AETHER_PROJECT_DIR");
 
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseAetherBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
-async function resolveProjectDir(options: AetherPromptOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
-
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectAetherPathSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use Aether source ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectAetherPathSymlink = createSymlinkGuard(
+  (filePath) => `cannot use Aether source ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectAetherPathSymlink(`${filePath}.bak`);
   await rejectAetherPathSymlink(`${filePath}.tmp`);
-}
-
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use Aether source ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
 }
 
 async function resolveSafeProjectPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
@@ -281,7 +168,11 @@ async function resolveSafeProjectPath(filePath: string, projectDir: string, real
     );
   }
 
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
+  await rejectSymlinkPathComponents(
+    resolvedPath,
+    projectDir,
+    `cannot use Aether source ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`,
+  );
   await rejectAetherPathSymlink(resolvedPath);
   return resolvedPath;
 }
@@ -538,18 +429,6 @@ function removePromptSourceFromAgents(
   return removed;
 }
 
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
-}
-
 async function writeAetherSettings(settingsPath: string, config: AetherSettings): Promise<void> {
   await mkdir(dirname(settingsPath), { recursive: true });
   await writeTextFileWithoutBackup(settingsPath, `${JSON.stringify(config, null, 2)}\n`);
@@ -566,7 +445,7 @@ async function readRequiredAetherSettings(settingsPath: string): Promise<{ confi
 }
 
 async function backupAetherFile(filePath: string, text: string): Promise<string> {
-  const backupPath = await chooseAetherBackupPath(filePath);
+  const backupPath = await findAvailableBackupPath(filePath);
   await writeFile(backupPath, text, { encoding: "utf8", flag: "wx" });
   return backupPath;
 }
@@ -766,29 +645,19 @@ export async function doctorAetherPrompt(
   }
 
   const promptIssues = prompt.exists
-    ? collectGuidanceIssues(prompt.text, {
-        required: [
+    ? collectTokenjuiceGuidanceIssues(prompt.text, {
+        configuredLabel: "Aether prompt",
+        singular: true,
+        additionalRequired: [
           {
             requiredText: TOKENJUICE_AETHER_MARKER,
             missingIssue: "configured Aether prompt does not look like the tokenjuice prompt",
           },
-          {
-            requiredText: TOKENJUICE_WRAP_COMMAND,
-            missingIssue: "configured Aether prompt is missing tokenjuice wrap guidance",
-          },
-          {
-            requiredText: TOKENJUICE_RAW_COMMAND,
-            missingIssue: "configured Aether prompt is missing the raw escape hatch",
-          },
+        ],
+        additionalRequiredAfter: [
           {
             requiredText: "aether show-prompt",
             missingIssue: "configured Aether prompt is missing prompt verification guidance",
-          },
-        ],
-        forbidden: [
-          {
-            forbiddenText: TOKENJUICE_FULL_COMMAND,
-            presentIssue: "configured Aether prompt still suggests the full escape hatch",
           },
         ],
       })

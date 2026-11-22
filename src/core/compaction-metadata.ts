@@ -1,4 +1,5 @@
 export type CompactionKind =
+  | "failure-signal-filter"
   | "head-tail-omission"
   | "middle-truncation"
   | "tail-truncation"
@@ -11,7 +12,9 @@ export type CompactionKind =
   | "github-status-check-rollup-omission"
   | "no-omit-head-tail-passthrough"
   | "no-omit-char-clip-passthrough"
-  | "no-omit-domain-passthrough";
+  | "no-omit-domain-passthrough"
+  | "rule-line-filter"
+  | "rule-output-replacement";
 
 export type CompactionMetadata = {
   authoritative: boolean;
@@ -33,7 +36,7 @@ export const WRAP_COMPACTION_FOOTER_PREFIX = "[tokenjuice]";
  * no claim that the omitted content is unrecoverable, so it never discourages
  * the reader from verifying or re-running. This keeps tokenjuice a transparent
  * output adapter rather than a source of do-not-verify directives. The caller
- * appends a factual pointer to the full output (a stored raw ref, or `--raw`).
+ * appends a factual pointer to stored output when one exists.
  */
 export function buildCompactionFooter(rawChars: number, reducedChars: number): string {
   const omitted = Math.max(0, rawChars - reducedChars);

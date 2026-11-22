@@ -1,10 +1,12 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, rename, rm, rmdir, writeFile } from "node:fs/promises";
+import { rename, rm, rmdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { createSymlinkGuard } from "../shared/path-ancestors.js";
+import { findAvailableBackupPath, writeTextFileWithoutBackup, collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+
 import {
+  type InstructionDoctorReportFields,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
@@ -29,17 +31,11 @@ export type UninstallLocalCodePluginResult = {
   removed: boolean;
 };
 
-export type LocalCodeDoctorReport = {
+export type LocalCodeDoctorReport = InstructionDoctorReportFields & {
   pluginDir: string;
   manifestPath: string;
   indexPath: string;
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_LOCALCODE_FIX_COMMAND = "tokenjuice install localcode";
@@ -68,19 +64,9 @@ function getIndexPath(options: LocalCodePluginOptions = {}): string {
   return join(getPluginDir(options), "index.js");
 }
 
-async function rejectPluginDirectorySymlink(pluginDir: string): Promise<void> {
-  try {
-    const stats = await lstat(pluginDir);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use LocalCode plugin directory ${pluginDir}; tokenjuice will not write through plugin directory symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectPluginDirectorySymlink = createSymlinkGuard(
+  (pluginDir) => `cannot use LocalCode plugin directory ${pluginDir}; tokenjuice will not write through plugin directory symlinks`,
+);
 
 async function rejectPluginDirectorySymlinks(options: LocalCodePluginOptions = {}): Promise<void> {
   const localCodeHome = getLocalCodeHome(options);
@@ -89,55 +75,12 @@ async function rejectPluginDirectorySymlinks(options: LocalCodePluginOptions = {
   }
 }
 
-async function rejectPluginFileSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use LocalCode plugin file ${filePath}; tokenjuice will not read or write through plugin file symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectPluginFileSymlink = createSymlinkGuard(
+  (filePath) => `cannot use LocalCode plugin file ${filePath}; tokenjuice will not read or write through plugin file symlinks`,
+);
 
 async function rejectPluginFileSidecarSymlinks(filePath: string): Promise<void> {
   await rejectPluginFileSymlink(`${filePath}.bak`);
-}
-
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseLocalCodeBackupPath(filePath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${filePath}.bak` : `${filePath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
 }
 
 async function readLocalCodePluginFiles(options: LocalCodePluginOptions = {}): Promise<{
@@ -353,11 +296,11 @@ export async function installLocalCodePlugin(
     const restoreBackups = readRestoreBackups(existingIndex.text);
     const manifestBackupPath =
       existingManifest.exists && !existingManifest.text.includes(TOKENJUICE_LOCALCODE_OWNERSHIP_MARKER)
-        ? await chooseLocalCodeBackupPath(manifestPath)
+        ? await findAvailableBackupPath(manifestPath)
         : undefined;
     const indexBackupPath =
       existingIndex.exists && !existingIndex.text.includes(TOKENJUICE_LOCALCODE_OWNERSHIP_MARKER)
-        ? await chooseLocalCodeBackupPath(indexPath)
+        ? await findAvailableBackupPath(indexPath)
         : undefined;
     if (manifestBackupPath) {
       await writeFile(manifestBackupPath, existingManifest.text, { encoding: "utf8", flag: "wx" });
@@ -400,8 +343,8 @@ export async function installLocalCodePlugin(
     };
   }
 
-  const manifestBackupPath = existingManifest.exists ? await chooseLocalCodeBackupPath(manifestPath) : undefined;
-  const indexBackupPath = existingIndex.exists ? await chooseLocalCodeBackupPath(indexPath) : undefined;
+  const manifestBackupPath = existingManifest.exists ? await findAvailableBackupPath(manifestPath) : undefined;
+  const indexBackupPath = existingIndex.exists ? await findAvailableBackupPath(indexPath) : undefined;
   if (manifestBackupPath) {
     await writeFile(manifestBackupPath, existingManifest.text, { encoding: "utf8", flag: "wx" });
   }

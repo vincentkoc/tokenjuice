@@ -1,13 +1,20 @@
-import { randomUUID } from "node:crypto";
-import { lstat, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { realpath } from "node:fs/promises";
+import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { readInstructionFile } from "../shared/instruction-file.js";
+
+import { createProjectInstructionPathResolver, createSymlinkGuard } from "../shared/path-ancestors.js";
+
+import { createProjectDirResolver } from "../shared/project-root.js";
+
+import { collectTokenjuiceGuidanceIssues, buildTokenjuiceGuidanceBullets } from "../shared/instruction-guidance.js";
 import {
+  type PathDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
 } from "../shared/instruction-doctor.js";
+
+import { createRestorableSkillCommands } from "../shared/restorable-skill.js";
 
 export type ElyraSkillOptions = {
   projectDir?: string;
@@ -23,15 +30,8 @@ export type UninstallElyraSkillResult = {
   removed: boolean;
 };
 
-export type ElyraDoctorReport = {
-  skillPath: string;
+export type ElyraDoctorReport = PathDoctorReport<"skillPath"> & {
   hasTokenjuiceMarker: boolean;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
 };
 
 const TOKENJUICE_ELYRA_FIX_COMMAND = "tokenjuice install elyra";
@@ -51,156 +51,28 @@ function readRestoreBackupSuffix(text: string): string | undefined {
   return match?.[1];
 }
 
-function getExplicitProjectDir(options: ElyraSkillOptions = {}): string | undefined {
-  return options.projectDir || process.env.ELYRA_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: ElyraSkillOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
-
-function isInsideOrEqual(parentDir: string, childPath: string): boolean {
-  const relativePath = relative(parentDir, childPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
-}
+const resolveProjectDir = createProjectDirResolver("ELYRA_PROJECT_DIR");
 
 function getExpectedSkillPath(projectDir: string): string {
   return join(projectDir, ".elyra", "skills", "tokenjuice", "SKILL.md");
 }
 
-async function realpathExistingAncestor(path: string): Promise<string> {
-  let current = path;
-  while (true) {
-    try {
-      return await realpath(current);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
-      const parent = dirname(current);
-      if (parent === current) {
-        throw error;
-      }
-      current = parent;
-    }
-  }
-}
-
-async function rejectSkillSymlink(filePath: string): Promise<void> {
-  try {
-    const stats = await lstat(filePath);
-    if (stats.isSymbolicLink()) {
-      throw new Error(`cannot use elyra skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-    }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
-    }
-    throw error;
-  }
-}
+const rejectSkillSymlink = createSymlinkGuard(
+  (filePath) => `cannot use elyra skill ${filePath}; tokenjuice will not read or write through instruction symlinks`,
+);
 
 async function rejectInstallSidecarSymlinks(filePath: string): Promise<void> {
   await rejectSkillSymlink(`${filePath}.bak`);
   await rejectSkillSymlink(`${filePath}.tmp`);
 }
 
-async function backupPathExists(backupPath: string): Promise<boolean> {
-  try {
-    await lstat(backupPath);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function chooseElyraBackupPath(skillPath: string): Promise<string> {
-  for (let index = 0; ; index += 1) {
-    const candidate = index === 0 ? `${skillPath}.bak` : `${skillPath}.bak.${index}`;
-    if (!(await backupPathExists(candidate))) {
-      return candidate;
-    }
-  }
-}
-
-async function writeTextFileWithoutBackup(filePath: string, text: string): Promise<void> {
-  await mkdir(dirname(filePath), { recursive: true });
-  const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, text, { encoding: "utf8", flag: "wx" });
-  try {
-    await rename(tempPath, filePath);
-  } catch (error) {
-    await rm(tempPath, { force: true });
-    throw error;
-  }
-}
-
-async function rejectSymlinkPathComponents(filePath: string, projectDir: string): Promise<void> {
-  const relativePath = relative(projectDir, filePath);
-  const segments = relativePath.split(sep).filter(Boolean);
-  let currentPath = projectDir;
-  for (const segment of segments.slice(0, -1)) {
-    currentPath = join(currentPath, segment);
-    try {
-      const stats = await lstat(currentPath);
-      if (stats.isSymbolicLink()) {
-        throw new Error(`cannot use elyra skill ${filePath}; tokenjuice will not read or write through instruction symlinks`);
-      }
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        return;
-      }
-      throw error;
-    }
-  }
-}
+const resolveProjectSkillPath = createProjectInstructionPathResolver(
+  "elyra skill",
+  rejectSkillSymlink,
+);
 
 async function resolveSafeProjectSkillPath(filePath: string, projectDir: string, realProjectDir = projectDir): Promise<string> {
-  const resolvedPath = resolve(filePath);
-  if (projectDir !== realProjectDir) {
-    throw new Error(`cannot use elyra skill ${resolvedPath}; tokenjuice will not read or write through instruction symlinks`);
-  }
-  const realParentDir = await realpathExistingAncestor(dirname(resolvedPath));
-  if (!isInsideOrEqual(realProjectDir, realParentDir)) {
-    throw new Error(
-      `cannot use elyra skill ${resolvedPath}; tokenjuice will not write through instruction directories outside ${realProjectDir}`,
-    );
-  }
-
-  await rejectSkillSymlink(projectDir);
-  await rejectSymlinkPathComponents(resolvedPath, projectDir);
-  await rejectSkillSymlink(resolvedPath);
+  const resolvedPath = await resolveProjectSkillPath(filePath, projectDir, realProjectDir);
   const expectedSkillPath = getExpectedSkillPath(projectDir);
   if (resolvedPath !== expectedSkillPath) {
     throw new Error(`cannot use elyra skill ${resolvedPath}; tokenjuice only installs the project-local .elyra/skills/tokenjuice/SKILL.md skill`);
@@ -309,37 +181,20 @@ function buildElyraSkill(
   ].join("\n");
 }
 
+const skillCommands = createRestorableSkillCommands({
+  buildSkill: buildElyraSkill,
+  isManagedText: isTokenjuiceElyraSkillText,
+  readRestoreBackupSuffix,
+  rejectSkillSymlink,
+  rejectInstallSidecarSymlinks,
+});
+
 export async function installElyraSkill(
   skillPath?: string,
   options: ElyraSkillOptions = {},
 ): Promise<InstallElyraSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  await rejectInstallSidecarSymlinks(resolvedSkillPath);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (existing.exists && isTokenjuiceElyraSkillText(existing.text)) {
-    const nextSkill = buildElyraSkill({ restoreBackupSuffix: readRestoreBackupSuffix(existing.text) });
-    if (existing.text === nextSkill) {
-      return { skillPath: resolvedSkillPath };
-    }
-    const result = await writeInstructionFile(resolvedSkillPath, nextSkill);
-    return {
-      skillPath: result.filePath,
-      ...(result.backupPath ? { backupPath: result.backupPath } : {}),
-    };
-  }
-
-  if (existing.exists) {
-    const backupPath = await chooseElyraBackupPath(resolvedSkillPath);
-    await writeFile(backupPath, existing.text, { encoding: "utf8", flag: "wx" });
-    await writeTextFileWithoutBackup(
-      resolvedSkillPath,
-      buildElyraSkill({ restoreBackupSuffix: backupPath.slice(resolvedSkillPath.length) }),
-    );
-    return { skillPath: resolvedSkillPath, backupPath };
-  }
-
-  await writeTextFileWithoutBackup(resolvedSkillPath, buildElyraSkill());
-  return { skillPath: resolvedSkillPath };
+  return skillCommands.install(resolvedSkillPath);
 }
 
 export async function uninstallElyraSkill(
@@ -347,23 +202,7 @@ export async function uninstallElyraSkill(
   options: ElyraSkillOptions = {},
 ): Promise<UninstallElyraSkillResult> {
   const resolvedSkillPath = await resolveSkillPath(skillPath, options);
-  const existing = await readInstructionFile(resolvedSkillPath);
-  if (!existing.exists || !isTokenjuiceElyraSkillText(existing.text)) {
-    return { skillPath: resolvedSkillPath, removed: false };
-  }
-  const restoreBackupSuffix = readRestoreBackupSuffix(existing.text);
-  if (restoreBackupSuffix) {
-    const backupPath = `${resolvedSkillPath}${restoreBackupSuffix}`;
-    await rejectSkillSymlink(backupPath);
-    const backup = await readInstructionFile(backupPath);
-    if (backup.exists && !isTokenjuiceElyraSkillText(backup.text)) {
-      await rm(resolvedSkillPath, { force: true });
-      await rename(backupPath, resolvedSkillPath);
-      return { skillPath: resolvedSkillPath, removed: true };
-    }
-  }
-  const result = await removeInstructionFile(resolvedSkillPath);
-  return { skillPath: result.filePath, removed: result.removed };
+  return skillCommands.uninstall(resolvedSkillPath);
 }
 
 export async function doctorElyraSkill(
@@ -418,8 +257,10 @@ export async function doctorElyraSkill(
 
   const issues = [
     ...collectFrontmatterIssues(existing.text),
-    ...collectGuidanceIssues(existing.text, {
-      required: [
+    ...collectTokenjuiceGuidanceIssues(existing.text, {
+      configuredLabel: "elyra skill",
+      singular: true,
+      additionalRequired: [
         {
           requiredText: TOKENJUICE_ELYRA_OWNERSHIP_MARKER,
           missingIssue: "configured elyra skill is missing the tokenjuice ownership marker",
@@ -428,23 +269,11 @@ export async function doctorElyraSkill(
           requiredText: TOKENJUICE_ELYRA_SKILL_MARKER,
           missingIssue: "configured elyra skill does not look like the tokenjuice skill",
         },
-        {
-          requiredText: TOKENJUICE_WRAP_COMMAND,
-          missingIssue: "configured elyra skill is missing tokenjuice wrap guidance",
-        },
-        {
-          requiredText: TOKENJUICE_RAW_COMMAND,
-          missingIssue: "configured elyra skill is missing the raw escape hatch",
-        },
+      ],
+      additionalRequiredAfter: [
         {
           requiredText: ".elyra/skills/tokenjuice/SKILL.md",
           missingIssue: "configured elyra skill is missing workspace skill path guidance",
-        },
-      ],
-      forbidden: [
-        {
-          forbiddenText: TOKENJUICE_FULL_COMMAND,
-          presentIssue: "configured elyra skill still suggests the full escape hatch",
         },
       ],
     }),

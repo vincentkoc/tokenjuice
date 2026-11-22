@@ -1,9 +1,9 @@
+import { isTokenjuiceExecutablePath } from "../../core/command-identity.js";
+
+export { isTokenjuiceExecutablePath };
+
 const POSIX_SAFE_SHELL_WORD = /^[A-Za-z0-9_./:-]+$/u;
 const WINDOWS_SAFE_SHELL_WORD = /^[A-Za-z0-9_./:\\-]+$/u;
-
-export function isTokenjuiceExecutablePath(value: string): boolean {
-  return /(?:^|[\\/])token(?:juice|-glace)(?:\.(?:exe|cmd|bat))?$/iu.test(value);
-}
 
 function isHookExecutablePath(value: string): boolean {
   return isNodeExecutablePath(value) || isTokenjuiceExecutablePath(value);

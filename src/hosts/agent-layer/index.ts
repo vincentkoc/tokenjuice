@@ -1,9 +1,20 @@
-import { stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 
-import { buildTokenjuiceGuidanceBullets, TOKENJUICE_FULL_COMMAND, TOKENJUICE_RAW_COMMAND, TOKENJUICE_WRAP_COMMAND } from "../shared/instruction-guidance.js";
-import { collectGuidanceIssues, readInstructionFile, removeInstructionFile, writeInstructionFile } from "../shared/instruction-file.js";
+import { createProjectDirResolver } from "../shared/project-root.js";
+
 import {
+  collectTokenjuiceGuidanceIssues,
+  buildTokenjuiceGuidanceBullets,
+  TOKENJUICE_WRAP_COMMAND,
+} from "../shared/instruction-guidance.js";
+import {
+  pathTargetExists as pathExists,
+  readInstructionFile,
+  removeInstructionFile,
+  writeInstructionFile,
+} from "../shared/instruction-file.js";
+import {
+  type InstructionsDoctorReport,
   buildInstructionDoctorReportFields,
   instructionDoctorStatusFromIssues,
   type InstructionDoctorReportFields,
@@ -25,15 +36,7 @@ export type UninstallAgentLayerInstructionsResult = {
   syncCommand: string;
 };
 
-export type AgentLayerDoctorReport = {
-  instructionsPath: string;
-  status: "ok" | "warn" | "broken" | "disabled";
-  issues: string[];
-  advisories: string[];
-  fixCommand: string;
-  checkedPaths: string[];
-  missingPaths: string[];
-};
+export type AgentLayerDoctorReport = InstructionsDoctorReport;
 
 const TOKENJUICE_AGENT_LAYER_FIX_COMMAND = "tokenjuice install agent-layer";
 const TOKENJUICE_AGENT_LAYER_INIT_FIX_COMMAND = "al init && tokenjuice install agent-layer";
@@ -44,53 +47,7 @@ const TOKENJUICE_AGENT_LAYER_UNINITIALIZED_ISSUE =
   "Agent Layer project is not initialized; run `al init` before installing tokenjuice instructions";
 const AGENT_LAYER_REQUIRED_PROJECT_FILES = [".agent-layer/config.toml", ".agent-layer/al.version"] as const;
 
-function getExplicitProjectDir(options: AgentLayerInstructionsOptions = {}): string | undefined {
-  return options.projectDir || process.env.AGENT_LAYER_PROJECT_DIR;
-}
-
-async function hasGitMetadata(dir: string): Promise<boolean> {
-  try {
-    await stat(join(dir, ".git"));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return false;
-    }
-    throw error;
-  }
-}
-
-async function findGitRoot(startDir: string): Promise<string | undefined> {
-  let current = resolve(startDir);
-  while (true) {
-    if (await hasGitMetadata(current)) {
-      return current;
-    }
-    const parent = dirname(current);
-    if (parent === current) {
-      return undefined;
-    }
-    current = parent;
-  }
-}
-
-async function resolveProjectDir(options: AgentLayerInstructionsOptions = {}): Promise<string> {
-  const explicitProjectDir = getExplicitProjectDir(options);
-  if (explicitProjectDir) {
-    return resolve(explicitProjectDir);
-  }
-
-  return (await findGitRoot(process.cwd())) ?? process.cwd();
-}
+const resolveProjectDir = createProjectDirResolver("AGENT_LAYER_PROJECT_DIR");
 
 async function getDefaultInstructionsPath(options: AgentLayerInstructionsOptions = {}): Promise<string> {
   return join(await resolveProjectDir(options), ".agent-layer", "instructions", "tokenjuice.md");
@@ -205,29 +162,18 @@ export async function doctorAgentLayerInstructions(
     };
   }
 
-  const issues = collectGuidanceIssues(existing.text, {
-    required: [
+  const issues = collectTokenjuiceGuidanceIssues(existing.text, {
+    configuredLabel: "Agent Layer instructions",
+    additionalRequired: [
       {
         requiredText: TOKENJUICE_AGENT_LAYER_INSTRUCTIONS_MARKER,
         missingIssue: "configured Agent Layer instructions do not look like the tokenjuice instructions",
       },
-      {
-        requiredText: TOKENJUICE_WRAP_COMMAND,
-        missingIssue: "configured Agent Layer instructions are missing tokenjuice wrap guidance",
-      },
-      {
-        requiredText: TOKENJUICE_RAW_COMMAND,
-        missingIssue: "configured Agent Layer instructions are missing the raw escape hatch",
-      },
+    ],
+    additionalRequiredAfter: [
       {
         requiredText: "al sync",
         missingIssue: "configured Agent Layer instructions are missing sync guidance",
-      },
-    ],
-    forbidden: [
-      {
-        forbiddenText: TOKENJUICE_FULL_COMMAND,
-        presentIssue: "configured Agent Layer instructions still suggest the full escape hatch",
       },
     ],
   });

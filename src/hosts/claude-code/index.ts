@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 
 import { compactBashResult } from "../../core/integrations/compact-bash-result.js";
 import { buildTokenjuiceHookCommand } from "../shared/host-command.js";
+import { parseShellWords, posixShellQuote } from "../shared/hook-command.js";
 import { inspectTokenjuiceHookCommand } from "../shared/hook-command-doctor.js";
 import { pruneHookGroups, readJsonHooksConfig, sanitizeHooksSettings } from "../shared/hooks-json-file.js";
 import { parseSettingsJson, readSettingsFile, writeSettingsFile } from "../shared/settings-file.js";
@@ -119,14 +120,22 @@ function getDefaultSettingsPath(): string {
 }
 
 async function buildClaudeCodeHookCommand(options: ClaudeCodeHookCommandOptions = {}): Promise<string> {
-  if (options.mode === "pre-tool-use") {
-    return buildWrapLauncherHookCommand({
+  const command = options.mode === "pre-tool-use"
+    ? await buildWrapLauncherHookCommand({
       ...options,
       subcommand: TOKENJUICE_CLAUDE_CODE_PRE_SUBCOMMAND,
       hostName: "claude code",
-    });
+    })
+    : await buildTokenjuiceHookCommand(TOKENJUICE_CLAUDE_CODE_POST_SUBCOMMAND, "claude code", options);
+  if (process.platform !== "win32") {
+    return command;
   }
-  return buildTokenjuiceHookCommand(TOKENJUICE_CLAUDE_CODE_POST_SUBCOMMAND, "claude code", options);
+
+  // Claude Code runs hooks for the Bash tool through Git Bash on Windows.
+  return parseShellWords(command, "win32")
+    // Quote apostrophes without backslash escapes so Windows hook inspection can also read them.
+    .map((arg) => posixShellQuote(arg.replaceAll("\\", "/")).replaceAll("'\\''", "'\"'\"'"))
+    .join(" ");
 }
 
 function getClaudeCodeFixCommand(options: ClaudeCodeHookCommandOptions): string {

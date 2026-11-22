@@ -86,6 +86,37 @@ async function captureStdout(run: () => Promise<number>): Promise<{ code: number
 }
 
 describe("installClaudeCodeHook", () => {
+  it.each(["post-tool-use", "pre-tool-use"] as const)(
+    "formats Windows paths for Git Bash in %s hooks",
+    async (mode) => {
+      const home = await createTempDir();
+      const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+      const settingsPath = join(home, "settings.json");
+      const binaryPath = join(home, "owner's build.js");
+      await writeFile(binaryPath, "");
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        const options = {
+          local: true,
+          binaryPath,
+          nodePath: "C:\\Node\\node.exe",
+          mode,
+        };
+        const { command } = await installClaudeCodeHook(settingsPath, options);
+        expect(command).toMatch(/^C:\/Node\/node\.exe /u);
+        const report = await doctorClaudeCodeHook(settingsPath, options);
+        expect(report.checkedPaths).toContain(binaryPath.replaceAll("\\", "/"));
+        const stale = await doctorClaudeCodeHook(settingsPath, {
+          ...options,
+          binaryPath: join(home, "new build.js"),
+        });
+        expect(stale.checkedPaths).toContain(binaryPath.replaceAll("\\", "/"));
+      } finally {
+        Object.defineProperty(process, "platform", platform);
+      }
+    },
+  );
+
   it("installs a non-mutating PostToolUse hook by default", async () => {
     const home = await createTempDir();
     const settingsPath = join(home, "settings.json");

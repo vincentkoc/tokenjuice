@@ -35,7 +35,7 @@ describe("allocation optimization equivalence", () => {
         }
       }
     }
-    expect(hash.digest("hex")).toBe("d13b8965d766abbbf7f15f8d3ff78598d7ddd09c2ca6a51f5a33e8a691806e82");
+    expect(hash.digest("hex")).toBe("83986aeaf2cd57121ded32d608cac800f7ab39e7f677cdac5756ff82e59e2439");
   });
 
   it("preserves compound command decisions from before the optimization", () => {

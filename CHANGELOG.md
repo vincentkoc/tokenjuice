@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove unreliable result counters from npm, pnpm, yarn and bun test wrappers; keep runner totals and failure diagnostics.
+
 ## 0.11.2 - 2026-11-19
 
 - Point the wrap footer at the stored-output command only when one is shown.

@@ -19,7 +19,7 @@ python -m pip install "tokenjuice-integrations[langchain]"
 ```
 
 Keep the CLI on your application's PATH or set `TOKENJUICE_BIN` to its executable
-path. For an npm/release bundle, install its `dist/python` directory with the same
+path. On Windows, npm's `tokenjuice.cmd` shim is resolved from absolute PATH entries. For an npm/release bundle, install its `dist/python` directory with the same
 extras instead of a registry name.
 
 ## Configure

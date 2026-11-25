@@ -4,6 +4,16 @@
 
 - Add a native OpenHanako / HanaAgent result plugin for completed successful shell output, preserving execution metadata and bypassing partial or interactive results. A pinned Linux app-core fixture verifies native plugin permission gates and model-visible output; desktop and PTY acceptance remain unqualified.
 
+## 0.11.2 - 2026-11-19
+
+- Point the wrap footer at the stored-output command only when one is shown.
+
+- Resolve npm's `tokenjuice.cmd` shim on Windows in the Python bridge used by Hermes, LangChain and FastMCP, and log one warning when the CLI cannot start, exits nonzero, times out or returns an invalid response instead of failing silently.
+
+## 0.11.1 - 2026-11-18
+
+- Keep compacted OpenClaw exec text and its structured `aggregated` projection in sync, including the compaction notice, without retaining a duplicate raw body.
+
 - Add isolated delivered-output token benchmarks, including host envelopes and expansion, plus exact JSON lexical-preservation regressions.
 
 - Apply install success shortcuts only to successful, fully recognized output; preserve extra warnings, vulnerability summaries and failed lifecycle output.

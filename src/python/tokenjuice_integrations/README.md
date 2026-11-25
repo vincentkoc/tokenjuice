@@ -17,11 +17,13 @@ compact-shell-result` subprocess. It never executes the command supplied in the
 hook payload. Only successful foreground output is eligible; failures, background
 polls, exact file reads, and explicit raw requests retain their original output.
 Missing executables, invalid responses, inputs over 2 MB, and five-second timeouts
-also preserve the original output.
+also preserve the original output; launch failures, nonzero exits, timeouts and
+invalid responses log one `tokenjuice` warning per process.
 
 The CLI reads tokenjuice's local configuration and rules. Bridge calls disable
 statistics and require no credentials or network service. Keep `tokenjuice` on
-PATH, or set `TOKENJUICE_BIN` to its executable path. No Hermes permissions are
+PATH, or set `TOKENJUICE_BIN` to its executable path. On Windows, the bridge
+resolves npm's `tokenjuice.cmd` shim from absolute PATH entries. No Hermes permissions are
 changed. Disable with `hermes plugins disable tokenjuice`; remove with
 `hermes plugins remove tokenjuice`.
 

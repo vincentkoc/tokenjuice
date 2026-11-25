@@ -26,7 +26,8 @@ export const NO_COMPACTION_METADATA: CompactionMetadata = {
   kinds: [],
 };
 
-export const WRAP_AUTHORITATIVE_FOOTER = "[tokenjuice] Compacted output; some content was omitted. Use the stored-output command below to inspect the captured original when available.";
+export const WRAP_AUTHORITATIVE_FOOTER = "[tokenjuice] Compacted output; some content was omitted.";
+export const WRAP_RECOVERY_HINT = "Use the stored-output command below to inspect the captured original.";
 
 function buildCompactionMetadata(authoritative: boolean, ...kinds: CompactionKind[]): CompactionMetadata {
   if (kinds.length === 0) {

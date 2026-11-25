@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { WRAP_AUTHORITATIVE_FOOTER } from "../../src/core/compaction-metadata.js";
+import { WRAP_AUTHORITATIVE_FOOTER, WRAP_RECOVERY_HINT } from "../../src/core/compaction-metadata.js";
 import { decorateWrapInlineText, formatStatsSources, isDirectModuleEntrypoint, parseArgs, resolveNoOmit } from "../../src/cli/main.js";
 import { statsArtifacts } from "../../src/core/analysis.js";
 import type { StatsSourceReport } from "../../src/core/analysis.js";
@@ -229,7 +229,11 @@ describe("decorateWrapInlineText", () => {
       },
     };
 
-    expect(decorateWrapInlineText(result, false)).toContain(WRAP_AUTHORITATIVE_FOOTER);
+    const decorated = decorateWrapInlineText(result, false);
+    expect(decorated).toContain(WRAP_AUTHORITATIVE_FOOTER);
+    // No stored output: do not point at a recovery command that is not shown.
+    expect(decorated).not.toContain(WRAP_RECOVERY_HINT);
+    expect(decorated).not.toMatch(/below|tokenjuice cat/u);
   });
 
   it("provides the raw-artifact recovery command when output is stored", () => {
@@ -256,7 +260,9 @@ describe("decorateWrapInlineText", () => {
       },
     };
 
-    expect(decorateWrapInlineText(result, false)).toContain("tokenjuice cat tj_0123456789ab");
+    const decorated = decorateWrapInlineText(result, false);
+    expect(decorated).toContain(`${WRAP_AUTHORITATIVE_FOOTER} ${WRAP_RECOVERY_HINT}`);
+    expect(decorated).toContain("tokenjuice cat tj_0123456789ab");
   });
 
   it("suppresses the authoritative footer for lossless rewrites", () => {

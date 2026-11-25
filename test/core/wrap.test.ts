@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getArtifact, listArtifactMetadata, listArtifacts, runWrappedCommand } from "../../src/index.js";
-import { WRAP_AUTHORITATIVE_FOOTER } from "../../src/core/compaction-metadata.js";
+import { WRAP_AUTHORITATIVE_FOOTER, WRAP_RECOVERY_HINT } from "../../src/core/compaction-metadata.js";
 import { countTextChars } from "../../src/core/text.js";
 
 const tempDirs: string[] = [];
@@ -34,10 +34,12 @@ describe("runWrappedCommand", () => {
   });
 
   it("keeps the original when the complete notice costs more than the omitted lines", async () => {
-    const output = Array.from({ length: 33 }, (_, index) => `line ${index}`).join("\n") + "\n";
-    const wrapped = await runWrappedCommand([
-      process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`,
-    ], { includeCompactionNotice: true, recordStats: false });
+    // Sized so the summary alone omits lines, but the summary plus notice is not smaller.
+    const output = Array.from({ length: 27 }, (_, index) => `line ${index}`).join("\n") + "\n";
+    const command = [process.execPath, "-e", `process.stdout.write(${JSON.stringify(output)})`];
+    const summaryOnly = await runWrappedCommand(command, { recordStats: false });
+    expect(summaryOnly.result.inlineText).toContain("lines omitted");
+    const wrapped = await runWrappedCommand(command, { includeCompactionNotice: true, recordStats: false });
 
     expect(wrapped.result.inlineText).toBe(output);
     expect(wrapped.result.stats.ratio).toBe(1);
@@ -52,6 +54,7 @@ describe("runWrappedCommand", () => {
     ], { includeCompactionNotice: true, store: true, recordStats: true, storeDir });
 
     expect(wrapped.result.inlineText).toContain(WRAP_AUTHORITATIVE_FOOTER);
+    expect(wrapped.result.inlineText).toContain(WRAP_RECOVERY_HINT);
     expect(wrapped.result.inlineText).toContain(`tokenjuice cat ${wrapped.result.rawRef!.id}`);
     expect(wrapped.result.inlineText.endsWith("\n")).toBe(true);
     const emittedChars = countTextChars(wrapped.result.inlineText);

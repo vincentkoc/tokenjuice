@@ -1,7 +1,7 @@
 import { dirname, resolve } from "node:path";
 
 import { resolveArtifactBaseDir } from "./artifacts.js";
-import { WRAP_AUTHORITATIVE_FOOTER } from "./compaction-metadata.js";
+import { WRAP_AUTHORITATIVE_FOOTER, WRAP_RECOVERY_HINT } from "./compaction-metadata.js";
 
 import type { CompactResult } from "../types.js";
 
@@ -30,7 +30,9 @@ export function decorateWrapInlineText(result: CompactResult, raw: boolean): str
     "---",
     result.captureTruncated
       ? "[tokenjuice] Capture limit reached. This summary and any stored output are incomplete."
-      : WRAP_AUTHORITATIVE_FOOTER,
+      : recovery
+        ? `${WRAP_AUTHORITATIVE_FOOTER} ${WRAP_RECOVERY_HINT}`
+        : WRAP_AUTHORITATIVE_FOOTER,
     ...(recovery ? [`Captured output is available locally${process.platform === "win32" ? " (PowerShell)" : ""}: ${recovery}`] : []),
   ].join("\n");
   return `${result.inlineText}${footer}`;

@@ -11,6 +11,7 @@
 - Add a native OpenHanako / HanaAgent result plugin for completed successful shell output, preserving execution metadata and bypassing partial or interactive results. A pinned Linux app-core fixture verifies native plugin permission gates and model-visible output; desktop and PTY acceptance remain unqualified.
 - Add project-local Empryo / SoulForge pre-tool wrapping with preserved shell inputs, shared failure handling, and owned-hook lifecycle commands.
 - Qualify Empryo / SoulForge 2.20.25 native hooks and model-visible output with an isolated CLI fixture; document the host's failure-output limits.
+- Add ZCode native pre-tool Bash wrapping with configuration lifecycle checks, full input preservation, and native model-visible acceptance for the pinned macOS agent.
 
 ## 0.11.2 - 2026-11-19
 

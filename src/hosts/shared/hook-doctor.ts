@@ -41,6 +41,7 @@ import { doctorCodegenInstructions, type CodegenDoctorReport, type CodegenInstru
 import { doctorCoderAgentsSkill, type CoderAgentsDoctorReport, type CoderAgentsSkillOptions } from "../coder-agents/index.js";
 import { doctorCodeRabbitConfig, type CodeRabbitConfigOptions, type CodeRabbitDoctorReport } from "../coderabbit/index.js";
 import { doctorCodeBuddyHook, type CodeBuddyDoctorReport, type CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
+import { doctorZCodeHook, type ZCodeDoctorReport } from "../zcode/index.js";
 import { doctorCommandCodeHook, type CommandCodeDoctorReport, type CommandCodeHookCommandOptions } from "../command-code/index.js";
 import { doctorContinueRule, type ContinueDoctorReport } from "../continue/index.js";
 import { doctorCodexHook, type CodexDoctorReport, type CodexHookCommandOptions } from "../codex/index.js";
@@ -149,6 +150,7 @@ export type HookIntegrationDoctorReport = {
   coderabbit: CodeRabbitDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
   empryo: EmpryoDoctorReport;
+  zcode: ZCodeDoctorReport;
   "command-code": CommandCodeDoctorReport;
   continue: ContinueDoctorReport;
   crush: CrushDoctorReport;
@@ -276,6 +278,7 @@ const hookDoctorIntegrationDoctors = {
   coderabbit: (options) => doctorCodeRabbitConfig(undefined, getHookCommandOptions(options)),
   empryo: (options) => doctorEmpryoHook(undefined, getHookCommandOptions(options)),
   codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
+  zcode: (options) => doctorZCodeHook(undefined, getHookCommandOptions(options)),
   "command-code": (options) => doctorCommandCodeHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),

@@ -15,7 +15,7 @@
 
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 
-import { stripLeadingCdPrefix } from "../../core/command.js";
+import { isCompoundShellCommand, isSetupWrapperSegment, stripLeadingCdPrefix, tokenizeCommand } from "../../core/command.js";
 import { resolveCommandFromPath, isExecutableFile } from "./host-command.js";
 
 import {
@@ -44,6 +44,40 @@ export type BuildWrapLauncherHookCommandOptions = WrapLauncherOptions & {
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const SHELL_ONLY_COMMANDS = new Set([
+  "!", "-", ".", ":", "[", "[[", "alias", "autoload", "bg", "bind", "bindkey", "break", "builtin", "bye",
+  "caller", "case", "cd", "chdir", "command", "compadd", "comparguments", "compcall", "compctl", "compdescribe",
+  "compfiles", "compgen", "compgroups", "complete", "compquote", "compset", "comptags", "comptry", "compvalues",
+  "continue", "coproc", "declare", "dirs", "disable", "disown", "do", "done", "echo", "echotc", "echoti",
+  "emulate", "enable", "eval", "exec", "exit", "export", "false", "fc", "fg", "fi", "float", "for",
+  "function", "functions", "getln", "getopts", "hash", "help", "history", "if", "integer", "jobs", "kill",
+  "let", "limit", "local", "log", "logout", "nocorrect", "noglob", "popd", "print", "printf", "private",
+  "pushd", "pushln", "pwd", "r", "read", "readonly", "rehash", "repeat", "return", "sched", "select",
+  "set", "setopt", "shift", "shopt", "source", "suspend", "test", "then", "time", "times", "trap", "true",
+  "ttyctl", "type", "typeset", "ulimit", "umask", "unalias", "unfunction", "unhash", "unlimit", "unset",
+  "unsetopt", "until", "vared", "wait", "whence", "where", "which", "while", "zcompile", "zformat", "zle",
+  "zmodload", "zparseopts", "zregexparse", "zstyle",
+]);
+
+/** Prefix only simple external commands so expansion remains in the host shell. */
+export function buildDirectWrappedCommand(params: {
+  wrapLauncher: string;
+  command: string;
+  source: string;
+  nodePath?: string;
+}): string | undefined {
+  const command = params.command;
+  if (isCompoundShellCommand(command) || /[\n\r&<>(){}]/u.test(command)) return undefined;
+  const argv = tokenizeCommand(command);
+  const first = argv[0]?.split("/").pop();
+  if (!first || first.startsWith("#") || /^[A-Za-z_][A-Za-z0-9_]*=/u.test(first) || isSetupWrapperSegment(argv, command)) return undefined;
+  if (SHELL_ONLY_COMMANDS.has(first)) return undefined;
+  const launcher = params.wrapLauncher.endsWith(".js")
+    ? `${posixShellQuote(params.nodePath ?? process.execPath)} ${posixShellQuote(params.wrapLauncher)}`
+    : posixShellQuote(params.wrapLauncher);
+  return `${launcher} wrap --keep-failures --source ${posixShellQuote(params.source)} -- ${command}`;
 }
 
 export { isExecutableFile, pathExists } from "./host-command.js";

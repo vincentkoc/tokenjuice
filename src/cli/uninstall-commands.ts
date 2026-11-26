@@ -45,6 +45,7 @@ import { uninstallCodegenInstructions } from "../hosts/codegen/index.js";
 import { uninstallCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { uninstallCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { uninstallCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { uninstallZCodeHook } from "../hosts/zcode/index.js";
 import { uninstallCommandCodeHook } from "../hosts/command-code/index.js";
 import { uninstallContinueRule } from "../hosts/continue/index.js";
 import { uninstallCodexHook } from "../hosts/codex/index.js";
@@ -258,6 +259,13 @@ const uninstallCodebuffCommand = createFileUninstallCommand("codebuff", "instruc
 const uninstallCodegenCommand = createFileUninstallCommand("codegen", "instructions", "instructionsPath", () => uninstallCodegenInstructions());
 
 const uninstallCoderAgentsCommand = createFileUninstallCommand("coder-agents", "skill", "skillPath", () => uninstallCoderAgentsSkill());
+
+const uninstallZCodeCommand = createHostCommand(() => uninstallZCodeHook(), (result) => {
+  process.stdout.write(`removed zcode hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  if (result.backupPath) process.stdout.write(`backup: ${result.backupPath}\n`);
+  process.stdout.write("enable: tokenjuice install zcode\n");
+});
 
 const uninstallEmpryoCommand = createHostCommand(() => uninstallEmpryoHook(), (result) => {
   process.stdout.write(`removed empryo hook: ${result.removed ? "yes" : "no"}\n`);
@@ -605,6 +613,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["empryo", uninstallEmpryoCommand],
   ["soulforge", uninstallEmpryoCommand],
   ["codebuddy", uninstallCodebuddyCommand],
+  ["zcode", uninstallZCodeCommand],
   ["command-code", uninstallCommandCodeCommand],
   ["commandcode", uninstallCommandCodeCommand],
   ["pi-go", uninstallPiGoCommand],

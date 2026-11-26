@@ -46,6 +46,7 @@ import { installCodegenInstructions } from "../hosts/codegen/index.js";
 import { installCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { installCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { installCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { installZCodeHook } from "../hosts/zcode/index.js";
 import { installCommandCodeHook } from "../hosts/command-code/index.js";
 import { installContinueRule } from "../hosts/continue/index.js";
 import { installCodexHook } from "../hosts/codex/index.js";
@@ -534,6 +535,17 @@ const installCoderAgentsCommand = createFileInstallCommand(() => installCoderAge
   pathLabel: "Skill",
   pathKey: "skillPath",
   beta: "workspace skill guidance; Coder Agents still owns shell execution",
+});
+
+const installZCodeCommand = createHostCommand((args) => installZCodeHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Settings", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Activate", value: "start a new ZCode session; explicitly disabled hooks remain disabled" },
+    { label: "Verify", value: `tokenjuice doctor zcode${args.local ? " --local" : ""} (persisted config only)` },
+  ];
+  if (result.backupPath) details.push({ label: "Backup", value: result.backupPath });
+  process.stdout.write(formatInstallSuccess("zcode", "hook", details));
 });
 
 const installEmpryoCommand = createHostCommand((args) => installEmpryoHook(undefined, { local: args.local }), (result, args) => {
@@ -1343,6 +1355,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["empryo", installEmpryoCommand],
   ["soulforge", installEmpryoCommand],
   ["codebuddy", installCodebuddyCommand],
+  ["zcode", installZCodeCommand],
   ["command-code", installCommandCodeCommand],
   ["commandcode", installCommandCodeCommand],
   ["continue", installContinueCommand],

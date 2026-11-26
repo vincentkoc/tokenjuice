@@ -45,6 +45,7 @@ import { doctorCodegenInstructions } from "../hosts/codegen/index.js";
 import { doctorCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { doctorCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { doctorCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { doctorZCodeHook } from "../hosts/zcode/index.js";
 import { doctorCommandCodeHook } from "../hosts/command-code/index.js";
 import { doctorContinueRule } from "../hosts/continue/index.js";
 import { doctorCodexHook } from "../hosts/codex/index.js";
@@ -691,6 +692,16 @@ const doctorEmpryoCommand = createDoctorCommand((args) => doctorEmpryoHook(undef
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
+const doctorZCodeCommand = createDoctorCommand((args) => doctorZCodeHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorCodebuddyCommand = createDoctorCommand((args) => doctorCodeBuddyHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -846,6 +857,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["empryo", doctorEmpryoCommand],
   ["soulforge", doctorEmpryoCommand],
   ["codebuddy", doctorCodebuddyCommand],
+  ["zcode", doctorZCodeCommand],
   ["continue", doctorContinueCommand],
   ["droid", doctorDroidCommand],
 ]);

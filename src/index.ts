@@ -1,3 +1,7 @@
+export { installMimoCodeHook, doctorMimoCodeHook, uninstallMimoCodeHook } from "./hosts/mimo-code/index.js";
+export type { MimoCodeOptions } from "./hosts/mimo-code/index.js";
+export { doctorEmpryoHook, installEmpryoHook, runEmpryoPreToolUseHook, uninstallEmpryoHook } from "./hosts/empryo/index.js";
+export type { EmpryoHookOptions, EmpryoDoctorReport, InstallEmpryoHookResult, UninstallEmpryoHookResult } from "./hosts/empryo/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";
@@ -11,6 +15,7 @@ export { compactFrameworkResult } from "./core/integrations/compact-framework-re
 export type { FrameworkShellResult, FrameworkSource } from "./core/integrations/compact-framework-result.js";
 export { createCopilotSdkHooks } from "./hosts/copilot-sdk/index.js";
 export { createMastraProcessor } from "./hosts/mastra/index.js";
+export { runMiniMaxCodePreToolUseHook } from "./hosts/minimax-code/index.js";
 export type { MastraCompactorOptions, MastraToolResult } from "./hosts/mastra/index.js";
 export { normalizeCommandSignature, normalizeEffectiveCommandSignature, normalizeExecutionInput, tokenizeCommand } from "./core/command.js";
 export { doctorAdalInstructions, installAdalInstructions, uninstallAdalInstructions } from "./hosts/adal/index.js";
@@ -48,6 +53,8 @@ export { doctorCodegenInstructions, installCodegenInstructions, uninstallCodegen
 export { doctorCoderAgentsSkill, installCoderAgentsSkill, uninstallCoderAgentsSkill } from "./hosts/coder-agents/index.js";
 export { doctorCodeRabbitConfig, installCodeRabbitConfig, uninstallCodeRabbitConfig } from "./hosts/coderabbit/index.js";
 export { doctorCodeBuddyHook, installCodeBuddyHook, runCodeBuddyPreToolUseHook, uninstallCodeBuddyHook } from "./hosts/codebuddy/index.js";
+export { doctorZCodeHook, installZCodeHook, runZCodePreToolUseHook, uninstallZCodeHook } from "./hosts/zcode/index.js";
+export type { ZCodeDoctorReport, ZCodeHookCommandOptions, InstallZCodeHookResult, UninstallZCodeHookResult } from "./hosts/zcode/index.js";
 export { doctorCommandCodeHook, installCommandCodeHook, runCommandCodePostToolUseHook, uninstallCommandCodeHook } from "./hosts/command-code/index.js";
 export { doctorContinueRule, installContinueRule, uninstallContinueRule } from "./hosts/continue/index.js";
 export {
@@ -771,5 +778,14 @@ export { doctorAnteInstructions, installAnteInstructions, uninstallAnteInstructi
 export type { AnteDoctorReport, AnteInstructionsOptions, InstallAnteInstructionsResult, UninstallAnteInstructionsResult } from "./hosts/ante/index.js";
 export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/qoder/hook-install.js";
 export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";
+
+export { installSnowCliHook, doctorSnowCliHook, uninstallSnowCliHook, runSnowCliAfterToolCallHook } from "./hosts/snow-cli/index.js";
+
+export { installOmoExtension, doctorOmoExtension, uninstallOmoExtension } from "./hosts/omo/index.js";
+export type { OmoExtensionOptions } from "./hosts/omo/index.js";
+
+export { installPaimonSkill, doctorPaimonSkill, uninstallPaimonSkill, type PaimonSkillOptions } from "./hosts/paimon/index.js";
+
+export { installMisterMorphSkill, doctorMisterMorphSkill, uninstallMisterMorphSkill, type MisterMorphSkillOptions } from "./hosts/mister-morph/index.js";
 
 export { installShelleySkill, doctorShelleySkill, uninstallShelleySkill, type ShelleySkillOptions } from "./hosts/shelley/index.js";

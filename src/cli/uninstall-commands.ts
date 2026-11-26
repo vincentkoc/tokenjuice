@@ -5,6 +5,7 @@ import { uninstallPaimonSkill } from "../hosts/paimon/index.js";
 import { uninstallMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { uninstallShelleySkill } from "../hosts/shelley/index.js";
 import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
+import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -495,6 +496,8 @@ const uninstallCraftAgentsCommand = createHostCommand((args) => uninstallCraftAg
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
+const uninstallAtomCodeCommand = createFileUninstallCommand("atomcode", "skill", "skillPath", () => uninstallAtomCodeSkill());
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -615,6 +618,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["agentsge", uninstallAgentsgeCommand],
   ["agentsmesh", uninstallAgentsmeshCommand],
   ["amazon-q", uninstallAmazonQCommand],
+  ["atomcode", uninstallAtomCodeCommand],
   ["amp", uninstallAmpCommand],
   ["antigravity", uninstallAntigravityCommand],
   ["anywhere-agents", uninstallAnywhereAgentsCommand],

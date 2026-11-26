@@ -5,6 +5,7 @@ import { doctorPaimonSkill } from "../hosts/paimon/index.js";
 import { doctorMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { doctorShelleySkill } from "../hosts/shelley/index.js";
 import { doctorCraftAgentsSkill } from "../hosts/craft-agents/index.js";
+import { doctorAtomCodeSkill } from "../hosts/atomcode/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -343,6 +344,8 @@ const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(unde
   writeDoctorList("advisories", report.advisories);
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
+
+const doctorAtomCodeCommand = createFileDoctorCommand("skill", "skillPath", () => doctorAtomCodeSkill());
 
 const doctorCraftAgentsCommand = createDoctorCommand((args) => doctorCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (report) => {
   process.stdout.write(`skill path: ${report.skillPath || "(workspace not selected)"}\n`);
@@ -768,6 +771,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["agentsge", doctorAgentsgeCommand],
   ["agentsmesh", doctorAgentsmeshCommand],
   ["amazon-q", doctorAmazonQCommand],
+  ["atomcode", doctorAtomCodeCommand],
   ["amp", doctorAmpCommand],
   ["antigravity", doctorAntigravityCommand],
   ["anywhere-agents", doctorAnywhereAgentsCommand],

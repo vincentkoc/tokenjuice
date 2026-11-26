@@ -4,6 +4,8 @@ export { doctorEmpryoHook, installEmpryoHook, runEmpryoPreToolUseHook, uninstall
 export type { EmpryoHookOptions, EmpryoDoctorReport, InstallEmpryoHookResult, UninstallEmpryoHookResult } from "./hosts/empryo/index.js";
 export { installCraftAgentsSkill, doctorCraftAgentsSkill, uninstallCraftAgentsSkill } from "./hosts/craft-agents/index.js";
 export type { CraftAgentsSkillOptions } from "./hosts/craft-agents/index.js";
+export { installAtomCodeSkill, doctorAtomCodeSkill, uninstallAtomCodeSkill } from "./hosts/atomcode/index.js";
+export type { AtomCodeSkillOptions } from "./hosts/atomcode/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";

@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 106 handlers
-and 124 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 118 handlers
+and 137 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -28,6 +28,7 @@ CLI compatibility; they are not E2E evidence.
 
 | Target and aliases | Recorded evidence | Native acceptance |
 | --- | --- | --- |
+| [`zcode`](zcode-integration.md) | [File and runtime contract](../test/hosts/zcode.test.ts), [native fixture](../scripts/zcode-e2e.mjs) | Pinned 3.18.2 macOS agent: discovery, model-visible output, cwd and uninstall; see guide for limits. |
 | [`adal`](adal-integration.md) | [File contract](../test/hosts/adal.test.ts) | Unqualified; see guide. |
 | [`aether`](aether-integration.md) | [File contract](../test/hosts/aether.test.ts) | Unqualified; see guide. |
 | [`aider`](aider-integration.md) | [File contract](../test/hosts/aider.test.ts) | Unqualified; see guide. |
@@ -42,6 +43,7 @@ CLI compatibility; they are not E2E evidence.
 | [`agentsge`](agentsge-integration.md) | [File contract](../test/hosts/agentsge.test.ts) | Unqualified; see guide. |
 | [`agentsmesh`](agentsmesh-integration.md) | [File contract](../test/hosts/agentsmesh.test.ts) | Unqualified; see guide. |
 | [`amazon-q`](amazon-q-integration.md) | [File contract](../test/hosts/amazon-q.test.ts) | Unqualified; see guide. |
+| [`atomcode`](atomcode-integration.md) | [File contract](../test/hosts/atomcode.test.ts) | Project skill; native execution unqualified. |
 | [`amp`](amp-integration.md) | [File contract](../test/hosts/amp.test.ts) | Unqualified; see guide. |
 | [`antigravity`](antigravity-integration.md) | [File contract](../test/hosts/antigravity.test.ts) | Unqualified; see guide. |
 | [`anywhere-agents`](anywhere-agents-integration.md) | [File contract](../test/hosts/anywhere-agents.test.ts) | Unqualified; see guide. |
@@ -66,6 +68,7 @@ CLI compatibility; they are not E2E evidence.
 | [`command-code`](command-code-integration.md), `commandcode` | [File contract](../test/hosts/command-code.test.ts) | Authentication blocks native tool execution; additive hook retired. |
 | [`continue`](continue-integration.md) | [File contract](../test/hosts/continue.test.ts) | Unqualified; see guide. |
 | [`copilot-agent`](copilot-agent-integration.md) | [Native fixture](../scripts/copilot-cli-e2e.mjs) | Local Copilot CLI repository hook only; cloud job unqualified. |
+| [`craft-agents`](craft-agents-integration.md) | [File contract](../test/hosts/craft-agents.test.ts) | Selected workspace skill; native execution unqualified. |
 | [`crush`](crush-integration.md) | [Native fixture](../scripts/crush-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`cursor`](cursor-integration.md) | [Hook contract](../scripts/hook-contracts.mjs) | Native loading/model delivery unqualified; see guide. |
 | [`deepagents`](deepagents-integration.md) | [File contract](../test/hosts/deepagents.test.ts) | Unqualified; see guide. |
@@ -74,8 +77,10 @@ CLI compatibility; they are not E2E evidence.
 | [`docker-agent`](docker-agent-integration.md), `dockeragent`, `cagent` | [File contract](../test/hosts/docker-agent.test.ts) | Unqualified; see guide. |
 | [`eca`](eca-integration.md) | [File contract](../test/hosts/eca.test.ts) | Unqualified; see guide. |
 | [`elyra`](elyra-integration.md) | [File contract](../test/hosts/elyra.test.ts) | Unqualified; see guide. |
+| [`empryo`](empryo-integration.md), `soulforge` | [File and payload contracts](../test/hosts/empryo.test.ts); [native CLI fixture](../scripts/empryo-e2e.mjs) | Native `2.20.25` hooks, lifecycle, default denial and follow-up model requests; host failure-output limits remain. |
 | [`firebase-studio`](firebase-studio-integration.md) | [File contract](../test/hosts/firebase-studio.test.ts) | Unqualified; see guide. |
 | [`forgecode`](forgecode-integration.md), `forge-code` | [File contract](../test/hosts/forgecode.test.ts) | Unqualified; see guide. |
+| [`fx`](fx-integration.md) | Instruction lifecycle and CLI contracts. | Native fx session and model-visible execution remain unqualified. |
 | [`gemini-cli`](gemini-cli-integration.md) | [Native fixture](../scripts/gemini-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`gitlab-duo`](gitlab-duo-integration.md) | [File contract](../test/hosts/gitlab-duo.test.ts) | Unqualified; see guide. |
 | [`grok-cli`](grok-cli-integration.md) | [Native fixture](../scripts/grok-cli-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |
@@ -97,11 +102,13 @@ CLI compatibility; they are not E2E evidence.
 | [`kilo`](kilo-integration.md) | [File contract](../test/hosts/kilo.test.ts) | Unqualified; see guide. |
 | [`mcp-agent`](mcp-agent-integration.md), `mcpagent` | [File contract](../test/hosts/mcp-agent.test.ts) | Unqualified; see guide. |
 | [`mistral-vibe`](mistral-vibe-integration.md), `mistralvibe` | [File contract](../test/hosts/mistral-vibe.test.ts) | Unqualified; see guide. |
+| [`mimo-code`](mimo-code-integration.md) | [Native fixture](../scripts/mimo-e2e.mjs) | Pinned Linux x64 CLI `0.1.17` with loopback provider; see guide. |
 | [`mini-swe-agent`](mini-swe-agent-integration.md), `mini-sweagent` | [File contract](../test/hosts/mini-swe-agent.test.ts) | Unqualified; see guide. |
 | [`swe-agent`](swe-agent-integration.md), `sweagent` | [File contract](../test/hosts/swe-agent.test.ts) | Unqualified; see guide. |
 | [`stagewise`](stagewise-integration.md) | [File contract](../test/hosts/stagewise.test.ts) | Unqualified; see guide. |
 | [`muse-code`](muse-code-integration.md) | [File contract](../test/hosts/muse-code.test.ts) | Unqualified; project skill guidance only. |
 | [`mux`](mux-integration.md) | [Native fixture](../scripts/mux-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |
+| [`nanobot`](nanobot-integration.md) | Workspace skill lifecycle and CLI contracts. | Native nanobot session and model-visible execution remain unqualified. |
 | [`novakit`](novakit-integration.md) | [File contract](../test/hosts/novakit.test.ts) | Unqualified; see guide. |
 | [`knowns`](knowns-integration.md) | [File contract](../test/hosts/knowns.test.ts) | Unqualified; see guide. |
 | [`ona`](ona-integration.md) | [File contract](../test/hosts/ona.test.ts) | Unqualified; see guide. |
@@ -139,10 +146,12 @@ CLI compatibility; they are not E2E evidence.
 
 | Product | Evidence and acceptance boundary |
 | --- | --- |
+| [MiniMax Code](minimax-code-integration.md) | [Native fixture](../scripts/minimax-e2e.mjs) checks the pinned `0.7.2` headless host on Ubuntu/Node 24: local plugin discovery, enable/disable/remove, and next-model compaction, exact/raw output and complete failure streams/status. Uses isolated loopback BYOK and explicit full permission mode; other permission modes/platforms remain unqualified. The host plugin manager owns lifecycle. |
 | [DeepSeek Harness](deepseek-harness-integration.md) | [Native fixture](../scripts/deepseek-e2e.mjs) covers its pinned CLI/profile. The native plugin activation route is separate from `tokenjuice install`. Other versions and PTC sessions require separate acceptance. |
 | [OpenClaw](spec.md) | Plugin adapter tests cover result handling. Native installation/loading and model delivery are unqualified; a package install or doctor is insufficient. |
 | [T3 Code](t3-code-integration.md) | [Custom Codex fixture](../scripts/t3-codex-e2e.mjs) qualifies explicit wrapping through T3 `0.1.6` and Codex `0.166.0`. [Custom Claude fixture](../scripts/t3-claude-e2e.mjs) qualifies automatic hook loading/removal and native model-visible results with Claude Code `2.1.316`. [Managed OpenCode V2 fixture](../scripts/t3-opencode-v2-e2e.mjs) qualifies V2 `2.0.18` plugin loading/removal through T3. Shadow homes, OpenCode V1/other providers and existing shared/external servers and remote/desktop routes remain unqualified. |
 | [WorkBuddy](workbuddy-integration.md) | Packaged skill metadata only; desktop import, enablement and actual model-visible tool output unqualified. |
+| [QwenPaw](qwenpaw-integration.md) | [Packaged skill tests](../test/packaging/qwenpaw-skill.test.ts) cover dependency and command guidance. Native workspace import, enablement and model-visible output remain unqualified. |
 | [Doubao Work](doubao-work-integration.md) | Packaged skill metadata only; personal importer and tool execution unqualified. |
 | [AutoClaw](autoclaw-integration.md) | Copyable workflow only; custom-skill creation/loading and runtime execution unqualified. |
 | [QClaw](qclaw-migration.md) | Migration guidance only; account migration does not qualify WorkBuddy. |

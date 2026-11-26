@@ -6,6 +6,7 @@ import { doctorMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { doctorShelleySkill } from "../hosts/shelley/index.js";
 import { doctorCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { doctorAtomCodeSkill } from "../hosts/atomcode/index.js";
+import { doctorMuseCodeSkill } from "../hosts/muse-code/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -370,6 +371,8 @@ const doctorSnowCliCommand = createDoctorCommand((args) => doctorSnowCliHook(und
 });
 
 const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
+
+const doctorMuseCodeCommand = createFileDoctorCommand("skill", "skillPath", () => doctorMuseCodeSkill(), true);
 
 const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
 
@@ -803,6 +806,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
+  ["muse-code", doctorMuseCodeCommand],
   ["qwenwork", doctorQwenWorkCommand],
   ["paimon", doctorPaimonCommand],
   ["mister-morph", doctorMisterMorphCommand],

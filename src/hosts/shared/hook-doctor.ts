@@ -7,6 +7,7 @@ import { doctorMisterMorphSkill } from "../mister-morph/index.js";
 import { doctorShelleySkill } from "../shelley/index.js";
 import { doctorCraftAgentsSkill } from "../craft-agents/index.js";
 import { doctorAtomCodeSkill } from "../atomcode/index.js";
+import { doctorMuseCodeSkill } from "../muse-code/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -198,6 +199,7 @@ export type HookIntegrationDoctorReport = {
   "swe-agent": SweAgentDoctorReport;
   stagewise: StagewiseDoctorReport;
   "mistral-vibe": MistralVibeDoctorReport;
+  "muse-code": Awaited<ReturnType<typeof doctorMuseCodeSkill>>;
   mux: MuxDoctorReport;
   novakit: NovaKitDoctorReport;
   ona: OnaDoctorReport;
@@ -334,6 +336,7 @@ const hookDoctorIntegrationDoctors = {
   "swe-agent": (options) => doctorSweAgentConfig(undefined, getHookCommandOptions(options)),
   stagewise: (options) => doctorStagewiseSkill(undefined, getHookCommandOptions(options)),
   "mistral-vibe": (options) => doctorMistralVibeInstructions(undefined, getHookCommandOptions(options)),
+  "muse-code": (options) => doctorMuseCodeSkill(getHookCommandOptions(options)),
   mux: (options) => doctorMuxHook(undefined, getHookCommandOptions(options)),
   novakit: (options) => doctorNovaKitInstructions(undefined, getHookCommandOptions(options)),
   ona: (options) => doctorOnaSkill(undefined, getHookCommandOptions(options)),

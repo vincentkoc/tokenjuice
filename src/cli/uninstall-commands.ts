@@ -6,6 +6,7 @@ import { uninstallMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { uninstallShelleySkill } from "../hosts/shelley/index.js";
 import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
+import { uninstallMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -504,6 +505,8 @@ const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkil
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
+const uninstallMuseCodeCommand = createFileUninstallCommand("muse-code", "skill", "skillPath", () => uninstallMuseCodeSkill());
+
 const uninstallQwenWorkCommand = createHostCommand(() => uninstallQwenWorkSkill(), (result) => {
   process.stdout.write(`removed qwenwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -712,6 +715,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],
+  ["muse-code", uninstallMuseCodeCommand],
   ["qwenwork", uninstallQwenWorkCommand],
   ["paimon", uninstallPaimonCommand],
   ["mister-morph", uninstallMisterMorphCommand],

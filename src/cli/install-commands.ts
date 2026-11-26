@@ -6,6 +6,7 @@ import { installMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { installShelleySkill } from "../hosts/shelley/index.js";
 import { installCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { installAtomCodeSkill } from "../hosts/atomcode/index.js";
+import { installMuseCodeSkill } from "../hosts/muse-code/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1132,6 +1133,15 @@ const installQoderWorkCommand = createHostCommand(() => installQoderWorkSkill(),
   ]));
 });
 
+const installMuseCodeCommand = createHostCommand(() => installMuseCodeSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("muse-code", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "project skill guidance; verify discovery and execution inside Muse Code" },
+    { label: "Verify", value: "tokenjuice doctor muse-code" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qwenwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1489,6 +1499,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["replit", installReplitCommand],
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
+  ["muse-code", installMuseCodeCommand],
   ["qwenwork", installQwenWorkCommand],
   ["paimon", installPaimonCommand],
   ["mister-morph", installMisterMorphCommand],

@@ -135,6 +135,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | — | [MiniMax Code](docs/minimax-code-integration.md) | Native plugin / pre-tool wrapping | Copy the packaged plugin into the active local catalog, then `mcode plugin enable tokenjuice@local` | Foreground Bash; native loading and model delivery unqualified |
 | — | [MiMo Code](docs/mimo-code-integration.md) | Result replacement (beta) | `tokenjuice install mimo-code` | Native file hook; Linux x64 CLI `0.1.17` verified |
 | <img width="48" height="48" src="docs/logos/mistral-vibe.png" alt="Mistral Vibe" /> | [Mistral Vibe](docs/mistral-vibe-integration.md) | Guidance | `tokenjuice install mistral-vibe` | `AGENTS.md` |
+| — | [Muse Code](docs/muse-code-integration.md) | Guidance | `tokenjuice install muse-code` | project skill at `.agents/skills/tokenjuice/SKILL.md`; native discovery pending |
 | <img width="48" height="48" src="docs/logos/mux-xum.png" alt="Mux / Xum" /> | [Mux / Xum](docs/mux-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/mux-integration.md) |
 | — | [nanobot](docs/nanobot-integration.md) | Guidance | `tokenjuice install nanobot` | `<workspace>/skills/tokenjuice/SKILL.md`; set `NANOBOT_WORKSPACE` for custom workspaces |
 | — | [NovaKit CLI](docs/novakit-integration.md) | Guidance | `tokenjuice install novakit` | `NOVAKIT.md` |

@@ -18,7 +18,7 @@ These tiles were rasterized with resvg 2.6.2 and normalized with ImageMagick. So
 
 ZCode uses a dash until a verified, theme-safe project mark is added.
 
-MiMo Code, OpenHanako, AgentInit, AI Memory Protocol, the community Grok CLI, Empryo / SoulForge, LeanCTL, NovaKit, oh-my-pi, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
+MiMo Code, OpenHanako, AgentInit, AI Memory Protocol, the community Grok CLI, Empryo / SoulForge, LeanCTL, Muse Code, NovaKit, oh-my-pi, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
 
 MiniMax Code also uses a dash until a project-specific mark is verified. Its plugin bundle reuses the existing tokenjuice banner as the plugin's own icon.
 

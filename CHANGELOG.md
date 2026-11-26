@@ -20,6 +20,7 @@
 - Add Craft Agents guidance skills with explicit workspace selection and safe install, doctor, and uninstall commands.
 - Add AtomCode project guidance skills with safe install, doctor, and uninstall commands.
 - Add nanobot workspace skill guidance with custom workspace selection and restorable installation.
+- Add Muse Code project skill guidance with owned-file install, doctor and uninstall commands.
 
 ## 0.11.2 - 2026-11-19
 

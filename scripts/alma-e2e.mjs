@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { createProcessRunner, removeReadOnlyFixture } from "./e2e-process.mjs";
+import { removeReadOnlyFixture } from "./e2e-process.mjs";
 
 const root = await realpath(await mkdtemp(join(tmpdir(), "tokenjuice-alma-e2e-")));
 const home = join(root, "home");
@@ -27,7 +27,6 @@ const env = {
   ALMA_API_URL: base, ALMA_PORT: "23001", ALMA_TOOL_APPROVAL: "auto",
   PATH: [bin, dirname(process.execPath), "/usr/local/bin", "/usr/bin", "/bin"].join(":"),
 };
-const run = createProcessRunner({ cwd: root, env });
 const list = `cd ${shellQuote(root)} && find files -type f`;
 let turn;
 let modelError;
@@ -37,10 +36,12 @@ const model = createServer(async (request, response) => {
     for await (const chunk of request) body += chunk;
     const payload = JSON.parse(body);
     assert.equal(request.url, "/v1/chat/completions");
+    const requested = turn && JSON.stringify(payload.messages).includes(turn.prompt);
     const bash = payload.tools?.find(tool => tool.function?.name === "Bash");
+    if (requested) assert.ok(bash, `Alma model request omitted Bash: ${(payload.tools ?? []).map(t => t.function?.name).join(", ")}`);
     const result = payload.messages.find(message => message.role === "tool" && message.tool_call_id === turn?.id);
     if (result) turn.result = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
-    const needsTool = bash && turn && !result;
+    const needsTool = bash && requested && !result;
     if (needsTool) assert.equal(++turn.calls, 1, "Alma must return the native Bash result to its model");
     const call = needsTool && {
       id: turn.id, type: "function",
@@ -52,6 +53,7 @@ const model = createServer(async (request, response) => {
     if (!payload.stream) {
       response.writeHead(200, { "Content-Type": "application/json" });
       response.end(JSON.stringify({ ...envelope, object: "chat.completion", choices: [{ index: 0, message, finish_reason: finish }] }));
+      if (result) turn.complete();
       return;
     }
     response.writeHead(200, { "Content-Type": "text/event-stream" });
@@ -60,8 +62,10 @@ const model = createServer(async (request, response) => {
       response.write(`data: ${JSON.stringify({ ...envelope, object: "chat.completion.chunk", choices: [{ index: 0, delta: piece, finish_reason: reason }] })}\n\n`);
     }
     response.end("data: [DONE]\n\n");
+    if (result) turn.complete();
   } catch (error) {
     modelError = error;
+    turn?.fail(error);
     response.writeHead(500).end("invalid fixture request");
   }
 });
@@ -77,9 +81,29 @@ async function api(path, method = "GET", data) {
 }
 
 async function bashTurn(providerId, label, command) {
-  turn = { id: `call_${label}`, command, calls: 0 };
-  await run(process.execPath, [join(runtime, "resources/cli/alma"), "run", "--model", `${providerId}:fixture`,
-    "--tools", "Bash", "--timeout", "40", `Run the ${label} fixture tool.`], 60_000);
+  const thread = await api("/api/threads", "POST", { title: label, headless: true });
+  const socket = new WebSocket(base.replace("http:", "ws:") + "/ws/threads");
+  const done = Promise.withResolvers();
+  const events = new Set();
+  turn = { id: `call_${label}`, command, calls: 0, prompt: `Run the ${label} fixture tool.`, complete: done.resolve, fail: done.reject };
+  const deadline = setTimeout(() => done.reject(new Error(`${label}: no native Bash result; events: ${[...events].join(", ")}`)), 40_000);
+  try {
+    // The shipped Alma client sends this message to the same pipeline as its web composer.
+    socket.addEventListener("open", () => socket.send(JSON.stringify({
+      type: "generate_response",
+      data: { threadId: thread.id, model: `${providerId}:fixture`, tools: ["Bash"], userMessage: { role: "user", parts: [{ type: "text", text: turn.prompt }] } },
+    })));
+    socket.addEventListener("error", () => done.reject(new Error("Alma generation socket failed")));
+    socket.addEventListener("message", event => {
+      const { type, data } = JSON.parse(event.data);
+      events.add(type);
+      if (type === "generation_error" && data?.threadId === thread.id) done.reject(new Error(JSON.stringify(data).slice(0, 700)));
+    });
+    await done.promise;
+  } finally {
+    clearTimeout(deadline);
+    socket.close();
+  }
   assert.ifError(modelError);
   assert.equal(turn.calls, 1, `${label}: native Bash dispatch`);
   assert.ok(turn.result, `${label}: result reached the next model request`);

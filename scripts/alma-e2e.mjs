@@ -27,7 +27,7 @@ const env = {
   ALMA_API_URL: base, ALMA_PORT: "23001", ALMA_TOOL_APPROVAL: "auto",
   PATH: [bin, dirname(process.execPath), "/usr/local/bin", "/usr/bin", "/bin"].join(":"),
 };
-const list = `cd ${shellQuote(root)} && find files -type f`;
+const list = `find ${shellQuote(files)} -type f`;
 let turn;
 let modelError;
 const model = createServer(async (request, response) => {
@@ -35,6 +35,16 @@ const model = createServer(async (request, response) => {
     let body = "";
     for await (const chunk of request) body += chunk;
     const payload = JSON.parse(body);
+    // Alma asks the configured provider for embeddings while preparing a fresh turn.
+    if (request.url === "/v1/embeddings") {
+      const inputs = Array.isArray(payload.input) ? payload.input : [payload.input];
+      const embedding = [1, ...Array(1535).fill(0)];
+      response.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({
+        object: "list", model: payload.model, data: inputs.map((_, index) => ({ object: "embedding", index, embedding })),
+        usage: { prompt_tokens: 1, total_tokens: 1 },
+      }));
+      return;
+    }
     assert.equal(request.url, "/v1/chat/completions");
     const requested = turn && JSON.stringify(payload.messages).includes(turn.prompt);
     const bash = payload.tools?.find(tool => tool.function?.name === "Bash");

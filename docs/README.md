@@ -43,6 +43,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [AI Memory Protocol integration](ai-memory-protocol-integration.md)
 - [aictl integration](aictl-integration.md)
 - [Aider integration](aider-integration.md)
+- [Alma integration](alma-integration.md)
 - [Amazon Q integration](amazon-q-integration.md)
 - [Amp integration](amp-integration.md)
 - [Ante integration](ante-integration.md)

@@ -13,12 +13,12 @@ not mean automatic compaction or native session acceptance. See the
 [support matrix](adapter-support-matrix.md) for the evidence behind existing
 routes.
 
-Of the 21 baseline gaps, 19 now have an integration on `main`. Eight have
+Of the 21 baseline gaps, 20 now have an integration on `main`. Nine have
 real-host evidence on the versions named in their guides. Ten provide
 instruction or skill guidance. DevEco Code is available on `main` as a beta whose
 plugin and installation contracts are tested. Released-host execution still
-requires the operator to review the vendor agreements. The Alma and Codely CLI
-proposals remain drafts pending their respective host checks.
+requires the operator to review the vendor agreements. The Codely CLI proposal
+remains a draft pending an authenticated host session.
 
 ## Existing routes
 
@@ -70,7 +70,7 @@ compaction, exact reads, raw bypass, failures and removal.
 | [AtomCode](https://atomcode.atomgit.com/docs/en/plugins.html) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/457) | Guidance only | Use documented project skill discovery; plugin trust and native model-visible acceptance remain host-owned. |
 | [Snow CLI](https://github.com/MayDay-wpf/snow-cli/blob/main/docs/usage/en/07.Hooks%20Configuration.md) | [Native result hook](https://github.com/vincentkoc/tokenjuice/pull/445) | Native fixture passed | `afterToolCall` exit 1 replaces content; preserve the serialized terminal result, stderr and exit status. |
 | [QwenPaw](https://github.com/agentscope-ai/QwenPaw/blob/main/website/public/docs/skills.en.md) | [Explicit-workspace skill](https://github.com/vincentkoc/tokenjuice/pull/448) | Guidance only | Dispatch/response message hooks are not per-tool hooks; legacy middleware needs separate native proof. |
-| [Alma](https://alma.now/docs/plugins/hooks-events) | [Native pre-tool plugin](https://github.com/vincentkoc/tokenjuice/pull/443) | Draft, Alma host required | Compose `output.args ?? input.args`, rewrite only known Bash commands and dispose subscriptions. Native acceptance requires a running Alma host; no isolated public host runner is available. |
+| [Alma](https://alma.now/docs/plugins/hooks-events) | [Native pre-tool plugin](https://github.com/vincentkoc/tokenjuice/pull/443) | Native fixture passed | Linux Alma Server 0.4.1176 loads the bundle and rewrites foreground Bash. The next model request receives smaller output, exact/raw bytes and failure status. Disabling restores the original output. |
 | [Shelley](https://github.com/boldsoftware/shelley/blob/main/skills/skills.go) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/459) | Guidance only | User skill root has no extra `skills/` component; published hooks lack a tool-result transform. |
 
 ## Upstream native gaps
@@ -83,8 +83,8 @@ compaction, exact reads, raw bypass, failures and removal.
 | [Command Code](https://commandcode.ai/docs/mods) | Expose structured exit/completion/abort status to `afterToolCall` mods. In published `1.89.1`, failed, timed-out and aborted shell commands can return non-error text results. | Runtime source is not public; the public registry cannot implement this API change. Keep explicit wrapping until the native contract supplies trustworthy status. |
 
 The [Alma plugin submission](https://github.com/yetone/alma-plugins/pull/39)
-proposes native pre-tool wrapping for its upstream plugin catalog. Host
-acceptance still requires an isolated Alma session.
+proposes the integration for the upstream plugin catalog. The Tokenjuice CI
+job verifies the locally installed bundle on Linux Alma Server 0.4.1176.
 
 Do not remove working guidance because automatic replacement is unavailable.
 Do not advertise an unverified API, use provider configuration as hook evidence,

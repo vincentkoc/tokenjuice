@@ -67,6 +67,8 @@ guide for its contract, install scope and verification steps.
 | [miniQ](miniq-integration.md) | Project skill at `.miniq/skills/tokenjuice/SKILL.md`; `install miniq`. | Native discovery and parser source inspected; shared managed-file lifecycle and CLI coverage. | Live skill loading, enabled state and model command adherence remain unverified. Hooks cannot replace the result in the inspected executor. |
 | [Tuanjie Codely CLI](codely-cli-integration.md) | Native `BeforeTool` input wrapping; `install codely-cli`. | Documented JSON contract and adapter lifecycle fixtures cover owned hooks, settings, disable controls, symlinks, exact argument preservation and raw bypass. Native `1.0.0-rc.73` starts in an isolated home but requires Codely OAuth before a custom OpenAI loopback provider; no model request was sent. | Authentication blocks native hook discovery, rewrite/policy and model-request acceptance. Cowork desktop requires separate qualification. |
 
+| [Alma](alma-integration.md) | Native `tool.willExecute` plugin wrapping foreground Bash on macOS/Linux. | Linux x86-64 Alma Server 0.4.1176 discovers, enables and disables the built bundle. Its model receives reduced stdout, exact file reads, raw output and the failing command’s output and exit code. | macOS desktop and interactive approval dialogs remain unverified. |
+
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:
 

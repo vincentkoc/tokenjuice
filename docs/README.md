@@ -13,6 +13,7 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [MiniMax Code integration](minimax-code-integration.md) — native local plugin for foreground Bash wrapping
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work
 - [complete verification inventory](verification-inventory.md) — every installer target, aliases and evidence level
+- [Magpie agent coverage](magpie-coverage.md) — the requested 38-agent audit, missing integrations and upstream native gaps
 
 ## development and distribution
 

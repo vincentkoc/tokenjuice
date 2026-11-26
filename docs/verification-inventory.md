@@ -28,6 +28,12 @@ CLI compatibility; they are not E2E evidence.
 
 | Target and aliases | Recorded evidence | Native acceptance |
 | --- | --- | --- |
+| [`miniq`](miniq-integration.md) | [File contract](../test/hosts/miniq.test.ts) | Guidance only. Native skill loading and use remain unqualified. |
+| [`mister-morph`](mister-morph-integration.md) | [File contract](../test/hosts/mister-morph.test.ts) | Guidance only. Native skill loading and use remain unqualified. |
+| [`omo`](omo-integration.md) | [Native fixture](../scripts/omo-e2e.mjs) | Pinned OmO/Senpi; see the guide for the tested command and output boundaries. |
+| [`paimon`](paimon-integration.md) | [File contract](../test/hosts/paimon.test.ts) | Guidance only. Native skill loading and use remain unqualified. |
+| [`shelley`](shelley-integration.md) | [File contract](../test/hosts/shelley.test.ts) | Guidance only. Native skill loading and use remain unqualified. |
+| [`snow-cli`](snow-cli-integration.md) | [Native fixture](../scripts/snow-cli-e2e.mjs) | Pinned Snow CLI; see the guide for the tested command and output boundaries. |
 | [`zcode`](zcode-integration.md) | [File and runtime contract](../test/hosts/zcode.test.ts), [native fixture](../scripts/zcode-e2e.mjs) | Pinned 3.18.2 macOS agent: discovery, model-visible output, cwd and uninstall; see guide for limits. |
 | [`adal`](adal-integration.md) | [File contract](../test/hosts/adal.test.ts) | Unqualified; see guide. |
 | [`aether`](aether-integration.md) | [File contract](../test/hosts/aether.test.ts) | Unqualified; see guide. |

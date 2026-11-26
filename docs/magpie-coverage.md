@@ -11,9 +11,14 @@ At this baseline, 17 agents have a tokenjuice route and 21 have no dedicated
 integration. Existing coverage includes guidance and explicit wrapping; it does
 not mean automatic compaction or native session acceptance. See the
 [support matrix](adapter-support-matrix.md) for the evidence behind existing
-routes. The implementation PRs below remain separate from native acceptance.
-An open PR, adapter test or successful build does not establish a working host
-session.
+routes.
+
+Of the 21 baseline gaps, 19 now have an integration on `main`. Eight have
+real-host evidence on the versions named in their guides. Ten provide
+instruction or skill guidance. DevEco Code is available on `main` as a beta whose
+plugin and installation contracts are tested. Released-host execution still
+requires the operator to review the vendor agreements. The Alma and Codely CLI
+proposals remain drafts pending their respective host checks.
 
 ## Existing routes
 
@@ -37,36 +42,36 @@ session.
 | [Droid](droid-integration.md) | Pre-tool wrapping | Pinned native fixture; host autonomy rules still apply. |
 | [Grok Build](grok-build-integration.md) | Project instructions | Passive hook stdout cannot replace a tool result. |
 
-## Implementation PRs for the baseline gaps
+## Implementations and open proposals
 
 Native skill discovery provides guidance, not an automatic tool hook. A file
 contract test cannot establish that the agent loads a skill or follows it.
 Keep native acceptance unqualified until a real host session verifies loading,
 compaction, exact reads, raw bypass, failures and removal.
 
-| Agent and primary source | Implementation PR | Contract to preserve |
-| --- | --- | --- |
-| [MiMo Code](https://github.com/XiaomiMiMo/MiMo-Code) | [Native file hook](https://github.com/vincentkoc/tokenjuice/pull/446) | Mutable `tool.execute.after`; require explicit successful Bash status and no unresolved truncation. Its loader differs from OpenCode. |
-| [DevEco Code](https://developer.huawei.com/consumer/cn/doc/HarmonyOS-Guides/ide-deveco-code-common-configure/) | [Native file hook](https://github.com/vincentkoc/tokenjuice/pull/450) | Mutable Bash result hook; preserve explicit exit/truncation metadata. Native `0.3.0-stable` blocks headless use until product consent, so model-visible acceptance remains unqualified. |
-| [fx](https://github.com/vercel-labs/fx) | [Instruction guidance](https://github.com/vincentkoc/tokenjuice/pull/452) | Internal hooks are not a documented CLI user-hook loader; SDK observer hooks do not establish replacement. |
-| [omp](https://github.com/can1357/oh-my-pi/blob/main/docs/extension-loading.md) | [Native extension](https://github.com/vincentkoc/tokenjuice/pull/442) | Use omp's own loader and event schema; preserve failure flags and structured details. |
-| [OmO](https://github.com/code-yeongyu/oh-my-openagent) | [Native Senpi extension](https://github.com/vincentkoc/tokenjuice/pull/449) | Resolve OmO's agent directory; a content replacement must not leave stale `structuredContent`. |
-| [Mister Morph](https://github.com/quailyquaily/mistermorph/blob/main/docs/skills.md) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/455) | Resolve `file_state_dir/skills`; shell enablement and explicit skill activation remain host-owned. |
-| [Muse Code](https://dev.meta.ai/docs/muse-code/extending) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/460) | Published hook docs do not establish a result-replacement wire contract. |
-| [Empryo](https://github.com/proxysoul/Empryo) | [SoulForge pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/447) | Current engine consumes `PreToolUse.updatedInput`; use current SoulForge config paths, not an old provider-config location. |
-| [nanobot](https://github.com/HKUDS/nanobot/blob/main/nanobot/agent/skills.py) | [Workspace skill](https://github.com/vincentkoc/tokenjuice/pull/458) | `after_execute_tool` return values are ignored; Python hooks require application registration. |
-| [miniQ](https://github.com/LeadingThink/miniQ/blob/main/crates/miniq-skills/src/store.rs) | [Workspace/user skill](https://github.com/vincentkoc/tokenjuice/pull/461) | Existing pre-hooks can block and post-hooks append feedback; neither establishes replacement. |
-| [Paimon](https://github.com/aisk/paimon#skills) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/454) | Use its documented skill roots; a custom Python toolset is a different integration contract. |
-| [MiniMax Code](https://github.com/MiniMax-AI/minimax-code) | [Native plugin with pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/441) | Verify parser behavior, not only interface declarations; native and Claude hook formats differ. |
-| [Craft Agents](https://thecraftagents.com/docs/skills/overview/) | [Explicit-workspace skill](https://github.com/vincentkoc/tokenjuice/pull/456) | Select the workspace; its isolated Pi backend does not load arbitrary global Pi extensions. |
-| [Tuanjie Cowork / Codely](https://codely-docs.tuanjie.cn/en/features-introduction/Hooks/) | [Codely pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/444) | Use `BeforeTool` and its CLI settings. Codely `1.0.0-rc.73` requires Codely OAuth before the custom OpenAI provider; Cowork desktop discovery requires separate acceptance. |
-| [ZCode](https://zcode.z.ai/en/docs/hooks) | [Native pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/451) | Return full `updatedInput`; preserve all Bash fields and downstream permission checks. |
-| [OpenHanako](https://github.com/liliMozi/openhanako/blob/main/PLUGIN_SDK.md) | [Native full-access extension plugin](https://github.com/vincentkoc/tokenjuice/pull/453) | Main shell is `exec_command`; compact only completed non-TTY successes and preserve `details.execCommand`. |
-| [AtomCode](https://atomcode.atomgit.com/docs/en/plugins.html) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/457) | Use documented project skill discovery; plugin trust and native model-visible acceptance remain host-owned. |
-| [Snow CLI](https://github.com/MayDay-wpf/snow-cli/blob/main/docs/usage/en/07.Hooks%20Configuration.md) | [Native result hook](https://github.com/vincentkoc/tokenjuice/pull/445) | `afterToolCall` exit 1 replaces content; preserve the serialized terminal result, stderr and exit status. |
-| [QwenPaw](https://github.com/agentscope-ai/QwenPaw/blob/main/website/public/docs/skills.en.md) | [Explicit-workspace skill](https://github.com/vincentkoc/tokenjuice/pull/448) | Dispatch/response message hooks are not per-tool hooks; legacy middleware needs separate native proof. |
-| [Alma](https://alma.now/docs/plugins/hooks-events) | [Native pre-tool plugin](https://github.com/vincentkoc/tokenjuice/pull/443) | Compose `output.args ?? input.args`, rewrite only known Bash commands and dispose subscriptions. Native acceptance requires a running Alma host; no isolated public host runner is available. |
-| [Shelley](https://github.com/boldsoftware/shelley/blob/main/skills/skills.go) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/459) | User skill root has no extra `skills/` component; published hooks lack a tool-result transform. |
+| Agent and primary source | Implementation PR | Status on `main` | Contract to preserve |
+| --- | --- | --- | --- |
+| [MiMo Code](https://github.com/XiaomiMiMo/MiMo-Code) | [Native file hook](https://github.com/vincentkoc/tokenjuice/pull/446) | Native fixture passed | Mutable `tool.execute.after`; require explicit successful Bash status and no unresolved truncation. Its loader differs from OpenCode. |
+| [DevEco Code](https://developer.huawei.com/consumer/cn/doc/HarmonyOS-Guides/ide-deveco-code-common-configure/) | [Native file hook](https://github.com/vincentkoc/tokenjuice/pull/450) | Beta, file and payload contracts | Mutable Bash result hook; preserve explicit exit/truncation metadata. Native `0.3.0-stable` blocks headless use until product consent, so model-visible acceptance remains unqualified. |
+| [fx](https://github.com/vercel-labs/fx) | [Instruction guidance](https://github.com/vincentkoc/tokenjuice/pull/452) | Guidance only | Internal hooks are not a documented CLI user-hook loader; SDK observer hooks do not establish replacement. |
+| [omp](https://github.com/can1357/oh-my-pi/blob/main/docs/extension-loading.md) | [Native extension](https://github.com/vincentkoc/tokenjuice/pull/442) | Native fixture passed | Use omp's own loader and event schema; preserve failure flags and structured details. |
+| [OmO](https://github.com/code-yeongyu/oh-my-openagent) | [Native Senpi extension](https://github.com/vincentkoc/tokenjuice/pull/449) | Native fixture passed | Resolve OmO's agent directory; a content replacement must not leave stale `structuredContent`. |
+| [Mister Morph](https://github.com/quailyquaily/mistermorph/blob/main/docs/skills.md) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/455) | Guidance only | Resolve `file_state_dir/skills`; shell enablement and explicit skill activation remain host-owned. |
+| [Muse Code](https://dev.meta.ai/docs/muse-code/extending) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/460) | Guidance only | Published hook docs do not establish a result-replacement wire contract. |
+| [Empryo](https://github.com/proxysoul/Empryo) | [SoulForge pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/447) | Native fixture passed | Current engine consumes `PreToolUse.updatedInput`; use current SoulForge config paths, not an old provider-config location. |
+| [nanobot](https://github.com/HKUDS/nanobot/blob/main/nanobot/agent/skills.py) | [Workspace skill](https://github.com/vincentkoc/tokenjuice/pull/458) | Guidance only | `after_execute_tool` return values are ignored; Python hooks require application registration. |
+| [miniQ](https://github.com/LeadingThink/miniQ/blob/main/crates/miniq-skills/src/store.rs) | [Workspace/user skill](https://github.com/vincentkoc/tokenjuice/pull/461) | Guidance only | Existing pre-hooks can block and post-hooks append feedback; neither establishes replacement. |
+| [Paimon](https://github.com/aisk/paimon#skills) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/454) | Guidance only | Use its documented skill roots; a custom Python toolset is a different integration contract. |
+| [MiniMax Code](https://github.com/MiniMax-AI/minimax-code) | [Native plugin with pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/441) | Native fixture passed | Verify parser behavior, not only interface declarations; native and Claude hook formats differ. |
+| [Craft Agents](https://thecraftagents.com/docs/skills/overview/) | [Explicit-workspace skill](https://github.com/vincentkoc/tokenjuice/pull/456) | Guidance only | Select the workspace; its isolated Pi backend does not load arbitrary global Pi extensions. |
+| [Tuanjie Cowork / Codely](https://codely-docs.tuanjie.cn/en/features-introduction/Hooks/) | [Codely pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/444) | Draft, authenticated Codely CLI required | Use `BeforeTool` and its CLI settings. Codely `1.0.0-rc.73` requires Codely OAuth before the custom OpenAI provider; Cowork desktop discovery requires separate acceptance. |
+| [ZCode](https://zcode.z.ai/en/docs/hooks) | [Native pre-tool wrapping](https://github.com/vincentkoc/tokenjuice/pull/451) | Native fixture passed | Return full `updatedInput`; preserve all Bash fields and downstream permission checks. |
+| [OpenHanako](https://github.com/liliMozi/openhanako/blob/main/PLUGIN_SDK.md) | [Native full-access extension plugin](https://github.com/vincentkoc/tokenjuice/pull/453) | Native fixture passed | Main shell is `exec_command`; compact only completed non-TTY successes and preserve `details.execCommand`. |
+| [AtomCode](https://atomcode.atomgit.com/docs/en/plugins.html) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/457) | Guidance only | Use documented project skill discovery; plugin trust and native model-visible acceptance remain host-owned. |
+| [Snow CLI](https://github.com/MayDay-wpf/snow-cli/blob/main/docs/usage/en/07.Hooks%20Configuration.md) | [Native result hook](https://github.com/vincentkoc/tokenjuice/pull/445) | Native fixture passed | `afterToolCall` exit 1 replaces content; preserve the serialized terminal result, stderr and exit status. |
+| [QwenPaw](https://github.com/agentscope-ai/QwenPaw/blob/main/website/public/docs/skills.en.md) | [Explicit-workspace skill](https://github.com/vincentkoc/tokenjuice/pull/448) | Guidance only | Dispatch/response message hooks are not per-tool hooks; legacy middleware needs separate native proof. |
+| [Alma](https://alma.now/docs/plugins/hooks-events) | [Native pre-tool plugin](https://github.com/vincentkoc/tokenjuice/pull/443) | Draft, Alma host required | Compose `output.args ?? input.args`, rewrite only known Bash commands and dispose subscriptions. Native acceptance requires a running Alma host; no isolated public host runner is available. |
+| [Shelley](https://github.com/boldsoftware/shelley/blob/main/skills/skills.go) | [Native skill guidance](https://github.com/vincentkoc/tokenjuice/pull/459) | Guidance only | User skill root has no extra `skills/` component; published hooks lack a tool-result transform. |
 
 ## Upstream native gaps
 
@@ -78,7 +83,7 @@ compaction, exact reads, raw bypass, failures and removal.
 | [Command Code](https://commandcode.ai/docs/mods) | Expose structured exit/completion/abort status to `afterToolCall` mods. In published `1.89.1`, failed, timed-out and aborted shell commands can return non-error text results. | Runtime source is not public; the public registry cannot implement this API change. Keep explicit wrapping until the native contract supplies trustworthy status. |
 
 The [Alma plugin submission](https://github.com/yetone/alma-plugins/pull/39)
-provides native pre-tool wrapping through its upstream plugin catalog. Host
+proposes native pre-tool wrapping for its upstream plugin catalog. Host
 acceptance still requires an isolated Alma session.
 
 Do not remove working guidance because automatic replacement is unavailable.

@@ -12,6 +12,7 @@
 - Add project-local Empryo / SoulForge pre-tool wrapping with preserved shell inputs, shared failure handling, and owned-hook lifecycle commands.
 - Qualify Empryo / SoulForge 2.20.25 native hooks and model-visible output with an isolated CLI fixture; document the host's failure-output limits.
 - Add ZCode native pre-tool Bash wrapping with configuration lifecycle checks, full input preservation, and native model-visible acceptance for the pinned macOS agent.
+- Add a QwenPaw workspace skill package with explicit-agent import, dependency checks and failure-preserving command guidance.
 
 ## 0.11.2 - 2026-11-19
 

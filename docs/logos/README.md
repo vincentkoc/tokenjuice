@@ -22,6 +22,8 @@ MiMo Code, OpenHanako, AgentInit, AI Memory Protocol, the community Grok CLI, Em
 
 MiniMax Code also uses a dash until a project-specific mark is verified. Its plugin bundle reuses the existing tokenjuice banner as the plugin's own icon.
 
+QwenPaw also uses a dash until a project-specific mark is verified.
+
 The GitHub product rows use the current GitHub mark from its brand kit; the old Copilot mascot is retired. Windsurf retains its official historical symbol rather than substituting the Devin logo now served by its redirected website. Some integrations use their official parent-project mark, such as AWS, OpenAI, JetBrains, and LangChain.
 
 When replacing an image, verify its identity against the project source, update both hashes and the source URL, then recheck the table in both themes. A new hostname or a successful image download alone does not establish that an asset is the project's logo.

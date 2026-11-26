@@ -45,33 +45,41 @@ const model = createServer(async (request, response) => {
       }));
       return;
     }
-    assert.equal(request.url, "/v1/chat/completions");
-    const requested = turn && JSON.stringify(payload.messages).includes(turn.prompt);
-    const bash = payload.tools?.find(tool => tool.function?.name === "Bash");
-    if (requested) assert.ok(bash, `Alma model request omitted Bash: ${(payload.tools ?? []).map(t => t.function?.name).join(", ")}`);
-    const result = payload.messages.find(message => message.role === "tool" && message.tool_call_id === turn?.id);
-    if (result) turn.result = typeof result.content === "string" ? result.content : JSON.stringify(result.content);
+    assert.equal(request.url, "/v1/responses");
+    const input = Array.isArray(payload.input) ? payload.input : [];
+    const requested = turn && JSON.stringify(payload.input).includes(turn.prompt);
+    const bash = payload.tools?.find(tool => tool.type === "function" && tool.name === "Bash");
+    if (requested) assert.ok(bash, `Alma model request omitted Bash: ${(payload.tools ?? []).map(t => t.name).join(", ")}`);
+    const result = input.find(item => item.type === "function_call_output" && item.call_id === turn?.id);
+    if (result) turn.result = typeof result.output === "string" ? result.output : JSON.stringify(result.output);
     const needsTool = bash && requested && !result;
     if (needsTool) assert.equal(++turn.calls, 1, "Alma must return the native Bash result to its model");
-    const call = needsTool && {
-      id: turn.id, type: "function",
-      function: { name: bash.function.name, arguments: JSON.stringify({ command: turn.command, description: "Read the disposable fixture" }) },
-    };
-    const message = call ? { role: "assistant", tool_calls: [call] } : { role: "assistant", content: "fixture complete" };
-    const finish = call ? "tool_calls" : "stop";
-    const envelope = { id: "native-alma-fixture", model: "fixture", created: 1 };
-    if (!payload.stream) {
-      response.writeHead(200, { "Content-Type": "application/json" });
-      response.end(JSON.stringify({ ...envelope, object: "chat.completion", choices: [{ index: 0, message, finish_reason: finish }] }));
-      if (result) turn.complete();
-      return;
+    const item = needsTool ? {
+      type: "function_call", id: `fc_${turn.id}`, call_id: turn.id, name: bash.name, status: "completed",
+      arguments: JSON.stringify({ command: turn.command, description: "Read the disposable fixture" }),
+    } : { type: "message", id: "msg_fixture", role: "assistant", status: "completed",
+      content: [{ type: "output_text", text: "fixture complete", annotations: [] }] };
+    const envelope = { id: `resp_${turn?.id ?? "aux"}_${needsTool ? "tool" : "done"}`, object: "response",
+      model: "fixture", created_at: 1, status: "completed", output: [item], usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } };
+    if (payload.stream) {
+      response.writeHead(200, { "Content-Type": "text/event-stream" });
+      let sequence = 0;
+      const event = (type, data) => response.write(`event: ${type}\ndata: ${JSON.stringify({ type, sequence_number: sequence++, ...data })}\n\n`);
+      event("response.created", { response: { ...envelope, status: "in_progress", output: [] } });
+      event("response.output_item.added", { output_index: 0, item: needsTool
+        ? { ...item, arguments: "", status: "in_progress" } : { ...item, content: [], status: "in_progress" } });
+      if (needsTool) {
+        event("response.function_call_arguments.delta", { item_id: item.id, output_index: 0, delta: item.arguments });
+        event("response.function_call_arguments.done", { item_id: item.id, output_index: 0, arguments: item.arguments });
+      } else {
+        event("response.output_text.delta", { item_id: item.id, output_index: 0, content_index: 0, delta: "fixture complete" });
+      }
+      event("response.output_item.done", { output_index: 0, item });
+      event("response.completed", { response: envelope });
+      response.end();
+    } else {
+      response.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(envelope));
     }
-    response.writeHead(200, { "Content-Type": "text/event-stream" });
-    const delta = call ? { ...message, tool_calls: [{ index: 0, ...call }] } : message;
-    for (const [piece, reason] of [[delta, null], [{}, finish]]) {
-      response.write(`data: ${JSON.stringify({ ...envelope, object: "chat.completion.chunk", choices: [{ index: 0, delta: piece, finish_reason: reason }] })}\n\n`);
-    }
-    response.end("data: [DONE]\n\n");
     if (result) turn.complete();
   } catch (error) {
     modelError = error;
@@ -138,7 +146,7 @@ try {
 
   const provider = await api("/api/providers", "POST", {
     name: "Tokenjuice fixture", type: "openai", apiKey: "fixture", enabled: true,
-    baseURL: `http://127.0.0.1:${model.address().port}/v1`, models: ["fixture"], isResponseAPI: false,
+    baseURL: `http://127.0.0.1:${model.address().port}/v1`, models: ["fixture"], isResponseAPI: true,
   });
   const baseline = await bashTurn(provider.id, "baseline", list);
   assert.match(baseline, /item-79\.txt/);

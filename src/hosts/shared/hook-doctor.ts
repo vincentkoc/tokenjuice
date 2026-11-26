@@ -9,6 +9,7 @@ import { doctorCraftAgentsSkill } from "../craft-agents/index.js";
 import { doctorAtomCodeSkill } from "../atomcode/index.js";
 import { doctorMuseCodeSkill } from "../muse-code/index.js";
 import { doctorMiniQSkill } from "../miniq/index.js";
+import { doctorDevEcoExtension } from "../deveco/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -166,6 +167,7 @@ export type HookIntegrationDoctorReport = {
   "craft-agents": Awaited<ReturnType<typeof doctorCraftAgentsSkill>>;
   crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
+  deveco: Awaited<ReturnType<typeof doctorDevEcoExtension>>;
   deepagents: DeepAgentsDoctorReport;
   devin: DevinDoctorReport;
   "dot-agents": DotAgentsDoctorReport;
@@ -304,6 +306,7 @@ const hookDoctorIntegrationDoctors = {
   "craft-agents": () => doctorCraftAgentsSkill(),
   crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
+  deveco: (options) => doctorDevEcoExtension(getHookCommandOptions(options)),
   deepagents: (options) => doctorDeepAgentsInstructions(undefined, getHookCommandOptions(options)),
   devin: (options) => doctorDevinHook(undefined, getHookCommandOptions(options)),
   "dot-agents": (options) => doctorDotAgentsRule(undefined, getHookCommandOptions(options)),

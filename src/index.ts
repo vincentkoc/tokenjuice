@@ -10,6 +10,8 @@ export { installMuseCodeSkill, doctorMuseCodeSkill, uninstallMuseCodeSkill } fro
 export type { MuseCodeSkillOptions } from "./hosts/muse-code/index.js";
 export { installMiniQSkill, doctorMiniQSkill, uninstallMiniQSkill } from "./hosts/miniq/index.js";
 export type { MiniQSkillOptions } from "./hosts/miniq/index.js";
+export { installDevEcoExtension, doctorDevEcoExtension, uninstallDevEcoExtension } from "./hosts/deveco/index.js";
+export type { DevEcoOptions } from "./hosts/deveco/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";

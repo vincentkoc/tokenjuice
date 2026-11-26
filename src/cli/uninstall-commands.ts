@@ -8,6 +8,7 @@ import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { uninstallMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { uninstallMiniQSkill } from "../hosts/miniq/index.js";
+import { uninstallDevEcoExtension } from "../hosts/deveco/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -457,6 +458,8 @@ const uninstallPiCommand = createHostCommand(() => uninstallPiExtension(), (resu
   process.stdout.write("enable: tokenjuice install pi\n");
 });
 
+const uninstallDevEcoCommand = createFileUninstallCommand("deveco", "extension", "extensionPath", () => uninstallDevEcoExtension());
+
 const uninstallOpencodeV2Command = createHostCommand(() => uninstallOpenCodeV2Extension(), (result) => {
   process.stdout.write(`removed opencode-v2 extension: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
@@ -713,6 +716,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["pi", uninstallPiCommand],
   ["mimo-code", uninstallMimoCodeCommand],
   ["opencode", uninstallOpencodeCommand],
+  ["deveco", uninstallDevEcoCommand],
   ["opencode-v2", uninstallOpencodeV2Command],
   ["plandex", uninstallPlandexCommand],
   ["ante", uninstallAnteCommand],

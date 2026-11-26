@@ -22,6 +22,7 @@
 - Add nanobot workspace skill guidance with custom workspace selection and restorable installation.
 - Add Muse Code project skill guidance with owned-file install, doctor and uninstall commands.
 - Add a project-local miniQ guidance skill with install, doctor and uninstall commands.
+- Add a beta DevEco Code native Bash-result plugin with owned-file lifecycle and successful, complete-output checks.
 
 ## 0.11.2 - 2026-11-19
 

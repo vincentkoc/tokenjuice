@@ -8,6 +8,7 @@ import { doctorCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { doctorAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { doctorMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { doctorMiniQSkill } from "../hosts/miniq/index.js";
+import { doctorDevEcoExtension } from "../hosts/deveco/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -302,6 +303,14 @@ const doctorPiCommand = createDoctorCommand(() => doctorPiExtension(), (report) 
 });
 
 const doctorPiGoCommand = createFileDoctorCommand("skill", "skillPath", () => doctorPiGoSkill(), true);
+
+const doctorDevEcoCommand = createDoctorCommand((args) => doctorDevEcoExtension({ local: args.local }), (report) => {
+  process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
 
 const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Extension({ local: args.local }), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
@@ -800,6 +809,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pigo", doctorPiGoCommand],
   ["mimo-code", doctorMimoCodeCommand],
   ["opencode", doctorOpencodeCommand],
+  ["deveco", doctorDevEcoCommand],
   ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],
   ["ante", doctorAnteCommand],

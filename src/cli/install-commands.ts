@@ -8,6 +8,7 @@ import { installCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { installAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { installMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { installMiniQSkill } from "../hosts/miniq/index.js";
+import { installDevEcoExtension } from "../hosts/deveco/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1236,6 +1237,15 @@ const installPiGoCommand = createFileInstallCommand(() => installPiGoSkill(), {
   beta: "project skill guidance; pi-go still owns shell execution",
 });
 
+const installDevEcoCommand = createHostCommand((args) => installDevEcoExtension({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("deveco", "extension", [
+    { label: "Extension", value: result.extensionPath },
+    { label: "Verify", value: "tokenjuice doctor deveco" },
+    { label: "Beta", value: "successful Bash result replacement; verify loading in a fresh DevEco session" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installOpencodeV2Command = createHostCommand((args) => installOpenCodeV2Extension({ local: args.local }), (result) => {
   process.stdout.write(formatInstallSuccess("opencode-v2", "extension", [
     { label: "Extension", value: result.extensionPath },
@@ -1522,6 +1532,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["pigo", installPiGoCommand],
   ["mimo-code", installMimoCodeCommand],
   ["opencode", installOpencodeCommand],
+  ["deveco", installDevEcoCommand],
   ["opencode-v2", installOpencodeV2Command],
   ["roo", installRooCommand],
   ["rovo", installRovoCommand],

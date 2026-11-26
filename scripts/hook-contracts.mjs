@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
+import { runMiniMaxPluginContracts } from "./minimax-plugin-contract.mjs";
 
 const repoRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
 const distCliPath = join(repoRoot, "dist", "cli", "main.js");
@@ -441,6 +442,7 @@ try {
   await assertFile(distCliPath, "run `pnpm build` first");
   const results = { codex: await runCodexContracts(), "qoder-cli": await runQoderContracts(), "opencode-v2": await runOpenCodeV2Contracts() };
   for (const spec of preToolHosts) results[spec.host] = await runPreToolContracts(spec);
+  results["minimax-code"] = await runMiniMaxPluginContracts();
   process.stdout.write(`${JSON.stringify({ ok: true, level: "installed-hook-contract", results }, null, 2)}\n`);
 } finally {
   await rm(tempRoot, { recursive: true, force: true });

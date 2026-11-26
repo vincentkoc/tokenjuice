@@ -1,7 +1,14 @@
+import { doctorMimoCodeHook } from "../hosts/mimo-code/index.js";
+import { doctorOmoExtension } from "../hosts/omo/index.js";
+import { doctorEmpryoHook } from "../hosts/empryo/index.js";
+import { doctorPaimonSkill } from "../hosts/paimon/index.js";
+import { doctorMisterMorphSkill } from "../hosts/mister-morph/index.js";
+import { doctorShelleySkill } from "../hosts/shelley/index.js";
 import { doctorCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
+import { doctorSnowCliHook } from "../hosts/snow-cli/index.js";
 import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { doctorQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice doctor <target>` (hosts plus `doctor hooks`).
@@ -42,6 +49,7 @@ import { doctorCodegenInstructions } from "../hosts/codegen/index.js";
 import { doctorCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { doctorCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { doctorCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { doctorZCodeHook } from "../hosts/zcode/index.js";
 import { doctorCommandCodeHook } from "../hosts/command-code/index.js";
 import { doctorContinueRule } from "../hosts/continue/index.js";
 import { doctorCodexHook } from "../hosts/codex/index.js";
@@ -63,6 +71,7 @@ import { doctorGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { doctorGooseHints } from "../hosts/goose/index.js";
 import { doctorGreptileRule } from "../hosts/greptile/index.js";
 import { doctorGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { doctorFxInstructions } from "../hosts/fx/index.js";
 import { doctorGrokBotRule } from "../hosts/grok-bot/index.js";
 import { doctorGrokCliHook } from "../hosts/grok-cli/index.js";
 import { doctorGptmeInstructions } from "../hosts/gptme/index.js";
@@ -272,6 +281,14 @@ const doctorCodexCommand = createDoctorCommand((args) => doctorCodexHook(undefin
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
+const doctorOmoCommand = createDoctorCommand((args) => doctorOmoExtension({ local: args.local }), (report) => {
+  process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorPiCommand = createDoctorCommand(() => doctorPiExtension(), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -284,6 +301,14 @@ const doctorPiGoCommand = createFileDoctorCommand("skill", "skillPath", () => do
 
 const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Extension({ local: args.local }), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorMimoCodeCommand = createDoctorCommand((args) => doctorMimoCodeHook({ local: args.local }), (report) => {
+  process.stdout.write(`hook path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   writeDoctorList("issues", report.issues);
   writeDoctorList("advisories", report.advisories);
@@ -327,9 +352,28 @@ const doctorCraftAgentsCommand = createDoctorCommand((args) => doctorCraftAgents
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
+const doctorSnowCliCommand = createDoctorCommand((args) => doctorSnowCliHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) {
+    process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
 
 const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
+
+const doctorPaimonCommand = createFileDoctorCommand("skill", "skillPath", () => doctorPaimonSkill());
+
+const doctorMisterMorphCommand = createFileDoctorCommand("skill", "skillPath", () => doctorMisterMorphSkill());
+
+const doctorShelleyCommand = createFileDoctorCommand("skill", "skillPath", () => doctorShelleySkill());
 
 const doctorQwenCodeCommand = createDoctorCommand((args) => doctorQwenCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
@@ -451,6 +495,7 @@ const doctorGptmeCommand = createFileDoctorCommand("instructions", "instructions
 const doctorJean2Command = createFileDoctorCommand("instructions", "instructionsPath", () => doctorJean2Instructions());
 
 const doctorGrokBuildCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorGrokBuildInstructions(), true);
+const doctorFxCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorFxInstructions(), true);
 
 const doctorGrokBotCommand = createFileDoctorCommand("rule", "rulePath", () => doctorGrokBotRule(), true);
 
@@ -656,6 +701,27 @@ const doctorCodegenCommand = createFileDoctorCommand("instructions", "instructio
 
 const doctorCoderAgentsCommand = createFileDoctorCommand("skill", "skillPath", () => doctorCoderAgentsSkill(), true);
 
+const doctorEmpryoCommand = createDoctorCommand((args) => doctorEmpryoHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  writeDoctorList("missing paths", report.missingPaths);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorZCodeCommand = createDoctorCommand((args) => doctorZCodeHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorCodebuddyCommand = createDoctorCommand((args) => doctorCodeBuddyHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -716,19 +782,25 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["builder", doctorBuilderCommand],
   ["charlie", doctorCharlieCommand],
   ["codex", doctorCodexCommand],
+  ["omo", doctorOmoCommand],
   ["pi", doctorPiCommand],
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],
+  ["mimo-code", doctorMimoCodeCommand],
   ["opencode", doctorOpencodeCommand],
   ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],
   ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],
   ["qoder-cli", doctorQoderCliCommand],
+  ["snow-cli", doctorSnowCliCommand],
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
   ["qwenwork", doctorQwenWorkCommand],
+  ["paimon", doctorPaimonCommand],
+  ["mister-morph", doctorMisterMorphCommand],
+  ["shelley", doctorShelleyCommand],
   ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],
@@ -753,6 +825,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["gptme", doctorGptmeCommand],
   ["jean2", doctorJean2Command],
   ["grok-build", doctorGrokBuildCommand],
+  ["fx", doctorFxCommand],
   ["grok-bot", doctorGrokBotCommand],
   ["grokbot", doctorGrokBotCommand],
   ["goose", doctorGooseCommand],
@@ -806,7 +879,10 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["codegen", doctorCodegenCommand],
   ["coder-agents", doctorCoderAgentsCommand],
   ["coderagents", doctorCoderAgentsCommand],
+  ["empryo", doctorEmpryoCommand],
+  ["soulforge", doctorEmpryoCommand],
   ["codebuddy", doctorCodebuddyCommand],
+  ["zcode", doctorZCodeCommand],
   ["continue", doctorContinueCommand],
   ["droid", doctorDroidCommand],
 ]);

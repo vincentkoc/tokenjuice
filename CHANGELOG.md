@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Add a MiniMax Code plugin for native foreground Bash input wrapping, managed through the host's local plugin catalog, with native headless lifecycle and model-visible output coverage for `0.7.2`.
+- Add an oh-my-pi native package extension for eligible successful Bash output; verify native package lifecycle, model-visible output and preserved replay metadata with OMP 18.20.0.
+- Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
+- Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
+- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
+- Add a native OmO extension for completed root Bash output, including native text-only results and matching structured results; qualify the standalone launcher against a local model fixture.
+- Add a native OpenHanako / HanaAgent result plugin for completed successful shell output, preserving execution metadata and bypassing partial or interactive results. A pinned Linux app-core fixture verifies native plugin permission gates and model-visible output; desktop and PTY acceptance remain unqualified.
+- Add project-local Empryo / SoulForge pre-tool wrapping with preserved shell inputs, shared failure handling, and owned-hook lifecycle commands.
+- Qualify Empryo / SoulForge 2.20.25 native hooks and model-visible output with an isolated CLI fixture; document the host's failure-output limits.
+- Add ZCode native pre-tool Bash wrapping with configuration lifecycle checks, full input preservation, and native model-visible acceptance for the pinned macOS agent.
+- Add a QwenPaw workspace skill package with explicit-agent import, dependency checks and failure-preserving command guidance.
+- Add a Paimon guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
+- Add a Mister Morph guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
+- Add a Shelley guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
+- Add fx project instruction guidance with isolated lifecycle management and explicit workspace selection.
 - Add Craft Agents guidance skills with explicit workspace selection and safe install, doctor, and uninstall commands.
 
 ## 0.11.2 - 2026-11-19

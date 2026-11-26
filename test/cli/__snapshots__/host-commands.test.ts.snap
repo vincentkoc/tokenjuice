@@ -1457,6 +1457,79 @@ exit 0
 "
 `;
 
+exports[`host CLI commands > install, doctor, and uninstall ante 1`] = `
+"$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: disabled
+[stdout] issues:
+[stdout] - tokenjuice Ante instructions are not installed
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+
+$ tokenjuice install ante
+[stdout] success: ante instructions installed successfully
+
+  Instructions: <SANDBOX>/project/AGENTS.md
+  Beta        : instruction-based guidance; Ante still owns command execution
+  Verify      : tokenjuice doctor ante
+  Escape hatch: tokenjuice wrap --raw -- <command>
+exit 0
+
+$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: ok
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+
+$ tokenjuice doctor ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
+  "status": "ok",
+  "issues": [],
+  "advisories": [
+    "Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution."
+  ],
+  "fixCommand": "tokenjuice install ante",
+  "checkedPaths": [],
+  "missingPaths": []
+}
+exit 0
+
+$ tokenjuice install ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md"
+}
+exit 0
+
+$ tokenjuice uninstall ante
+[stdout] removed ante instructions: yes
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] enable: tokenjuice install ante
+exit 0
+
+$ tokenjuice uninstall ante --format json
+[stdout] {
+  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
+  "removed": false
+}
+exit 0
+
+$ tokenjuice doctor ante
+[stdout] instructions path: <SANDBOX>/project/AGENTS.md
+[stdout] health: disabled
+[stdout] issues:
+[stdout] - tokenjuice Ante instructions are not installed
+[stdout] advisories:
+[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
+[stdout] repair: tokenjuice install ante
+exit 0
+"
+`;
+
 exports[`host CLI commands > install, doctor, and uninstall antigravity 1`] = `
 "$ tokenjuice doctor antigravity
 [stdout] rule path: <SANDBOX>/project/.agents/rules/tokenjuice.md
@@ -7413,79 +7486,6 @@ $ tokenjuice doctor plandex
 [stdout] advisories:
 [stdout] - Plandex support is beta and context-based; load it with plandex load PLANDEX.tokenjuice.md or @PLANDEX.tokenjuice.md in the REPL.
 [stdout] repair: tokenjuice install plandex
-exit 0
-"
-`;
-
-exports[`host CLI commands > install, doctor, and uninstall ante 1`] = `
-"$ tokenjuice doctor ante
-[stdout] instructions path: <SANDBOX>/project/AGENTS.md
-[stdout] health: disabled
-[stdout] issues:
-[stdout] - tokenjuice Ante instructions are not installed
-[stdout] advisories:
-[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
-[stdout] repair: tokenjuice install ante
-exit 0
-
-$ tokenjuice install ante
-[stdout] success: ante instructions installed successfully
-
-  Instructions: <SANDBOX>/project/AGENTS.md
-  Beta        : instruction-based guidance; Ante still owns command execution
-  Verify      : tokenjuice doctor ante
-  Escape hatch: tokenjuice wrap --raw -- <command>
-exit 0
-
-$ tokenjuice doctor ante
-[stdout] instructions path: <SANDBOX>/project/AGENTS.md
-[stdout] health: ok
-[stdout] advisories:
-[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
-[stdout] repair: tokenjuice install ante
-exit 0
-
-$ tokenjuice doctor ante --format json
-[stdout] {
-  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
-  "status": "ok",
-  "issues": [],
-  "advisories": [
-    "Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution."
-  ],
-  "fixCommand": "tokenjuice install ante",
-  "checkedPaths": [],
-  "missingPaths": []
-}
-exit 0
-
-$ tokenjuice install ante --format json
-[stdout] {
-  "instructionsPath": "<SANDBOX>/project/AGENTS.md"
-}
-exit 0
-
-$ tokenjuice uninstall ante
-[stdout] removed ante instructions: yes
-[stdout] instructions path: <SANDBOX>/project/AGENTS.md
-[stdout] enable: tokenjuice install ante
-exit 0
-
-$ tokenjuice uninstall ante --format json
-[stdout] {
-  "instructionsPath": "<SANDBOX>/project/AGENTS.md",
-  "removed": false
-}
-exit 0
-
-$ tokenjuice doctor ante
-[stdout] instructions path: <SANDBOX>/project/AGENTS.md
-[stdout] health: disabled
-[stdout] issues:
-[stdout] - tokenjuice Ante instructions are not installed
-[stdout] advisories:
-[stdout] - Ante support is beta and instruction-based; Ante loads project AGENTS.md but still owns command execution.
-[stdout] repair: tokenjuice install ante
 exit 0
 "
 `;

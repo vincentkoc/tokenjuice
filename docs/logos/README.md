@@ -33,3 +33,5 @@ Snow CLI: no verified project mark is bundled; its catalog entry uses a dash.
 OmO: no verified project mark is packaged; the catalog uses a dash.
 
 Paimon: no verified project mark is bundled; its catalog entry uses a dash.
+
+Mister Morph: no verified project mark is bundled; its catalog entry uses a dash.

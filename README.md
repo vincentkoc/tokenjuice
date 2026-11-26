@@ -136,6 +136,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | — | [NovaKit CLI](docs/novakit-integration.md) | Guidance | `tokenjuice install novakit` | `NOVAKIT.md` |
 | — | [Snow CLI](docs/snow-cli-integration.md) | Result replacement (beta) | `tokenjuice install snow-cli` | Native `afterToolCall`; Snow 0.9.15 local headless acceptance passed |
 | — | [Paimon](docs/paimon-integration.md) | Guidance skill | `tokenjuice install paimon` | Native user skills; live acceptance pending |
+| — | [Mister Morph](docs/mister-morph-integration.md) | Guidance skill | `tokenjuice install mister-morph` | Native user skills; live acceptance pending |
 | <img width="48" height="48" src="docs/logos/ona.png" alt="Ona Agent" /> | [Ona Agent](docs/ona-integration.md) | Guidance | `tokenjuice install ona` | `.ona/skills/tokenjuice/SKILL.md` |
 | <img width="48" height="48" src="docs/logos/open-interpreter.png" alt="Open Interpreter" /> | [Open Interpreter](docs/open-interpreter-integration.md) | Guidance | `tokenjuice install open-interpreter` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/openwebui.png" alt="Open WebUI" /> | [Open WebUI](docs/openwebui-integration.md) | Manual tool import (beta) | `tokenjuice install openwebui` | `.openwebui/tools/tokenjuice_compact.py`; then import in Workspace Tools |

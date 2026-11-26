@@ -785,3 +785,5 @@ export { installOmoExtension, doctorOmoExtension, uninstallOmoExtension } from "
 export type { OmoExtensionOptions } from "./hosts/omo/index.js";
 
 export { installPaimonSkill, doctorPaimonSkill, uninstallPaimonSkill, type PaimonSkillOptions } from "./hosts/paimon/index.js";
+
+export { installMisterMorphSkill, doctorMisterMorphSkill, uninstallMisterMorphSkill, type MisterMorphSkillOptions } from "./hosts/mister-morph/index.js";

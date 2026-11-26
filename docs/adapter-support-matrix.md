@@ -56,6 +56,7 @@ guide for its contract, install scope and verification steps.
 
 | [Empryo / SoulForge](empryo-integration.md) | Project `PreToolUse` Bash input wrapping; `install empryo` or `soulforge`. | Native CLI `2.20.25` baseline/installed/uninstalled sessions verify hook loading, `sh -c`, retained inputs, default denial, 80-entry compaction, exact CRLF/raw bytes, and complete native failure results. Follow-up model requests are checked. | The host omits separate stderr/status from model context when stdout exists and can compress failed output. Native read/glob advice is lost after wrapping. Other versions, interactive permissions, remote providers and native Windows remain unqualified. |
 | [Paimon](paimon-integration.md) | Native user guidance skill; `install paimon`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
+| [Mister Morph](mister-morph-integration.md) | Native user guidance skill; `install mister-morph`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
 
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:

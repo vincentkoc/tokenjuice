@@ -155,3 +155,5 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Mister Morph integration](mister-morph-integration.md) — native guidance skill.
 
 - [Shelley integration](shelley-integration.md) — native guidance skill.
+
+- [miniQ integration](miniq-integration.md) — project-local guidance skill.

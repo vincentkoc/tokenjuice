@@ -100,6 +100,7 @@ const HOST_TARGETS = [
   "mcp-agent",
   "mcpagent",
   "mimo-code",
+  "miniq",
   "mini-swe-agent",
   "mini-sweagent",
   "mistral-vibe",

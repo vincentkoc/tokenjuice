@@ -63,6 +63,7 @@ guide for its contract, install scope and verification steps.
 | [Shelley](shelley-integration.md) | Native user guidance skill; `install shelley`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
 | [Craft Agents](craft-agents-integration.md) | Selected workspace guidance skill; `install craft-agents <workspace-dir>`. | File lifecycle, explicit selection, raw/failure guidance and symlink refusal tests. | Native skill discovery, model adherence and tool execution remain unqualified. |
 | [AtomCode](atomcode-integration.md) | Project guidance skill; `install atomcode`. | Managed file lifecycle, unchanged project instructions, raw/failure guidance and symlink refusal tests. | Native discovery, model adherence and tool execution remain unqualified. |
+| [miniQ](miniq-integration.md) | Project skill at `.miniq/skills/tokenjuice/SKILL.md`; `install miniq`. | Native discovery and parser source inspected; shared managed-file lifecycle and CLI coverage. | Live skill loading, enabled state and model command adherence remain unverified. Hooks cannot replace the result in the inspected executor. |
 
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:

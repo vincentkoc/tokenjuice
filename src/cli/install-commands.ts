@@ -7,6 +7,7 @@ import { installShelleySkill } from "../hosts/shelley/index.js";
 import { installCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { installAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { installMuseCodeSkill } from "../hosts/muse-code/index.js";
+import { installMiniQSkill } from "../hosts/miniq/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1142,6 +1143,15 @@ const installMuseCodeCommand = createHostCommand(() => installMuseCodeSkill(), (
   ]));
 });
 
+const installMiniQCommand = createHostCommand(() => installMiniQSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("miniq", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside miniQ" },
+    { label: "Verify", value: "tokenjuice doctor miniq" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qwenwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1477,6 +1487,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["mcpagent", installMcpAgentCommand],
   ["mistral-vibe", installMistralVibeCommand],
   ["mistralvibe", installMistralVibeCommand],
+  ["miniq", installMiniQCommand],
   ["mini-swe-agent", installMiniSweAgentCommand],
   ["mini-sweagent", installMiniSweAgentCommand],
   ["swe-agent", installSweAgentCommand],

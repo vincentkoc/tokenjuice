@@ -8,6 +8,7 @@ import { doctorShelleySkill } from "../shelley/index.js";
 import { doctorCraftAgentsSkill } from "../craft-agents/index.js";
 import { doctorAtomCodeSkill } from "../atomcode/index.js";
 import { doctorMuseCodeSkill } from "../muse-code/index.js";
+import { doctorMiniQSkill } from "../miniq/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -195,6 +196,7 @@ export type HookIntegrationDoctorReport = {
   knowns: KnownsDoctorReport;
   localcode: LocalCodeDoctorReport;
   "mcp-agent": McpAgentDoctorReport;
+  miniq: Awaited<ReturnType<typeof doctorMiniQSkill>>;
   "mini-swe-agent": MiniSweAgentDoctorReport;
   "swe-agent": SweAgentDoctorReport;
   stagewise: StagewiseDoctorReport;
@@ -332,6 +334,7 @@ const hookDoctorIntegrationDoctors = {
   knowns: (options) => doctorKnownsInstructions(undefined, getHookCommandOptions(options)),
   localcode: (options) => doctorLocalCodePlugin(getHookCommandOptions(options)),
   "mcp-agent": (options) => doctorMcpAgentDefinition(undefined, getHookCommandOptions(options)),
+  miniq: (options) => doctorMiniQSkill({ projectDir: options.projectDir ?? process.cwd() }),
   "mini-swe-agent": (options) => doctorMiniSweAgentConfig(undefined, getHookCommandOptions(options)),
   "swe-agent": (options) => doctorSweAgentConfig(undefined, getHookCommandOptions(options)),
   stagewise: (options) => doctorStagewiseSkill(undefined, getHookCommandOptions(options)),

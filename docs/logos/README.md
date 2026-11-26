@@ -45,3 +45,5 @@ Craft Agents: no verified redistributable mark is bundled; the catalog uses a da
 AtomCode: no verified redistributable mark is bundled; the catalog uses a dash.
 
 - nanobot: no verified standalone mark included; the integration catalog uses a dash. [Project source](https://github.com/HKUDS/nanobot).
+
+miniQ: no verified project mark is packaged; the catalog uses a dash.

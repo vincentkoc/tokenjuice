@@ -8,7 +8,9 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [spec](spec.md) — CLI commands, adapter JSON, compaction, rules, and storage
 - [rules](rules.md) — JSON rule schema and authoring
 - [integration catalog](../README.md#harness-and-framework-catalog) — setup routes and configuration locations
+- [oh-my-pi native extension](omp-integration.md) — package setup and acceptance limits
 - [framework integrations](framework-integrations.md) — Hermes, Copilot SDK, LangChain, Mastra, and FastMCP
+- [MiniMax Code integration](minimax-code-integration.md) — native local plugin for foreground Bash wrapping
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work
 - [complete verification inventory](verification-inventory.md) — every installer target, aliases and evidence level
 
@@ -21,6 +23,8 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [security](../SECURITY.md) — vulnerability reporting
 
 ## integration guides
+
+- [ZCode integration](zcode-integration.md)
 
 Some clients use automatic wrapping or result replacement. Others use guidance, manual imports, or explicit wrapping.
 A client appearing here does not establish native acceptance. Each guide states its own requirements and limits.
@@ -77,6 +81,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Droid integration](droid-integration.md)
 - [ECA integration](eca-integration.md)
 - [Elyra integration](elyra-integration.md)
+- [Empryo / SoulForge integration](empryo-integration.md)
 - [Firebase Studio integration](firebase-studio-integration.md)
 - [ForgeCode integration](forgecode-integration.md)
 - [Gemini CLI integration](gemini-cli-integration.md)
@@ -99,12 +104,14 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [LocalCode integration](localcode-integration.md)
 - [mcp-agent integration](mcp-agent-integration.md)
 - [mini-SWE-agent integration](mini-swe-agent-integration.md)
+- [MiMo Code integration](mimo-code-integration.md)
 - [Mistral Vibe integration](mistral-vibe-integration.md)
 - [Mux / Xum integration](mux-integration.md)
 - [NovaKit integration](novakit-integration.md)
 - [Ona integration](ona-integration.md)
 - [Open Interpreter integration](open-interpreter-integration.md)
 - [OpenCode V2 integration](opencode-v2-integration.md)
+- [OpenHanako integration](openhanako-integration.md)
 - [OpenHands integration](openhands-integration.md)
 - [Open WebUI integration](openwebui-integration.md)
 - [pi-go integration](pi-go-integration.md)
@@ -115,6 +122,7 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Qodo integration](qodo-integration.md)
 - [Qwen Code integration](qwen-code-integration.md)
 - [QwenWork integration](qwenwork-integration.md)
+- [QwenPaw integration](qwenpaw-integration.md)
 - [Replit integration](replit-integration.md)
 - [Roo Code integration](roo-integration.md)
 - [Rovo integration](rovo-integration.md)
@@ -132,5 +140,11 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [WorkBuddy desktop integration](workbuddy-integration.md)
 - [Zed integration](zed-integration.md)
 - [Zencoder integration](zencoder-integration.md)
+
+- [Snow CLI integration](snow-cli-integration.md) — native terminal-result replacement (beta).
+
+- [OmO integration](omo-integration.md) — native Senpi extension installation and limits.
+
+- [Paimon integration](paimon-integration.md) — native guidance skill.
 
 - [Mister Morph integration](mister-morph-integration.md) — native guidance skill.

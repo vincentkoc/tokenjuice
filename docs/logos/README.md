@@ -25,3 +25,5 @@ The GitHub product rows use the current GitHub mark from its brand kit; the old 
 When replacing an image, verify its identity against the project source, update both hashes and the source URL, then recheck the table in both themes. A new hostname or a successful image download alone does not establish that an asset is the project's logo.
 
 Snow CLI: no verified project mark is bundled; its catalog entry uses a dash.
+
+OmO: no verified project mark is packaged; the catalog uses a dash.

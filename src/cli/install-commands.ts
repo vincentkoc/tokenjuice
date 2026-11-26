@@ -1,4 +1,5 @@
 import { installMimoCodeHook } from "../hosts/mimo-code/index.js";
+import { installOmoExtension } from "../hosts/omo/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1093,6 +1094,14 @@ const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(u
   process.stdout.write(formatInstallSuccess("qwen-code", "hook", details));
 });
 
+const installOmoCommand = createHostCommand((args) => installOmoExtension({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("omo", "extension", [
+    { label: "Extension", value: result.extensionPath },
+    { label: "Reload", value: "start a fresh OmO session" },
+    { label: "Verify", value: "tokenjuice doctor omo" },
+  ]));
+});
+
 const installPiCommand = createHostCommand((args) => installPiExtension(undefined, {
     local: args.local,
     skipCommandNames: args.skipCommandNames,
@@ -1387,6 +1396,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
   ["qoderwork", installQoderWorkCommand],
+  ["omo", installOmoCommand],
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],

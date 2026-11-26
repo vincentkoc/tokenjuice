@@ -7,6 +7,7 @@
 - Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
 - Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
 - Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
+- Add a native OmO extension for completed root Bash output, including native text-only results and matching structured results; qualify the standalone launcher against a local model fixture.
 
 ## 0.11.2 - 2026-11-19
 

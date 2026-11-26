@@ -1,4 +1,5 @@
 import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
+import { uninstallOmoExtension } from "../hosts/omo/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -413,6 +414,12 @@ const uninstallOpenwebuiCommand = createHostCommand(() => uninstallOpenWebUITool
   process.stdout.write("enable: tokenjuice install openwebui\n");
 });
 
+const uninstallOmoCommand = createHostCommand(() => uninstallOmoExtension(), (result) => {
+  process.stdout.write(`removed omo extension: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`extension path: ${result.extensionPath}\n`);
+  process.stdout.write("enable: tokenjuice install omo\n");
+});
+
 const uninstallPiCommand = createHostCommand(() => uninstallPiExtension(), (result) => {
   process.stdout.write(`removed pi extension: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
@@ -639,6 +646,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["open-interpreter", uninstallOpenInterpreterCommand],
   ["openinterpreter", uninstallOpenInterpreterCommand],
   ["openwebui", uninstallOpenwebuiCommand],
+  ["omo", uninstallOmoCommand],
   ["pi", uninstallPiCommand],
   ["mimo-code", uninstallMimoCodeCommand],
   ["opencode", uninstallOpencodeCommand],

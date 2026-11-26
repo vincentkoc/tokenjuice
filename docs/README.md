@@ -137,3 +137,5 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Zencoder integration](zencoder-integration.md)
 
 - [Snow CLI integration](snow-cli-integration.md) — native terminal-result replacement (beta).
+
+- [OmO integration](omo-integration.md) — native Senpi extension installation and limits.

@@ -776,3 +776,6 @@ export { installQoderHook, uninstallQoderHook, doctorQoderHook } from "./hosts/q
 export { onDeepSeekPostExecute } from "./hosts/deepseek-harness/runtime.js";
 
 export { installSnowCliHook, doctorSnowCliHook, uninstallSnowCliHook, runSnowCliAfterToolCallHook } from "./hosts/snow-cli/index.js";
+
+export { installOmoExtension, doctorOmoExtension, uninstallOmoExtension } from "./hosts/omo/index.js";
+export type { OmoExtensionOptions } from "./hosts/omo/index.js";

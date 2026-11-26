@@ -48,8 +48,10 @@ const model = createServer(async (request, response) => {
     assert.equal(request.url, "/v1/responses");
     const input = Array.isArray(payload.input) ? payload.input : [];
     const requested = turn && JSON.stringify(payload.input).includes(turn.prompt);
-    const bash = payload.tools?.find(tool => tool.type === "function" && tool.name === "Bash");
-    if (requested) assert.ok(bash, `Alma model request omitted Bash: ${(payload.tools ?? []).map(t => t.name).join(", ")}`);
+    const tools = payload.tools ?? [];
+    const bash = tools.find(tool => tool.type === "function" && tool.name?.toLowerCase() === "bash");
+    if (requested) turn.requests.add(tools.map(t => t.name ?? t.type).join(",") || "no tools");
+    if (requested && tools.length) assert.ok(bash, `Alma's selected tools did not include Bash: ${[...turn.requests]}`);
     const result = input.find(item => item.type === "function_call_output" && item.call_id === turn?.id);
     if (result) turn.result = typeof result.output === "string" ? result.output : JSON.stringify(result.output);
     const needsTool = bash && requested && !result;
@@ -60,7 +62,7 @@ const model = createServer(async (request, response) => {
     } : { type: "message", id: "msg_fixture", role: "assistant", status: "completed",
       content: [{ type: "output_text", text: "fixture complete", annotations: [] }] };
     const envelope = { id: `resp_${turn?.id ?? "aux"}_${needsTool ? "tool" : "done"}`, object: "response",
-      model: "fixture", created_at: 1, status: "completed", output: [item], usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } };
+      model: "gpt-4o", created_at: 1, status: "completed", output: [item], usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 } };
     if (payload.stream) {
       response.writeHead(200, { "Content-Type": "text/event-stream" });
       let sequence = 0;
@@ -103,13 +105,13 @@ async function bashTurn(providerId, label, command) {
   const socket = new WebSocket(base.replace("http:", "ws:") + "/ws/threads");
   const done = Promise.withResolvers();
   const events = new Set();
-  turn = { id: `call_${label}`, command, calls: 0, prompt: `Run the ${label} fixture tool.`, complete: done.resolve, fail: done.reject };
-  const deadline = setTimeout(() => done.reject(new Error(`${label}: no native Bash result; events: ${[...events].join(", ")}`)), 40_000);
+  turn = { id: `call_${label}`, command, calls: 0, requests: new Set(), prompt: `Run the ${label} fixture tool.`, complete: done.resolve, fail: done.reject };
+  const deadline = setTimeout(() => done.reject(new Error(`${label}: no native Bash result; requests: ${[...turn.requests]}; events: ${[...events].join(", ")}`)), 40_000);
   try {
     // The shipped Alma client sends this message to the same pipeline as its web composer.
     socket.addEventListener("open", () => socket.send(JSON.stringify({
       type: "generate_response",
-      data: { threadId: thread.id, model: `${providerId}:fixture`, tools: ["Bash"], userMessage: { role: "user", parts: [{ type: "text", text: turn.prompt }] } },
+      data: { threadId: thread.id, model: `${providerId}:gpt-4o`, tools: ["Bash"], userMessage: { role: "user", parts: [{ type: "text", text: turn.prompt }] } },
     })));
     socket.addEventListener("error", () => done.reject(new Error("Alma generation socket failed")));
     socket.addEventListener("message", event => {
@@ -146,12 +148,8 @@ try {
 
   const provider = await api("/api/providers", "POST", {
     name: "Tokenjuice fixture", type: "openai", apiKey: "fixture", enabled: true,
-    baseURL: `http://127.0.0.1:${model.address().port}/v1`, models: ["fixture"], isResponseAPI: true,
+    baseURL: `http://127.0.0.1:${model.address().port}/v1`, models: ["gpt-4o"], isResponseAPI: true,
   });
-  const baseline = await bashTurn(provider.id, "baseline", list);
-  assert.match(baseline, /item-79\.txt/);
-  assert.equal(await readFile(trace, "utf8"), "");
-
   const { globalPath } = await api("/api/plugins-path");
   const localPath = relative(home, resolve(globalPath));
   assert.ok(localPath && !localPath.startsWith("..") && !localPath.startsWith("/"), "Alma's plugin directory must be under the fixture HOME");
@@ -160,7 +158,14 @@ try {
   const plugin = (await api("/api/plugins")).find(p => p.name === "Tokenjuice");
   assert.ok(plugin, "Alma must discover the built plugin");
   const route = `/api/plugins/${encodeURIComponent(plugin.id)}`;
+  assert.equal((await api(route + "/disable", "POST")).enabled, false);
+  console.log("Alma discovered the built bundle and disabled it via its plugin manager.");
+  const baseline = await bashTurn(provider.id, "baseline", list);
+  assert.match(baseline, /item-79\.txt/);
+  assert.equal(await readFile(trace, "utf8"), "");
+
   assert.equal((await api(route + "/enable", "POST")).enabled, true);
+  console.log("Alma enabled the plugin via its plugin manager.");
   const compact = await bashTurn(provider.id, "enabled", list);
   assert.match(await readFile(trace, "utf8"), /wrap --keep-failures --source alma/);
   assert.ok(compact.length < baseline.length && compact !== baseline, "enabled hook must reduce model-visible output");

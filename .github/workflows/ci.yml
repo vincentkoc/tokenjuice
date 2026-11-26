@@ -88,8 +88,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build native fixture CLI
-        run: pnpm build
+      - name: Verify Alma callback contracts and build native fixture CLI
+        run: |
+          pnpm exec vitest run test/hosts/alma.test.ts
+          pnpm build
 
       - name: Exercise the pinned Alma server's application-owned plugin manager
         run: |

@@ -1,6 +1,16 @@
+import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
+import { uninstallOmoExtension } from "../hosts/omo/index.js";
+import { uninstallEmpryoHook } from "../hosts/empryo/index.js";
+import { uninstallPaimonSkill } from "../hosts/paimon/index.js";
+import { uninstallMisterMorphSkill } from "../hosts/mister-morph/index.js";
+import { uninstallShelleySkill } from "../hosts/shelley/index.js";
+import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
+import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
+import { uninstallMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { uninstallMiniQSkill } from "../hosts/miniq/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
+import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { uninstallQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice uninstall <target>`.
@@ -42,6 +52,7 @@ import { uninstallCodegenInstructions } from "../hosts/codegen/index.js";
 import { uninstallCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { uninstallCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { uninstallCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { uninstallZCodeHook } from "../hosts/zcode/index.js";
 import { uninstallCommandCodeHook } from "../hosts/command-code/index.js";
 import { uninstallContinueRule } from "../hosts/continue/index.js";
 import { uninstallCodexHook } from "../hosts/codex/index.js";
@@ -55,6 +66,7 @@ import { uninstallDotAgentsRule } from "../hosts/dot-agents/index.js";
 import { uninstallDockerAgentPrompt } from "../hosts/docker-agent/index.js";
 import { uninstallDroidHook } from "../hosts/droid/index.js";
 import { uninstallEcaSkill } from "../hosts/eca/index.js";
+import { uninstallNanobotSkill } from "../hosts/nanobot/index.js";
 import { uninstallElyraSkill } from "../hosts/elyra/index.js";
 import { uninstallFirebaseStudioRule } from "../hosts/firebase-studio/index.js";
 import { uninstallForgeCodeInstructions } from "../hosts/forgecode/index.js";
@@ -63,6 +75,7 @@ import { uninstallGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { uninstallGooseHints } from "../hosts/goose/index.js";
 import { uninstallGreptileRule } from "../hosts/greptile/index.js";
 import { uninstallGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { uninstallFxInstructions } from "../hosts/fx/index.js";
 import { uninstallGrokBotRule } from "../hosts/grok-bot/index.js";
 import { uninstallGrokCliHook } from "../hosts/grok-cli/index.js";
 import { uninstallGptmeInstructions } from "../hosts/gptme/index.js";
@@ -256,6 +269,19 @@ const uninstallCodegenCommand = createFileUninstallCommand("codegen", "instructi
 
 const uninstallCoderAgentsCommand = createFileUninstallCommand("coder-agents", "skill", "skillPath", () => uninstallCoderAgentsSkill());
 
+const uninstallZCodeCommand = createHostCommand(() => uninstallZCodeHook(), (result) => {
+  process.stdout.write(`removed zcode hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  if (result.backupPath) process.stdout.write(`backup: ${result.backupPath}\n`);
+  process.stdout.write("enable: tokenjuice install zcode\n");
+});
+
+const uninstallEmpryoCommand = createHostCommand(() => uninstallEmpryoHook(), (result) => {
+  process.stdout.write(`removed empryo hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  if (result.backupPath) process.stdout.write(`backup: ${result.backupPath}\n`);
+});
+
 const uninstallCodebuddyCommand = createHostCommand(() => uninstallCodeBuddyHook(), (result) => {
   process.stdout.write(`removed codebuddy hook: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
@@ -318,6 +344,7 @@ const uninstallGptmeCommand = createFileUninstallCommand("gptme", "instructions"
 const uninstallJean2Command = createFileUninstallCommand("jean2", "instructions", "instructionsPath", () => uninstallJean2Instructions());
 
 const uninstallGrokBuildCommand = createFileUninstallCommand("grok-build", "instructions", "instructionsPath", () => uninstallGrokBuildInstructions());
+const uninstallFxCommand = createFileUninstallCommand("fx", "instructions", "instructionsPath", () => uninstallFxInstructions());
 
 const uninstallGrokBotCommand = createHostCommand(() => uninstallGrokBotRule(), (result) => {
   process.stdout.write(`removed grok-bot rule: ${result.removed ? "yes" : "no"}\n`);
@@ -412,6 +439,12 @@ const uninstallOpenwebuiCommand = createHostCommand(() => uninstallOpenWebUITool
   process.stdout.write("enable: tokenjuice install openwebui\n");
 });
 
+const uninstallOmoCommand = createHostCommand(() => uninstallOmoExtension(), (result) => {
+  process.stdout.write(`removed omo extension: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`extension path: ${result.extensionPath}\n`);
+  process.stdout.write("enable: tokenjuice install omo\n");
+});
+
 const uninstallPiCommand = createHostCommand(() => uninstallPiExtension(), (result) => {
   process.stdout.write(`removed pi extension: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
@@ -427,6 +460,12 @@ const uninstallPiCommand = createHostCommand(() => uninstallPiExtension(), (resu
 const uninstallOpencodeV2Command = createHostCommand(() => uninstallOpenCodeV2Extension(), (result) => {
   process.stdout.write(`removed opencode-v2 extension: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
+});
+
+const uninstallMimoCodeCommand = createHostCommand(() => uninstallMimoCodeHook(), (result) => {
+  process.stdout.write(`removed mimo-code hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`hook path: ${result.extensionPath}\n`);
+  process.stdout.write("enable: tokenjuice install mimo-code\n");
 });
 
 const uninstallOpencodeCommand = createHostCommand(() => uninstallOpenCodeExtension(), (result) => {
@@ -449,10 +488,25 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
 });
 
+const uninstallSnowCliCommand = createHostCommand(() => uninstallSnowCliHook(), (result) => {
+  process.stdout.write(`removed snow-cli entries: ${result.removed}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  process.stdout.write("enable: tokenjuice install snow-cli\n");
+});
+
+const uninstallCraftAgentsCommand = createHostCommand((args) => uninstallCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (result) => {
+  process.stdout.write(`removed craft-agents skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
+const uninstallAtomCodeCommand = createFileUninstallCommand("atomcode", "skill", "skillPath", () => uninstallAtomCodeSkill());
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
+
+const uninstallMuseCodeCommand = createFileUninstallCommand("muse-code", "skill", "skillPath", () => uninstallMuseCodeSkill());
 
 const uninstallMiniQCommand = createHostCommand(() => uninstallMiniQSkill(), (result) => {
   process.stdout.write(`removed miniq skill: ${result.removed ? "yes" : "no"}\n`);
@@ -461,6 +515,21 @@ const uninstallMiniQCommand = createHostCommand(() => uninstallMiniQSkill(), (re
 
 const uninstallQwenWorkCommand = createHostCommand(() => uninstallQwenWorkSkill(), (result) => {
   process.stdout.write(`removed qwenwork skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
+const uninstallPaimonCommand = createHostCommand(() => uninstallPaimonSkill(), (result) => {
+  process.stdout.write(`removed paimon skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
+const uninstallMisterMorphCommand = createHostCommand(() => uninstallMisterMorphSkill(), (result) => {
+  process.stdout.write(`removed mister-morph skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
+const uninstallShelleyCommand = createHostCommand(() => uninstallShelleySkill(), (result) => {
+  process.stdout.write(`removed shelley skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
@@ -525,6 +594,8 @@ const uninstallEcaCommand = createHostCommand(() => uninstallEcaSkill(), (result
   process.stdout.write("enable: tokenjuice install eca\n");
 });
 
+const uninstallNanobotCommand = createFileUninstallCommand("nanobot", "skill", "skillPath", () => uninstallNanobotSkill());
+
 const uninstallElyraCommand = createHostCommand(() => uninstallElyraSkill(), (result) => {
   process.stdout.write(`removed Elyra skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -559,6 +630,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["agentsge", uninstallAgentsgeCommand],
   ["agentsmesh", uninstallAgentsmeshCommand],
   ["amazon-q", uninstallAmazonQCommand],
+  ["atomcode", uninstallAtomCodeCommand],
   ["amp", uninstallAmpCommand],
   ["antigravity", uninstallAntigravityCommand],
   ["anywhere-agents", uninstallAnywhereAgentsCommand],
@@ -580,13 +652,17 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["codegen", uninstallCodegenCommand],
   ["coder-agents", uninstallCoderAgentsCommand],
   ["coderagents", uninstallCoderAgentsCommand],
+  ["empryo", uninstallEmpryoCommand],
+  ["soulforge", uninstallEmpryoCommand],
   ["codebuddy", uninstallCodebuddyCommand],
+  ["zcode", uninstallZCodeCommand],
   ["command-code", uninstallCommandCodeCommand],
   ["commandcode", uninstallCommandCodeCommand],
   ["pi-go", uninstallPiGoCommand],
   ["pigo", uninstallPiGoCommand],
   ["continue", uninstallContinueCommand],
   ["copilot-agent", uninstallCopilotAgentCommand],
+  ["craft-agents", uninstallCraftAgentsCommand],
   ["crush", uninstallCrushCommand],
   ["cursor", uninstallCursorCommand],
   ["firebase-studio", uninstallFirebaseStudioCommand],
@@ -598,6 +674,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["gptme", uninstallGptmeCommand],
   ["jean2", uninstallJean2Command],
   ["grok-build", uninstallGrokBuildCommand],
+  ["fx", uninstallFxCommand],
   ["grok-bot", uninstallGrokBotCommand],
   ["grokbot", uninstallGrokBotCommand],
   ["goose", uninstallGooseCommand],
@@ -632,17 +709,24 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["open-interpreter", uninstallOpenInterpreterCommand],
   ["openinterpreter", uninstallOpenInterpreterCommand],
   ["openwebui", uninstallOpenwebuiCommand],
+  ["omo", uninstallOmoCommand],
   ["pi", uninstallPiCommand],
+  ["mimo-code", uninstallMimoCodeCommand],
   ["opencode", uninstallOpencodeCommand],
   ["opencode-v2", uninstallOpencodeV2Command],
   ["plandex", uninstallPlandexCommand],
   ["ante", uninstallAnteCommand],
   ["qoder", uninstallQoderCommand],
   ["qoder-cli", uninstallQoderCliCommand],
+  ["snow-cli", uninstallSnowCliCommand],
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],
+  ["muse-code", uninstallMuseCodeCommand],
   ["qwenwork", uninstallQwenWorkCommand],
+  ["paimon", uninstallPaimonCommand],
+  ["mister-morph", uninstallMisterMorphCommand],
+  ["shelley", uninstallShelleyCommand],
   ["qoderwork", uninstallQoderWorkCommand],
   ["roo", uninstallRooCommand],
   ["rovo", uninstallRovoCommand],
@@ -662,6 +746,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["dockeragent", uninstallDockerAgentCommand],
   ["cagent", uninstallDockerAgentCommand],
   ["eca", uninstallEcaCommand],
+  ["nanobot", uninstallNanobotCommand],
   ["elyra", uninstallElyraCommand],
   ["droid", uninstallDroidCommand],
   ["zed", uninstallZedCommand],

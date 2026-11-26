@@ -30,6 +30,7 @@ const HOST_TARGETS = [
   "aimemoryprotocol",
   "amazon-q",
   "amp",
+  "atomcode",
   "ante",
   "antigravity",
   "anywhere-agents",
@@ -59,6 +60,7 @@ const HOST_TARGETS = [
   "continue",
   "copilot-agent",
   "copilot-cli",
+  "craft-agents",
   "crush",
   "cursor",
   "deepagents",
@@ -68,10 +70,13 @@ const HOST_TARGETS = [
   "dot-agents",
   "droid",
   "eca",
+  "nanobot",
   "elyra",
+  "empryo",
   "firebase-studio",
   "forge-code",
   "forgecode",
+  "fx",
   "gemini-cli",
   "gitlab-duo",
   "goose",
@@ -94,11 +99,13 @@ const HOST_TARGETS = [
   "localcode",
   "mcp-agent",
   "mcpagent",
+  "mimo-code",
   "miniq",
   "mini-swe-agent",
   "mini-sweagent",
   "mistral-vibe",
   "mistralvibe",
+  "muse-code",
   "mux",
   "novakit",
   "ona",
@@ -107,6 +114,7 @@ const HOST_TARGETS = [
   "openhands",
   "openinterpreter",
   "openwebui",
+  "omo",
   "pi",
   "pi-go",
   "pigo",
@@ -120,6 +128,7 @@ const HOST_TARGETS = [
   "rovo",
   "rovo-dev",
   "ruler",
+  "soulforge",
   "stagewise",
   "swe-agent",
   "sweagent",
@@ -132,9 +141,10 @@ const HOST_TARGETS = [
   "windsurf",
   "zed",
   "zencoder",
+  "zcode",
 ] as const;
 
-const PATH_ENV_KEYS = ["HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "APPDATA", "LOCALAPPDATA"];
+const PATH_ENV_KEYS = ["HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "APPDATA", "LOCALAPPDATA", "SNOW_CONFIG_DIR", "PAIMON_CONFIG_HOME", "MISTER_MORPH_FILE_STATE_DIR"];
 
 let savedEnv: NodeJS.ProcessEnv;
 let savedCwd: string;
@@ -172,7 +182,7 @@ async function enterSandbox(): Promise<string> {
 
   const env: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(savedEnv)) {
-    if (key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.startsWith("XDG_")) {
+    if (key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.endsWith("_CODING_AGENT_DIR") || key.startsWith("XDG_") || key === "MIMOCODE_CONFIG_DIR") {
       continue;
     }
     env[key] = value;
@@ -186,6 +196,8 @@ async function enterSandbox(): Promise<string> {
   env.XDG_CACHE_HOME = join(home, ".cache");
   env.PATH = bin;
   env.SHELL = "/bin/sh";
+  env.TOKENJUICE_CRAFT_WORKSPACE = project;
+  env.NANOBOT_WORKSPACE = project;
   env.TOKENJUICE_ARTIFACT_DIR = join(root, "artifacts");
   replaceEnv(env);
   process.chdir(project);

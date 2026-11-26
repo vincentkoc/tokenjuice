@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { runSnowCliAfterToolCallHook } from "../hosts/snow-cli/index.js";
+import { runEmpryoPreToolUseHook } from "../hosts/empryo/index.js";
 import { compactFrameworkResult, type FrameworkSource } from "../core/integrations/compact-framework-result.js";
 
 import { stat } from "node:fs/promises";
@@ -21,6 +23,7 @@ export { decorateWrapInlineText } from "../core/wrap-format.js";
 import { runClaudeCodePostToolUseHook, runClaudeCodePreToolUseHook } from "../hosts/claude-code/index.js";
 import { runClinePreToolUseHook, runClinePostToolUseHook } from "../hosts/cline/index.js";
 import { runCodeBuddyPreToolUseHook } from "../hosts/codebuddy/index.js";
+import { runZCodePreToolUseHook } from "../hosts/zcode/index.js";
 import { runCommandCodePostToolUseHook } from "../hosts/command-code/index.js";
 import { runCodexPostToolUseHook } from "../hosts/codex/index.js";
 import { runCopilotAgentPostToolUseHook } from "../hosts/copilot-agent/index.js";
@@ -31,6 +34,7 @@ import { runDroidPostToolUseHook, runDroidPreToolUseHook } from "../hosts/droid/
 import { runGeminiCliAfterToolHook, runGeminiCliBeforeToolHook } from "../hosts/gemini-cli/index.js";
 import { runGrokCliPostToolUseHook } from "../hosts/grok-cli/index.js";
 import { runKimiPostToolUseHook } from "../hosts/kimi/index.js";
+import { runMiniMaxCodePreToolUseHook } from "../hosts/minimax-code/index.js";
 import { runMuxPostToolUseHook } from "../hosts/mux/index.js";
 import { runOpenHandsPostToolUseHook } from "../hosts/openhands/index.js";
 import { runQwenCodePostToolUseHook, runQwenCodePreToolUseHook } from "../hosts/qwen-code/index.js";
@@ -96,6 +100,7 @@ function printUsage(): void {
       "  tokenjuice install coder-agents",
       "  tokenjuice install coderabbit",
       "  tokenjuice install codebuddy [--local]",
+      "  tokenjuice install zcode [--local]",
       "  tokenjuice install continue",
       "  tokenjuice install copilot-agent [--local]",
       "  tokenjuice install crush",
@@ -106,6 +111,7 @@ function printUsage(): void {
       "  tokenjuice install docker-agent",
       "  tokenjuice install droid [--local]",
       "  tokenjuice install eca",
+      "  tokenjuice install nanobot",
       "  tokenjuice install elyra",
       "  tokenjuice install firebase-studio",
       "  tokenjuice install forgecode",
@@ -114,6 +120,7 @@ function printUsage(): void {
       "  tokenjuice install goose",
       "  tokenjuice install greptile",
       "  tokenjuice install grok-build",
+      "  tokenjuice install fx",
       "  tokenjuice install grok-bot",
       "  tokenjuice install gptme",
       "  tokenjuice install jean2",
@@ -130,21 +137,30 @@ function printUsage(): void {
       "  tokenjuice install swe-agent",
       "  tokenjuice install stagewise",
       "  tokenjuice install mistral-vibe",
+      "  tokenjuice install muse-code",
       "  tokenjuice install mux [--local]",
       "  tokenjuice install novakit",
       "  tokenjuice install knowns",
       "  tokenjuice install ona",
       "  tokenjuice install open-interpreter",
       "  tokenjuice install openwebui",
+      "  tokenjuice install omo [--local]",
       "  tokenjuice install pi [--local] [--skip-command <name>]",
       "  tokenjuice install pi-go",
       "  tokenjuice install plandex",
       "  tokenjuice install qodo",
       "  tokenjuice install qoder",
       "  tokenjuice install qoder-cli [--local]",
+      "  tokenjuice install snow-cli [--local]",
       "  tokenjuice install qwenwork",
+      "  tokenjuice install paimon",
+      "  tokenjuice install mister-morph",
+      "  tokenjuice install shelley",
+      "  tokenjuice install craft-agents <workspace-dir>",
+      "  tokenjuice install atomcode",
       "  tokenjuice install qoderwork",
       "  tokenjuice install replit",
+      "  tokenjuice install mimo-code [--local]",
       "  tokenjuice install opencode [--local]",
       "  tokenjuice install opencode-v2 [--local]",
       "  tokenjuice install qwen-code [--local]",
@@ -198,6 +214,7 @@ function printUsage(): void {
       "  tokenjuice uninstall coder-agents",
       "  tokenjuice uninstall coderabbit",
       "  tokenjuice uninstall codebuddy",
+      "  tokenjuice uninstall zcode",
       "  tokenjuice uninstall command-code",
       "  tokenjuice uninstall continue",
       "  tokenjuice uninstall copilot-agent",
@@ -209,6 +226,7 @@ function printUsage(): void {
       "  tokenjuice uninstall docker-agent",
       "  tokenjuice uninstall droid",
       "  tokenjuice uninstall eca",
+      "  tokenjuice uninstall nanobot",
       "  tokenjuice uninstall elyra",
       "  tokenjuice uninstall firebase-studio",
       "  tokenjuice uninstall forgecode",
@@ -217,6 +235,7 @@ function printUsage(): void {
       "  tokenjuice uninstall goose",
       "  tokenjuice uninstall greptile",
       "  tokenjuice uninstall grok-build",
+      "  tokenjuice uninstall fx",
       "  tokenjuice uninstall grok-bot",
       "  tokenjuice uninstall grok-cli",
       "  tokenjuice uninstall gptme",
@@ -236,21 +255,30 @@ function printUsage(): void {
       "  tokenjuice uninstall swe-agent",
       "  tokenjuice uninstall stagewise",
       "  tokenjuice uninstall mistral-vibe",
+      "  tokenjuice uninstall muse-code",
       "  tokenjuice uninstall mux",
       "  tokenjuice uninstall novakit",
       "  tokenjuice uninstall ona",
       "  tokenjuice uninstall openhands",
       "  tokenjuice uninstall open-interpreter",
       "  tokenjuice uninstall openwebui",
+      "  tokenjuice uninstall omo",
       "  tokenjuice uninstall pi",
       "  tokenjuice uninstall pi-go",
+      "  tokenjuice uninstall mimo-code",
       "  tokenjuice uninstall opencode",
       "  tokenjuice uninstall opencode-v2",
       "  tokenjuice uninstall plandex",
       "  tokenjuice uninstall qodo",
       "  tokenjuice uninstall qoder",
       "  tokenjuice uninstall qoder-cli [--local]",
+      "  tokenjuice uninstall snow-cli",
       "  tokenjuice uninstall qwenwork",
+      "  tokenjuice uninstall paimon",
+      "  tokenjuice uninstall mister-morph",
+      "  tokenjuice uninstall shelley",
+      "  tokenjuice uninstall craft-agents <workspace-dir>",
+      "  tokenjuice uninstall atomcode",
       "  tokenjuice uninstall qoderwork",
       "  tokenjuice uninstall replit",
       "  tokenjuice uninstall qwen-code",
@@ -271,7 +299,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|command-code|continue|copilot-agent|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|eca|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|miniq|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|qoderwork|qwen-code|qwenwork|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|atomcode|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|zcode|command-code|continue|copilot-agent|craft-agents|crush|cursor|deepagents|devin|dot-agents|docker-agent|droid|empryo|soulforge|eca|nanobot|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|fx|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|miniq|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mimo-code|muse-code|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|omo|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|snow-cli|qoderwork|qwen-code|qwenwork|paimon|mister-morph|shelley|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice doctor codex [--local] [--no-omit]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source] [--limit <n>] [--cursor <cursor>]",
     ].join("\n"),
@@ -689,7 +717,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, zcode, continue, copilot-agent, craft-agents, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, fx, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -701,7 +729,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, command-code, continue, copilot-agent, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, eca, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mux, novakit, ona, openhands, open-interpreter, openwebui, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, zcode, command-code, continue, copilot-agent, craft-agents, crush, cursor, deepagents, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, fx, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, openhands, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1099,8 +1127,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runClinePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "cline-post-tool-use":
       return await runClinePostToolUseHook(await readStdin(args.maxInputBytes));
+    case "empryo-pre-tool-use":
+      return await runEmpryoPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "codebuddy-pre-tool-use":
       return await runCodeBuddyPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "zcode-pre-tool-use":
+      return await runZCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "command-code-post-tool-use":
       return await runCommandCodePostToolUseHook(await readStdin(args.maxInputBytes));
     case "cursor-pre-tool-use":
@@ -1115,6 +1147,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runGrokCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "kimi-post-tool-use":
       return await runKimiPostToolUseHook(await readStdin(args.maxInputBytes));
+    case "minimax-code-pre-tool-use":
+      return await runMiniMaxCodePreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "mux-post-tool-use":
       return await runMuxPostToolUseHook();
     case "openhands-post-tool-use":
@@ -1131,6 +1165,10 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCopilotCliPostToolUseHook(await readStdin(args.maxInputBytes));
     case "droid-pre-tool-use":
       return await runDroidPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "snow-cli-after-tool-call": {
+      const input = await readStdinForCodexHook(args.maxInputBytes);
+      return input === undefined ? 0 : await runSnowCliAfterToolCallHook(input);
+    }
     case "qoder-post-tool-use":
       return await runQoderPostToolUseHook(await readStdin(args.maxInputBytes));
     case "droid-post-tool-use":

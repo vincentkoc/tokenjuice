@@ -1,3 +1,12 @@
+import { doctorSnowCliHook } from "../snow-cli/index.js";
+import { doctorMimoCodeHook } from "../mimo-code/index.js";
+import { doctorOmoExtension } from "../omo/index.js";
+import { doctorEmpryoHook, type EmpryoHookOptions, type EmpryoDoctorReport } from "../empryo/index.js";
+import { doctorPaimonSkill } from "../paimon/index.js";
+import { doctorMisterMorphSkill } from "../mister-morph/index.js";
+import { doctorShelleySkill } from "../shelley/index.js";
+import { doctorCraftAgentsSkill } from "../craft-agents/index.js";
+import { doctorAtomCodeSkill } from "../atomcode/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -37,6 +46,7 @@ import { doctorCodegenInstructions, type CodegenDoctorReport, type CodegenInstru
 import { doctorCoderAgentsSkill, type CoderAgentsDoctorReport, type CoderAgentsSkillOptions } from "../coder-agents/index.js";
 import { doctorCodeRabbitConfig, type CodeRabbitConfigOptions, type CodeRabbitDoctorReport } from "../coderabbit/index.js";
 import { doctorCodeBuddyHook, type CodeBuddyDoctorReport, type CodeBuddyHookCommandOptions } from "../codebuddy/index.js";
+import { doctorZCodeHook, type ZCodeDoctorReport } from "../zcode/index.js";
 import { doctorCommandCodeHook, type CommandCodeDoctorReport, type CommandCodeHookCommandOptions } from "../command-code/index.js";
 import { doctorContinueRule, type ContinueDoctorReport } from "../continue/index.js";
 import { doctorCodexHook, type CodexDoctorReport, type CodexHookCommandOptions } from "../codex/index.js";
@@ -59,6 +69,7 @@ import { doctorGitLabDuoRule, type GitLabDuoDoctorReport, type GitLabDuoRuleOpti
 import { doctorGooseHints, type GooseDoctorReport, type GooseHintsOptions } from "../goose/index.js";
 import { doctorGreptileRule, type GreptileDoctorReport, type GreptileRuleOptions } from "../greptile/index.js";
 import { doctorGrokBuildInstructions, type GrokBuildDoctorReport, type GrokBuildInstructionsOptions } from "../grok-build/index.js";
+import { doctorFxInstructions, type FxDoctorReport, type FxInstructionsOptions } from "../fx/index.js";
 import { doctorGrokBotRule, type GrokBotDoctorReport, type GrokBotRuleOptions } from "../grok-bot/index.js";
 import { doctorGrokCliHook, type GrokCliDoctorReport, type GrokCliHookCommandOptions } from "../grok-cli/index.js";
 import { doctorGptmeInstructions, type GptmeDoctorReport, type GptmeInstructionsOptions } from "../gptme/index.js";
@@ -123,6 +134,7 @@ export type HookIntegrationDoctorReport = {
   agentsmesh: AgentsMeshDoctorReport;
   "amazon-q": AmazonQDoctorReport;
   amp: AmpDoctorReport;
+  atomcode: Awaited<ReturnType<typeof doctorAtomCodeSkill>>;
   antigravity: AntigravityDoctorReport;
   "anywhere-agents": AnywhereAgentsDoctorReport;
   augment: AugmentDoctorReport;
@@ -145,8 +157,11 @@ export type HookIntegrationDoctorReport = {
   "coder-agents": CoderAgentsDoctorReport;
   coderabbit: CodeRabbitDoctorReport;
   codebuddy: CodeBuddyDoctorReport;
+  empryo: EmpryoDoctorReport;
+  zcode: ZCodeDoctorReport;
   "command-code": CommandCodeDoctorReport;
   continue: ContinueDoctorReport;
+  "craft-agents": Awaited<ReturnType<typeof doctorCraftAgentsSkill>>;
   crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
   deepagents: DeepAgentsDoctorReport;
@@ -164,6 +179,7 @@ export type HookIntegrationDoctorReport = {
   goose: GooseDoctorReport;
   greptile: GreptileDoctorReport;
   "grok-build": GrokBuildDoctorReport;
+  fx: FxDoctorReport;
   "grok-bot": GrokBotDoctorReport;
   "grok-cli": GrokCliDoctorReport;
   gptme: GptmeDoctorReport;
@@ -188,7 +204,9 @@ export type HookIntegrationDoctorReport = {
   openhands: OpenHandsDoctorReport;
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
+  "mimo-code": Awaited<ReturnType<typeof doctorMimoCodeHook>>;
   "opencode-v2": Awaited<ReturnType<typeof doctorOpenCodeV2Extension>>;
+  omo: Awaited<ReturnType<typeof doctorOmoExtension>>;
   pi: PiDoctorReport;
   "pi-go": PiGoDoctorReport;
   plandex: PlandexDoctorReport;
@@ -196,9 +214,13 @@ export type HookIntegrationDoctorReport = {
   ante: AnteDoctorReport;
   qoder: QoderDoctorReport;
   "qoder-cli": Awaited<ReturnType<typeof doctorQoderHook>>;
+  "snow-cli": Awaited<ReturnType<typeof doctorSnowCliHook>>;
   qoderwork: Awaited<ReturnType<typeof doctorQoderWorkSkill>>;
   "qwen-code": QwenCodeDoctorReport;
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
+  paimon: Awaited<ReturnType<typeof doctorPaimonSkill>>;
+  "mister-morph": Awaited<ReturnType<typeof doctorMisterMorphSkill>>;
+  shelley: Awaited<ReturnType<typeof doctorShelleySkill>>;
   replit: ReplitDoctorReport;
   roo: RooDoctorReport;
   rovo: RovoDoctorReport;
@@ -220,7 +242,7 @@ export type HookDoctorReport = {
   integrations: HookIntegrationDoctorReport;
 };
 
-export type HookDoctorCommandOptions = AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BlackboxSkillOptions & BlocksSkillOptions & ClawdbotSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & NanobotSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & StagewiseSkillOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & GrokBotRuleOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaSkillOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & AnteInstructionsOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
+export type HookDoctorCommandOptions = EmpryoHookOptions & AdalInstructionsOptions & AetherPromptOptions & AictlInstructionsOptions & AiMemoryProtocolOptions & AgentLayerInstructionsOptions & AgentInitInstructionsOptions & AgentlinkInstructionsOptions & AgentloomRuleOptions & AgentsCliMemoryOptions & AgentsMdInstructionsOptions & AgentsGeRuleOptions & AgentsMeshRuleOptions & AmazonQRuleOptions & AmpInstructionsOptions & AntigravityRuleOptions & AnywhereAgentsInstructionsOptions & AugmentRuleOptions & BazSkillOptions & BitoGuidelinesOptions & BlackboxSkillOptions & BlocksSkillOptions & ClawdbotSkillOptions & BobInstructionsOptions & BuilderRuleOptions & CharlieInstructionsOptions & CodeAntInstructionsOptions & CodebuffInstructionsOptions & CodegenInstructionsOptions & CommandCodeHookCommandOptions & CoderAgentsSkillOptions & CodeRabbitConfigOptions & DeepAgentsInstructionsOptions & DockerAgentPromptOptions & DotAgentsRuleOptions & EcaSkillOptions & NanobotSkillOptions & ElyraSkillOptions & LocalCodePluginOptions & MiniSweAgentConfigOptions & SweAgentConfigOptions & StagewiseSkillOptions & PiGoSkillOptions & CodexHookCommandOptions & ClaudeCodeHookCommandOptions & CodeBuddyHookCommandOptions & CopilotAgentHookCommandOptions & CrushSkillOptions & DevinHookCommandOptions & DroidHookCommandOptions & FirebaseStudioRuleOptions & ForgeCodeInstructionsOptions & GitLabDuoRuleOptions & GooseHintsOptions & GreptileRuleOptions & GrokBuildInstructionsOptions & FxInstructionsOptions & GrokBotRuleOptions & GrokCliHookCommandOptions & GptmeInstructionsOptions & Jean2InstructionsOptions & JetBrainsAiRuleOptions & JulesInstructionsOptions & KimiHookCommandOptions & KnownsInstructionsOptions & LeanCtlInstructionsOptions & McpAgentDefinitionOptions & MistralVibeInstructionsOptions & MuxHookCommandOptions & NovaKitInstructionsOptions & OnaSkillOptions & OpenInterpreterInstructionsOptions & OpenWebUIToolOptions & PlandexConventionOptions & QodoReviewConfigOptions & AnteInstructionsOptions & QoderInstructionsOptions & QwenCodeHookCommandOptions & ReplitInstructionsOptions & RovoInstructionsOptions & RulerRuleOptions & TabbySystemPromptOptions & TabnineInstructionsOptions & TraeRuleOptions & UiPathInstructionsOptions & WarpInstructionsOptions & ZencoderRuleOptions;
 export type HookIntegrationDoctorEntry = [
   keyof HookIntegrationDoctorReport,
   HookIntegrationDoctorReport[keyof HookIntegrationDoctorReport],
@@ -246,6 +268,7 @@ const hookDoctorIntegrationDoctors = {
   agentsge: (options) => doctorAgentsGeRule(undefined, getHookCommandOptions(options)),
   agentsmesh: (options) => doctorAgentsMeshRule(undefined, getHookCommandOptions(options)),
   "amazon-q": (options) => doctorAmazonQRule(undefined, getHookCommandOptions(options)),
+  atomcode: (options) => doctorAtomCodeSkill(options.projectDir === undefined ? {} : { projectDir: options.projectDir }),
   amp: (options) => doctorAmpInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   ante: (options) => doctorAnteInstructions(undefined, getHookCommandOptions(options)),
   antigravity: (options) => doctorAntigravityRule(undefined, getHookCommandOptions(options)),
@@ -268,10 +291,13 @@ const hookDoctorIntegrationDoctors = {
   codegen: (options) => doctorCodegenInstructions(undefined, getHookCommandOptions(options)),
   "coder-agents": (options) => doctorCoderAgentsSkill(undefined, getHookCommandOptions(options)),
   coderabbit: (options) => doctorCodeRabbitConfig(undefined, getHookCommandOptions(options)),
+  empryo: (options) => doctorEmpryoHook(undefined, getHookCommandOptions(options)),
   codebuddy: (options) => doctorCodeBuddyHook(undefined, getHookCommandOptions(options)),
+  zcode: (options) => doctorZCodeHook(undefined, getHookCommandOptions(options)),
   "command-code": (options) => doctorCommandCodeHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
+  "craft-agents": () => doctorCraftAgentsSkill(),
   crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   deepagents: (options) => doctorDeepAgentsInstructions(undefined, getHookCommandOptions(options)),
@@ -289,6 +315,7 @@ const hookDoctorIntegrationDoctors = {
   goose: (options) => doctorGooseHints(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   greptile: (options) => doctorGreptileRule(undefined, getHookCommandOptions(options)),
   "grok-build": (options) => doctorGrokBuildInstructions(undefined, getHookCommandOptions(options)),
+  fx: (options) => doctorFxInstructions(undefined, getHookCommandOptions(options)),
   "grok-bot": (options) => doctorGrokBotRule(undefined, getHookCommandOptions(options)),
   "grok-cli": (options) => doctorGrokCliHook(undefined, getHookCommandOptions(options)),
   gptme: (options) => doctorGptmeInstructions(undefined, getHookCommandOptions(options)),
@@ -313,16 +340,22 @@ const hookDoctorIntegrationDoctors = {
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),
+  "mimo-code": (options) => doctorMimoCodeHook(getHookCommandOptions(options)),
   "opencode-v2": (options) => doctorOpenCodeV2Extension(getHookCommandOptions(options)),
+  omo: (options) => doctorOmoExtension({ local: options.local ?? false }),
   pi: () => doctorPiExtension(),
   "pi-go": (options) => doctorPiGoSkill(undefined, getHookCommandOptions(options)),
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
   qodo: (options) => doctorQodoReviewConfig(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
   "qoder-cli": (options) => doctorQoderHook(undefined, getHookCommandOptions(options)),
+  "snow-cli": (options) => doctorSnowCliHook(undefined, getHookCommandOptions(options)),
   qoderwork: () => doctorQoderWorkSkill(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   qwenwork: () => doctorQwenWorkSkill(),
+  paimon: () => doctorPaimonSkill(),
+  "mister-morph": () => doctorMisterMorphSkill(),
+  shelley: () => doctorShelleySkill(),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),
   rovo: (options) => doctorRovoInstructions(undefined, getHookCommandOptions(options)),

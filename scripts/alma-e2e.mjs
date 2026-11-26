@@ -32,6 +32,18 @@ let turn;
 let modelError;
 const model = createServer(async (request, response) => {
   try {
+    if (request.method === "GET") {
+      const entry = { id: "gpt-4o", object: "model", created: 1, owned_by: "fixture" };
+      if (request.url === "/v1/models" || request.url === "/v1/models/gpt-4o") {
+        const data = request.url === "/v1/models" ? { object: "list", data: [entry] } : entry;
+        response.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(data));
+      } else {
+        response.writeHead(404).end();
+      }
+      console.log(`Alma provider GET ${request.url}: ${response.statusCode}`);
+      return;
+    }
+    assert.equal(request.method, "POST", `Unexpected Alma provider request: ${request.method} ${request.url}`);
     let body = "";
     for await (const chunk of request) body += chunk;
     const payload = JSON.parse(body);
@@ -50,11 +62,16 @@ const model = createServer(async (request, response) => {
     const requested = turn && JSON.stringify(payload.input).includes(turn.prompt);
     const tools = payload.tools ?? [];
     const bash = tools.find(tool => tool.type === "function" && tool.name?.toLowerCase() === "bash");
-    if (requested) turn.requests.add(tools.map(t => t.name ?? t.type).join(",") || "no tools");
-    if (requested && tools.length) assert.ok(bash, `Alma's selected tools did not include Bash: ${[...turn.requests]}`);
+    const names = tools.map(tool => tool.name ?? tool.type).join(",") || "none";
+    const roles = input.map(item => item.role ?? item.type).join(",") || typeof payload.input;
+    const descriptor = `model=${payload.model} tools=${names} input=${roles} fixturePrompt=${Boolean(requested)}`;
+    if (turn && !turn.requests.has(descriptor)) {
+      console.log("Alma provider request:", descriptor);
+      turn.requests.add(descriptor);
+    }
     const result = input.find(item => item.type === "function_call_output" && item.call_id === turn?.id);
     if (result) turn.result = typeof result.output === "string" ? result.output : JSON.stringify(result.output);
-    const needsTool = bash && requested && !result;
+    const needsTool = turn && bash && !result && !turn.result;
     if (needsTool) assert.equal(++turn.calls, 1, "Alma must return the native Bash result to its model");
     const item = needsTool ? {
       type: "function_call", id: `fc_${turn.id}`, call_id: turn.id, name: bash.name, status: "completed",
@@ -105,7 +122,7 @@ async function bashTurn(providerId, label, command) {
   const socket = new WebSocket(base.replace("http:", "ws:") + "/ws/threads");
   const done = Promise.withResolvers();
   const events = new Set();
-  turn = { id: `call_${label}`, command, calls: 0, requests: new Set(), prompt: `Run the ${label} fixture tool.`, complete: done.resolve, fail: done.reject };
+  turn = { id: `call_${label}`, command, calls: 0, requests: new Set(), prompt: `Use the Bash tool to run the ${label} fixture command.`, complete: done.resolve, fail: done.reject };
   const deadline = setTimeout(() => done.reject(new Error(`${label}: no native Bash result; requests: ${[...turn.requests]}; events: ${[...events].join(", ")}`)), 40_000);
   try {
     // The shipped Alma client sends this message to the same pipeline as its web composer.
@@ -158,8 +175,9 @@ try {
   const plugin = (await api("/api/plugins")).find(p => p.name === "Tokenjuice");
   assert.ok(plugin, "Alma must discover the built plugin");
   const route = `/api/plugins/${encodeURIComponent(plugin.id)}`;
+  assert.equal((await api(route + "/enable", "POST")).enabled, true);
   assert.equal((await api(route + "/disable", "POST")).enabled, false);
-  console.log("Alma discovered the built bundle and disabled it via its plugin manager.");
+  console.log("Alma discovered, enabled and disabled the built bundle via its plugin manager.");
   const baseline = await bashTurn(provider.id, "baseline", list);
   assert.match(baseline, /item-79\.txt/);
   assert.equal(await readFile(trace, "utf8"), "");

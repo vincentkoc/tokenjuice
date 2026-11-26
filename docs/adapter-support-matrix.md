@@ -45,8 +45,9 @@ guide for its contract, install scope and verification steps.
 | [Community Grok CLI](grok-cli-integration.md) | Explicit `tokenjuice wrap`; automatic hook retired. Legacy uninstall remains available. | Native macOS arm64 standalone from npm `grok-dev@1.1.7` reports `1.1.4`: checks model requests, explicit wrapping, raw output and native failure flags; configured hooks do not run. | The separate JavaScript entrypoint, other versions/platforms and remote providers remain unqualified. This is not xAI Grok Build or Grok Bot. |
 | [oh-my-pi (omp)](omp-integration.md) | Native npm package extension via `omp.extensions`; successful foreground Bash content replacement. | Native OMP 18.20.0/Bun 1.4.4 macOS arm64 and Linux x64 sessions verify package link/doctor/disable/enable/uninstall, follow-up model requests, listing compaction, exact CRLF/raw output, full exit-7 failures and unchanged native metadata/replay traces. Linux CI uses the standard package build. | Other versions, providers and interactive permission modes remain unqualified. Background, truncated/minimized and host-notice results pass through. Native replay traces are retained and not included in savings claims. |
 
-## Acceptance record
+| [MiniMax Code](minimax-code-integration.md) | Native local plugin; foreground `bash` input wrapping. | Native `0.7.2` headless fixture on Ubuntu/Node 24 checks local discovery, enable/disable/remove and next-model delivery: compaction, exact reads, raw output, complete failed stdout/stderr and exit code 7. Unit and packaged synthetic contracts also run. | Fixture uses isolated HOME and loopback BYOK with explicit `--permission full`. Default permission decisions, Windows, other versions and desktop/cloud sessions remain unqualified. |
 
+## Acceptance record
 For a new host/version, record these facts without copying private transcripts:
 
 1. Host and tokenjuice versions, execution machine class, configuration scope and

@@ -1,6 +1,7 @@
 import { doctorMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { doctorOmoExtension } from "../hosts/omo/index.js";
 import { doctorEmpryoHook } from "../hosts/empryo/index.js";
+import { doctorPaimonSkill } from "../hosts/paimon/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -355,6 +356,8 @@ const doctorSnowCliCommand = createDoctorCommand((args) => doctorSnowCliHook(und
 const doctorQoderWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQoderWorkSkill());
 
 const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () => doctorQwenWorkSkill());
+
+const doctorPaimonCommand = createFileDoctorCommand("skill", "skillPath", () => doctorPaimonSkill());
 
 const doctorQwenCodeCommand = createDoctorCommand((args) => doctorQwenCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
@@ -778,6 +781,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],
   ["qwenwork", doctorQwenWorkCommand],
+  ["paimon", doctorPaimonCommand],
   ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],

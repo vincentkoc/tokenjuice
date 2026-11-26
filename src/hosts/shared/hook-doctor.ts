@@ -2,6 +2,7 @@ import { doctorSnowCliHook } from "../snow-cli/index.js";
 import { doctorMimoCodeHook } from "../mimo-code/index.js";
 import { doctorOmoExtension } from "../omo/index.js";
 import { doctorEmpryoHook, type EmpryoHookOptions, type EmpryoDoctorReport } from "../empryo/index.js";
+import { doctorPaimonSkill } from "../paimon/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -207,6 +208,7 @@ export type HookIntegrationDoctorReport = {
   qoderwork: Awaited<ReturnType<typeof doctorQoderWorkSkill>>;
   "qwen-code": QwenCodeDoctorReport;
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
+  paimon: Awaited<ReturnType<typeof doctorPaimonSkill>>;
   replit: ReplitDoctorReport;
   roo: RooDoctorReport;
   rovo: RovoDoctorReport;
@@ -335,6 +337,7 @@ const hookDoctorIntegrationDoctors = {
   qoderwork: () => doctorQoderWorkSkill(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   qwenwork: () => doctorQwenWorkSkill(),
+  paimon: () => doctorPaimonSkill(),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),
   rovo: (options) => doctorRovoInstructions(undefined, getHookCommandOptions(options)),

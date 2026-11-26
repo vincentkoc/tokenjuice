@@ -144,3 +144,5 @@ A client appearing here does not establish native acceptance. Each guide states 
 - [Snow CLI integration](snow-cli-integration.md) — native terminal-result replacement (beta).
 
 - [OmO integration](omo-integration.md) — native Senpi extension installation and limits.
+
+- [Paimon integration](paimon-integration.md) — native guidance skill.

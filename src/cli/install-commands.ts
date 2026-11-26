@@ -1,6 +1,7 @@
 import { installMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { installOmoExtension } from "../hosts/omo/index.js";
 import { installEmpryoHook } from "../hosts/empryo/index.js";
+import { installPaimonSkill } from "../hosts/paimon/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1103,6 +1104,15 @@ const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (
   ]));
 });
 
+const installPaimonCommand = createHostCommand(() => installPaimonSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("paimon", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Paimon" },
+    { label: "Verify", value: "tokenjuice doctor paimon" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1421,6 +1431,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
+  ["paimon", installPaimonCommand],
   ["qoderwork", installQoderWorkCommand],
   ["omo", installOmoCommand],
   ["pi", installPiCommand],

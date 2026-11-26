@@ -783,3 +783,5 @@ export { installSnowCliHook, doctorSnowCliHook, uninstallSnowCliHook, runSnowCli
 
 export { installOmoExtension, doctorOmoExtension, uninstallOmoExtension } from "./hosts/omo/index.js";
 export type { OmoExtensionOptions } from "./hosts/omo/index.js";
+
+export { installPaimonSkill, doctorPaimonSkill, uninstallPaimonSkill, type PaimonSkillOptions } from "./hosts/paimon/index.js";

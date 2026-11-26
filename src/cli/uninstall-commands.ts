@@ -1,6 +1,7 @@
 import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { uninstallOmoExtension } from "../hosts/omo/index.js";
 import { uninstallEmpryoHook } from "../hosts/empryo/index.js";
+import { uninstallPaimonSkill } from "../hosts/paimon/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -494,6 +495,11 @@ const uninstallQwenWorkCommand = createHostCommand(() => uninstallQwenWorkSkill(
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
+const uninstallPaimonCommand = createHostCommand(() => uninstallPaimonSkill(), (result) => {
+  process.stdout.write(`removed paimon skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQwenCodeCommand = createHostCommand(() => uninstallQwenCodeHook(), (result) => {
   process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
@@ -678,6 +684,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],
   ["qwenwork", uninstallQwenWorkCommand],
+  ["paimon", uninstallPaimonCommand],
   ["qoderwork", uninstallQoderWorkCommand],
   ["roo", uninstallRooCommand],
   ["rovo", uninstallRovoCommand],

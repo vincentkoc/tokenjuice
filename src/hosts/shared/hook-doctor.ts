@@ -1,3 +1,6 @@
+import { doctorSnowCliHook } from "../snow-cli/index.js";
+import { doctorMimoCodeHook } from "../mimo-code/index.js";
+import { doctorOmoExtension } from "../omo/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -186,7 +189,9 @@ export type HookIntegrationDoctorReport = {
   openhands: OpenHandsDoctorReport;
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
+  "mimo-code": Awaited<ReturnType<typeof doctorMimoCodeHook>>;
   "opencode-v2": Awaited<ReturnType<typeof doctorOpenCodeV2Extension>>;
+  omo: Awaited<ReturnType<typeof doctorOmoExtension>>;
   pi: PiDoctorReport;
   "pi-go": PiGoDoctorReport;
   plandex: PlandexDoctorReport;
@@ -194,6 +199,7 @@ export type HookIntegrationDoctorReport = {
   ante: AnteDoctorReport;
   qoder: QoderDoctorReport;
   "qoder-cli": Awaited<ReturnType<typeof doctorQoderHook>>;
+  "snow-cli": Awaited<ReturnType<typeof doctorSnowCliHook>>;
   qoderwork: Awaited<ReturnType<typeof doctorQoderWorkSkill>>;
   "qwen-code": QwenCodeDoctorReport;
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
@@ -310,13 +316,16 @@ const hookDoctorIntegrationDoctors = {
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),
+  "mimo-code": (options) => doctorMimoCodeHook(getHookCommandOptions(options)),
   "opencode-v2": (options) => doctorOpenCodeV2Extension(getHookCommandOptions(options)),
+  omo: (options) => doctorOmoExtension({ local: options.local ?? false }),
   pi: () => doctorPiExtension(),
   "pi-go": (options) => doctorPiGoSkill(undefined, getHookCommandOptions(options)),
   plandex: (options) => doctorPlandexConvention(undefined, getHookCommandOptions(options)),
   qodo: (options) => doctorQodoReviewConfig(undefined, getHookCommandOptions(options)),
   qoder: (options) => doctorQoderInstructions(undefined, getHookCommandOptions(options)),
   "qoder-cli": (options) => doctorQoderHook(undefined, getHookCommandOptions(options)),
+  "snow-cli": (options) => doctorSnowCliHook(undefined, getHookCommandOptions(options)),
   qoderwork: () => doctorQoderWorkSkill(),
   "qwen-code": (options) => doctorQwenCodeHook(undefined, options),
   qwenwork: () => doctorQwenWorkSkill(),

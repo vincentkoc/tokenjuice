@@ -16,7 +16,7 @@ These tiles were rasterized with resvg 2.6.2 and normalized with ImageMagick. So
 
 ## Missing and shared marks
 
-AgentInit, AI Memory Protocol, the community Grok CLI, LeanCTL, NovaKit, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
+AgentInit, AI Memory Protocol, the community Grok CLI, LeanCTL, NovaKit, oh-my-pi, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
 
 MiniMax Code also uses a dash until a project-specific mark is verified. Its plugin bundle reuses the existing tokenjuice banner as the plugin's own icon.
 

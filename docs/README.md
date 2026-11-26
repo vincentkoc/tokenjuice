@@ -8,6 +8,7 @@ Check [support and verification](adapter-support-matrix.md) for the scope of rec
 - [spec](spec.md) — CLI commands, adapter JSON, compaction, rules, and storage
 - [rules](rules.md) — JSON rule schema and authoring
 - [integration catalog](../README.md#harness-and-framework-catalog) — setup routes and configuration locations
+- [oh-my-pi native extension](omp-integration.md) — package setup and acceptance limits
 - [framework integrations](framework-integrations.md) — Hermes, Copilot SDK, LangChain, Mastra, and FastMCP
 - [MiniMax Code integration](minimax-code-integration.md) — native local plugin for foreground Bash wrapping
 - [support and verification](adapter-support-matrix.md) — native test versions and remaining acceptance work

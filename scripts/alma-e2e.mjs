@@ -43,7 +43,6 @@ const model = createServer(async (request, response) => {
       } else {
         response.writeHead(404).end();
       }
-      console.log(`Alma provider GET ${request.url}: ${response.statusCode}`);
       return;
     }
     assert.equal(request.method, "POST", `Unexpected Alma provider request: ${request.method} ${request.url}`);

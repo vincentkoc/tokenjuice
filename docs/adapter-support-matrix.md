@@ -52,6 +52,8 @@ guide for its contract, install scope and verification steps.
 
 | [OpenHanako / HanaAgent](openhanako-integration.md) | Native Pi extension; completed successful non-TTY `exec_command` results. | Native Linux app-core v0.450.0 loads the delivered bundle through `PluginManager`, verifies full-access denial/grant/revocation, and compares real tool callbacks with the next model request. The fixture proves 80-entry compaction, exact/raw output, exit-7 metadata and output, truncation pass-through, and disabled-plugin restoration. | Desktop UI, interactive PTY behavior, other platforms/versions and remote providers remain unqualified. |
 
+| [Empryo / SoulForge](empryo-integration.md) | Project `PreToolUse` Bash input wrapping; `install empryo` or `soulforge`. | Native CLI `2.20.25` baseline/installed/uninstalled sessions verify hook loading, `sh -c`, retained inputs, default denial, 80-entry compaction, exact CRLF/raw bytes, and complete native failure results. Follow-up model requests are checked. | The host omits separate stderr/status from model context when stdout exists and can compress failed output. Native read/glob advice is lost after wrapping. Other versions, interactive permissions, remote providers and native Windows remain unqualified. |
+
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:
 

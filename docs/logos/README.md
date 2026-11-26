@@ -16,8 +16,34 @@ These tiles were rasterized with resvg 2.6.2 and normalized with ImageMagick. So
 
 ## Missing and shared marks
 
-AgentInit, AI Memory Protocol, DevEco Code, the community Grok CLI, LeanCTL, NovaKit, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
+ZCode uses a dash until a verified, theme-safe project mark is added.
+
+MiMo Code, OpenHanako, AgentInit, AI Memory Protocol, DevEco Code, the community Grok CLI, Empryo / SoulForge, LeanCTL, Muse Code, NovaKit, oh-my-pi, pi-go, and Ruler have no verified project-specific mark in their linked sources. Their catalog rows intentionally use a dash. Do not fill those slots with unrelated or fabricated artwork.
+
+MiniMax Code also uses a dash until a project-specific mark is verified. Its plugin bundle reuses the existing tokenjuice banner as the plugin's own icon.
+
+QwenPaw also uses a dash until a project-specific mark is verified.
 
 The GitHub product rows use the current GitHub mark from its brand kit; the old Copilot mascot is retired. Windsurf retains its official historical symbol rather than substituting the Devin logo now served by its redirected website. Some integrations use their official parent-project mark, such as AWS, OpenAI, JetBrains, and LangChain.
 
 When replacing an image, verify its identity against the project source, update both hashes and the source URL, then recheck the table in both themes. A new hostname or a successful image download alone does not establish that an asset is the project's logo.
+
+Snow CLI: no verified project mark is bundled; its catalog entry uses a dash.
+
+OmO: no verified project mark is packaged; the catalog uses a dash.
+
+Paimon: no verified project mark is bundled; its catalog entry uses a dash.
+
+Mister Morph: no verified project mark is bundled; its catalog entry uses a dash.
+
+Shelley: no verified project mark is bundled; its catalog entry uses a dash.
+
+- fx: no verified standalone mark included; the integration catalog uses a dash. [Project source](https://github.com/vercel-labs/fx).
+
+Craft Agents: no verified redistributable mark is bundled; the catalog uses a dash.
+
+AtomCode: no verified redistributable mark is bundled; the catalog uses a dash.
+
+- nanobot: no verified standalone mark included; the integration catalog uses a dash. [Project source](https://github.com/HKUDS/nanobot).
+
+miniQ: no verified project mark is packaged; the catalog uses a dash.

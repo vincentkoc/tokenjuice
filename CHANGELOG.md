@@ -6,6 +6,7 @@
 - Add an oh-my-pi native package extension for eligible successful Bash output; verify native package lifecycle, model-visible output and preserved replay metadata with OMP 18.20.0.
 - Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
 - Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
+- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
 
 ## 0.11.2 - 2026-11-19
 

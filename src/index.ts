@@ -1,3 +1,5 @@
+export { installMimoCodeHook, doctorMimoCodeHook, uninstallMimoCodeHook } from "./hosts/mimo-code/index.js";
+export type { MimoCodeOptions } from "./hosts/mimo-code/index.js";
 export { installQoderWorkSkill, doctorQoderWorkSkill, uninstallQoderWorkSkill } from "./hosts/qoderwork/index.js";
 export type { QoderWorkSkillOptions } from "./hosts/qoderwork/index.js";
 export { installQwenWorkSkill, doctorQwenWorkSkill, uninstallQwenWorkSkill } from "./hosts/qwenwork/index.js";

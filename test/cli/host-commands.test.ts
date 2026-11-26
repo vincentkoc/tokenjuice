@@ -94,6 +94,7 @@ const HOST_TARGETS = [
   "localcode",
   "mcp-agent",
   "mcpagent",
+  "mimo-code",
   "mini-swe-agent",
   "mini-sweagent",
   "mistral-vibe",
@@ -171,7 +172,7 @@ async function enterSandbox(): Promise<string> {
 
   const env: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(savedEnv)) {
-    if (key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.startsWith("XDG_")) {
+    if (key.startsWith("TOKENJUICE_") || key.endsWith("_PROJECT_DIR") || key.endsWith("_HOME") || key.startsWith("XDG_") || key === "MIMOCODE_CONFIG_DIR") {
       continue;
     }
     env[key] = value;

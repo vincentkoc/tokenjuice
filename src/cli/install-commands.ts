@@ -1,3 +1,4 @@
+import { installMimoCodeHook } from "../hosts/mimo-code/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
@@ -1127,6 +1128,16 @@ const installOpencodeV2Command = createHostCommand((args) => installOpenCodeV2Ex
   ]));
 });
 
+const installMimoCodeCommand = createHostCommand((args) => installMimoCodeHook({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("mimo-code", "hook", [
+    { label: "Hook", value: result.extensionPath },
+    { label: "Reload", value: "restart MiMo Code to load the hook" },
+    { label: "Verify", value: "tokenjuice doctor mimo-code" },
+    { label: "Beta", value: "native file hook; model-visible output needs session verification" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installOpencodeCommand = createHostCommand((args) => installOpenCodeExtension(undefined, { local: args.local }), (result) => {
   const details = [
     { label: "Extension", value: result.extensionPath },
@@ -1379,6 +1390,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],
+  ["mimo-code", installMimoCodeCommand],
   ["opencode", installOpencodeCommand],
   ["opencode-v2", installOpencodeV2Command],
   ["roo", installRooCommand],

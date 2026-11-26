@@ -1,4 +1,5 @@
 import { doctorSnowCliHook } from "../snow-cli/index.js";
+import { doctorMimoCodeHook } from "../mimo-code/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -187,6 +188,7 @@ export type HookIntegrationDoctorReport = {
   openhands: OpenHandsDoctorReport;
   "open-interpreter": OpenInterpreterDoctorReport;
   openwebui: OpenWebUIDoctorReport;
+  "mimo-code": Awaited<ReturnType<typeof doctorMimoCodeHook>>;
   "opencode-v2": Awaited<ReturnType<typeof doctorOpenCodeV2Extension>>;
   pi: PiDoctorReport;
   "pi-go": PiGoDoctorReport;
@@ -312,6 +314,7 @@ const hookDoctorIntegrationDoctors = {
   openhands: (options) => doctorOpenHandsHook(undefined, getHookCommandOptions(options)),
   "open-interpreter": (options) => doctorOpenInterpreterInstructions(undefined, { ...getHookCommandOptions(options), scanProjectTree: false }),
   openwebui: (options) => doctorOpenWebUITool(undefined, getHookCommandOptions(options)),
+  "mimo-code": (options) => doctorMimoCodeHook(getHookCommandOptions(options)),
   "opencode-v2": (options) => doctorOpenCodeV2Extension(getHookCommandOptions(options)),
   pi: () => doctorPiExtension(),
   "pi-go": (options) => doctorPiGoSkill(undefined, getHookCommandOptions(options)),

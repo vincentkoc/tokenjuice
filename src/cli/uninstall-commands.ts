@@ -1,6 +1,7 @@
 import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
+import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { uninstallQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice uninstall <target>`.
@@ -455,6 +456,12 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
 });
 
+const uninstallSnowCliCommand = createHostCommand(() => uninstallSnowCliHook(), (result) => {
+  process.stdout.write(`removed snow-cli entries: ${result.removed}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  process.stdout.write("enable: tokenjuice install snow-cli\n");
+});
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -640,6 +647,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["ante", uninstallAnteCommand],
   ["qoder", uninstallQoderCommand],
   ["qoder-cli", uninstallQoderCliCommand],
+  ["snow-cli", uninstallSnowCliCommand],
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],

@@ -3,6 +3,7 @@ import { uninstallOmoExtension } from "../hosts/omo/index.js";
 import { uninstallEmpryoHook } from "../hosts/empryo/index.js";
 import { uninstallPaimonSkill } from "../hosts/paimon/index.js";
 import { uninstallMisterMorphSkill } from "../hosts/mister-morph/index.js";
+import { uninstallShelleySkill } from "../hosts/shelley/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -506,6 +507,11 @@ const uninstallMisterMorphCommand = createHostCommand(() => uninstallMisterMorph
   process.stdout.write(`skill path: ${result.skillPath}\n`);
 });
 
+const uninstallShelleyCommand = createHostCommand(() => uninstallShelleySkill(), (result) => {
+  process.stdout.write(`removed shelley skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQwenCodeCommand = createHostCommand(() => uninstallQwenCodeHook(), (result) => {
   process.stdout.write(`removed qwen-code entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
@@ -692,6 +698,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["qwenwork", uninstallQwenWorkCommand],
   ["paimon", uninstallPaimonCommand],
   ["mister-morph", uninstallMisterMorphCommand],
+  ["shelley", uninstallShelleyCommand],
   ["qoderwork", uninstallQoderWorkCommand],
   ["roo", uninstallRooCommand],
   ["rovo", uninstallRovoCommand],

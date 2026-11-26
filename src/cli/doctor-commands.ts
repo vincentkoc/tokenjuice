@@ -3,6 +3,7 @@ import { doctorOmoExtension } from "../hosts/omo/index.js";
 import { doctorEmpryoHook } from "../hosts/empryo/index.js";
 import { doctorPaimonSkill } from "../hosts/paimon/index.js";
 import { doctorMisterMorphSkill } from "../hosts/mister-morph/index.js";
+import { doctorShelleySkill } from "../hosts/shelley/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
@@ -361,6 +362,8 @@ const doctorQwenWorkCommand = createFileDoctorCommand("skill", "skillPath", () =
 const doctorPaimonCommand = createFileDoctorCommand("skill", "skillPath", () => doctorPaimonSkill());
 
 const doctorMisterMorphCommand = createFileDoctorCommand("skill", "skillPath", () => doctorMisterMorphSkill());
+
+const doctorShelleyCommand = createFileDoctorCommand("skill", "skillPath", () => doctorShelleySkill());
 
 const doctorQwenCodeCommand = createDoctorCommand((args) => doctorQwenCodeHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
@@ -786,6 +789,7 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["qwenwork", doctorQwenWorkCommand],
   ["paimon", doctorPaimonCommand],
   ["mister-morph", doctorMisterMorphCommand],
+  ["shelley", doctorShelleyCommand],
   ["qoderwork", doctorQoderWorkCommand],
   ["command-code", doctorCommandCodeCommand],
   ["commandcode", doctorCommandCodeCommand],

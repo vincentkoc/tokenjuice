@@ -4,6 +4,7 @@ import { doctorOmoExtension } from "../omo/index.js";
 import { doctorEmpryoHook, type EmpryoHookOptions, type EmpryoDoctorReport } from "../empryo/index.js";
 import { doctorPaimonSkill } from "../paimon/index.js";
 import { doctorMisterMorphSkill } from "../mister-morph/index.js";
+import { doctorShelleySkill } from "../shelley/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -211,6 +212,7 @@ export type HookIntegrationDoctorReport = {
   qwenwork: Awaited<ReturnType<typeof doctorQwenWorkSkill>>;
   paimon: Awaited<ReturnType<typeof doctorPaimonSkill>>;
   "mister-morph": Awaited<ReturnType<typeof doctorMisterMorphSkill>>;
+  shelley: Awaited<ReturnType<typeof doctorShelleySkill>>;
   replit: ReplitDoctorReport;
   roo: RooDoctorReport;
   rovo: RovoDoctorReport;
@@ -341,6 +343,7 @@ const hookDoctorIntegrationDoctors = {
   qwenwork: () => doctorQwenWorkSkill(),
   paimon: () => doctorPaimonSkill(),
   "mister-morph": () => doctorMisterMorphSkill(),
+  shelley: () => doctorShelleySkill(),
   replit: (options) => doctorReplitInstructions(undefined, getHookCommandOptions(options)),
   roo: () => doctorRooInstructions(),
   rovo: (options) => doctorRovoInstructions(undefined, getHookCommandOptions(options)),

@@ -15,6 +15,7 @@
 - Add a QwenPaw workspace skill package with explicit-agent import, dependency checks and failure-preserving command guidance.
 - Add a Paimon guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
 - Add a Mister Morph guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
+- Add a Shelley guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
 
 ## 0.11.2 - 2026-11-19
 

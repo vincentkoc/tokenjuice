@@ -14,7 +14,8 @@ import { removeReadOnlyFixture } from "./e2e-process.mjs";
 const root = await realpath(await mkdtemp(join(tmpdir(), "tokenjuice-alma-e2e-")));
 const home = join(root, "home");
 const bin = join(root, "bin");
-const files = join(root, "files");
+const exactFile = join(root, "exact.txt");
+const exactText = "first fixture line\nsecond fixture line\n";
 const cli = fileURLToPath(new URL("../dist/cli/main.js", import.meta.url));
 const bundle = fileURLToPath(new URL("../dist/hosts/alma/bundle/", import.meta.url));
 const runtime = "/opt/alma-server";
@@ -27,7 +28,9 @@ const env = {
   ALMA_API_URL: base, ALMA_PORT: "23001", ALMA_TOOL_APPROVAL: "auto",
   PATH: [bin, dirname(process.execPath), "/usr/local/bin", "/usr/bin", "/bin"].join(":"),
 };
-const list = `find ${shellQuote(files)} -type f`;
+// Alma reduces file inventories itself, so use ordinary progress output for this comparison.
+const list = "seq -f 'fixture-progress-%03g' 0 159";
+const expected = Array.from({ length: 160 }, (_, i) => `fixture-progress-${String(i).padStart(3, "0")}\n`).join("");
 let turn;
 let modelError;
 const model = createServer(async (request, response) => {
@@ -144,16 +147,16 @@ async function bashTurn(providerId, label, command) {
   assert.ifError(modelError);
   assert.equal(turn.calls, 1, `${label}: native Bash dispatch`);
   assert.ok(turn.result, `${label}: result reached the next model request`);
-  return turn.result;
+  return JSON.parse(turn.result);
 }
 
 let host;
 let hostLog = "";
 try {
-  await Promise.all([home, bin, files].map(path => mkdir(path)));
+  await Promise.all([home, bin].map(path => mkdir(path)));
   await writeFile(trace, "");
   await writeFile(join(bin, "tokenjuice"), `#!/bin/sh\nprintf '%s\\n' "$*" >> ${shellQuote(trace)}\nexec ${shellQuote(process.execPath)} ${shellQuote(cli)} "$@"\n`, { mode: 0o755 });
-  for (let i = 0; i < 80; i++) await writeFile(join(files, `item-${i}.txt`), "fixture\n");
+  await writeFile(exactFile, exactText);
   await new Promise(ready => model.listen(0, "127.0.0.1", ready));
   host = spawn(join(runtime, "bin/alma-server"), [], { cwd: root, env, stdio: ["ignore", "pipe", "pipe"] });
   for (const stream of [host.stdout, host.stderr]) stream.on("data", data => { hostLog = (hostLog + data).slice(-6000); });
@@ -189,25 +192,35 @@ try {
   assert.equal((await api(route + "/disable", "POST")).enabled, false);
   console.log("Alma discovered, enabled and disabled the built bundle via its plugin manager.");
   const baseline = await bashTurn(provider.id, "baseline", list);
-  assert.match(baseline, /item-79\.txt/);
+  assert.equal(baseline.exitCode, 0);
+  assert.equal(baseline.stdout, expected);
   assert.equal(await readFile(trace, "utf8"), "");
 
   assert.equal((await api(route + "/enable", "POST")).enabled, true);
   console.log("Alma enabled the plugin via its plugin manager.");
   const compact = await bashTurn(provider.id, "enabled", list);
   assert.match(await readFile(trace, "utf8"), /wrap --keep-failures --source alma/);
-  assert.ok(compact.length < baseline.length && compact !== baseline, "enabled hook must reduce model-visible output");
+  assert.equal(compact.exitCode, 0);
+  assert.match(compact.stdout, /fixture-progress-000/);
+  assert.ok(compact.stdout.length < baseline.stdout.length, "enabled hook must reduce model-visible stdout");
+
+  const exact = await bashTurn(provider.id, "exact", `cat ${shellQuote(exactFile)}`);
+  assert.equal(exact.stdout, exactText);
+  assert.equal(exact.exitCode, 0);
 
   const raw = await bashTurn(provider.id, "raw", `${shellQuote(join(bin, "tokenjuice"))} wrap --raw -- /bin/sh -c ${shellQuote(list)}`);
-  assert.match(raw, /item-79\.txt/);
+  assert.equal(raw.exitCode, 0);
+  assert.equal(raw.stdout, expected);
   const failed = await bashTurn(provider.id, "failed", "printf 'failed-out\\n'; printf 'failed-err\\n' >&2; exit 7");
-  assert.match(failed, /failed-out/);
-  assert.match(failed, /failed-err/);
+  assert.equal(failed.exitCode, 7);
+  assert.match(failed.stdout, /failed-out/);
+  assert.match([failed.stdout, failed.stderr].join("\n"), /failed-err/);
   const beforeDisable = await readFile(trace, "utf8");
-  assert.equal(beforeDisable.split("\n").filter(line => line.startsWith("wrap --keep-failures")).length, 2);
+  assert.equal(beforeDisable.split("\n").filter(line => line.startsWith("wrap --keep-failures")).length, 3);
   assert.equal((await api(route + "/disable", "POST")).enabled, false);
   const disabled = await bashTurn(provider.id, "disabled", list);
-  assert.match(disabled, /item-79\.txt/);
+  assert.equal(disabled.exitCode, 0);
+  assert.equal(disabled.stdout, expected);
   assert.equal(await readFile(trace, "utf8"), beforeDisable, "disabling the plugin must dispose its hook");
   console.log("Alma plugin discovery, enable, reduced Bash output, raw bypass, failure output and disable passed.");
 } catch (error) {

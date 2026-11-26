@@ -23,6 +23,13 @@ describe("managed guidance skills", () => {
     expect(text).not.toContain("wrap --full");
   });
 
+  it("supports host-specific wrapping guidance without changing the default", () => {
+    const wrapBullet = "- Use `tokenjuice wrap --keep-failures -- <command>`.";
+    expect(buildManagedSkill({ ...spec, wrapBullet })).toContain(wrapBullet);
+    expect(buildManagedSkill(spec)).not.toContain("--keep-failures");
+    expect(buildManagedSkill({ ...spec, wrapBullet })).toContain("tokenjuice wrap --raw -- <command>");
+  });
+
   it("supports idempotent install, refresh backup, doctor and file-only uninstall", async () => {
     expect((await doctorManagedSkill(spec)).status).toBe("disabled");
     const { skillPath } = await installManagedSkill(spec);

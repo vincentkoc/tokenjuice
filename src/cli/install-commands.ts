@@ -1,7 +1,15 @@
+import { installMimoCodeHook } from "../hosts/mimo-code/index.js";
+import { installOmoExtension } from "../hosts/omo/index.js";
+import { installEmpryoHook } from "../hosts/empryo/index.js";
+import { installPaimonSkill } from "../hosts/paimon/index.js";
+import { installMisterMorphSkill } from "../hosts/mister-morph/index.js";
+import { installShelleySkill } from "../hosts/shelley/index.js";
+import { installCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { installAtomCodeSkill } from "../hosts/atomcode/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
+import { installSnowCliHook } from "../hosts/snow-cli/index.js";
 import { installQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { installQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice install <target>`.
@@ -43,6 +51,7 @@ import { installCodegenInstructions } from "../hosts/codegen/index.js";
 import { installCoderAgentsSkill } from "../hosts/coder-agents/index.js";
 import { installCodeRabbitConfig } from "../hosts/coderabbit/index.js";
 import { installCodeBuddyHook } from "../hosts/codebuddy/index.js";
+import { installZCodeHook } from "../hosts/zcode/index.js";
 import { installCommandCodeHook } from "../hosts/command-code/index.js";
 import { installContinueRule } from "../hosts/continue/index.js";
 import { installCodexHook } from "../hosts/codex/index.js";
@@ -64,6 +73,7 @@ import { installGitLabDuoRule } from "../hosts/gitlab-duo/index.js";
 import { installGooseHints } from "../hosts/goose/index.js";
 import { installGreptileRule } from "../hosts/greptile/index.js";
 import { installGrokBuildInstructions } from "../hosts/grok-build/index.js";
+import { installFxInstructions } from "../hosts/fx/index.js";
 import { installGrokBotRule } from "../hosts/grok-bot/index.js";
 import { installGrokCliHook } from "../hosts/grok-cli/index.js";
 import { installGptmeInstructions } from "../hosts/gptme/index.js";
@@ -533,6 +543,27 @@ const installCoderAgentsCommand = createFileInstallCommand(() => installCoderAge
   beta: "workspace skill guidance; Coder Agents still owns shell execution",
 });
 
+const installZCodeCommand = createHostCommand((args) => installZCodeHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Settings", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Activate", value: "start a new ZCode session; explicitly disabled hooks remain disabled" },
+    { label: "Verify", value: `tokenjuice doctor zcode${args.local ? " --local" : ""} (persisted config only)` },
+  ];
+  if (result.backupPath) details.push({ label: "Backup", value: result.backupPath });
+  process.stdout.write(formatInstallSuccess("zcode", "hook", details));
+});
+
+const installEmpryoCommand = createHostCommand((args) => installEmpryoHook(undefined, { local: args.local }), (result, args) => {
+  process.stdout.write(formatInstallSuccess("empryo", "hook", [
+    { label: "Settings", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "SoulForge PreToolUse wrapping; native session acceptance is unqualified" },
+    { label: "Verify", value: `tokenjuice doctor empryo${args.local ? " --local" : ""}` },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installCodebuddyCommand = createHostCommand((args) => installCodeBuddyHook(undefined, { local: args.local }), (result, args) => {
   process.stdout.write(formatCodeBuddyInstallSuccess({ ...result, local: args.local }));
 });
@@ -718,6 +749,14 @@ const installJean2Command = createFileInstallCommand(() => installJean2Instructi
   pathLabel: "Instructions",
   pathKey: "instructionsPath",
   beta: "instruction-file guidance; Jean2 still owns command execution",
+});
+
+const installFxCommand = createFileInstallCommand(() => installFxInstructions(), {
+  target: "fx",
+  noun: "instructions",
+  pathLabel: "Instructions",
+  pathKey: "instructionsPath",
+  beta: "instruction-based guidance; fx still owns command execution",
 });
 
 const installGrokBuildCommand = createFileInstallCommand(() => installGrokBuildInstructions(), {
@@ -1046,6 +1085,27 @@ const installQoderCliCommand = createHostCommand((args) => installQoderHook(unde
   process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
 });
 
+const installSnowCliCommand = createHostCommand((args) => installSnowCliHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Hook", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "native terminal output replacement; verify live Snow CLI behavior" },
+    { label: "Verify", value: `tokenjuice doctor snow-cli${args.local ? " --local" : ""}` },
+    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+  ];
+  if (result.backupPath) {
+    details.push({ label: "Backup", value: result.backupPath });
+  }
+  process.stdout.write(formatInstallSuccess("snow-cli", "hook", details));
+});
+
+const installCraftAgentsCommand = createHostCommand((args) => installCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (result) => {
+  process.stdout.write(formatInstallSuccess("craft-agents", "workspace skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside the selected Craft workspace" },
+  ]));
+});
+
 const installAtomCodeCommand = createHostCommand(() => installAtomCodeSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("atomcode", "project skill", [
     { label: "Skill", value: result.skillPath },
@@ -1072,6 +1132,33 @@ const installQwenWorkCommand = createHostCommand(() => installQwenWorkSkill(), (
   ]));
 });
 
+const installPaimonCommand = createHostCommand(() => installPaimonSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("paimon", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Paimon" },
+    { label: "Verify", value: "tokenjuice doctor paimon" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
+const installMisterMorphCommand = createHostCommand(() => installMisterMorphSkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("mister-morph", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Mister Morph" },
+    { label: "Verify", value: "tokenjuice doctor mister-morph" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
+const installShelleyCommand = createHostCommand(() => installShelleySkill(), (result) => {
+  process.stdout.write(formatInstallSuccess("shelley", "skill", [
+    { label: "Skill", value: result.skillPath },
+    { label: "Beta", value: "guidance skill; verify discovery and execution inside Shelley" },
+    { label: "Verify", value: "tokenjuice doctor shelley" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
 const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(undefined, { local: args.local }), (result, args) => {
   const details = [
     { label: "Hook", value: result.settingsPath },
@@ -1084,6 +1171,14 @@ const installQwenCodeCommand = createHostCommand((args) => installQwenCodeHook(u
     details.push({ label: "Backup", value: result.backupPath });
   }
   process.stdout.write(formatInstallSuccess("qwen-code", "hook", details));
+});
+
+const installOmoCommand = createHostCommand((args) => installOmoExtension({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("omo", "extension", [
+    { label: "Extension", value: result.extensionPath },
+    { label: "Reload", value: "start a fresh OmO session" },
+    { label: "Verify", value: "tokenjuice doctor omo" },
+  ]));
 });
 
 const installPiCommand = createHostCommand((args) => installPiExtension(undefined, {
@@ -1117,6 +1212,16 @@ const installOpencodeV2Command = createHostCommand((args) => installOpenCodeV2Ex
     { label: "Extension", value: result.extensionPath },
     { label: "Verify", value: "tokenjuice doctor opencode-v2" },
     { label: "Beta", value: "V2 shell output replacement; verify loading in a fresh session" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
+const installMimoCodeCommand = createHostCommand((args) => installMimoCodeHook({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("mimo-code", "hook", [
+    { label: "Hook", value: result.extensionPath },
+    { label: "Reload", value: "restart MiMo Code to load the hook" },
+    { label: "Verify", value: "tokenjuice doctor mimo-code" },
+    { label: "Beta", value: "native file hook; model-visible output needs session verification" },
     ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
   ]));
 });
@@ -1304,11 +1409,15 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["codegen", installCodegenCommand],
   ["coder-agents", installCoderAgentsCommand],
   ["coderagents", installCoderAgentsCommand],
+  ["empryo", installEmpryoCommand],
+  ["soulforge", installEmpryoCommand],
   ["codebuddy", installCodebuddyCommand],
+  ["zcode", installZCodeCommand],
   ["command-code", installCommandCodeCommand],
   ["commandcode", installCommandCodeCommand],
   ["continue", installContinueCommand],
   ["copilot-agent", installCopilotAgentCommand],
+  ["craft-agents", installCraftAgentsCommand],
   ["crush", installCrushCommand],
   ["cursor", installCursorCommand],
   ["deepagents", installDeepagentsCommand],
@@ -1328,6 +1437,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["gptme", installGptmeCommand],
   ["jean2", installJean2Command],
   ["grok-build", installGrokBuildCommand],
+  ["fx", installFxCommand],
   ["grok-bot", installGrokBotCommand],
   ["grokbot", installGrokBotCommand],
   ["goose", installGooseCommand],
@@ -1365,14 +1475,20 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["ante", installAnteCommand],
   ["qoder", installQoderCommand],
   ["qoder-cli", installQoderCliCommand],
+  ["snow-cli", installSnowCliCommand],
   ["replit", installReplitCommand],
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
   ["qwenwork", installQwenWorkCommand],
+  ["paimon", installPaimonCommand],
+  ["mister-morph", installMisterMorphCommand],
+  ["shelley", installShelleyCommand],
   ["qoderwork", installQoderWorkCommand],
+  ["omo", installOmoCommand],
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],
+  ["mimo-code", installMimoCodeCommand],
   ["opencode", installOpencodeCommand],
   ["opencode-v2", installOpencodeV2Command],
   ["roo", installRooCommand],

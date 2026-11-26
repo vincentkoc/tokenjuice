@@ -19,6 +19,7 @@
 - Add fx project instruction guidance with isolated lifecycle management and explicit workspace selection.
 - Add Craft Agents guidance skills with explicit workspace selection and safe install, doctor, and uninstall commands.
 - Add AtomCode project guidance skills with safe install, doctor, and uninstall commands.
+- Add nanobot workspace skill guidance with custom workspace selection and restorable installation.
 
 ## 0.11.2 - 2026-11-19
 

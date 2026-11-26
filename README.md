@@ -136,6 +136,7 @@ A passing doctor check confirms managed configuration, not host loading or model
 | — | [MiMo Code](docs/mimo-code-integration.md) | Result replacement (beta) | `tokenjuice install mimo-code` | Native file hook; Linux x64 CLI `0.1.17` verified |
 | <img width="48" height="48" src="docs/logos/mistral-vibe.png" alt="Mistral Vibe" /> | [Mistral Vibe](docs/mistral-vibe-integration.md) | Guidance | `tokenjuice install mistral-vibe` | `AGENTS.md` |
 | <img width="48" height="48" src="docs/logos/mux-xum.png" alt="Mux / Xum" /> | [Mux / Xum](docs/mux-integration.md) | Explicit wrapping | `tokenjuice wrap -- <command>` | [Automatic hook retired](docs/mux-integration.md) |
+| — | [nanobot](docs/nanobot-integration.md) | Guidance | `tokenjuice install nanobot` | `<workspace>/skills/tokenjuice/SKILL.md`; set `NANOBOT_WORKSPACE` for custom workspaces |
 | — | [NovaKit CLI](docs/novakit-integration.md) | Guidance | `tokenjuice install novakit` | `NOVAKIT.md` |
 | — | [Snow CLI](docs/snow-cli-integration.md) | Result replacement (beta) | `tokenjuice install snow-cli` | Native `afterToolCall`; Snow 0.9.15 local headless acceptance passed |
 | — | [Paimon](docs/paimon-integration.md) | Guidance skill | `tokenjuice install paimon` | Native user skills; live acceptance pending |

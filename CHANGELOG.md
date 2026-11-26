@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add a MiniMax Code plugin for native foreground Bash input wrapping, managed through the host's local plugin catalog, with native headless lifecycle and model-visible output coverage for `0.7.2`.
+- Add an oh-my-pi native package extension for eligible successful Bash output; verify native package lifecycle, model-visible output and preserved replay metadata with OMP 18.20.0.
+- Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
+- Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
+- Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
 - Add a native OmO extension for completed root Bash output, including native text-only results and matching structured results; qualify the standalone launcher against a local model fixture.
 
 ## 0.11.2 - 2026-11-19

@@ -1,6 +1,8 @@
+import { uninstallMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { uninstallOmoExtension } from "../hosts/omo/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
+import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
 import { uninstallQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { uninstallQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice uninstall <target>`.
@@ -435,6 +437,12 @@ const uninstallOpencodeV2Command = createHostCommand(() => uninstallOpenCodeV2Ex
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
 });
 
+const uninstallMimoCodeCommand = createHostCommand(() => uninstallMimoCodeHook(), (result) => {
+  process.stdout.write(`removed mimo-code hook: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`hook path: ${result.extensionPath}\n`);
+  process.stdout.write("enable: tokenjuice install mimo-code\n");
+});
+
 const uninstallOpencodeCommand = createHostCommand(() => uninstallOpenCodeExtension(), (result) => {
   process.stdout.write(`removed opencode extension: ${result.removed ? "yes" : "missing"}\n`);
   process.stdout.write(`extension path: ${result.extensionPath}\n`);
@@ -453,6 +461,12 @@ const uninstallQoderCliCommand = createHostCommand(() => uninstallQoderHook(), (
   process.stdout.write(`removed qoder-cli entries: ${result.removed}\n`);
   process.stdout.write(`settings path: ${result.settingsPath}\n`);
   process.stdout.write("enable: tokenjuice install qoder-cli\n");
+});
+
+const uninstallSnowCliCommand = createHostCommand(() => uninstallSnowCliHook(), (result) => {
+  process.stdout.write(`removed snow-cli entries: ${result.removed}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  process.stdout.write("enable: tokenjuice install snow-cli\n");
 });
 
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
@@ -634,12 +648,14 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["openwebui", uninstallOpenwebuiCommand],
   ["omo", uninstallOmoCommand],
   ["pi", uninstallPiCommand],
+  ["mimo-code", uninstallMimoCodeCommand],
   ["opencode", uninstallOpencodeCommand],
   ["opencode-v2", uninstallOpencodeV2Command],
   ["plandex", uninstallPlandexCommand],
   ["ante", uninstallAnteCommand],
   ["qoder", uninstallQoderCommand],
   ["qoder-cli", uninstallQoderCliCommand],
+  ["snow-cli", uninstallSnowCliCommand],
   ["replit", uninstallReplitCommand],
   ["replit-agent", uninstallReplitCommand],
   ["qwen-code", uninstallQwenCodeCommand],

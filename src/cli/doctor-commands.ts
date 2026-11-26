@@ -1,7 +1,9 @@
+import { doctorMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { doctorOmoExtension } from "../hosts/omo/index.js";
 import type { PathDoctorReport } from "../hosts/shared/instruction-doctor.js";
 import { doctorOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { doctorQoderHook } from "../hosts/qoder/hook-install.js";
+import { doctorSnowCliHook } from "../hosts/snow-cli/index.js";
 import { doctorQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { doctorQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice doctor <target>` (hosts plus `doctor hooks`).
@@ -298,6 +300,14 @@ const doctorOpencodeV2Command = createDoctorCommand((args) => doctorOpenCodeV2Ex
   process.stdout.write(`repair: ${report.fixCommand}\n`);
 });
 
+const doctorMimoCodeCommand = createDoctorCommand((args) => doctorMimoCodeHook({ local: args.local }), (report) => {
+  process.stdout.write(`hook path: ${report.extensionPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
 const doctorOpencodeCommand = createDoctorCommand(() => doctorOpenCodeExtension(), (report) => {
   process.stdout.write(`extension path: ${report.extensionPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
@@ -315,6 +325,19 @@ const doctorQoderCommand = createFileDoctorCommand("instructions", "instructions
 const doctorReplitCommand = createFileDoctorCommand("instructions", "instructionsPath", () => doctorReplitInstructions(), true);
 
 const doctorQoderCliCommand = createDoctorCommand((args) => doctorQoderHook(undefined, { local: args.local }), (report) => {
+  process.stdout.write(`settings path: ${report.settingsPath}\n`);
+  process.stdout.write(`health: ${report.status}\n`);
+  process.stdout.write(`expected command: ${report.expectedCommand}\n`);
+  if (report.detectedCommand) {
+    process.stdout.write(`configured command: ${report.detectedCommand}\n`);
+  }
+  writeDoctorList("issues", report.issues);
+  writeDoctorList("missing paths", report.missingPaths);
+  writeDoctorList("advisories", report.advisories);
+  process.stdout.write(`repair: ${report.fixCommand}\n`);
+});
+
+const doctorSnowCliCommand = createDoctorCommand((args) => doctorSnowCliHook(undefined, { local: args.local }), (report) => {
   process.stdout.write(`settings path: ${report.settingsPath}\n`);
   process.stdout.write(`health: ${report.status}\n`);
   process.stdout.write(`expected command: ${report.expectedCommand}\n`);
@@ -720,12 +743,14 @@ export const doctorCommands: ReadonlyMap<string, HostCommandHandler> = new Map<s
   ["pi", doctorPiCommand],
   ["pi-go", doctorPiGoCommand],
   ["pigo", doctorPiGoCommand],
+  ["mimo-code", doctorMimoCodeCommand],
   ["opencode", doctorOpencodeCommand],
   ["opencode-v2", doctorOpencodeV2Command],
   ["plandex", doctorPlandexCommand],
   ["ante", doctorAnteCommand],
   ["qoder", doctorQoderCommand],
   ["qoder-cli", doctorQoderCliCommand],
+  ["snow-cli", doctorSnowCliCommand],
   ["replit", doctorReplitCommand],
   ["replit-agent", doctorReplitCommand],
   ["qwen-code", doctorQwenCodeCommand],

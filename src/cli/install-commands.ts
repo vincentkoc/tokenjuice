@@ -1,7 +1,9 @@
+import { installMimoCodeHook } from "../hosts/mimo-code/index.js";
 import { installOmoExtension } from "../hosts/omo/index.js";
 import type { WriteInstructionFileResult } from "../hosts/shared/instruction-file.js";
 import { installOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { installQoderHook } from "../hosts/qoder/hook-install.js";
+import { installSnowCliHook } from "../hosts/snow-cli/index.js";
 import { installQwenWorkSkill } from "../hosts/qwenwork/index.js";
 import { installQoderWorkSkill } from "../hosts/qoderwork/index.js";
 // Per-target handlers for `tokenjuice install <target>`.
@@ -1046,6 +1048,20 @@ const installQoderCliCommand = createHostCommand((args) => installQoderHook(unde
   process.stdout.write(formatInstallSuccess("qoder-cli", "hook", details));
 });
 
+const installSnowCliCommand = createHostCommand((args) => installSnowCliHook(undefined, { local: args.local }), (result, args) => {
+  const details = [
+    { label: "Hook", value: result.settingsPath },
+    { label: "Command", value: result.command },
+    { label: "Beta", value: "native terminal output replacement; verify live Snow CLI behavior" },
+    { label: "Verify", value: `tokenjuice doctor snow-cli${args.local ? " --local" : ""}` },
+    { label: "Escape hatch", value: "tokenjuice wrap --raw -- <command>" },
+  ];
+  if (result.backupPath) {
+    details.push({ label: "Backup", value: result.backupPath });
+  }
+  process.stdout.write(formatInstallSuccess("snow-cli", "hook", details));
+});
+
 const installQoderWorkCommand = createHostCommand(() => installQoderWorkSkill(), (result) => {
   process.stdout.write(formatInstallSuccess("qoderwork", "skill", [
     { label: "Skill", value: result.skillPath },
@@ -1117,6 +1133,16 @@ const installOpencodeV2Command = createHostCommand((args) => installOpenCodeV2Ex
     { label: "Extension", value: result.extensionPath },
     { label: "Verify", value: "tokenjuice doctor opencode-v2" },
     { label: "Beta", value: "V2 shell output replacement; verify loading in a fresh session" },
+    ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
+  ]));
+});
+
+const installMimoCodeCommand = createHostCommand((args) => installMimoCodeHook({ local: args.local }), (result) => {
+  process.stdout.write(formatInstallSuccess("mimo-code", "hook", [
+    { label: "Hook", value: result.extensionPath },
+    { label: "Reload", value: "restart MiMo Code to load the hook" },
+    { label: "Verify", value: "tokenjuice doctor mimo-code" },
+    { label: "Beta", value: "native file hook; model-visible output needs session verification" },
     ...(result.backupPath ? [{ label: "Backup", value: result.backupPath }] : []),
   ]));
 });
@@ -1364,6 +1390,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["ante", installAnteCommand],
   ["qoder", installQoderCommand],
   ["qoder-cli", installQoderCliCommand],
+  ["snow-cli", installSnowCliCommand],
   ["replit", installReplitCommand],
   ["replit-agent", installReplitCommand],
   ["qwen-code", installQwenCodeCommand],
@@ -1373,6 +1400,7 @@ export const installCommands: ReadonlyMap<string, HostCommandHandler> = new Map<
   ["pi", installPiCommand],
   ["pi-go", installPiGoCommand],
   ["pigo", installPiGoCommand],
+  ["mimo-code", installMimoCodeCommand],
   ["opencode", installOpencodeCommand],
   ["opencode-v2", installOpencodeV2Command],
   ["roo", installRooCommand],

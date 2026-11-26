@@ -4,6 +4,8 @@
 
 - Add a MiniMax Code plugin for native foreground Bash input wrapping, managed through the host's local plugin catalog, with native headless lifecycle and model-visible output coverage for `0.7.2`.
 - Add an oh-my-pi native package extension for eligible successful Bash output; verify native package lifecycle, model-visible output and preserved replay metadata with OMP 18.20.0.
+- Add a pinned Snow CLI native acceptance fixture for exit-1 replacement, model-visible results and uninstall.
+- Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
 
 ## 0.11.2 - 2026-11-19
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a MiniMax Code plugin for native foreground Bash input wrapping, managed through the host's local plugin catalog, with native headless lifecycle and model-visible output coverage for `0.7.2`.
+
 ## 0.11.2 - 2026-11-19
 
 - Point the wrap footer at the stored-output command only when one is shown.

@@ -8,6 +8,7 @@
 - Add a Snow CLI afterToolCall integration that compacts successful local terminal results while preserving failure output and native status.
 - Add a beta MiMo Code file hook for successful Bash output, preserving failed, truncated, raw and exact-read results, with native Linux x64 CLI 0.1.17 acceptance coverage.
 - Add a native OmO extension for completed root Bash output, including native text-only results and matching structured results; qualify the standalone launcher against a local model fixture.
+- Add a native OpenHanako / HanaAgent result plugin for completed successful shell output, preserving execution metadata and bypassing partial or interactive results. A pinned Linux app-core fixture verifies native plugin permission gates and model-visible output; desktop and PTY acceptance remain unqualified.
 
 ## 0.11.2 - 2026-11-19
 

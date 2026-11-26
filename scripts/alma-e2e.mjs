@@ -69,7 +69,7 @@ const model = createServer(async (request, response) => {
 async function api(path, method = "GET", data) {
   const response = await fetch(base + path, {
     method, headers: { "content-type": "application/json" },
-    body: data === undefined ? undefined : JSON.stringify(data), signal: AbortSignal.timeout(12_000),
+    ...(data === undefined ? {} : { body: JSON.stringify(data) }), signal: AbortSignal.timeout(12_000),
   });
   const body = await response.text();
   assert.ok(response.ok, `${method} ${path}: ${response.status} ${body.slice(0, 400)}`);

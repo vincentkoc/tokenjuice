@@ -16,6 +16,7 @@
 - Add a Paimon guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
 - Add a Mister Morph guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
 - Add a Shelley guidance skill with native discovery paths, isolated lifecycle commands and failure-preserving wrapping.
+- Add fx project instruction guidance with isolated lifecycle management and explicit workspace selection.
 
 ## 0.11.2 - 2026-11-19
 

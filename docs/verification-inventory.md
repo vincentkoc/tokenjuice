@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 110 handlers
-and 129 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 114 handlers
+and 133 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -78,6 +78,7 @@ CLI compatibility; they are not E2E evidence.
 | [`empryo`](empryo-integration.md), `soulforge` | [File and payload contracts](../test/hosts/empryo.test.ts); [native CLI fixture](../scripts/empryo-e2e.mjs) | Native `2.20.25` hooks, lifecycle, default denial and follow-up model requests; host failure-output limits remain. |
 | [`firebase-studio`](firebase-studio-integration.md) | [File contract](../test/hosts/firebase-studio.test.ts) | Unqualified; see guide. |
 | [`forgecode`](forgecode-integration.md), `forge-code` | [File contract](../test/hosts/forgecode.test.ts) | Unqualified; see guide. |
+| [`fx`](fx-integration.md) | Instruction lifecycle and CLI contracts. | Native fx session and model-visible execution remain unqualified. |
 | [`gemini-cli`](gemini-cli-integration.md) | [Native fixture](../scripts/gemini-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`gitlab-duo`](gitlab-duo-integration.md) | [File contract](../test/hosts/gitlab-duo.test.ts) | Unqualified; see guide. |
 | [`grok-cli`](grok-cli-integration.md) | [Native fixture](../scripts/grok-cli-e2e.mjs) | Explicit wrapping qualified; automatic additive hook retired. |

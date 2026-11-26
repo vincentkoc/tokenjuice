@@ -1,8 +1,8 @@
 # Complete verification inventory
 
 This inventory covers every entry in the CLI installer registry. Aliases share
-a row because they call the same handler. The current registry has 114 handlers
-and 133 accepted names. External plugins and manual products appear separately.
+a row because they call the same handler. The current registry has 115 handlers
+and 134 accepted names. External plugins and manual products appear separately.
 
 The [integration catalog](integrations.md) describes setup. The
 [support matrix](adapter-support-matrix.md) records detailed acceptance limits.
@@ -67,6 +67,7 @@ CLI compatibility; they are not E2E evidence.
 | [`command-code`](command-code-integration.md), `commandcode` | [File contract](../test/hosts/command-code.test.ts) | Authentication blocks native tool execution; additive hook retired. |
 | [`continue`](continue-integration.md) | [File contract](../test/hosts/continue.test.ts) | Unqualified; see guide. |
 | [`copilot-agent`](copilot-agent-integration.md) | [Native fixture](../scripts/copilot-cli-e2e.mjs) | Local Copilot CLI repository hook only; cloud job unqualified. |
+| [`craft-agents`](craft-agents-integration.md) | [File contract](../test/hosts/craft-agents.test.ts) | Selected workspace skill; native execution unqualified. |
 | [`crush`](crush-integration.md) | [Native fixture](../scripts/crush-e2e.mjs) | Pinned CLI only; see the fixture and guide. |
 | [`cursor`](cursor-integration.md) | [Hook contract](../scripts/hook-contracts.mjs) | Native loading/model delivery unqualified; see guide. |
 | [`deepagents`](deepagents-integration.md) | [File contract](../test/hosts/deepagents.test.ts) | Unqualified; see guide. |

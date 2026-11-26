@@ -4,6 +4,7 @@ import { uninstallEmpryoHook } from "../hosts/empryo/index.js";
 import { uninstallPaimonSkill } from "../hosts/paimon/index.js";
 import { uninstallMisterMorphSkill } from "../hosts/mister-morph/index.js";
 import { uninstallShelleySkill } from "../hosts/shelley/index.js";
+import { uninstallCraftAgentsSkill } from "../hosts/craft-agents/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -489,6 +490,11 @@ const uninstallSnowCliCommand = createHostCommand(() => uninstallSnowCliHook(), 
   process.stdout.write("enable: tokenjuice install snow-cli\n");
 });
 
+const uninstallCraftAgentsCommand = createHostCommand((args) => uninstallCraftAgentsSkill({ workspaceDir: args.positionals[1] }), (result) => {
+  process.stdout.write(`removed craft-agents skill: ${result.removed ? "yes" : "no"}\n`);
+  process.stdout.write(`skill path: ${result.skillPath}\n`);
+});
+
 const uninstallQoderWorkCommand = createHostCommand(() => uninstallQoderWorkSkill(), (result) => {
   process.stdout.write(`removed qoderwork skill: ${result.removed ? "yes" : "no"}\n`);
   process.stdout.write(`skill path: ${result.skillPath}\n`);
@@ -640,6 +646,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["pigo", uninstallPiGoCommand],
   ["continue", uninstallContinueCommand],
   ["copilot-agent", uninstallCopilotAgentCommand],
+  ["craft-agents", uninstallCraftAgentsCommand],
   ["crush", uninstallCrushCommand],
   ["cursor", uninstallCursorCommand],
   ["firebase-studio", uninstallFirebaseStudioCommand],

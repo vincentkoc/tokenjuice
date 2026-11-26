@@ -5,6 +5,7 @@ import { doctorEmpryoHook, type EmpryoHookOptions, type EmpryoDoctorReport } fro
 import { doctorPaimonSkill } from "../paimon/index.js";
 import { doctorMisterMorphSkill } from "../mister-morph/index.js";
 import { doctorShelleySkill } from "../shelley/index.js";
+import { doctorCraftAgentsSkill } from "../craft-agents/index.js";
 import { doctorOpenCodeV2Extension } from "../opencode/v2/index.js";
 import { doctorQoderHook } from "../qoder/hook-install.js";
 import { doctorQwenWorkSkill } from "../qwenwork/index.js";
@@ -157,6 +158,7 @@ export type HookIntegrationDoctorReport = {
   zcode: ZCodeDoctorReport;
   "command-code": CommandCodeDoctorReport;
   continue: ContinueDoctorReport;
+  "craft-agents": Awaited<ReturnType<typeof doctorCraftAgentsSkill>>;
   crush: CrushDoctorReport;
   cursor: CursorDoctorReport;
   deepagents: DeepAgentsDoctorReport;
@@ -290,6 +292,7 @@ const hookDoctorIntegrationDoctors = {
   "command-code": (options) => doctorCommandCodeHook(undefined, getHookCommandOptions(options)),
   continue: () => doctorContinueRule(),
   "copilot-agent": (options) => doctorCopilotAgentHook(undefined, getHookCommandOptions(options)),
+  "craft-agents": () => doctorCraftAgentsSkill(),
   crush: (options) => doctorCrushSkill(undefined, getHookCommandOptions(options)),
   cursor: (options) => doctorCursorHook(undefined, getHookCommandOptions(options)),
   deepagents: (options) => doctorDeepAgentsInstructions(undefined, getHookCommandOptions(options)),

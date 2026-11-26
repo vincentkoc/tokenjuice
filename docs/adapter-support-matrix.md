@@ -59,6 +59,7 @@ guide for its contract, install scope and verification steps.
 | [Paimon](paimon-integration.md) | Native user guidance skill; `install paimon`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
 | [Mister Morph](mister-morph-integration.md) | Native user guidance skill; `install mister-morph`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
 | [Shelley](shelley-integration.md) | Native user guidance skill; `install shelley`. | Isolated lifecycle and JSON CLI tests; hosted CI pending. | Native skill loading, command adherence and model-request acceptance remain unqualified. |
+| [Craft Agents](craft-agents-integration.md) | Selected workspace guidance skill; `install craft-agents <workspace-dir>`. | File lifecycle, explicit selection, raw/failure guidance and symlink refusal tests. | Native skill discovery, model adherence and tool execution remain unqualified. |
 
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:

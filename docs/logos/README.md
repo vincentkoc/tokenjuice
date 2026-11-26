@@ -39,3 +39,5 @@ Mister Morph: no verified project mark is bundled; its catalog entry uses a dash
 Shelley: no verified project mark is bundled; its catalog entry uses a dash.
 
 - fx: no verified standalone mark included; the integration catalog uses a dash. [Project source](https://github.com/vercel-labs/fx).
+
+Craft Agents: no verified redistributable mark is bundled; the catalog uses a dash.

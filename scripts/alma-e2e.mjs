@@ -167,6 +167,16 @@ try {
     name: "Tokenjuice fixture", type: "openai", apiKey: "fixture", enabled: true,
     baseURL: `http://127.0.0.1:${model.address().port}/v1`, models: ["gpt-4o"], isResponseAPI: true,
   });
+  // Offline Alma cannot look up a provider's capabilities in its external model catalog.
+  // Declare the fixture's function-calling support through the same setting as the UI.
+  const modelsPath = `/api/providers/${encodeURIComponent(provider.id)}/models`;
+  await api(modelsPath, "PUT", {
+    models: ["gpt-4o"],
+    availableModels: [{ id: "gpt-4o", name: "Fixture", isManual: true, capabilityOverrides: { functionCalling: true } }],
+  });
+  const { models } = await api(modelsPath);
+  assert.equal(models.find(model => model.id === "gpt-4o")?.capabilities.functionCalling, true);
+
   const { globalPath } = await api("/api/plugins-path");
   const localPath = relative(home, resolve(globalPath));
   assert.ok(localPath && !localPath.startsWith("..") && !localPath.startsWith("/"), "Alma's plugin directory must be under the fixture HOME");

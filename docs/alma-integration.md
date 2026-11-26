@@ -27,12 +27,17 @@ wrapped commands, and leaves the call unchanged if its prerequisites are absent.
 Automatic wrapping uses `--keep-failures`, preserving failing stdout/stderr and
 exit status. For raw output, ask Alma to run `tokenjuice wrap --raw -- <command>`.
 
-Unit tests cover the native callback shape, composition, bypass and disposal.
-Native Alma discovery, permission behavior and model-visible output remain
-unverified. Before relying on the integration, compare a fresh baseline and
-installed session using a noisy successful command, an exact file read, raw
-bypass and a command that writes both streams and exits nonzero. Inspect the
-next model request as well as the displayed result.
+The `alma-native` CI job runs [Alma Server 0.4.1176](https://github.com/yetone/alma-releases/releases/tag/v0.4.1176)
+on Linux x86-64 with a fresh profile and a loopback model fixture. It installs
+the built bundle in the directory Alma reports, then enables and disables it
+through the server's plugin manager. The next model request receives shorter
+output for a 160-line command. Exact file reads and explicit raw output retain
+their bytes. Both output streams from a failed command remain visible along
+with exit code 7. Disabling the plugin restores the original 160-line output.
+
+Alma Server uses its headless automatic-approval mode in this test. Interactive
+approval dialogs and the macOS desktop application still need a separate check.
+Callback tests cover earlier argument edits, cancellation, bypass and disposal.
 
 Contracts: [Alma hooks](https://alma.now/docs/plugins/hooks-events),
 [plugin installation](https://alma.now/docs/plugins/), and

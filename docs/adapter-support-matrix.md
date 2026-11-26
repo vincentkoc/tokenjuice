@@ -66,7 +66,7 @@ guide for its contract, install scope and verification steps.
 | [AtomCode](atomcode-integration.md) | Project guidance skill; `install atomcode`. | Managed file lifecycle, unchanged project instructions, raw/failure guidance and symlink refusal tests. | Native discovery, model adherence and tool execution remain unqualified. |
 | [miniQ](miniq-integration.md) | Project skill at `.miniq/skills/tokenjuice/SKILL.md`; `install miniq`. | Native discovery and parser source inspected; shared managed-file lifecycle and CLI coverage. | Live skill loading, enabled state and model command adherence remain unverified. Hooks cannot replace the result in the inspected executor. |
 
-| [Alma](alma-integration.md) | Native `tool.willExecute` plugin wrapping foreground Bash on macOS/Linux. | Callback-shape unit tests cover composition, cancellation, bypass and disposal. | Native discovery, permissions and model-visible results remain unverified. |
+| [Alma](alma-integration.md) | Native `tool.willExecute` plugin wrapping foreground Bash on macOS/Linux. | Linux x86-64 Alma Server 0.4.1176 discovers, enables and disables the built bundle. Its model receives reduced stdout, exact file reads, raw output and the failing command’s output and exit code. | macOS desktop and interactive approval dialogs remain unverified. |
 
 ## Acceptance record
 For a new host/version, record these facts without copying private transcripts:

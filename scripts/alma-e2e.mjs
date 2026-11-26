@@ -69,12 +69,11 @@ const model = createServer(async (request, response) => {
     const roles = input.map(item => item.role ?? item.type).join(",") || typeof payload.input;
     const descriptor = `model=${payload.model} tools=${names} input=${roles} fixturePrompt=${Boolean(requested)}`;
     if (turn && !turn.requests.has(descriptor)) {
-      console.log("Alma provider request:", descriptor);
       turn.requests.add(descriptor);
     }
     const result = input.find(item => item.type === "function_call_output" && item.call_id === turn?.id);
     if (result) turn.result = typeof result.output === "string" ? result.output : JSON.stringify(result.output);
-    const needsTool = turn && bash && !result && !turn.result;
+    const needsTool = requested && bash && !result && !turn.result;
     if (needsTool) assert.equal(++turn.calls, 1, "Alma must return the native Bash result to its model");
     const item = needsTool ? {
       type: "function_call", id: `fc_${turn.id}`, call_id: turn.id, name: bash.name, status: "completed",
@@ -222,7 +221,7 @@ try {
   assert.equal(disabled.exitCode, 0);
   assert.equal(disabled.stdout, expected);
   assert.equal(await readFile(trace, "utf8"), beforeDisable, "disabling the plugin must dispose its hook");
-  console.log("Alma plugin discovery, enable, reduced Bash output, raw bypass, failure output and disable passed.");
+  console.log("Alma plugin discovery, enable, reduced Bash output, exact file read, raw bypass, exit 7 and disable passed.");
 } catch (error) {
   console.error(hostLog);
   throw modelError ?? error;

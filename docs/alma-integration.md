@@ -10,7 +10,8 @@ Build tokenjuice with `pnpm build`. Copy the **contents** of
 `dist/hosts/alma/bundle/` to a `tokenjuice/` folder under Alma's plugin directory:
 
 - macOS: `~/Library/Application Support/Alma/plugins/`
-- Linux: `~/.config/Alma/plugins/`
+- Linux Alma Server 0.4.1176: `~/.config/alma/plugins/` by default. Its local
+  `GET /api/plugins-path` returns the active directory.
 
 Install the tokenjuice CLI on the PATH visible to the Alma process, with `bash`
 available there too. Enable the plugin in Alma and start a fresh session.

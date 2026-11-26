@@ -64,6 +64,44 @@ jobs:
       - name: Audit dependencies
         run: pnpm audit --audit-level moderate
 
+  alma-native:
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build native fixture CLI
+        run: pnpm build
+
+      - name: Exercise the pinned Alma server's application-owned plugin manager
+        run: |
+          docker run --rm --init --network none \
+            --mount type=bind,src="$PWD/dist",dst=/fixture/dist,readonly \
+            --mount type=bind,src="$PWD/package.json",dst=/fixture/package.json,readonly \
+            --mount type=bind,src="$PWD/scripts/alma-e2e.mjs",dst=/fixture/scripts/alma-e2e.mjs,readonly \
+            --mount type=bind,src="$PWD/scripts/e2e-process.mjs",dst=/fixture/scripts/e2e-process.mjs,readonly \
+            --entrypoint /opt/alma-server/runtime/node \
+            ghcr.io/yetone/alma-server@sha256:27c4a32a96a97eb3b2a8fb53edefe031d0a6e1774efcbfb15d129ccc8bdce37e \
+            /fixture/scripts/alma-e2e.mjs
+
   mimo-native:
     runs-on: ubuntu-latest
     needs: quality

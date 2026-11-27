@@ -40,17 +40,5 @@
     "preserveOnFailure": true,
     "head": 18,
     "tail": 18
-  },
-  "counters": [
-    {
-      "name": "failed",
-      "pattern": "fail",
-      "flags": "i"
-    },
-    {
-      "name": "passed",
-      "pattern": "pass",
-      "flags": "i"
-    }
-  ]
+  }
 }

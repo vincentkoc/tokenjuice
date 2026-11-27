@@ -11,6 +11,6 @@
   "expect": {
     "matchedReducer": "tests/bun-test",
     "family": "test-results",
-    "contains": ["failed", "fail test/example.test.ts"]
+    "contains": ["exit 1", "fail test/example.test.ts"]
   }
 }

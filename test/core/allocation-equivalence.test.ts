@@ -35,7 +35,8 @@ describe("allocation optimization equivalence", () => {
         }
       }
     }
-    expect(hash.digest("hex")).toBe("d13b8965d766abbbf7f15f8d3ff78598d7ddd09c2ca6a51f5a33e8a691806e82");
+    // Only the make and Docker build failure fixtures changed: unknown causes stay raw.
+    expect(hash.digest("hex")).toBe("ab7df7a3c6a8a4dc21e09427919a6c18be2284cf5c2db9cf07e8f4e8f9f85964");
   });
 
   it("preserves compound command decisions from before the optimization", () => {
@@ -62,6 +63,7 @@ describe("allocation optimization equivalence", () => {
         hash.update(JSON.stringify([input, isFileContentInspectionCommand(input), isRepositoryInspectionCommand(input), ...policies.map((policy) => getInspectionCommandSkipReason(input.command ?? "", policy))]));
       }
     }
-    expect(hash.digest("hex")).toBe("4982c2a957a524e651ccc8a5cf347103070db301e6c5f1777edb261a28c42fd7");
+    // jq projections of package-lock.json no longer opt into the lockfile summary.
+    expect(hash.digest("hex")).toBe("87be5f0abf909652aaa2d0aab5d6da5d76e2458c4dbc1956eac6f953ac26479e");
   });
 });

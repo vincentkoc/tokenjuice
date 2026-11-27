@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTokenjuiceOpenClawEmbeddedExtension } from "../../src/hosts/openclaw/index.js";
+import { listArtifactMetadata } from "../../src/core/artifacts.js";
 
 function createToolResultHandler(): Function {
   const handlers = new Map<string, Function>();
@@ -318,6 +319,40 @@ describe("OpenClaw adapter", () => {
     expect(result?.details.aggregated).toBe(visibleText);
     expect(result?.details.fullOutputPath).toBe("/tmp/failure.log");
     expect(result?.details.custom).toEqual({ retained: true });
+  });
+
+  it("does not replace a failed build with no observed exit", async () => {
+    const aggregated = ["#7 [2/2] RUN npm install", "#7 0.350 npm error code E404", "#7 0.352 npm error 404 missing-dependency@1.0.0", "Command timed out after 15 seconds", "(Command terminated by signal SIGKILL)"].join("\n");
+    const event = {
+      toolName: "exec",
+      input: { command: "docker build ." },
+      content: [{ type: "text", text: aggregated }],
+      details: { status: "failed", exitCode: null, aggregated },
+      isError: true,
+    };
+    expect(await createToolResultHandler()(event, { cwd: home })).toBeUndefined();
+  });
+
+  it.each([
+    ["On branch main\n  modified: src/foo.ts\n", false],
+    [" M     " + "x".repeat(40) + "\n", false],
+    ["On branch a-long-branch-name-for-the-test\n  modified: src/foo.ts\nno changes added to commit\n", true],
+  ] as const)("measures final delivered text before keeping or rewriting", async (aggregated, rewrite) => {
+    const storeDir = path.join(home, "stats");
+    vi.stubEnv("TOKENJUICE_STATS", "on");
+    vi.stubEnv("TOKENJUICE_ARTIFACT_DIR", storeDir);
+    const result = await createToolResultHandler()({
+      toolName: "exec",
+      input: { command: "git status" },
+      content: [{ type: "text", text: aggregated }],
+      details: { status: "completed", exitCode: 0, aggregated },
+    }, { cwd: home });
+    const deliveredText = result?.content[0].text ?? aggregated;
+    expect(Boolean(result)).toBe(rewrite);
+    expect(result?.details.tokenjuice.savedChars ?? 0).toBe(aggregated.length - deliveredText.length);
+    const stats = await listArtifactMetadata(storeDir);
+    expect(stats).toHaveLength(1);
+    expect(stats[0]?.metadata).toMatchObject({ rawChars: aggregated.length, reducedChars: deliveredText.length });
   });
 
   it("ignores non-exec tool results", async () => {

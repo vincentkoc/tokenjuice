@@ -11,6 +11,6 @@
   "expect": {
     "matchedReducer": "devops/docker-build",
     "family": "container-build",
-    "contains": ["step", "ERROR"]
+    "contains": ["RUN pnpm build", "ERROR"]
   }
 }

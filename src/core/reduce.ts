@@ -1,12 +1,12 @@
 import { loadRules } from "./rules.js";
 import { hasMultipleSubstantiveShellCommands } from "./command-match.js";
 import { classifyExecution, resolveRuleMatch } from "./classify.js";
-import { isFileContentInspectionCommand, isVerbatimConfigInspectionCommand } from "./command-identity.js";
+import { isFileContentInspectionCommand, isMachineReadableGitInspectionCommand, isVerbatimConfigInspectionCommand } from "./command-identity.js";
 import { normalizeExecutionInput } from "./execution-input.js";
 import { clampTextMiddleWithMetadata, clampTextWithMetadata, collapseRepeatedEmojiBanner, countTextChars, dedupeAdjacent, headTail, normalizeLines, pluralize, stripAnsi, trimEmptyEdges } from "./text.js";
 import { storeArtifact, tryStoreArtifactMetadata } from "./artifacts.js";
 import { NO_COMPACTION_METADATA, createCompactionMetadata, mergeCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
-import { buildFailureSummary } from "./failure-summary.js";
+import { buildFailureSummary, buildNamedBuildFailureSummary } from "./failure-summary.js";
 import { buildGithubActionsFailureSummary } from "./github-actions-summary.js";
 import { rewriteGhLines, rewriteGitDiffLines, rewriteGitStatusLines, rewriteSearchLines } from "./reduce-formatters.js";
 import { buildInspectionSummary } from "./reduce-inspection-summary.js";
@@ -381,8 +381,14 @@ export async function reduceExecutionWithRules(
       }
     : undefined;
 
-  const requiresVerbatimOutput = !multipleSubstantiveCommands
-    && isVerbatimConfigInspectionCommand(input);
+  const needsBuildFailureSelection = (classification.matchedReducer === "task/make"
+    || classification.matchedReducer === "devops/docker-build") && reducerInput.exitCode !== 0;
+  const buildFailure = needsBuildFailureSelection && !opts.raw
+    ? buildNamedBuildFailureSummary(reducerInput.exitCode, rawText, maxInlineChars, opts.noOmit)
+    : null;
+  const requiresVerbatimOutput = isMachineReadableGitInspectionCommand(input, rawText.includes("\0"))
+    || (!multipleSubstantiveCommands && isVerbatimConfigInspectionCommand(input))
+    || (needsBuildFailureSelection && !buildFailure);
   if (opts.raw || requiresVerbatimOutput) {
     const rawRef = opts.store
       ? await storeArtifact(
@@ -432,7 +438,7 @@ export async function reduceExecutionWithRules(
 
   const inspectionSummary = multipleSubstantiveCommands
     ? null
-    : buildInspectionSummary(normalizedInput, rawText, opts.noOmit);
+    : buildInspectionSummary(input, rawText, opts.noOmit);
   if (inspectionSummary) {
     const summaryText = inspectionSummary.lines.join("\n").trim();
     const selectedText = clampTextMiddleWithMetadata(summaryText, maxInlineChars, opts.noOmit);
@@ -520,10 +526,10 @@ export async function reduceExecutionWithRules(
     throw new Error("missing generic fallback rule");
   }
 
-  const failureSummary = classification.matchedReducer === "generic/fallback"
+  const failureSummary = buildFailure ?? (classification.matchedReducer === "generic/fallback"
     ? buildGithubActionsFailureSummary(reducerInput, rawText, opts.noOmit)
       ?? buildFailureSummary(reducerInput, rawText, maxInlineChars, opts.noOmit)
-    : null;
+    : null);
   if (failureSummary) {
     const inlineText = clampTextMiddleWithMetadata(failureSummary.text, maxInlineChars, opts.noOmit);
     const reducedChars = countTextChars(inlineText.text);

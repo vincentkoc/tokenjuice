@@ -8,8 +8,9 @@ import {
 } from "../command.js";
 import { getInspectionCommandSkipReason, getSafeRepositoryInventorySourceArgv, type InspectionCommandPolicy, type InspectionCommandSkipReason } from "../inventory-safety.js";
 import { readNoOmissionFromEnv } from "../env.js";
-import { shouldRecordStats, storeArtifact } from "../artifacts.js";
+import { shouldRecordStats, storeArtifact, tryStoreArtifactMetadata } from "../artifacts.js";
 import { reduceExecution } from "../reduce.js";
+import { countTextChars, stripAnsi } from "../text.js";
 import { getCompactionSkipReason, type RewritePolicyOptions } from "./rewrite-policy.js";
 
 import type { CompactResult, ReduceOptions, ToolExecutionInput } from "../../types.js";
@@ -24,7 +25,6 @@ export type CompactBashResultInput = {
   maxInlineChars?: number;
   noOmit?: boolean;
   allowOmit?: boolean;
-  storeRaw?: boolean;
   recordStats?: boolean;
   storeDir?: string;
   metadata?: Record<string, unknown>;
@@ -32,7 +32,11 @@ export type CompactBashResultInput = {
   /** @deprecated use inspectionPolicy instead. */
   skipInspectionCommands?: boolean;
   skipCommandNames?: readonly string[];
-} & RewritePolicyOptions;
+} & RewritePolicyOptions & (
+  | { storeRaw?: boolean; renderDeliveredText?: never }
+  // Only for hosts whose final text doesn't depend on a newly stored raw artifact.
+  | { storeRaw?: false; renderDeliveredText: (result: CompactResult) => string }
+);
 
 type CompactBashResultKeepReason =
   | "raw-bypass"
@@ -58,6 +62,7 @@ export type CompactBashResultOutput =
       rawText: string;
       usedTrustedFullText: boolean;
       result: CompactResult;
+      delivery?: { text: string; stats: CompactResult["stats"] };
     };
 
 function resolveInspectionPolicy(input: CompactBashResultInput): InspectionCommandPolicy {
@@ -299,17 +304,31 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
     ...(typeof input.cwd === "string" && input.cwd.trim() ? { cwd: input.cwd } : {}),
     ...(typeof input.maxInlineChars === "number" ? { maxInlineChars: input.maxInlineChars } : {}),
     ...(input.noOmit || (!input.allowOmit && readNoOmissionFromEnv()) ? { noOmit: true } : {}),
-    // store:true inside reduceExecution writes before this function can keep the output, so a
-    // storeRaw caller stores below, only after the rewrite decision. A keep from a storeRaw
-    // caller then leaves no raw file and no stats entry: recordStats stays off for that call
-    // as well. Callers without storeRaw keep the stats policy unchanged: an explicit
-    // input.recordStats wins, otherwise stats are on unless TOKENJUICE_STATS disables them.
-    recordStats: input.storeRaw ? false : recordStats,
+    // Defer writes when the decision or renderer determines what gets delivered.
+    recordStats: !input.storeRaw && !input.renderDeliveredText && recordStats,
     ...(storeDir ? { storeDir } : {}),
   };
 
   const result = await reduceExecution(executionInput, options);
-  const skipReason = getCompactionSkipReason(command, rawText, result, input);
+  const bodySkipReason = getCompactionSkipReason(command, rawText, result, input);
+  const renderedText = bodySkipReason ? undefined : input.renderDeliveredText?.(result);
+  const rawChars = result.stats.rawChars;
+  const reducedChars = renderedText === undefined ? 0 : countTextChars(stripAnsi(renderedText));
+  const delivery = renderedText === undefined ? undefined : {
+    text: renderedText,
+    stats: { rawChars, reducedChars, ratio: rawChars === 0 ? 1 : reducedChars / rawChars },
+  };
+  const skipReason = delivery
+    ? getCompactionSkipReason(command, rawText, { ...result, inlineText: delivery.text, stats: delivery.stats }, input)
+    : bodySkipReason;
+  if (input.renderDeliveredText && recordStats) {
+    await tryStoreArtifactMetadata({
+      input: executionInput,
+      rawText,
+      classification: result.classification,
+      stats: !skipReason && delivery ? delivery.stats : { rawChars, reducedChars: rawChars, ratio: 1 },
+    }, storeDir);
+  }
   if (skipReason) {
     return {
       action: "keep",
@@ -326,6 +345,7 @@ export async function compactBashResult(input: CompactBashResultInput): Promise<
       rawText,
       usedTrustedFullText,
       result,
+      ...(delivery ? { delivery } : {}),
     };
   }
 

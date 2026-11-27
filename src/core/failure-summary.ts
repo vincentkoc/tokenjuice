@@ -3,6 +3,55 @@ import { clampTextWithMetadata, countTextChars, normalizeLines, stripAnsi } from
 import type { ToolExecutionInput } from "../types.js";
 
 const FAILURE_LINE = /(?:^|\s)(?:fatal(?:\s+error)?|error|panic|exception|caused by|traceback)(?:[:\s]|$)|\b[A-Z][A-Za-z]*(?:Error|Exception):/iu;
+const NESTED_BUILD_FAILURE = /\bnpm\s+(?:ERR!|error\b)|\bundefined reference\b/iu;
+const BUILD_CAUSE = /(?:^|\s)(?:fatal\s+error|error(?:\s+TS\d+)?|panic|caused by):|\b[A-Z][A-Za-z]*(?:Error|Exception):/iu;
+const BUILD_DETAIL = /\bcompilation terminated\.|^\s*\d*\s*\||^\s*\(?Command (?:timed out|terminated|killed|exited)\b/iu;
+// Under -k, GNU Make can report a missing prerequisite without a final "Stop.".
+const MAKE_FAILURE = /^(?:g?make(?:\[\d+\])?|[^:\r\n]+:\d+):\s+\*\*\* (?!\[)(?:No rule to make target\b|.+\.\s+Stop\.$)/u;
+const BUILD_FAILURE_WRAPPER = /^(?:\s*make(?:\[\d+\])?:\s+\*\*\*.*\bError\s+\d+|.*\bprocess .*did not complete successfully|.*\bfailed to solve:.*\bexit code\b)/iu;
+
+/** For build failures, only emit a selection when all recognized diagnostic rows fit intact. */
+export function buildNamedBuildFailureSummary(
+  exitCode: number | undefined,
+  rawText: string,
+  maxChars: number,
+  noOmit = false,
+): { text: string; compaction: CompactionMetadata } | null {
+  if (noOmit || exitCode === undefined || !Number.isInteger(exitCode) || exitCode === 0) return null;
+  const textWithoutAnsi = stripAnsi(rawText);
+  const lines = normalizeLines(textWithoutAnsi);
+  const diagnostics = new Set<number>();
+  let hasCause = false;
+  for (const [index, line] of lines.entries()) {
+    const nestedFailure = NESTED_BUILD_FAILURE.test(line);
+    const makeFailure = MAKE_FAILURE.test(line);
+    if (makeFailure || ((nestedFailure || BUILD_CAUSE.test(line)) && !BUILD_FAILURE_WRAPPER.test(line))) hasCause = true;
+    if (makeFailure || nestedFailure || FAILURE_LINE.test(line) || BUILD_DETAIL.test(line)) diagnostics.add(index);
+  }
+  if (!hasCause) return null;
+
+  const header = "[exit " + exitCode + "] selected build failure details (original line numbers):\n";
+  const footer = "\n[other output omitted]";
+  let remaining = maxChars - countTextChars(header + footer);
+  const row = (index: number) => (index + 1) + ": " + lines[index];
+  for (const index of diagnostics) {
+    remaining -= countTextChars(row(index)) + 1;
+    if (remaining < 0) return null;
+  }
+  const selection = new Set(diagnostics);
+  for (const index of diagnostics) {
+    for (const neighbor of [index - 1, index + 1]) {
+      if (!lines[neighbor] || selection.has(neighbor)) continue;
+      const cost = countTextChars(row(neighbor)) + 1;
+      if (cost > remaining) continue;
+      selection.add(neighbor);
+      remaining -= cost;
+    }
+  }
+  const text = header + [...selection].sort((left, right) => left - right).map(row).join("\n") + footer;
+  if (countTextChars(text) >= countTextChars(textWithoutAnsi)) return null;
+  return { text, compaction: createCompactionMetadata("failure-signal-filter") };
+}
 
 /** Prioritize diagnostic lines before spending the remaining budget on context. */
 export function buildFailureSummary(

@@ -11,6 +11,6 @@
   "expect": {
     "matchedReducer": "task/make",
     "family": "task-runner",
-    "contains": ["error", "Error 2"]
+    "contains": ["cc main.c -o main", "Error 2"]
   }
 }

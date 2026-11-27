@@ -99,7 +99,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
     });
 
     child.on("error", reject);
-    child.on("close", async (code) => {
+    child.on("close", async (code, signal) => {
       try {
         const input: ToolExecutionInput = {
           toolName: "exec",
@@ -108,13 +108,13 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
           stdout: stdout.text,
           stderr: stderr.text,
           combinedText: combined.text,
-          exitCode: code ?? 1,
+          ...(code === null ? {} : { exitCode: code }),
           metadata: {
             ...(opts.source ? { source: opts.source } : {}),
             tokenjuiceCaptureTruncated: combined.truncated,
           },
         };
-        const raw = opts.raw === true || (opts.keepFailures === true && code !== 0);
+        const raw = opts.raw === true || code === null || (opts.keepFailures === true && code !== 0);
         const reduced = await reduceExecution(
           input,
           {
@@ -175,6 +175,7 @@ export async function runWrappedCommand(argv: string[], opts: WrapOptions = {}):
         resolve({
           result,
           exitCode: code ?? 1,
+          ...(signal ? { signal } : {}),
           stdout: stdout.text,
           stderr: stderr.text,
         });

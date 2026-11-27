@@ -2,6 +2,8 @@ import {
   getCommandName,
   getGitSubcommand,
   isFileContentInspectionCommand,
+  isMachineReadableGitInspectionCommand,
+  isPackageLockSummaryInspectionCommand,
 } from "./command-identity.js";
 import { getEffectiveCommandArgv } from "./command-match.js";
 import {
@@ -109,6 +111,7 @@ export type InspectionCommandPolicy = "compact-all" | "skip-all" | "skip-file-co
 export type InspectionCommandSkipReason =
   | "inspection-command"
   | "file-content-inspection-command"
+  | "machine-readable-git-command"
   | "sequential-inventory-command"
   | "unsafe-inventory-pipeline";
 
@@ -377,11 +380,6 @@ function isPreparedRepositoryInspection(analysis: { argv: string[]; fileContent:
   return false;
 }
 
-function hasCommandOnlyFileContentSummary(command: string): boolean {
-  const effectiveCommand = stripLeadingCdPrefix(command);
-  return /\bpackage-lock\.json\b/u.test(effectiveCommand);
-}
-
 export function getSafeRepositoryInventorySourceArgv(command: string): string[] | null {
   return getRepositoryInventorySafety(command) === "safe"
     ? getRepositoryInventorySourceArgv(command)
@@ -392,6 +390,9 @@ export function getInspectionCommandSkipReason(
   command: string,
   policy: InspectionCommandPolicy,
 ): InspectionCommandSkipReason | null {
+  if (isMachineReadableGitInspectionCommand({ command })) {
+    return "machine-readable-git-command";
+  }
   if (policy === "compact-all") {
     return null;
   }
@@ -401,7 +402,7 @@ export function getInspectionCommandSkipReason(
   }
 
   const fileContent = isFileContentInspectionCommand({ command });
-  if (fileContent && !hasCommandOnlyFileContentSummary(command)) {
+  if (fileContent && !isPackageLockSummaryInspectionCommand({ command })) {
     return "file-content-inspection-command";
   }
 

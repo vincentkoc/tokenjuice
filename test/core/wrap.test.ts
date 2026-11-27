@@ -21,6 +21,22 @@ afterEach(async () => {
 });
 
 describe("runWrappedCommand", () => {
+  it.skipIf(process.platform === "win32")("keeps exact captured output when a signal closes the child without an exit code", async () => {
+    const storeDir = await createTempDir();
+    const chatter = Array.from({ length: 80 }, (_, index) => "long non-diagnostic build progress " + index + "\n").join("");
+    const output = chatter + "fatal error: middle compiler failure\n" + chatter;
+    const script = "process.stdout.write(" + JSON.stringify(output) + ", () => process.kill(process.pid, 'SIGTERM'))";
+    const wrapped = await runWrappedCommand([process.execPath, "-e", script], {
+      includeCompactionNotice: true, store: true, recordStats: true, storeDir,
+    });
+    expect(wrapped.exitCode).toBe(1);
+    expect(wrapped.result.inlineText === output).toBe(true);
+    expect(wrapped).toHaveProperty("signal", "SIGTERM");
+    expect(wrapped.result.stats.ratio).toBe(1);
+    expect((await getArtifact(wrapped.result.rawRef!.id, storeDir))?.metadata).not.toHaveProperty("exitCode");
+    expect((await listArtifactMetadata(storeDir))[0]?.metadata).not.toHaveProperty("exitCode");
+  });
+
   it("exposes an incomplete capture in results and persisted metadata", async () => {
     const storeDir = await createTempDir();
     const output = Array.from({ length: 500 }, (_, index) => `line ${index} ${"x".repeat(100)}`).join("\n");

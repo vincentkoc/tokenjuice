@@ -25,6 +25,8 @@
 - Add a beta DevEco Code native Bash-result plugin with owned-file lifecycle and successful, complete-output checks.
 - Document coverage and native integration gaps for the 38-agent Magpie catalog audit.
 - Add an Alma native plugin for foreground Bash wrapping on macOS and Linux, verified on Linux Alma Server 0.4.1176.
+- Preserve make and Docker build failure diagnostics, exact lockfile reads, and machine-readable Git status and NUL-separated inventories.
+- Keep OpenClaw shell output when the final compaction notice would erase the savings, and record savings against what was delivered.
 
 ## 0.11.2 - 2026-11-19
 

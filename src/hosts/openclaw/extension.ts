@@ -67,11 +67,10 @@ function readAggregatedText(details: unknown, content: unknown): string {
   return extractTextContent(content);
 }
 
-function readExitCode(details: unknown, isError: boolean): number {
-  if (isRecord(details) && typeof details.exitCode === "number") {
-    return details.exitCode;
-  }
-  return isError ? 1 : 0;
+function readExitCode(details: OpenClawExecDetails): number | undefined {
+  return typeof details.exitCode === "number" && Number.isInteger(details.exitCode)
+    ? details.exitCode
+    : undefined;
 }
 
 function isCompletedExecDetails(details: unknown): details is OpenClawExecDetails {
@@ -92,6 +91,10 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
         return undefined;
       }
 
+      const exitCode = readExitCode(event.details);
+      if (exitCode === undefined && (event.isError || event.details.status === "failed")) {
+        return undefined;
+      }
       const command = readOpenClawShellCommand(event.input);
       if (!command) {
         return undefined;
@@ -115,7 +118,8 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
           command,
           cwd: readCwd(event.input, event.details, ctx.cwd),
           visibleText: outputText,
-          exitCode: readExitCode(event.details, Boolean(event.isError)),
+          ...(exitCode !== undefined ? { exitCode } : {}),
+          renderDeliveredText: (result) => result.inlineText + "\n\n[" + buildCompactionNotice(result) + "]",
           maxInlineChars: DEFAULT_MAX_INLINE_CHARS,
           inspectionPolicy: "allow-safe-inventory",
           minSavedCharsAny: 8,
@@ -127,11 +131,11 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
           },
         });
 
-        if (outcome.action === "keep") {
+        if (outcome.action === "keep" || !outcome.delivery) {
           return undefined;
         }
 
-        const deliveredText = `${outcome.result.inlineText}\n\n[${buildCompactionNotice(outcome.result)}]`;
+        const { text: deliveredText, stats } = outcome.delivery;
         return {
           content: [
             {
@@ -140,7 +144,7 @@ export function createTokenjuiceOpenClawEmbeddedExtension() {
             },
           ],
           details: {
-            ...mergeDetails(event.details, buildTokenjuiceDetails(outcome.result)),
+            ...mergeDetails(event.details, buildTokenjuiceDetails({ ...outcome.result, stats })),
             // Structured consumers use aggregated instead of the content projection.
             ...(typeof event.details.aggregated === "string" ? { aggregated: deliveredText } : {}),
           },

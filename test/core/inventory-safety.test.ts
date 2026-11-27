@@ -153,7 +153,14 @@ describe("getInspectionCommandSkipReason", () => {
     expect(getInspectionCommandSkipReason("rg --files | sort | head -n 10", "allow-safe-inventory")).toBeNull();
     expect(getInspectionCommandSkipReason("cd /repo && rg --files src", "allow-safe-inventory")).toBeNull();
     expect(getInspectionCommandSkipReason("git ls-files | sed -n '1,20p'", "allow-safe-inventory")).toBeNull();
-    expect(getInspectionCommandSkipReason("jq '.packages' package-lock.json", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("jq . package-lock.json", "allow-safe-inventory")).toBeNull();
+    expect(getInspectionCommandSkipReason("jq '.packages' package-lock.json", "allow-safe-inventory")).toBe("file-content-inspection-command");
     expect(getInspectionCommandSkipReason("sed -n '1,260p' /tmp/paper.review.md", "allow-safe-inventory")).toBe("file-content-inspection-command");
+  });
+
+  it("keeps explicit machine-readable Git output independently of inventory policy", () => {
+    expect(getInspectionCommandSkipReason("env LANG=C git -C repo status --porcelain=v2", "compact-all")).toBe("machine-readable-git-command");
+    expect(getInspectionCommandSkipReason("git ls-files -cz", "allow-safe-inventory")).toBe("machine-readable-git-command");
+    expect(getInspectionCommandSkipReason("git status --short -- --porcelain=v2", "allow-safe-inventory")).toBeNull();
   });
 });

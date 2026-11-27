@@ -12,8 +12,8 @@ describe("buildInspectionSummary", () => {
   });
   const lockfileRead = {
     toolName: "exec",
-    command: "cat package-lock.json",
-    argv: ["cat", "package-lock.json"],
+    command: "jq . package-lock.json",
+    argv: ["jq", ".", "package-lock.json"],
     exitCode: 0,
   };
 

@@ -163,4 +163,12 @@ describe("getInspectionCommandSkipReason", () => {
     expect(getInspectionCommandSkipReason("git ls-files -cz", "allow-safe-inventory")).toBe("machine-readable-git-command");
     expect(getInspectionCommandSkipReason("git status --short -- --porcelain=v2", "allow-safe-inventory")).toBeNull();
   });
+
+  it.each(["-z", "-cz", "-zc", "-zM", "-zz"])("detects the short NUL flag in %s", (option) => {
+    expect(getInspectionCommandSkipReason("git ls-files " + option, "compact-all")).toBe("machine-readable-git-command");
+  });
+
+  it.each(["filename-z", "--zero", "-Z", "-z1", "-z=1", "-éz", "-- -z", "-"])("does not mistake %s for a short NUL flag", (option) => {
+    expect(getInspectionCommandSkipReason("git status " + option, "compact-all")).toBeNull();
+  });
 });

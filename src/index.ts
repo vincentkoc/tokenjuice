@@ -803,3 +803,6 @@ export { installPaimonSkill, doctorPaimonSkill, uninstallPaimonSkill, type Paimo
 export { installMisterMorphSkill, doctorMisterMorphSkill, uninstallMisterMorphSkill, type MisterMorphSkillOptions } from "./hosts/mister-morph/index.js";
 
 export { installShelleySkill, doctorShelleySkill, uninstallShelleySkill, type ShelleySkillOptions } from "./hosts/shelley/index.js";
+
+export { installCodelyCliHook, uninstallCodelyCliHook, doctorCodelyCliHook, runCodelyCliBeforeToolHook } from "./hosts/codely-cli/index.js";
+export type { CodelyCliHookCommandOptions, CodelyCliDoctorReport, InstallCodelyCliHookResult, UninstallCodelyCliHookResult } from "./hosts/codely-cli/index.js";

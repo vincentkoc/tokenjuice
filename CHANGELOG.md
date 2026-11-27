@@ -26,6 +26,7 @@
 - Document coverage and native integration gaps for the 38-agent Magpie catalog audit.
 - Add an Alma native plugin for foreground Bash wrapping on macOS and Linux, verified on Linux Alma Server 0.4.1176.
 - Remove unreliable result counters from npm, pnpm, yarn and bun test wrappers; keep runner totals and failure diagnostics.
+- Add Tuanjie Codely CLI native BeforeTool wrapping with safe settings lifecycle and explicit native-acceptance limits.
 
 ## 0.11.2 - 2026-11-19
 

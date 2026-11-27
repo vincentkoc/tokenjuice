@@ -9,6 +9,7 @@ import { uninstallAtomCodeSkill } from "../hosts/atomcode/index.js";
 import { uninstallMuseCodeSkill } from "../hosts/muse-code/index.js";
 import { uninstallMiniQSkill } from "../hosts/miniq/index.js";
 import { uninstallDevEcoExtension } from "../hosts/deveco/index.js";
+import { uninstallCodelyCliHook } from "../hosts/codely-cli/index.js";
 import { uninstallOpenCodeV2Extension } from "../hosts/opencode/v2/index.js";
 import { uninstallQoderHook } from "../hosts/qoder/hook-install.js";
 import { uninstallSnowCliHook } from "../hosts/snow-cli/index.js";
@@ -325,6 +326,12 @@ const uninstallCursorCommand = createHostCommand(() => uninstallCursorHook(), (r
 const uninstallFirebaseStudioCommand = createFileUninstallCommand("firebase-studio", "rules", "rulePath", () => uninstallFirebaseStudioRule());
 
 const uninstallForgecodeCommand = createFileUninstallCommand("forgecode", "instructions", "instructionsPath", () => uninstallForgeCodeInstructions());
+
+const uninstallCodelyCliCommand = createHostCommand(() => uninstallCodelyCliHook(), (result) => {
+  process.stdout.write(`removed codely-cli entries: ${result.removed}\n`);
+  process.stdout.write(`settings path: ${result.settingsPath}\n`);
+  process.stdout.write("enable: tokenjuice install codely-cli\n");
+});
 
 const uninstallGeminiCliCommand = createHostCommand(() => uninstallGeminiCliHook(), (result) => {
   process.stdout.write(`removed gemini-cli entries: ${result.removed}\n`);
@@ -671,6 +678,7 @@ export const uninstallCommands: ReadonlyMap<string, HostCommandHandler> = new Ma
   ["firebase-studio", uninstallFirebaseStudioCommand],
   ["forgecode", uninstallForgecodeCommand],
   ["forge-code", uninstallForgecodeCommand],
+  ["codely-cli", uninstallCodelyCliCommand],
   ["gemini-cli", uninstallGeminiCliCommand],
   ["gitlab-duo", uninstallGitlabDuoCommand],
   ["grok-cli", uninstallGrokCliCommand],

@@ -51,6 +51,7 @@ const HOST_TARGETS = [
   "codebuddy",
   "codebuff",
   "codegen",
+  "codely-cli",
   "coder-agents",
   "coderabbit",
   "coderagents",

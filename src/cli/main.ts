@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runSnowCliAfterToolCallHook } from "../hosts/snow-cli/index.js";
 import { runEmpryoPreToolUseHook } from "../hosts/empryo/index.js";
+import { runCodelyCliBeforeToolHook } from "../hosts/codely-cli/index.js";
 import { compactFrameworkResult, type FrameworkSource } from "../core/integrations/compact-framework-result.js";
 
 import { stat } from "node:fs/promises";
@@ -116,6 +117,7 @@ function printUsage(): void {
       "  tokenjuice install elyra",
       "  tokenjuice install firebase-studio",
       "  tokenjuice install forgecode",
+      "  tokenjuice install codely-cli [--local]",
       "  tokenjuice install gemini-cli [--local]",
       "  tokenjuice install gitlab-duo",
       "  tokenjuice install goose",
@@ -232,6 +234,7 @@ function printUsage(): void {
       "  tokenjuice uninstall elyra",
       "  tokenjuice uninstall firebase-studio",
       "  tokenjuice uninstall forgecode",
+      "  tokenjuice uninstall codely-cli",
       "  tokenjuice uninstall gemini-cli",
       "  tokenjuice uninstall gitlab-duo",
       "  tokenjuice uninstall goose",
@@ -301,7 +304,7 @@ function printUsage(): void {
       "  tokenjuice cat <artifact-id>",
       "  tokenjuice verify [--fixtures]",
       "  tokenjuice discover [file] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>] [--source <name>] [--by-source]",
-      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|atomcode|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|coder-agents|coderabbit|codebuddy|zcode|command-code|continue|copilot-agent|craft-agents|crush|cursor|deepagents|deveco|devin|dot-agents|docker-agent|droid|empryo|soulforge|eca|nanobot|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|fx|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|miniq|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mimo-code|muse-code|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|omo|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|snow-cli|qoderwork|qwen-code|qwenwork|paimon|mister-morph|shelley|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
+      "  tokenjuice doctor [file|hooks|adal|aether|aictl|ai-memory-protocol|aider|agent-layer|agentinit|agentlink|agentloom|agents-cli|agents-md|agentsge|agentsmesh|amazon-q|amp|atomcode|ante|antigravity|anywhere-agents|augment|avante|baz|bito|blackbox|blocks|clawdbot|bob|builder|charlie|codex|claude-code|cline|codeant|codebuff|codegen|codely-cli|coder-agents|coderabbit|codebuddy|zcode|command-code|continue|copilot-agent|craft-agents|crush|cursor|deepagents|deveco|devin|dot-agents|docker-agent|droid|empryo|soulforge|eca|nanobot|elyra|firebase-studio|forgecode|gemini-cli|gitlab-duo|goose|greptile|grok-build|fx|grok-bot|grok-cli|gptme|jean2|jetbrains-ai|junie|jules|leanctl|kimi|kiro|kilo|localcode|mcp-agent|miniq|mini-swe-agent|swe-agent|stagewise|mistral-vibe|mimo-code|muse-code|mux|novakit|knowns|ona|openhands|open-interpreter|openwebui|omo|pi|pi-go|opencode|opencode-v2|plandex|qodo|qoder|qoder-cli|snow-cli|qoderwork|qwen-code|qwenwork|paimon|mister-morph|shelley|replit|roo|rovo|ruler|tabby|tabnine|trae|uipath|vscode-copilot|warp|windsurf|zed|zencoder|copilot-cli] [--local] [--print-instructions] [--source-command <cmd>] [--tool-name <name>] [--exit-code <n>]",
       "  tokenjuice doctor codex [--local] [--no-omit]",
       "  tokenjuice stats [--timezone local|utc|<iana-timezone>] [--source <name>] [--by-source] [--limit <n>] [--cursor <cursor>]",
     ].join("\n"),
@@ -719,7 +722,7 @@ async function runInstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, zcode, continue, copilot-agent, craft-agents, crush, cursor, deepagents, deveco, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, fx, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("install currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, codely-cli, coder-agents, coderabbit, codebuddy, zcode, continue, copilot-agent, craft-agents, crush, cursor, deepagents, deveco, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gemini-cli, gitlab-duo, goose, greptile, grok-build, fx, grok-bot, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runUninstall(args: ParsedArgs): Promise<number> {
@@ -731,7 +734,7 @@ async function runUninstall(args: ParsedArgs): Promise<number> {
     }
   }
 
-  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, coder-agents, coderabbit, codebuddy, zcode, command-code, continue, copilot-agent, craft-agents, crush, cursor, deepagents, deveco, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, fx, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, openhands, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
+  throw new Error("uninstall currently supports: adal, aether, aictl, ai-memory-protocol, aider, agent-layer, agentinit, agentlink, agentloom, agents-cli, agents-md, agentsge, agentsmesh, amazon-q, amp, atomcode, ante, antigravity, anywhere-agents, augment, avante, baz, bito, blackbox, blocks, clawdbot, bob, builder, charlie, codex, claude-code, cline, codeant, codebuff, codegen, codely-cli, coder-agents, coderabbit, codebuddy, zcode, command-code, continue, copilot-agent, craft-agents, crush, cursor, deepagents, deveco, devin, dot-agents, docker-agent, droid, empryo, soulforge, eca, nanobot, elyra, firebase-studio, forgecode, gitlab-duo, gemini-cli, goose, greptile, grok-build, fx, grok-bot, grok-cli, gptme, jean2, jetbrains-ai, junie, jules, leanctl, kimi, kiro, kilo, knowns, localcode, mcp-agent, miniq, mini-swe-agent, swe-agent, stagewise, mistral-vibe, mimo-code, muse-code, mux, novakit, ona, openhands, open-interpreter, openwebui, omo, pi, pi-go, opencode, opencode-v2, plandex, qodo, qoder, qoderwork, snow-cli, paimon, mister-morph, shelley, replit, qwen-code, roo, rovo, ruler, tabby, tabnine, trae, uipath, vscode-copilot, warp, windsurf, copilot-cli, zed, zencoder");
 }
 
 async function runList(args: ParsedArgs): Promise<number> {
@@ -1141,6 +1144,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return await runCursorPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "devin-pre-tool-use":
       return await runDevinPreToolUseHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
+    case "codely-cli-before-tool":
+      return await runCodelyCliBeforeToolHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-before-tool":
       return await runGeminiCliBeforeToolHook(await readStdin(args.maxInputBytes), args.wrapLauncher);
     case "gemini-cli-after-tool":

@@ -8,7 +8,104 @@ const BUILD_CAUSE = /(?:^|\s)(?:fatal\s+error|error(?:\s+TS\d+)?|panic|caused by
 const BUILD_DETAIL = /\bcompilation terminated\.|^\s*\d*\s*\||^\s*\(?Command (?:timed out|terminated|killed|exited)\b/iu;
 // Under -k, GNU Make can report a missing prerequisite without a final "Stop.".
 const MAKE_FAILURE = /^(?:g?make(?:\[\d+\])?|[^:\r\n]+:\d+):\s+\*\*\* (?!\[)(?:No rule to make target\b|.+\.\s+Stop\.$)/u;
-const BUILD_FAILURE_WRAPPER = /^(?:\s*make(?:\[\d+\])?:\s+\*\*\*.*\bError\s+\d+|.*\bprocess .*did not complete successfully|.*\bfailed to solve:.*\bexit code\b)/iu;
+
+function isUnicodeWordChar(char: string | undefined): boolean {
+  return char !== undefined && /\w/u.test(char);
+}
+
+function hasUnicodeWordBoundary(text: string, index: number): boolean {
+  return isUnicodeWordChar(text[index - 1]) !== isUnicodeWordChar(text[index]);
+}
+
+function indexOfIgnoreCase(haystack: string, lower: string | null, needle: string, from = 0): number {
+  if (lower) return lower.indexOf(needle, from);
+  const needleLength = needle.length;
+  for (let index = from; index <= haystack.length - needleLength; index += 1) {
+    if (haystack.slice(index, index + needleLength).toLowerCase() === needle) return index;
+  }
+  return -1;
+}
+
+function isMakeErrorWrapper(line: string, lower: string | null): boolean {
+  let index = 0;
+  while (index < line.length && /\s/u.test(line[index]!)) index += 1;
+  if (indexOfIgnoreCase(line, lower, "make", index) !== index) return false;
+  index += 4;
+  if (line[index] === "[") {
+    index += 1;
+    if (index >= line.length || !/\d/u.test(line[index]!)) return false;
+    while (index < line.length && /\d/u.test(line[index]!)) index += 1;
+    if (line[index] !== "]") return false;
+    index += 1;
+  }
+  if (line[index] !== ":") return false;
+  index += 1;
+  if (index >= line.length || !/\s/u.test(line[index]!)) return false;
+  while (index < line.length && /\s/u.test(line[index]!)) index += 1;
+  if (!line.startsWith("***", index)) return false;
+  let search = index + 3;
+  while (search < line.length) {
+    const errorAt = indexOfIgnoreCase(line, lower, "error", search);
+    if (errorAt === -1) return false;
+    if (hasUnicodeWordBoundary(line, errorAt)) {
+      let after = errorAt + 5;
+      if (after < line.length && /\s/u.test(line[after]!)) {
+        while (after < line.length && /\s/u.test(line[after]!)) after += 1;
+        if (after < line.length && /\d/u.test(line[after]!)) return true;
+      }
+    }
+    search = errorAt + 1;
+  }
+  return false;
+}
+
+function hasBoundedPhrase(line: string, lower: string | null, phrase: string, from: number): boolean {
+  let search = from;
+  while (search <= line.length - phrase.length) {
+    const at = indexOfIgnoreCase(line, lower, phrase, search);
+    if (at === -1) return false;
+    if (hasUnicodeWordBoundary(line, at) && hasUnicodeWordBoundary(line, at + phrase.length)) return true;
+    search = at + 1;
+  }
+  return false;
+}
+
+function isProcessFailureWrapper(line: string, lower: string | null): boolean {
+  const needle = "process ";
+  let search = 0;
+  while (search <= line.length - needle.length) {
+    const at = indexOfIgnoreCase(line, lower, needle, search);
+    if (at === -1) return false;
+    if (hasUnicodeWordBoundary(line, at)) {
+      return indexOfIgnoreCase(line, lower, "did not complete successfully", at + needle.length) !== -1;
+    }
+    search = at + 1;
+  }
+  return false;
+}
+
+function isFailedToSolveWrapper(line: string, lower: string | null): boolean {
+  const needle = "failed to solve:";
+  let search = 0;
+  while (search <= line.length - needle.length) {
+    const at = indexOfIgnoreCase(line, lower, needle, search);
+    if (at === -1) return false;
+    if (hasUnicodeWordBoundary(line, at)) {
+      return hasBoundedPhrase(line, lower, "exit code", at + needle.length);
+    }
+    search = at + 1;
+  }
+  return false;
+}
+
+function isBuildFailureWrapper(line: string): boolean {
+  const lower = line.toLowerCase();
+  const aligned = lower.length === line.length ? lower : null;
+  return isMakeErrorWrapper(line, aligned)
+    || isProcessFailureWrapper(line, aligned)
+    || isFailedToSolveWrapper(line, aligned);
+}
+
 
 /** For build failures, only emit a selection when all recognized diagnostic rows fit intact. */
 export function buildNamedBuildFailureSummary(
@@ -25,7 +122,7 @@ export function buildNamedBuildFailureSummary(
   for (const [index, line] of lines.entries()) {
     const nestedFailure = NESTED_BUILD_FAILURE.test(line);
     const makeFailure = MAKE_FAILURE.test(line);
-    if (makeFailure || ((nestedFailure || BUILD_CAUSE.test(line)) && !BUILD_FAILURE_WRAPPER.test(line))) hasCause = true;
+    if (makeFailure || ((nestedFailure || BUILD_CAUSE.test(line)) && !isBuildFailureWrapper(line))) hasCause = true;
     if (makeFailure || nestedFailure || FAILURE_LINE.test(line) || BUILD_DETAIL.test(line)) diagnostics.add(index);
   }
   if (!hasCause) return null;

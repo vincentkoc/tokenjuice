@@ -71,6 +71,15 @@ describe("result fidelity", () => {
     expect(result.stats.ratio).toBe(1);
   });
 
+  it("does not stall on a long unmatched build line", async () => {
+    const combinedText = "#7 ERROR: " + "x".repeat(1_000_000) + "\n";
+    const started = performance.now();
+    const result = await reduceExecution({ toolName: "exec", command: "docker build .", combinedText, exitCode: 1 });
+    expect(performance.now() - started).toBeLessThan(2_000);
+    expect(result.inlineText).toBe(combinedText);
+    expect(result.stats.ratio).toBe(1);
+  });
+
   it.each([
     ["git status --porcelain=v1", " M src/file-", "\n"],
     ["git -C repo status --porcelain=v2", "1 .M N... 100644 100644 100644 0123456 0123456 src/file-", "\n"],

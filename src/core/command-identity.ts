@@ -108,6 +108,17 @@ function getGitSubcommandIndex(argv: string[]): number | null {
   return null;
 }
 
+function hasGitNulShortFlag(arg: string): boolean {
+  if (arg[0] !== "-") return false;
+  let hasNulFlag = false;
+  for (let index = 1; index < arg.length; index += 1) {
+    const code = arg.charCodeAt(index);
+    if (!((code >= 65 && code <= 90) || (code >= 97 && code <= 122))) return false;
+    if (arg[index] === "z") hasNulFlag = true;
+  }
+  return hasNulFlag;
+}
+
 export function isMachineReadableGitInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">, hasNulOutput = false): boolean {
   return deriveCommandMatchCandidates(input).some(({ argv }) => {
     const index = getGitSubcommandIndex(argv);
@@ -119,7 +130,7 @@ export function isMachineReadableGitInspectionCommand(input: Pick<ToolExecutionI
 
     for (const arg of argv.slice(index + 1)) {
       if (arg === "--") break;
-      if (/^-[a-zA-Z]*z[a-zA-Z]*$/u.test(arg)) return true;
+      if (hasGitNulShortFlag(arg)) return true;
       const option = arg.split("=", 1)[0];
       if (subcommand === "status" && option?.startsWith("--porc") && "--porcelain".startsWith(option)) return true;
     }

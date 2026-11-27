@@ -251,6 +251,8 @@ export type WrapOptions = {
 export type WrapResult = {
   result: CompactResult;
   exitCode: number;
+  /** The observed termination signal, if the child did not exit normally. */
+  signal?: NodeJS.Signals;
   stdout: string;
   stderr: string;
 };

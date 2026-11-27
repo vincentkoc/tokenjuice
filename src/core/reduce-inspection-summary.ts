@@ -1,9 +1,8 @@
 import { createCompactionMetadata, type CompactionMetadata } from "./compaction-metadata.js";
+import { isPackageLockSummaryInspectionCommand } from "./command-identity.js";
 import { parseJsonValue } from "./reduce-utils.js";
 
 import type { ToolExecutionInput } from "../types.js";
-
-const PACKAGE_LOCK_RE = /\bpackage-lock\.json\b/u;
 
 type InspectionSummaryReducerId = "generic/package-lock-summary";
 
@@ -18,6 +17,7 @@ function buildPackageLockSummary(value: unknown, noOmit = false): string[] {
     return [];
   }
   const record = value as Record<string, unknown>;
+  if (typeof record.lockfileVersion !== "number") return [];
   const packages = typeof record.packages === "object" && record.packages !== null && !Array.isArray(record.packages)
     ? Object.keys(record.packages as Record<string, unknown>)
     : [];
@@ -42,8 +42,7 @@ function buildPackageLockSummary(value: unknown, noOmit = false): string[] {
 }
 
 export function buildInspectionSummary(input: ToolExecutionInput, rawText: string, noOmit = false): InspectionSummary | null {
-  const command = input.command ?? "";
-  if (!PACKAGE_LOCK_RE.test(command)) {
+  if (!isPackageLockSummaryInspectionCommand(input)) {
     return null;
   }
 

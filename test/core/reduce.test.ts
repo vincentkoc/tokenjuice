@@ -2651,12 +2651,14 @@ describe("reduceExecution", () => {
         progress,
         "#2 DONE 18.2s",
         "#3 [3/5] RUN pnpm build",
+        "#3 0.300 src/main.ts:2:7: error TS2322: Type 'string' is not assignable to type 'number'.",
         "#3 ERROR: process \"/bin/sh -c pnpm build\" did not complete successfully",
       ].join("\n"),
       exitCode: 1,
     });
 
     expect(result.classification.matchedReducer).toBe("devops/docker-build");
+    expect(result.inlineText).toContain("error TS2322");
     expect(result.inlineText).toContain("#3 ERROR");
     expect(result.stats.ratio).toBeLessThan(0.5);
   });

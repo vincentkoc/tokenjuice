@@ -108,6 +108,36 @@ function getGitSubcommandIndex(argv: string[]): number | null {
   return null;
 }
 
+function hasGitNulShortFlag(arg: string): boolean {
+  if (arg[0] !== "-") return false;
+  let hasNulFlag = false;
+  for (let index = 1; index < arg.length; index += 1) {
+    const code = arg.charCodeAt(index);
+    if (!((code >= 65 && code <= 90) || (code >= 97 && code <= 122))) return false;
+    if (arg[index] === "z") hasNulFlag = true;
+  }
+  return hasNulFlag;
+}
+
+export function isMachineReadableGitInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">, hasNulOutput = false): boolean {
+  return deriveCommandMatchCandidates(input).some(({ argv }) => {
+    const index = getGitSubcommandIndex(argv);
+    if (index === null) return false;
+    // NUL separates records even when an alias hides the underlying Git subcommand.
+    if (hasNulOutput) return true;
+    const subcommand = argv[index];
+    if (subcommand !== "status" && subcommand !== "ls-files") return false;
+
+    for (const arg of argv.slice(index + 1)) {
+      if (arg === "--") break;
+      if (hasGitNulShortFlag(arg)) return true;
+      const option = arg.split("=", 1)[0];
+      if (subcommand === "status" && option?.startsWith("--porc") && "--porcelain".startsWith(option)) return true;
+    }
+    return false;
+  });
+}
+
 function isGitBlobSpecifier(arg: string): boolean {
   return /^[^:]+:.+/u.test(arg);
 }
@@ -293,6 +323,18 @@ export function isFileContentInspectionCommand(input: Pick<ToolExecutionInput, "
   const candidates = deriveCommandMatchCandidates(input);
   return isFileContentInspectionArgv(getInspectionArgv(input, candidates))
     || candidates.some((candidate) => isGhApiContentsDecodeCommand(candidate.command));
+}
+
+export function isPackageLockSummaryInspectionCommand(input: Pick<ToolExecutionInput, "argv" | "command">): boolean {
+  const candidate = getMostDerivedCandidate(input);
+  const file = candidate.argv[2];
+  // Only the unformatted jq identity read is the legacy human summary entry point.
+  return candidate.argv.length === 3
+    && getCommandName(candidate.argv) === "jq"
+    && candidate.argv[1] === "."
+    && typeof file === "string"
+    && file.split(/[/\\]/u).at(-1) === "package-lock.json"
+    && !isCompoundShellCommand(stripLeadingCdPrefix(candidate.command ?? ""));
 }
 
 function isVerbatimRemoteInspectionCommand(command: string): boolean {

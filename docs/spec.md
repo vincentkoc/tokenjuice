@@ -73,11 +73,17 @@ host adapters choose an inspection policy before calling the shared compactor. t
 
 - exact file-content reads stay raw (`cat`, `sed`, `head`, `tail`, `nl`, `bat`, `jq`, `yq`)
 - size and prose shape do not change this. a file read over 4,000 characters stays raw
-- a command whose text contains `package-lock.json` is the exception. it may be replaced by the package-lock summary
+- `jq . package-lock.json` is the legacy human lockfile summary; `cat package-lock.json`, jq projections, and explicitly formatted jq reads stay raw
 - standalone repository inventory commands can compact when they are inventory-only (`find`, `ls`, `rg --files`, `git ls-files`, `fd`)
 - inventory pipelines compact only when downstream commands are structural stdin transforms (`sort`, `head`, `tail`, `uniq`)
 - source inventory commands that execute other commands, such as `find ... -exec ...` or `fd --exec ...`, stay raw
 - mixed command sequences and unsafe inventory pipelines stay raw
+
+Explicit machine formats (`git status --porcelain[=<version>]`, its abbreviations starting at `--porc`, `git status -z`, and `git ls-files -z`) stay verbatim in the shared reducer and shell-result compactor, independently of the host's inventory policy. Observed NUL-delimited Git results also stay verbatim even if an alias hides the underlying subcommand. Human Git status and ordinary inventories can still compact.
+
+Failed `make` and `docker build` reductions prioritize intact diagnostic lines from before any rule filtering and identify the observed nonzero exit. They keep the captured output if a cause cannot be identified, its diagnostics do not fit, or the exit is unknown.
+
+OpenClaw's shell-result adapter admits a replacement and records its savings using the delivered text including its notice (or the unchanged text if kept). This does not change library `inlineText` measurements or artifact-retention defaults.
 
 ## operating modes
 
@@ -110,6 +116,8 @@ this is the machine-facing protocol surface. it accepts either:
 - a direct `ToolExecutionInput` JSON object
 - an envelope with `{ input, options }`
 
+For NUL-delimited Git output, use `wrap` or the library directly; `reduce-json` rejects NUL in text fields.
+
 ### wrap
 
 explicitly run a command through tokenjuice:
@@ -120,6 +128,8 @@ tokenjuice wrap --store -- pnpm test
 ```
 
 this is command wrapping, not command rewriting.
+
+If the child is terminated by a signal rather than returning an exit code, `wrap` keeps the captured text, reports the observed `signal` in its JSON result, and still returns the wrapper status of 1. No exit code is attributed to the child in artifact metadata in this case.
 
 Text-mode wrapping measures the complete emitted text, including the compaction
 notice, recovery command, and line ending. If that notice would erase the saving,

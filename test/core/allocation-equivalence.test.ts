@@ -35,8 +35,8 @@ describe("allocation optimization equivalence", () => {
         }
       }
     }
-    // Only the make and Docker build failure fixtures changed: unknown causes stay raw.
-    expect(hash.digest("hex")).toBe("ab7df7a3c6a8a4dc21e09427919a6c18be2284cf5c2db9cf07e8f4e8f9f85964");
+    // Make/Docker unknown causes stay raw; also includes the test-wrapper counter change from main.
+    expect(hash.digest("hex")).toBe("d1bd238ccdf55967dee692fc69fe188260c48aecd71bc5dde7844427100839da");
   });
 
   it("preserves compound command decisions from before the optimization", () => {

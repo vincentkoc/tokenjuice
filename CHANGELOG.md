@@ -27,6 +27,7 @@
 - Add an Alma native plugin for foreground Bash wrapping on macOS and Linux, verified on Linux Alma Server 0.4.1176.
 - Preserve make and Docker build failure diagnostics, exact lockfile reads, and machine-readable Git status and NUL-separated inventories.
 - Keep OpenClaw shell output when the final compaction notice would erase the savings, and record savings against what was delivered.
+- Remove unreliable result counters from npm, pnpm, yarn and bun test wrappers; keep runner totals and failure diagnostics.
 
 ## 0.11.2 - 2026-11-19
 

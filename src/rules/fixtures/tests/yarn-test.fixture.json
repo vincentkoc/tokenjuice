@@ -11,6 +11,6 @@
   "expect": {
     "matchedReducer": "tests/yarn-test",
     "family": "test-results",
-    "contains": ["failed", "FAIL test/example.test.ts"]
+    "contains": ["exit 1", "FAIL test/example.test.ts"]
   }
 }

@@ -1,6 +1,6 @@
 # Client logos
 
-The [README catalog](../../README.md#harness-and-framework-catalog) uses these local PNGs so image hosts and theme-dependent SVG styles cannot break the table.
+The [integration catalog](../integrations.md#harness-and-framework-catalog) uses these local PNGs so image hosts and theme-dependent SVG styles cannot break the table.
 
 Every image comes from an official project site, repository, organization, or brand kit. [sources.json](sources.json) records the upstream URL, source SHA-256, rendered SHA-256, and client-to-asset mapping. An `archive_member` identifies artwork extracted from a brand-kit ZIP. Shared brand marks reuse one file.
 
